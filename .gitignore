@@ -1,0 +1,21 @@
+# Ignora el entorno virtual en cualquier carpeta que esté
+venv/
+env/
+# Ignora archivos de cache de Python
+**/__pycache__/
+*.py[cod]
+# Ignora la base de datos local de prueba
+db.sqlite3
+# Ignora archivos de configuración personal
+.env
+
+# Ignora carpetas de compilación y paquetes
+frontend/build/
+frontend/.dart_tool/
+frontend/.packages
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+
+# --- GENERAL ---
+.vscode/
+.DS_Store
