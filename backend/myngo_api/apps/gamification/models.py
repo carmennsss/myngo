@@ -4,9 +4,9 @@ from users.models import Usuario
 from communities.models import Comunidad
 class Voto(models.Model):
     id = models.AutoField(primary_key=True)
-    votante= models.ForeignKey(Usuario,on_delete=models.CASCADE)
-    receptor_usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE,null=True, blank=True)
-    receptor_comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True, blank=True)
+    votante= models.ForeignKey(Usuario,on_delete=models.CASCADE,related_name='votos_emitidos')
+    receptor_usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE,null=True, blank=True,related_name='votos_recibidos_perfil')
+    receptor_comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True, blank=True,related_name='votos_recibidos_comunidad')
     estrellas=models.IntegerField(
         default=0,
         validators=[

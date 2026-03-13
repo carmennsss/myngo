@@ -3,7 +3,7 @@ from communities.models import Comunidad
 from users.models import Usuario
 class Salas_chat(models.Model):
     id=models.AutoField(primary_key=True)
-    nombre=models.CharField(max_length=100,max_length=500,max_length=500)
+    nombre=models.CharField(max_length=100)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE)
     es_grupal=models.BooleanField(default=False)
     fecha_creacion=models.DateTimeField(auto_now_add=True)

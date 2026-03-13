@@ -5,7 +5,7 @@ class Publicacion(models.Model):
     id = models.AutoField(primary_key=True)
     autor=models.ForeignKey(Usuario,on_delete=models.CASCADE,blank=True)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True, blank=True)
-    titulo=models.CharField(max_length=200,null=True,null=True, blank=True)
+    titulo=models.CharField(max_length=200,null=True, blank=True)
     contenido_texto=models.TextField(null=True, blank=True)
     url_archivo_s3=models.CharField(max_length=500)
     relacion_aspecto=models.FloatField(default=1.0)
