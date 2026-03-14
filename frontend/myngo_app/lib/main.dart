@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login/pantalla_login.dart';
+import 'screens/registro/pantalla_registro.dart';
 
 void main() {
+  usePathUrlStrategy(); // Elimina el # de las URLs en Flutter Web
   runApp(const MiAplicacion());
 }
 
@@ -22,7 +25,11 @@ class MiAplicacion extends StatelessWidget {
         useMaterial3: true,
         textTheme: GoogleFonts.outfitTextTheme(),
       ),
-      home: const PantallaLogin(),
+      initialRoute: '/login',
+      routes: {
+        '/login': (context) => const PantallaLogin(),
+        '/registro': (context) => const PantallaRegistro(),
+      },
     );
   }
 }

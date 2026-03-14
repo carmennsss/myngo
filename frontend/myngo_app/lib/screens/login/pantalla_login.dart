@@ -313,6 +313,37 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                     alPresionar: _iniciarSesion,
                     notificadorCargando: _estaCargando,
                   ),
+                  const SizedBox(height: 20),
+
+                  // ── Enlace: Ir al registro ──
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '¿No tienes cuenta?',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/registro');
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF6C63FF),
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                        ),
+                        child: const Text(
+                          'Regístrate',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

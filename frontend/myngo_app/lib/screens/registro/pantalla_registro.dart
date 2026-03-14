@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/campo_texto_personalizado.dart';
-import '../../widgets/gatos_animados.dart';
+import '../../widgets/gatos_registro_animados.dart';
 
 /// Pantalla de registro con fondo degradado, idéntica en estética al login
 class PantallaRegistro extends StatefulWidget {
@@ -144,16 +144,44 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     }
   }
 
+  // Igual que _iniciarSesion en el login: valida y pone triste si hay error
+  void _crearCuenta() {
+    // Quitar el foco de todos los campos (igual que en el login)
+    _nodoEnfoqueNombre.unfocus();
+    _nodoEnfoqueEmail.unfocus();
+    _nodoEnfoquePassword.unfocus();
+
+    if (_llaveFormulario.currentState!.validate()) {
+      // Validación OK — aquí irá la llamada al API en el futuro
+      setState(() {
+        _estadoGatos = EstadoMonstruo.calculando;
+      });
+    } else {
+      // Campos vacíos o mal escritos → pelo erizado
+      setState(() {
+        _estadoGatos = EstadoMonstruo.triste;
+      });
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _estadoGatos = EstadoMonstruo.inactivo;
+          });
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Lavanda muy suave — diferente al blanco puro del login
+        color: const Color(0xFFF7F4FF),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
+            color: const Color(0xFF6C63FF).withOpacity(0.12),
+            blurRadius: 24,
             offset: const Offset(0, 10),
           ),
         ],
@@ -161,8 +189,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Gatos animados — mismos que en login
-          GatosAnimados(
+          // Gatos alternativos exclusivos del registro
+          GatosRegistroAnimados(
             estado: _estadoGatos,
             ratioMirada: _ratioMirada,
             posicionMouseGlobal: widget.posicionMouse,
@@ -314,9 +342,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () {
-                          // Funcionalidad pendiente
-                        },
+                        onTap: _crearCuenta,
                         borderRadius: BorderRadius.circular(16),
                         child: const Center(
                           child: Text(
@@ -347,7 +373,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // Navegación pendiente
+                          Navigator.pushReplacementNamed(context, '/login');
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFF6C63FF),
