@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/campo_texto_personalizado.dart';
 import '../../widgets/gatos_registro_animados.dart';
-
+import '../../services/servicio_usuarios.dart';
 /// Pantalla de registro con fondo degradado, idéntica en estética al login
 class PantallaRegistro extends StatefulWidget {
   const PantallaRegistro({super.key});
@@ -65,6 +65,7 @@ class TarjetaRegistro extends StatefulWidget {
 }
 
 class _TarjetaRegistroState extends State<TarjetaRegistro> {
+  final _servicioUsuarios = ServicioUsuarios();
   final _nodoEnfoqueNombre = FocusNode();
   final _nodoEnfoqueEmail = FocusNode();
   final _nodoEnfoquePassword = FocusNode();
@@ -145,28 +146,88 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
   }
 
   // Igual que _iniciarSesion en el login: valida y pone triste si hay error
-  void _crearCuenta() {
-    // Quitar el foco de todos los campos (igual que en el login)
+  Future<void> _crearCuenta() async {
+    // 1. Quitamos el foco de los teclados para que bajen
     _nodoEnfoqueNombre.unfocus();
     _nodoEnfoqueEmail.unfocus();
     _nodoEnfoquePassword.unfocus();
 
+    // 2. Validación de los campos de texto
     if (_llaveFormulario.currentState!.validate()) {
-      // Validación OK — aquí irá la llamada al API en el futuro
+      
+      // 3. Validación extra: ¿Aceptó los términos?
+      if (!_aceptaTerminos) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Debes aceptar los términos y condiciones'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() => _estadoGatos = EstadoMonstruo.triste);
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
+        });
+        return;
+      }
+
+      // 4. Activamos estado de carga
+      _estaCargando.value = true;
       setState(() {
         _estadoGatos = EstadoMonstruo.calculando;
       });
+
+      // 5. Llamada al servicio (Asíncrona)
+      final respuesta = await _servicioUsuarios.registrarse(
+        _controladorNombre.text,
+        _controladorEmail.text,
+        _controladorPassword.text,
+      );
+
+      _estaCargando.value = false;
+
+      // Comprobamos que la pantalla siga existiendo
+      if (!mounted) return;
+
+      // 6. Gestionamos la respuesta de Django
+      if (respuesta.exito) {
+        setState(() => _estadoGatos = EstadoMonstruo.feliz);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(respuesta.mensaje),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        // Opcional: Redirigir al login tras 2 segundos de éxito
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        });
+
+      } else {
+        // Error (Email ya existe, nombre muy corto, etc.)
+        setState(() => _estadoGatos = EstadoMonstruo.triste);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(respuesta.mensaje),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        
+        // Volver al estado normal tras el susto
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
+        });
+      }
     } else {
-      // Campos vacíos o mal escritos → pelo erizado
-      setState(() {
-        _estadoGatos = EstadoMonstruo.triste;
-      });
+      // Formulario inválido localmente
+      setState(() => _estadoGatos = EstadoMonstruo.triste);
       Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _estadoGatos = EstadoMonstruo.inactivo;
-          });
-        }
+        if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
       });
     }
   }

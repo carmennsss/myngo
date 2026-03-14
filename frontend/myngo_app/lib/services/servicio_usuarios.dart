@@ -48,4 +48,37 @@ class ServicioUsuarios {
       );
     }
   }
+  Future<RespuestaApi<Usuario>> registrarse(String nombre_usuario,String email, String contrasena) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlBase/registrar/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'nombre_usuario':nombre_usuario,
+          'email': email,
+          'contrasena': contrasena,
+        }),
+      );
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+
+      if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
+        return RespuestaApi.fromJson(
+          datosJson,
+          transformador: (json) => Usuario.fromJson(json),
+        );
+      } else {
+        return RespuestaApi(
+          exito: false,
+          mensaje: datosJson['mensaje'] ?? 'Error en el registro',
+          errores: datosJson['errores'],
+        );
+      }
+    } catch (e) {
+      return RespuestaApi(
+        exito: false,
+        mensaje: 'Error de conexión con el servidor: $e',
+      );
+    }
+  }
 }
