@@ -49,12 +49,12 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Las aplicaciones
-    'apps.users',
-    'apps.content',
-    'apps.chats',
-    'apps.communities',
-    'apps.gamification',
-    'apps.notifications'
+    'apps.usuarios',
+    'apps.contenido',
+    'apps.mensajeria',
+    'apps.comunidades',
+    'apps.mejoras',
+    'apps.notificaciones'
 ]
 
 MIDDLEWARE = [

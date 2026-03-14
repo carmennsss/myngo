@@ -1,9 +1,10 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
-from users.models import Usuario
-from communities.models import Comunidad
+from usuarios.models import Usuario
+from comunidades.models import Comunidad
 class Voto(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'votos'
     votante= models.ForeignKey(Usuario,on_delete=models.CASCADE,related_name='votos_emitidos')
     receptor_usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE,null=True, blank=True,related_name='votos_recibidos_perfil')
     receptor_comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True, blank=True,related_name='votos_recibidos_comunidad')
@@ -17,13 +18,15 @@ class Voto(models.Model):
     )
     fecha_voto=models.DateTimeField(auto_now_add=True)
 class Catalogo_mejoras(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'catalogo_mejoras'
     nombre=models.CharField(max_length=100)
     tipo=models.CharField(max_length=50)
     precio_puntos=models.IntegerField()
     url_recurso=models.URLField(max_length=500)
 class Mejoras_usuario(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'mejoras_usuario'
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     mejora=models.ForeignKey(Catalogo_mejoras,on_delete=models.CASCADE)
     esta_equipada=models.BooleanField(default=False)
