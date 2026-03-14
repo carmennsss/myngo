@@ -1,8 +1,9 @@
 from django.db import models
-from users.models import Usuario
-from communities.models import Comunidad
+from usuarios.models import Usuario
+from comunidades.models import Comunidad
 class Notificacion(models.Model):
-    id=models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'notificaciones'
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE,related_name='notificaciones_recibidas')
     tipo=models.CharField(max_length=50)
     mensaje=models.TextField()

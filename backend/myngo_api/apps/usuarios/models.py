@@ -1,7 +1,8 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 class Usuario(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'usuarios'
     nombre_usuario=models.CharField(max_length=150)
     email=models.EmailField(max_length=255,unique=True)
     contrasena=models.CharField(max_length=255)
@@ -15,7 +16,8 @@ class Usuario(models.Model):
         return f"{self.id} - {self.nombre_usuario}"
 
 class Perfil(models.Model):
-    id=models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'perfiles'
     usuario=models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='perfil')
     biografia=models.TextField(blank=True, null=True)
     url_avatar=models.URLField(max_length=500, blank=True, null=True)
@@ -32,10 +34,11 @@ class Perfil(models.Model):
     def __str__(self):
         return self # TODO
 class Seguimiento(models.Model):
-    id=models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'seguimientos'
     seguidor=models.ForeignKey(Usuario,on_delete=models.CASCADE,related_name='siguiendo')
     seguido_usuario=models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='seguidores', null=True, blank=True)
-    seguida_comunidad = models.ForeignKey('communities.Comunidad', on_delete=models.CASCADE, related_name='seguidores', null=True, blank=True)
+    seguida_comunidad = models.ForeignKey('comunidades.Comunidad', on_delete=models.CASCADE, related_name='seguidores', null=True, blank=True)
     estado=models.CharField(max_length=20, default='ACEPTADO')
     fecha_seguimiento=models.DateTimeField(auto_now_add=True)
 

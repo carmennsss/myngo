@@ -1,7 +1,8 @@
 from django.db import models
-from users.models import Usuario
+from usuarios.models import Usuario
 class Comunidad(models.Model):
-    id=models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'comunidades'
     nombre=models.CharField(max_length=100,unique=True)
     descripcion=models.TextField(blank=True, null=True)
     creador=models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
@@ -15,7 +16,8 @@ class Comunidad(models.Model):
         return self # TODO
     
 class Miembros_comunidades(models.Model):
-    id=models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'miembros_comunidades'
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE)
     rol=models.CharField(max_length=20,default="Miembro")

@@ -1,8 +1,9 @@
 from django.db import models
-from users.models import Usuario
-from communities.models import Comunidad
+from usuarios.models import Usuario
+from comunidades.models import Comunidad
 class Publicacion(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'publicacion'
     autor=models.ForeignKey(Usuario,on_delete=models.CASCADE,blank=True)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True, blank=True)
     titulo=models.CharField(max_length=200,null=True, blank=True)
@@ -13,7 +14,8 @@ class Publicacion(models.Model):
     fecha_creacion=models.DateTimeField(auto_now_add=True)
 
 class Imagenes_galeria(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'imagenes_galeria'
     propietario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE)
     url_s3=models.CharField(max_length=500)
@@ -22,7 +24,8 @@ class Imagenes_galeria(models.Model):
     fecha_subida=models.DateTimeField(auto_now_add=True)
 
 class Coleccion(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'colecciones'
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     nombre_coleccion=models.CharField(max_length=100)
     categoria=models.CharField(max_length=50,null=True, blank=True)
@@ -31,17 +34,20 @@ class Coleccion(models.Model):
     fecha_creacion=models.DateTimeField(auto_now_add=True)
 
 class Imagenes_en_colecciones(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'imagenes_en_colecciones'
     coleccion=models.ForeignKey(Coleccion,on_delete=models.CASCADE)
     imagen=models.ForeignKey(Imagenes_galeria,on_delete=models.CASCADE)
 
 class Me_gustas(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'me_gustas'
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     publicacion=models.ForeignKey(Publicacion,on_delete=models.CASCADE)
     fecha_like=models.DateTimeField(auto_now_add=True)
 class Comentario(models.Model):
-    id = models.AutoField(primary_key=True)
+    class Meta:
+        db_table = 'comentarios'
     publicacion=models.ForeignKey(Publicacion,on_delete=models.CASCADE)
     autor=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     contenido=models.TextField()
