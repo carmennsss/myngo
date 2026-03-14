@@ -1,11 +1,36 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-enum EstadoMonstruo { inactivo, mirando, escondido, calculando, feliz, triste }
+/// Define los posibles estados de ánimo y comportamientos de los gatos animados.
+enum EstadoMonstruo { 
+  /// Los gatos están en reposo, respirando suavemente.
+  inactivo, 
+  /// Los gatos siguen el cursor o el foco de entrada con la mirada.
+  mirando, 
+  /// Los gatos se esconden tras el borde (típicamente al escribir una contraseña).
+  escondido, 
+  /// Los gatos se mueven rápidamente, simulando un proceso de espera.
+  calculando, 
+  /// Los gatos saltan de alegría tras una operación exitosa.
+  feliz, 
+  /// Los gatos vibran y muestran ojos de decepción tras un error.
+  triste 
+}
 
+/// Widget que renderiza una serie de gatos animados interactivos.
+/// 
+/// Los gatos reaccionan al estado de la aplicación, al movimiento del mouse
+/// y a la interacción con otros widgets. Utiliza múltiples controladores de 
+/// animación para lograr efectos de respiración, parpadeo, saltos y vibraciones.
 class GatosAnimados extends StatefulWidget {
+  /// El estado actual de los gatos.
   final EstadoMonstruo estado;
+
+  /// Factor de posición de la mirada (0.0 a 1.0) usado principalmente para
+  /// seguir la longitud del texto en un campo de entrada.
   final double ratioMirada;
+
+  /// Posición absoluta del puntero del mouse en la pantalla.
   final Offset posicionMouseGlobal;
 
   const GatosAnimados({
@@ -20,9 +45,13 @@ class GatosAnimados extends StatefulWidget {
 }
 
 class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateMixin {
+  /// Controlador para la animación rítmica de respiración (idle).
   late AnimationController _controladorIdle;
+  /// Controlador para el efecto de salto (éxito).
   late AnimationController _controladorSalto;
+  /// Controlador para el efecto de vibración lateral (error).
   late AnimationController _controladorVibracion;
+  /// Controlador para el parpadeo aleatorio de los ojos.
   late AnimationController _controladorParpadeo;
 
   @override
@@ -50,6 +79,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     _programarParpadeo();
   }
 
+  /// Gestiona el parpadeo de los ojos de forma asíncrona y con intervalos aleatorios.
   void _programarParpadeo() {
     if (!mounted) return;
     Future.delayed(Duration(milliseconds: 2000 + Random().nextInt(4000)), () {
@@ -131,7 +161,6 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
                 alignment: Alignment.bottomCenter,
                 clipBehavior: Clip.none,
                 children: [
-                   // GATO NEGRO
                    Positioned(
                      left: 70,
                      bottom: offsetSalto + sin(fT) * 6,
@@ -143,7 +172,6 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
                        )
                      ),
                    ),
-                   // GATO SIAMES 
                    Positioned(
                      left: 155,
                      bottom: offsetSalto + sin(fT + 1) * 8,
@@ -155,7 +183,6 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
                        )
                      ),
                    ),
-                   // GATO ATIGRADO/NARANJA 
                    Positioned(
                      left: 210,
                      bottom: offsetSalto + sin(fT + 2) * 7,
@@ -167,7 +194,6 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
                        )
                      ),
                    ),
-                   // GATO CÁLICO 
                    Positioned(
                      left: 10,
                      bottom: offsetSalto + sin(fT + 3) * 5,
@@ -188,6 +214,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
+  /// Calcula el desplazamiento de los ojos en función de la interacción actual.
   Offset _obtenerOffsetOjo(double mouseX, double mouseY) {
     if (widget.estado == EstadoMonstruo.mirando) {
       return Offset((widget.ratioMirada - 0.5) * 25, 0); 
@@ -200,9 +227,9 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
   }
 
 
-  // ================= CONSTRUCCIÓN DE GATOS ================= //
+  // ================= CONSTRUCCIÓN DE COMPONENTES DE GATOS ================= //
 
-  // 1. GATO NEGRO
+  /// Construye la representación visual del gato negro (vació).
   Widget _construirGatoNegro(Offset ojo, bool estaCerrado, bool estaTriste, bool estaFeliz, bool estaParpadeando, double t) {
     const color = Color(0xFF1A1A1A);
     
@@ -233,10 +260,10 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
-  // 2. GATO SIAMES
+  /// Construye la representación visual del gato siamés.
   Widget _construirGatoSiames(Offset ojo, bool estaCerrado, bool estaTriste, bool estaFeliz, bool estaParpadeando, double t) {
-    const colorBase = Color(0xFFEBE0D0); // Crema
-    const colorPuntos = Color(0xFF3B2F2F); // Marrón Oscuro
+    const colorBase = Color(0xFFEBE0D0);
+    const colorPuntos = Color(0xFF3B2F2F);
     
     return SizedBox(
       width: 75, height: 140,
@@ -266,7 +293,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
-  // 3. GATO NARANJA
+  /// Construye la representación visual del gato naranja atigrado.
   Widget _construirGatoNaranja(Offset ojo, bool estaCerrado, bool estaTriste, bool estaFeliz, bool estaParpadeando, double t) {
     const color = Color(0xFFF29C38);
     return SizedBox(
@@ -299,7 +326,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
-  // 4. GATO CÁLICO 
+  /// Construye la representación visual del gato cálico.
   Widget _construirGatoCalico(Offset ojo, bool estaCerrado, bool estaTriste, bool estaFeliz, bool estaParpadeando, double t) {
     const colorBase = Color(0xFFFFFFFF);
     const manchaNaranja = Color(0xFFF29C38);
@@ -335,10 +362,10 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
-  // ================= PARTES ================= //
+  // ================= ELEMENTOS COMUNES ================= //
 
+  /// Dibuja el efecto de pelo erizado rodeando la silueta del gato.
   Widget _construirPeloErizado(Color color, double ancho, double alto) {
-    // Dibujo matemático de pinchos exactamente sobre el borde del gato central
     return Container(
       alignment: Alignment.bottomCenter,
       child: CustomPaint(
@@ -348,6 +375,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
+  /// Crea un ojo con pupilas dinámicas que reaccionan al estado de ánimo.
   Widget _construirOjo(bool estaCerrado, bool estaTriste, bool estaFeliz, {required Color colorOjo}) {
     if (estaCerrado) {
        return Container(width: 12, height: 3, decoration: BoxDecoration(color: const Color(0xFF141414), borderRadius: BorderRadius.circular(2)));
@@ -370,6 +398,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
+  /// Dibuja una oreja triangular utilizando un trazado personalizado.
   Widget _construirOreja(Color color, {double angulo = 0, Alignment origen = Alignment.bottomCenter}) {
     return Transform.rotate(
       angle: angulo,
@@ -388,6 +417,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
     );
   }
 
+  /// Construye el conjunto de nariz, boca y bigotes base.
   Widget _construirNarizGato(Color color) {
     return Column(
       children: [
@@ -407,7 +437,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
   }
 }
 
-// Pintor para pelo erizado que rodea EXACTAMENTE el borde curvo del gato
+/// Pintor que genera pinchos matemáticos alineados con el borde curvo de los gatos.
 class _PintorPeloErizado extends CustomPainter {
   final Color color;
   _PintorPeloErizado({required this.color});
@@ -420,10 +450,9 @@ class _PintorPeloErizado extends CustomPainter {
 
     Path path = Path();
     
-    // Si el gato es alargado horizontalmente en vez de verticalmente... (El Calico Wide)
+    // Lógica para gatos anchos (horizontal) como el cálico.
     if (size.width > size.height) {
-       double r = size.height; // El semicirculo toma la altura
-
+       double r = size.height;
        int pasos = 18;
        for(int i = 0; i < pasos; i++) {
          double t1 = i / pasos;
@@ -431,59 +460,44 @@ class _PintorPeloErizado extends CustomPainter {
          double x1 = size.width * t1;
          double x2 = size.width * t2;
          double medioX = (x1 + x2) / 2;
-
          double archY1 = size.height - (sin(t1 * pi) * r);
          double archY2 = size.height - (sin(t2 * pi) * r);
-         
-         double topeArchY = size.height - (sin(((t1 + t2)/2) * pi) * (r + 10)); // Punta del pelo
-         
+         double topeArchY = size.height - (sin(((t1 + t2)/2) * pi) * (r + 10));
          double offsetPuntoX = ((i % 2 == 0) ? -5 : 5);
-         
          path.moveTo(x1, (archY1>size.height)?size.height:archY1);
          path.lineTo(medioX + offsetPuntoX, topeArchY - 5);
          path.lineTo(x2, (archY2>size.height)?size.height:archY2);
        }
-       
        canvas.drawPath(path, paint);
        return;
     }
 
-    // Para los gatos verticales normales (Void, Orange, Siamese)
+    // Lógica para gatos verticales estándar.
     double r = size.width / 2;
-    // Izquierda recta
     for (double y = size.height; y > r; y -= 15) {
       path.moveTo(0, y);
       path.lineTo(-8, y - 5);
       path.lineTo(0, y - 10);
     }
-    
-    // Curva superior
     for (double angulo = pi; angulo > 0; angulo -= pi / 7) {
        double cx = r;
        double cy = r; 
-       
        double x = cx + r * cos(angulo);
        double y = cy - r * sin(angulo);
-       
        double tx = cx + (r + 8) * cos(angulo - pi/20);
        double ty = cy - (r + 8) * sin(angulo - pi/20);
-       
        double siguienteAngulo = angulo - (pi/7);
        double nx = cx + r * cos(siguienteAngulo);
        double ny = cy - r * sin(siguienteAngulo);
-       
        path.moveTo(x, y);
        path.lineTo(tx, ty);
        path.lineTo(nx, ny);
     }
-
-    // Derecha recta
     for (double y = r; y < size.height; y += 15) {
       path.moveTo(size.width, y);
       path.lineTo(size.width + 8, y + 5);
       path.lineTo(size.width, y + 10);
     }
-    
     canvas.drawPath(path, paint);
   }
 
@@ -491,8 +505,7 @@ class _PintorPeloErizado extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-// ========== RECORTADORES Y PINTORES ========== //
-
+/// Define la forma triangular de la oreja con curvas suaves en la base.
 class _RecortadorOrejaGato extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -508,6 +521,7 @@ class _RecortadorOrejaGato extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
+/// Define la pequeña tripa triangular invertida de la nariz.
 class _RecortadorNarizGato extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -522,6 +536,7 @@ class _RecortadorNarizGato extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
+/// Dibuja las dos curvas que representan la boca felina.
 class _PintorPequenaW extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
