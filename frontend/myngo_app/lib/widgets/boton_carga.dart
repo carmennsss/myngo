@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Botón primario animado que maneja su estado de carga
+/// Botón con estilo gradiente que integra un indicador de progreso.
+/// 
+/// Este componente reacciona a un [ValueNotifier] para mostrar un 
+/// [CircularProgressIndicator] cuando se inicia una operación asíncrona,
+/// deshabilitando las interacciones del usuario automáticamente.
 class BotonCarga extends StatelessWidget {
+  /// Función que se ejecuta al pulsar el botón.
   final VoidCallback alPresionar;
+
+  /// Escucha los cambios de estado (cargando/no cargando).
   final ValueNotifier<bool> notificadorCargando;
 
   const BotonCarga({

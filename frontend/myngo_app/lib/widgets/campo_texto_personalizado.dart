@@ -1,15 +1,35 @@
 import 'package:flutter/material.dart';
 
-/// Campo de texto personalizado con microinteracciones y Material 3
+/// Widget de campo de texto altamente personalizado con soporte para microinteracciones.
+/// 
+/// Incluye soporte para enmascaramiento de contraseñas, validación reactiva
+/// y estilos siguiendo las líneas de diseño de Material 3.
 class CampoTextoPersonalizado extends StatefulWidget {
+  /// Texto de sugerencia que aparece sobre el campo.
   final String etiqueta;
+
+  /// Icono descriptivo que se muestra al inicio del campo.
   final IconData icono;
+
+  /// Controlador para gestionar el valor del texto.
   final TextEditingController controlador;
+
+  /// Nodo de enfoque para gestionar el estado de atención del widget.
   final FocusNode nodoEnfoque;
+
+  /// Indica si el campo es para una contraseña (oculta el texto).
   final bool esContrasena;
+
+  /// Callback opcional que se dispara al cambiar el texto.
   final Function(String)? alCambiar;
+
+  /// Callback que se dispara al alternar la visibilidad de la contraseña.
   final ValueChanged<bool>? alCambiarVisibilidad;
+
+  /// Tipo de entrada de teclado (ej. email, número).
   final TextInputType? tipoTeclado;
+
+  /// Función opcional para validar el contenido del campo.
   final String? Function(String?)? validador;
 
   const CampoTextoPersonalizado({
@@ -30,6 +50,7 @@ class CampoTextoPersonalizado extends StatefulWidget {
 }
 
 class _CampoTextoPersonalizadoState extends State<CampoTextoPersonalizado> {
+  /// Controla internamente si el texto está oculto o visible.
   bool _textoOculto = true;
 
   @override

@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import '../../widgets/campo_texto_personalizado.dart';
 import '../../widgets/boton_carga.dart';
 import '../../widgets/gatos_animados.dart';
+import '../../services/servicio_usuarios.dart';
 
-/// Pantalla principal con fondo degradado web responsive
+/// Pantalla de inicio de sesión de la aplicación.
+/// 
+/// Presenta una interfaz minimalista con un fondo degradado animado
+/// y rastro del cursor para la interacción con los elementos visuales.
 class PantallaLogin extends StatefulWidget {
   const PantallaLogin({super.key});
 
@@ -12,11 +16,11 @@ class PantallaLogin extends StatefulWidget {
 }
 
 class _PantallaLoginState extends State<PantallaLogin> {
+  /// Almacena la posición actual del cursor para las animaciones de los gatos.
   Offset _posicionMouse = Offset.zero;
 
   @override
   Widget build(BuildContext context) {
-    // Usamos MouseRegion para rastrear la posición del ratón de forma global
     return MouseRegion(
       onHover: (evento) {
         setState(() {
@@ -32,8 +36,8 @@ class _PantallaLoginState extends State<PantallaLogin> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFE0C3FC), // Morado Pastel
-                Color(0xFF8EC5FC), // Azul Pastel
+                Color(0xFFE0C3FC),
+                Color(0xFF8EC5FC),
               ],
             ),
           ),
@@ -44,7 +48,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                 padding: const EdgeInsets.all(24.0),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
-                    maxWidth: 450, // IU Minimalista Web
+                    maxWidth: 450,
                   ),
                   child: TarjetaLogin(posicionMouse: _posicionMouse),
                 ),
@@ -57,9 +61,11 @@ class _PantallaLoginState extends State<PantallaLogin> {
   }
 }
 
-/// Tarjeta blanca central con sombras suaves
+/// Componente visual principal que contiene el formulario de inicio de sesión.
 class TarjetaLogin extends StatefulWidget {
+  /// Posición del ratón para sincronizar la mirada de los gatos.
   final Offset posicionMouse;
+  
   const TarjetaLogin({super.key, this.posicionMouse = Offset.zero});
 
   @override
@@ -72,11 +78,20 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   final _controladorEmail = TextEditingController();
   final _controladorPassword = TextEditingController();
 
+  /// Estado observable para manejar la visibilidad del indicador de carga.
   final _estaCargando = ValueNotifier<bool>(false);
   final _llaveFormulario = GlobalKey<FormState>();
+  
+  /// Instancia del servicio para la autenticación con el backend.
+  final _servicioUsuarios = ServicioUsuarios();
 
+  /// Estado actual que determina la animación y expresión de los gatos.
   EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
+
+  /// Factor que suaviza el movimiento de la mirada de los gatos (0.0 a 1.0).
   double _ratioMirada = 0.5;
+
+  /// Controla la visibilidad enmascarada del campo de contraseña.
   bool _esPasswordVisible = false;
 
   @override
@@ -98,6 +113,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     super.dispose();
   }
 
+  /// Gestiona el cambio de estado de los gatos al enfocar los campos de texto.
   void _alCambiarEnfoque() {
     if (_nodoEnfoquePassword.hasFocus) {
       setState(() {
@@ -116,6 +132,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
+  /// Alterna la visibilidad del texto en el campo de contraseña.
   void _alCambiarVisibilidadPassword(bool esVisible) {
     setState(() {
       _esPasswordVisible = esVisible;
@@ -125,6 +142,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     });
   }
 
+  /// Calcula el ratio de la mirada según la longitud del texto ingresado.
   void _actualizarPosicionMirada(String valor) {
     if (_nodoEnfoqueEmail.hasFocus) {
       setState(() {
@@ -133,6 +151,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
+  /// Procesa el intento de inicio de sesión conectando con el servicio de usuarios.
   Future<void> _iniciarSesion() async {
     _nodoEnfoqueEmail.unfocus();
     _nodoEnfoquePassword.unfocus();
@@ -142,19 +161,23 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
       setState(() {
         _estadoGatos = EstadoMonstruo.calculando;
       });
-      
-      await Future.delayed(const Duration(seconds: 2));
+
+      final respuesta = await _servicioUsuarios.iniciarSesion(
+        _controladorEmail.text,
+        _controladorPassword.text,
+      );
+
       _estaCargando.value = false;
 
       if (!mounted) return;
 
-      if (_controladorEmail.text == "admin@myngo.com" && _controladorPassword.text == "123456") {
+      if (respuesta.exito) {
         setState(() {
           _estadoGatos = EstadoMonstruo.feliz;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Inicio de sesión exitoso!'),
+          SnackBar(
+            content: Text(respuesta.mensaje),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -164,8 +187,8 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           _estadoGatos = EstadoMonstruo.triste;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Credenciales incorrectas'),
+          SnackBar(
+            content: Text(respuesta.mensaje),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),

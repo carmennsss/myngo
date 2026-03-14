@@ -4,11 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/login/pantalla_login.dart';
 import 'screens/registro/pantalla_registro.dart';
 
+/// Punto de entrada principal de la aplicación Myngo.
 void main() {
   usePathUrlStrategy(); // Elimina el # de las URLs en Flutter Web
   runApp(const MiAplicacion());
 }
 
+/// Widget raíz que configura el tema global y la navegación inicial.
 class MiAplicacion extends StatelessWidget {
   const MiAplicacion({super.key});
 
