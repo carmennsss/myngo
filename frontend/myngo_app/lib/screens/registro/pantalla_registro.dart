@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../widgets/campo_texto_personalizado.dart';
-import '../../widgets/boton_carga.dart';
-import '../../widgets/gatos_animados.dart';
-import '../../services/servicio_usuarios.dart';
+import '../../widgets/gatos_registro_animados.dart';
 
-/// Pantalla de inicio de sesión de la aplicación.
-/// 
-/// Presenta una interfaz minimalista con un fondo degradado animado
-/// y rastro del cursor para la interacción con los elementos visuales.
-class PantallaLogin extends StatefulWidget {
-  const PantallaLogin({super.key});
+/// Pantalla de registro con fondo degradado, idéntica en estética al login
+class PantallaRegistro extends StatefulWidget {
+  const PantallaRegistro({super.key});
 
   @override
-  State<PantallaLogin> createState() => _PantallaLoginState();
+  State<PantallaRegistro> createState() => _PantallaRegistroState();
 }
 
-class _PantallaLoginState extends State<PantallaLogin> {
-  /// Almacena la posición actual del cursor para las animaciones de los gatos.
+class _PantallaRegistroState extends State<PantallaRegistro> {
   Offset _posicionMouse = Offset.zero;
 
   @override
@@ -36,8 +30,8 @@ class _PantallaLoginState extends State<PantallaLogin> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFE0C3FC),
-                Color(0xFF8EC5FC),
+                Color(0xFFE0C3FC), // Morado Pastel
+                Color(0xFF8EC5FC), // Azul Pastel
               ],
             ),
           ),
@@ -50,7 +44,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                   constraints: const BoxConstraints(
                     maxWidth: 450,
                   ),
-                  child: TarjetaLogin(posicionMouse: _posicionMouse),
+                  child: TarjetaRegistro(posicionMouse: _posicionMouse),
                 ),
               ),
             ),
@@ -61,70 +55,69 @@ class _PantallaLoginState extends State<PantallaLogin> {
   }
 }
 
-/// Componente visual principal que contiene el formulario de inicio de sesión.
-class TarjetaLogin extends StatefulWidget {
-  /// Posición del ratón para sincronizar la mirada de los gatos.
+/// Tarjeta blanca central con sombras suaves — misma estructura que TarjetaLogin
+class TarjetaRegistro extends StatefulWidget {
   final Offset posicionMouse;
-  
-  const TarjetaLogin({super.key, this.posicionMouse = Offset.zero});
+  const TarjetaRegistro({super.key, this.posicionMouse = Offset.zero});
 
   @override
-  State<TarjetaLogin> createState() => _TarjetaLoginState();
+  State<TarjetaRegistro> createState() => _TarjetaRegistroState();
 }
 
-class _TarjetaLoginState extends State<TarjetaLogin> {
+class _TarjetaRegistroState extends State<TarjetaRegistro> {
+  final _nodoEnfoqueNombre = FocusNode();
   final _nodoEnfoqueEmail = FocusNode();
   final _nodoEnfoquePassword = FocusNode();
+
+  final _controladorNombre = TextEditingController();
   final _controladorEmail = TextEditingController();
   final _controladorPassword = TextEditingController();
 
-  /// Estado observable para manejar la visibilidad del indicador de carga.
-  final _estaCargando = ValueNotifier<bool>(false);
   final _llaveFormulario = GlobalKey<FormState>();
-  
-  /// Instancia del servicio para la autenticación con el backend.
-  final _servicioUsuarios = ServicioUsuarios();
+  final _estaCargando = ValueNotifier<bool>(false);
 
-  /// Estado actual que determina la animación y expresión de los gatos.
   EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
-
-  /// Factor que suaviza el movimiento de la mirada de los gatos (0.0 a 1.0).
   double _ratioMirada = 0.5;
-
-  /// Controla la visibilidad enmascarada del campo de contraseña.
   bool _esPasswordVisible = false;
+  bool _aceptaTerminos = false;
 
   @override
   void initState() {
     super.initState();
+    _nodoEnfoqueNombre.addListener(_alCambiarEnfoque);
     _nodoEnfoqueEmail.addListener(_alCambiarEnfoque);
     _nodoEnfoquePassword.addListener(_alCambiarEnfoque);
   }
 
   @override
   void dispose() {
+    _nodoEnfoqueNombre.removeListener(_alCambiarEnfoque);
     _nodoEnfoqueEmail.removeListener(_alCambiarEnfoque);
     _nodoEnfoquePassword.removeListener(_alCambiarEnfoque);
+    _nodoEnfoqueNombre.dispose();
     _nodoEnfoqueEmail.dispose();
     _nodoEnfoquePassword.dispose();
+    _controladorNombre.dispose();
     _controladorEmail.dispose();
     _controladorPassword.dispose();
     _estaCargando.dispose();
     super.dispose();
   }
 
-  /// Gestiona el cambio de estado de los gatos al enfocar los campos de texto.
   void _alCambiarEnfoque() {
     if (_nodoEnfoquePassword.hasFocus) {
       setState(() {
-        _estadoGatos = _esPasswordVisible ? EstadoMonstruo.escondido : EstadoMonstruo.mirando;
+        _estadoGatos = _esPasswordVisible
+            ? EstadoMonstruo.escondido
+            : EstadoMonstruo.mirando;
       });
-    } else if (_nodoEnfoqueEmail.hasFocus) {
+    } else if (_nodoEnfoqueEmail.hasFocus || _nodoEnfoqueNombre.hasFocus) {
       setState(() {
         _estadoGatos = EstadoMonstruo.mirando;
       });
     } else {
-      if (_estadoGatos != EstadoMonstruo.feliz && _estadoGatos != EstadoMonstruo.triste) {
+      if (_estadoGatos != EstadoMonstruo.feliz &&
+          _estadoGatos != EstadoMonstruo.triste) {
         setState(() {
           _estadoGatos = EstadoMonstruo.inactivo;
         });
@@ -132,77 +125,39 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
-  /// Alterna la visibilidad del texto en el campo de contraseña.
   void _alCambiarVisibilidadPassword(bool esVisible) {
     setState(() {
       _esPasswordVisible = esVisible;
       if (_nodoEnfoquePassword.hasFocus) {
-        _estadoGatos = _esPasswordVisible ? EstadoMonstruo.escondido : EstadoMonstruo.mirando;
+        _estadoGatos = _esPasswordVisible
+            ? EstadoMonstruo.escondido
+            : EstadoMonstruo.mirando;
       }
     });
   }
 
-  /// Calcula el ratio de la mirada según la longitud del texto ingresado.
   void _actualizarPosicionMirada(String valor) {
-    if (_nodoEnfoqueEmail.hasFocus) {
+    if (_nodoEnfoqueEmail.hasFocus || _nodoEnfoqueNombre.hasFocus) {
       setState(() {
         _ratioMirada = (valor.length / 30).clamp(0.0, 1.0);
       });
     }
   }
 
-  /// Procesa el intento de inicio de sesión conectando con el servicio de usuarios.
-  Future<void> _iniciarSesion() async {
+  // Igual que _iniciarSesion en el login: valida y pone triste si hay error
+  void _crearCuenta() {
+    // Quitar el foco de todos los campos (igual que en el login)
+    _nodoEnfoqueNombre.unfocus();
     _nodoEnfoqueEmail.unfocus();
     _nodoEnfoquePassword.unfocus();
 
     if (_llaveFormulario.currentState!.validate()) {
-      _estaCargando.value = true;
+      // Validación OK — aquí irá la llamada al API en el futuro
       setState(() {
         _estadoGatos = EstadoMonstruo.calculando;
       });
-
-      final respuesta = await _servicioUsuarios.iniciarSesion(
-        _controladorEmail.text,
-        _controladorPassword.text,
-      );
-
-      _estaCargando.value = false;
-
-      if (!mounted) return;
-
-      if (respuesta.exito) {
-        setState(() {
-          _estadoGatos = EstadoMonstruo.feliz;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(respuesta.mensaje),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else {
-        setState(() {
-          _estadoGatos = EstadoMonstruo.triste;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(respuesta.mensaje),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            setState(() {
-              _estadoGatos = EstadoMonstruo.inactivo;
-            });
-          }
-        });
-      }
     } else {
+      // Campos vacíos o mal escritos → pelo erizado
       setState(() {
         _estadoGatos = EstadoMonstruo.triste;
       });
@@ -220,12 +175,13 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Lavanda muy suave — diferente al blanco puro del login
+        color: const Color(0xFFF7F4FF),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
+            color: const Color(0xFF6C63FF).withOpacity(0.12),
+            blurRadius: 24,
             offset: const Offset(0, 10),
           ),
         ],
@@ -233,37 +189,61 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GatosAnimados(
+          // Gatos alternativos exclusivos del registro
+          GatosRegistroAnimados(
             estado: _estadoGatos,
             ratioMirada: _ratioMirada,
             posicionMouseGlobal: widget.posicionMouse,
           ),
-          
+
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
             child: Form(
               key: _llaveFormulario,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // ── Título ──
                   Text(
-                    '¡Hola de nuevo!',
+                    '¡Únete a Myngo!',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2D3142),
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF2D3142),
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Inicia sesión para continuar',
+                    'Crea tu cuenta para empezar',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF9094A6),
-                    ),
+                          color: const Color(0xFF9094A6),
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  
+
+                  // ── Campo: Nombre de usuario ──
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Nombre de usuario',
+                    icono: Icons.person_outline,
+                    controlador: _controladorNombre,
+                    nodoEnfoque: _nodoEnfoqueNombre,
+                    alCambiar: _actualizarPosicionMirada,
+                    tipoTeclado: TextInputType.name,
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) {
+                        return 'Por favor ingresa tu nombre de usuario';
+                      }
+                      if (valor.length < 3) {
+                        return 'El nombre debe tener al menos 3 caracteres';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Campo: Email ──
                   CampoTextoPersonalizado(
                     etiqueta: 'Correo Electrónico',
                     icono: Icons.email_outlined,
@@ -282,7 +262,8 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
+                  // ── Campo: Contraseña ──
                   CampoTextoPersonalizado(
                     etiqueta: 'Contraseña',
                     icono: Icons.lock_outline,
@@ -292,58 +273,99 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                     alCambiarVisibilidad: _alCambiarVisibilidadPassword,
                     validador: (valor) {
                       if (valor == null || valor.isEmpty) {
-                        return 'Por favor ingresa tu contraseña';
+                        return 'Por favor ingresa una contraseña';
+                      }
+                      if (valor.length < 6) {
+                        return 'La contraseña debe tener al menos 6 caracteres';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
+                  // ── Checkbox: Términos y condiciones ──
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: true,
-                            onChanged: (valor) {},
-                            activeColor: const Color(0xFF6C63FF),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          Text(
-                            'Recordarme',
+                      Checkbox(
+                        value: _aceptaTerminos,
+                        onChanged: (valor) {
+                          setState(() {
+                            _aceptaTerminos = valor ?? false;
+                          });
+                        },
+                        activeColor: const Color(0xFF6C63FF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
                             style: TextStyle(
                               color: Colors.grey.shade700,
-                              fontSize: 14,
+                              fontSize: 13,
                             ),
+                            children: const [
+                              TextSpan(text: 'Acepto los '),
+                              TextSpan(
+                                text: 'Términos y condiciones',
+                                style: TextStyle(
+                                  color: Color(0xFF6C63FF),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF6C63FF),
                         ),
-                        child: const Text('¿Olvidaste tu contraseña?'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
-                  BotonCarga(
-                    alPresionar: _iniciarSesion,
-                    notificadorCargando: _estaCargando,
+
+                  // ── Botón Crear cuenta (misma estética que BotonCarga) ──
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6C63FF), Color(0xFF5A52D5)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6C63FF).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _crearCuenta,
+                        borderRadius: BorderRadius.circular(16),
+                        child: const Center(
+                          child: Text(
+                            'Crear cuenta',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Enlace: Ir al registro ──
+                  // ── Enlace: Volver al login ──
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '¿No tienes cuenta?',
+                        '¿Ya tienes cuenta?',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 14,
@@ -351,14 +373,14 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/registro');
+                          Navigator.pushReplacementNamed(context, '/login');
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFF6C63FF),
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                         ),
                         child: const Text(
-                          'Regístrate',
+                          'Inicia sesión',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
