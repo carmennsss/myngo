@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
 /// Botón primario animado que maneja su estado de carga
-class LoadingButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final ValueNotifier<bool> isLoadingNotifier;
+class BotonCarga extends StatelessWidget {
+  final VoidCallback alPresionar;
+  final ValueNotifier<bool> notificadorCargando;
 
-  const LoadingButton({
+  const BotonCarga({
     super.key,
-    required this.onPressed,
-    required this.isLoadingNotifier,
+    required this.alPresionar,
+    required this.notificadorCargando,
   });
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
-      valueListenable: isLoadingNotifier,
-      builder: (context, isLoading, child) {
+      valueListenable: notificadorCargando,
+      builder: (context, estaCargando, hijo) {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           height: 56,
@@ -35,10 +35,10 @@ class LoadingButton extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: isLoading ? null : onPressed,
+              onTap: estaCargando ? null : alPresionar,
               borderRadius: BorderRadius.circular(16),
               child: Center(
-                child: isLoading
+                child: estaCargando
                     ? const SizedBox(
                         height: 24,
                         width: 24,

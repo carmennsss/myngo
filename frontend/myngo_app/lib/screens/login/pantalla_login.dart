@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
-import '../../widgets/custom_text_field.dart';
-import '../../widgets/loading_button.dart';
-import '../../widgets/animated_monsters.dart'; // Módulo de monstruos
+import '../../widgets/campo_texto_personalizado.dart';
+import '../../widgets/boton_carga.dart';
+import '../../widgets/gatos_animados.dart';
 
 /// Pantalla principal con fondo degradado web responsive
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class PantallaLogin extends StatefulWidget {
+  const PantallaLogin({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<PantallaLogin> createState() => _PantallaLoginState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  Offset _mousePosition = Offset.zero;
+class _PantallaLoginState extends State<PantallaLogin> {
+  Offset _posicionMouse = Offset.zero;
 
   @override
   Widget build(BuildContext context) {
     // Usamos MouseRegion para rastrear la posición del ratón de forma global
     return MouseRegion(
-      onHover: (event) {
+      onHover: (evento) {
         setState(() {
-          _mousePosition = event.position;
+          _posicionMouse = evento.position;
         });
       },
       child: Scaffold(
@@ -32,8 +32,8 @@ class _LoginScreenState extends State<LoginScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFE0C3FC), // Pastel Purple
-                Color(0xFF8EC5FC), // Pastel Blue
+                Color(0xFFE0C3FC), // Morado Pastel
+                Color(0xFF8EC5FC), // Azul Pastel
               ],
             ),
           ),
@@ -44,9 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.all(24.0),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
-                    maxWidth: 450, // UI Minimalista Web
+                    maxWidth: 450, // IU Minimalista Web
                   ),
-                  child: LoginCard(mousePosition: _mousePosition),
+                  child: TarjetaLogin(posicionMouse: _posicionMouse),
                 ),
               ),
             ),
@@ -58,102 +58,99 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 /// Tarjeta blanca central con sombras suaves
-class LoginCard extends StatefulWidget {
-  final Offset mousePosition;
-  const LoginCard({super.key, this.mousePosition = Offset.zero});
+class TarjetaLogin extends StatefulWidget {
+  final Offset posicionMouse;
+  const TarjetaLogin({super.key, this.posicionMouse = Offset.zero});
 
   @override
-  State<LoginCard> createState() => _LoginCardState();
+  State<TarjetaLogin> createState() => _TarjetaLoginState();
 }
 
-class _LoginCardState extends State<LoginCard> {
-  final _emailFocusNode = FocusNode();
-  final _passwordFocusNode = FocusNode();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+class _TarjetaLoginState extends State<TarjetaLogin> {
+  final _nodoEnfoqueEmail = FocusNode();
+  final _nodoEnfoquePassword = FocusNode();
+  final _controladorEmail = TextEditingController();
+  final _controladorPassword = TextEditingController();
 
-  final _isLoading = ValueNotifier<bool>(false);
-  final _formKey = GlobalKey<FormState>();
+  final _estaCargando = ValueNotifier<bool>(false);
+  final _llaveFormulario = GlobalKey<FormState>();
 
-  MonsterState _monsterState = MonsterState.idle;
-  double _lookRatio = 0.5;
-  bool _isPasswordVisible = false;
+  EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
+  double _ratioMirada = 0.5;
+  bool _esPasswordVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _emailFocusNode.addListener(_onFocusChange);
-    _passwordFocusNode.addListener(_onFocusChange);
+    _nodoEnfoqueEmail.addListener(_alCambiarEnfoque);
+    _nodoEnfoquePassword.addListener(_alCambiarEnfoque);
   }
 
   @override
   void dispose() {
-    _emailFocusNode.removeListener(_onFocusChange);
-    _passwordFocusNode.removeListener(_onFocusChange);
-    _emailFocusNode.dispose();
-    _passwordFocusNode.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _isLoading.dispose();
+    _nodoEnfoqueEmail.removeListener(_alCambiarEnfoque);
+    _nodoEnfoquePassword.removeListener(_alCambiarEnfoque);
+    _nodoEnfoqueEmail.dispose();
+    _nodoEnfoquePassword.dispose();
+    _controladorEmail.dispose();
+    _controladorPassword.dispose();
+    _estaCargando.dispose();
     super.dispose();
   }
 
-  void _onFocusChange() {
-    if (_passwordFocusNode.hasFocus) {
-      // Si la contraseña ES visible, se tapan los ojos.
-      // Si está tapada (puntitos), NO se tapan los ojos (están mirando).
+  void _alCambiarEnfoque() {
+    if (_nodoEnfoquePassword.hasFocus) {
       setState(() {
-        _monsterState = _isPasswordVisible ? MonsterState.hiding : MonsterState.looking;
+        _estadoGatos = _esPasswordVisible ? EstadoMonstruo.escondido : EstadoMonstruo.mirando;
       });
-    } else if (_emailFocusNode.hasFocus) {
+    } else if (_nodoEnfoqueEmail.hasFocus) {
       setState(() {
-        _monsterState = MonsterState.looking;
+        _estadoGatos = EstadoMonstruo.mirando;
       });
     } else {
-      if (_monsterState != MonsterState.happy && _monsterState != MonsterState.sad) {
+      if (_estadoGatos != EstadoMonstruo.feliz && _estadoGatos != EstadoMonstruo.triste) {
         setState(() {
-          _monsterState = MonsterState.idle;
+          _estadoGatos = EstadoMonstruo.inactivo;
         });
       }
     }
   }
 
-  void _onPasswordVisibilityChanged(bool isVisible) {
+  void _alCambiarVisibilidadPassword(bool esVisible) {
     setState(() {
-      _isPasswordVisible = isVisible;
-      if (_passwordFocusNode.hasFocus) {
-        _monsterState = _isPasswordVisible ? MonsterState.hiding : MonsterState.looking;
+      _esPasswordVisible = esVisible;
+      if (_nodoEnfoquePassword.hasFocus) {
+        _estadoGatos = _esPasswordVisible ? EstadoMonstruo.escondido : EstadoMonstruo.mirando;
       }
     });
   }
 
-  void _updateLookPosition(String value) {
-    if (_emailFocusNode.hasFocus) {
-      // ratio: cuán largo es el texto (suponiendo ancho campo visible ~30 caracteres)
+  void _actualizarPosicionMirada(String valor) {
+    if (_nodoEnfoqueEmail.hasFocus) {
       setState(() {
-        _lookRatio = (value.length / 30).clamp(0.0, 1.0);
+        _ratioMirada = (valor.length / 30).clamp(0.0, 1.0);
       });
     }
   }
 
-  Future<void> _login() async {
-    _emailFocusNode.unfocus();
-    _passwordFocusNode.unfocus();
+  Future<void> _iniciarSesion() async {
+    _nodoEnfoqueEmail.unfocus();
+    _nodoEnfoquePassword.unfocus();
 
-    if (_formKey.currentState!.validate()) {
-      _isLoading.value = true;
+    if (_llaveFormulario.currentState!.validate()) {
+      _estaCargando.value = true;
       setState(() {
-        _monsterState = MonsterState.computing;
+        _estadoGatos = EstadoMonstruo.calculando;
       });
       
       await Future.delayed(const Duration(seconds: 2));
-      _isLoading.value = false;
+      _estaCargando.value = false;
 
       if (!mounted) return;
 
-      if (_emailController.text == "admin@myngo.com" && _passwordController.text == "123456") {
+      if (_controladorEmail.text == "admin@myngo.com" && _controladorPassword.text == "123456") {
         setState(() {
-          _monsterState = MonsterState.happy;
+          _estadoGatos = EstadoMonstruo.feliz;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -164,7 +161,7 @@ class _LoginCardState extends State<LoginCard> {
         );
       } else {
         setState(() {
-          _monsterState = MonsterState.sad;
+          _estadoGatos = EstadoMonstruo.triste;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -174,23 +171,22 @@ class _LoginCardState extends State<LoginCard> {
           ),
         );
         
-        // Return to idle after animation
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
             setState(() {
-              _monsterState = MonsterState.idle;
+              _estadoGatos = EstadoMonstruo.inactivo;
             });
           }
         });
       }
     } else {
       setState(() {
-        _monsterState = MonsterState.sad;
+        _estadoGatos = EstadoMonstruo.triste;
       });
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() {
-            _monsterState = MonsterState.idle;
+            _estadoGatos = EstadoMonstruo.inactivo;
           });
         }
       });
@@ -214,18 +210,16 @@ class _LoginCardState extends State<LoginCard> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Monstruos Animados propios
-          AnimatedMonsters(
-            state: _monsterState,
-            lookRatio: _lookRatio,
-            globalMousePosition: widget.mousePosition,
+          GatosAnimados(
+            estado: _estadoGatos,
+            ratioMirada: _ratioMirada,
+            posicionMouseGlobal: widget.posicionMouse,
           ),
           
-          // Formulario
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
             child: Form(
-              key: _formKey,
+              key: _llaveFormulario,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -247,19 +241,18 @@ class _LoginCardState extends State<LoginCard> {
                   ),
                   const SizedBox(height: 32),
                   
-                  // Campo Email
-                  CustomTextField(
-                    label: 'Correo Electrónico',
-                    icon: Icons.email_outlined,
-                    controller: _emailController,
-                    focusNode: _emailFocusNode,
-                    onChanged: _updateLookPosition,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Correo Electrónico',
+                    icono: Icons.email_outlined,
+                    controlador: _controladorEmail,
+                    nodoEnfoque: _nodoEnfoqueEmail,
+                    alCambiar: _actualizarPosicionMirada,
+                    tipoTeclado: TextInputType.emailAddress,
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) {
                         return 'Por favor ingresa tu correo';
                       }
-                      if (!value.contains('@')) {
+                      if (!valor.contains('@')) {
                         return 'Ingresa un correo válido';
                       }
                       return null;
@@ -267,16 +260,15 @@ class _LoginCardState extends State<LoginCard> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Campo Contraseña
-                  CustomTextField(
-                    label: 'Contraseña',
-                    icon: Icons.lock_outline,
-                    controller: _passwordController,
-                    focusNode: _passwordFocusNode,
-                    isPassword: true,
-                    onVisibilityChanged: _onPasswordVisibilityChanged,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Contraseña',
+                    icono: Icons.lock_outline,
+                    controlador: _controladorPassword,
+                    nodoEnfoque: _nodoEnfoquePassword,
+                    esContrasena: true,
+                    alCambiarVisibilidad: _alCambiarVisibilidadPassword,
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) {
                         return 'Por favor ingresa tu contraseña';
                       }
                       return null;
@@ -284,7 +276,6 @@ class _LoginCardState extends State<LoginCard> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Recordarme y Olvidé contraseña
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -292,7 +283,7 @@ class _LoginCardState extends State<LoginCard> {
                         children: [
                           Checkbox(
                             value: true,
-                            onChanged: (value) {},
+                            onChanged: (valor) {},
                             activeColor: const Color(0xFF6C63FF),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
@@ -318,10 +309,9 @@ class _LoginCardState extends State<LoginCard> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Botón de Login
-                  LoadingButton(
-                    onPressed: _login,
-                    isLoadingNotifier: _isLoading,
+                  BotonCarga(
+                    alPresionar: _iniciarSesion,
+                    notificadorCargando: _estaCargando,
                   ),
                 ],
               ),
