@@ -194,13 +194,19 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
         setState(() => _estadoGatos = EstadoMonstruo.feliz);
         
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(respuesta.mensaje),
-            backgroundColor: Colors.green,
+          const SnackBar(
+            content: Text('¡Revisa tu correo para activar tu cuenta!'),
+            backgroundColor: Colors.blueAccent, // Color informativo
             behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 5),
           ),
         );
-      Navigator.pushReplacementNamed(context, '/inicio');
+
+        // En lugar de ir a /inicio, lo mandamos al login para que entre 
+        // una vez pulse el link del correo
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        });
 
       } else {
         // Error (Email ya existe, nombre muy corto, etc.)

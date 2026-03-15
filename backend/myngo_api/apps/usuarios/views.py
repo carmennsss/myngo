@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.http import HttpResponse
 from .serializers import UsuarioSerializer,SeguimientoSerializer
 from .models import Usuario,Seguimiento,Perfil
 from rest_framework.response import Response
@@ -10,12 +10,15 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import random
 import string
+from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 
+signer = TimestampSigner()
 class RegistroUsuarios(APIView):
     """
     Vista para el registro de nuevos usuarios en la plataforma.
     """
     def post(self, request):
+        
         """
         Procesa la creación de un nuevo usuario a partir de los datos recibidos.
         
@@ -23,21 +26,88 @@ class RegistroUsuarios(APIView):
         una lista de errores de validación si la solicitud es incorrecta.
         """
         serializer = UsuarioSerializer(data=request.data)
-
+        
         if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "exito": True,
-                    "mensaje": "Usuario registrado correctamente",
-                    "datos": serializer.data
-                },
-                status=status.HTTP_201_CREATED)
-        else:
+        
+            datos_usuario = request.data
+            token = signer.sign_object(datos_usuario)
+            url_activacion = f"http://localhost:8000/usuarios/confirmar/{token}/"
+            sujeto = 'Bienvenido a Myngo 🐾 - Activa tu cuenta'
+            # Usamos un botón morado como el de tu app
+            mensaje_html = f"""
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 15px; padding: 25px; text-align: center; background-color: #ffffff;">
+                <h2 style="color: #6C63FF; margin-bottom: 10px;">¡Hola de nuevo!</h2>
+                <p style="color: #666; font-size: 16px;">Ya casi eres parte de la comunidad de <strong>Myngo</strong>. Solo falta un último paso para activar tu cuenta.</p>
+                
+                <div style="margin: 30px 0;">
+                    <a href="{url_activacion}" 
+                    style="background-color: #6C63FF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 4px 6px rgba(108, 99, 255, 0.2);">
+                    ACTIVAR MI CUENTA 🐾
+                    </a>
+                </div>
+                
+                <p style="color: #999; font-size: 12px;">Si no te has registrado en Myngo, puedes ignorar este correo.</p>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #6C63FF; font-weight: bold;">El equipo de Myngo</p>
+            </div>
+            """
+            mensaje_plano = strip_tags(mensaje_html)
+
+            send_mail(
+                sujeto,
+                mensaje_plano,
+                settings.EMAIL_HOST_USER,
+                [datos_usuario['email']],
+                html_message=mensaje_html, # IMPORTANTE: enviar la versión HTML
+                fail_silently=False,
+            )
+                
             return Response({
-                "exito": False,
-                "errores": serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+                "exito": True,
+                "mensaje": "Revisa tu correo para completar el registro."
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "exito": False, 
+            "mensaje": "Error en la validación",
+            "errores": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST) 
+    def get(self,request,token):
+        try:
+            # 1. Abrimos el paquete (token). Si alguien lo tocó, saltará BadSignature.
+            # max_age=3600 hace que el link caduque en 1 hora.
+            datos_usuario = signer.unsign_object(token, max_age=3600)
+            
+            # 2. Ahora que el email está verificado, CREAMOS al usuario
+            serializer = UsuarioSerializer(data=datos_usuario)
+            if serializer.is_valid():
+                serializer.save()
+                return HttpResponse(f"""
+    <html>
+        <head>
+            <style>
+                body {{ font-family: 'Segoe UI', sans-serif; background-color: #F7F4FF; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
+                .card {{ background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }}
+                h1 {{ color: #6C63FF; margin-bottom: 20px; }}
+                p {{ color: #666; line-height: 1.6; }}
+                .btn {{ display: inline-block; margin-top: 25px; padding: 12px 25px; background: #6C63FF; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>¡Cuenta Activada! 🐾</h1>
+                <p>Tu registro en <b>Myngo</b> se ha completado con éxito. Ya puedes cerrar esta ventana y volver a la aplicación para iniciar sesión.</p>
+                <div style="font-size: 50px; margin: 20px 0;">🐱</div>
+                <p style="font-size: 12px; color: #aaa;">¡Nos vemos dentro!</p>
+            </div>
+        </body>
+    </html>
+    """)
+            return HttpResponse("<h1>Error: Los datos ya no son válidos.</h1>", status=400)
+            
+        except SignatureExpired:
+            return HttpResponse("<h1>Enlace caducado o inválido.</h1>", status=400)
+        except BadSignature:
+            return HttpResponse("<h1>Enlace caducado o inválido.</h1>", status=400)
 
 class LoginUsuario(APIView):
     """
