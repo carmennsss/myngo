@@ -182,6 +182,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+        Navigator.pushReplacementNamed(context, '/inicio');
       } else {
         setState(() {
           _estadoGatos = EstadoMonstruo.triste;
@@ -322,7 +323,9 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                         ],
                       ),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/recuperar_contrasena');
+                        },
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFF6C63FF),
                         ),

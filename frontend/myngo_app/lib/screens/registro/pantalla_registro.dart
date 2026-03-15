@@ -200,11 +200,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-
-        // Opcional: Redirigir al login tras 2 segundos de éxito
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) Navigator.pushReplacementNamed(context, '/login');
-        });
+      Navigator.pushReplacementNamed(context, '/inicio');
 
       } else {
         // Error (Email ya existe, nombre muy corto, etc.)
