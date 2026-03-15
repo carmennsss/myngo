@@ -81,4 +81,27 @@ class ServicioUsuarios {
       );
     }
   }
+
+  /// Solicita el restablecimiento de la contraseña enviando un correo al usuario.
+  /// 
+  /// Recibe el [email] del usuario y devuelve una [RespuestaApi] indicando 
+  /// si el correo de recuperación fue enviado con éxito.
+  Future<RespuestaApi> recuperarContrasena(String email) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlBase/recuperar-password/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+
+      return RespuestaApi.fromJson(datosJson);
+    } catch (e) {
+      return RespuestaApi(
+        exito: false,
+        mensaje: 'Error de conexión con el servidor: $e',
+      );
+    }
+  }
 }
