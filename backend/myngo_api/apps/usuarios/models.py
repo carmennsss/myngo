@@ -39,7 +39,15 @@ class Seguimiento(models.Model):
     seguidor=models.ForeignKey(Usuario,on_delete=models.CASCADE,related_name='siguiendo')
     seguido_usuario=models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='seguidores', null=True, blank=True)
     seguida_comunidad = models.ForeignKey('comunidades.Comunidad', on_delete=models.CASCADE, related_name='seguidores', null=True, blank=True)
-    estado=models.CharField(max_length=20, default='ACEPTADO')
+    estado = models.CharField(
+        max_length=20, 
+        default='SOLICITUD',
+        choices=[
+            ('ACEPTADO', 'Aceptado'),
+            ('SOLICITUD', 'Solicitud'),
+            ('DENEGADO', 'Denegado'),
+        ]
+    )
     fecha_seguimiento=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

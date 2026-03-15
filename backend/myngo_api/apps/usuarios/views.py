@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from .serializers import UsuarioSerializer
-from .models import Usuario
+from .serializers import UsuarioSerializer,SeguimientoSerializer
+from .models import Usuario,Seguimiento,Perfil
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
@@ -72,3 +72,82 @@ class LoginUsuario(APIView):
                 "exito": False,
                 "mensaje": "Usuario no encontrado"
             }, status=status.HTTP_404_NOT_FOUND)
+        
+class SeguimientoUsuarios(APIView):
+    def post(self,request):
+        serializer=SeguimientoSerializer(data=request.data)
+        if(serializer.is_valid()):
+            serializer.save()
+            return Response({
+                "exito":True,
+                "mensaje":"Seguimiento creado",
+                "datos":serializer.data
+            },status=status.HTTP_201_CREATED)
+        else:
+             return Response({
+                "exito": False,
+                "errores": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    def put(self,request):
+        seguimiento_id=request.data.get('id')
+        estado=request.data.get('estado', '')
+        try:
+            seguimiento=Seguimiento.objects.get(id=seguimiento_id)
+            if estado.upper() not in ['ACEPTADO','DENEGADO']:
+                raise ValueError(f"¡Error! La cadena '{estado}' no es una opcion valida'")
+            else:
+                serializer=SeguimientoSerializer(seguimiento,data=request.data,partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response({
+                        "exito":True,
+                        "mensaje":"Seguimiento actualizado en estado",
+                        "datos":serializer.data
+                    })
+                return Response({"exito": False, "errores": serializer.errors}, status=400)
+        except Seguimiento.DoesNotExist:
+            return Response({
+                "exito": False,
+                "errores": "No existe un seguimiento con el ID proporcionado."
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+             return Response({
+                "exito": False,
+                "errores": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+class DatosUsuarios(APIView):
+    def get(self,request):
+        usuarios=Usuario.objects.all()
+        serializer=UsuarioSerializer(usuarios,many=True)
+        return Response({
+            "exito":True,
+            "mensaje":"Todos los usuarios del sistema",
+            "datos":serializer.data
+        })
+    def put(self,request):
+        usuario_id=request.data.get('id')
+        try:
+            usuario=Usuario.objects.get(id=usuario_id)
+            serializer = UsuarioSerializer(usuario, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "exito": True, 
+                    "mensaje": "Perfil actualizado", 
+                    "datos": serializer.data
+                })
+            return Response({"exito": False, "errores": serializer.errors}, status=400)
+        except Usuario.DoesNotExist:
+            return Response({
+                "exito": False,
+                "errores": "No existe un usuario con el ID proporcionado."
+            }, status=status.HTTP_404_NOT_FOUND)  
+        except Exception as e:
+             return Response({
+                "exito": False,
+                "errores": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)  
+
+
+        
