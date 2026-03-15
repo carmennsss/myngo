@@ -3,6 +3,8 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login/pantalla_login.dart';
 import 'screens/registro/pantalla_registro.dart';
+import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
+import 'screens/inicio/pantalla_inicio.dart';
 
 /// Punto de entrada principal de la aplicación Myngo.
 void main() {
@@ -31,6 +33,8 @@ class MiAplicacion extends StatelessWidget {
       routes: {
         '/login': (context) => const PantallaLogin(),
         '/registro': (context) => const PantallaRegistro(),
+        '/recuperar_contrasena': (context) => const PantallaRecuperarContrasena(),
+        '/inicio': (context) => const PantallaInicio(),
       },
     );
   }
