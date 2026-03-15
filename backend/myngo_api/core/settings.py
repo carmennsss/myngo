@@ -145,3 +145,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Configuración de Correo Electrónico (SMTP Gmail)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='myngoadmin@gmail.com')
+# IMPORTANTE: Usar "Contraseña de Aplicación" de Google, no la normal.
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='xvip punk tbnf twyd') 
+DEFAULT_FROM_EMAIL = f"Myngo <{EMAIL_HOST_USER}>"

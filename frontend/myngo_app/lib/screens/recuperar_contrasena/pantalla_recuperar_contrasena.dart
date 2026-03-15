@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/campo_texto_personalizado.dart';
+import '../../services/servicio_usuarios.dart';
+import '../../widgets/boton_carga.dart';
 
 /// Pantalla de recuperación de contraseña.
 ///
@@ -23,6 +25,9 @@ class _PantallaRecuperarContrasenaState
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+
+  final _servicioUsuarios = ServicioUsuarios();
+  final _estaCargando = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -50,6 +55,7 @@ class _PantallaRecuperarContrasenaState
     _animController.dispose();
     _controladorEmail.dispose();
     _nodoEnfoqueEmail.dispose();
+    _estaCargando.dispose();
     super.dispose();
   }
 
@@ -182,11 +188,9 @@ class _PantallaRecuperarContrasenaState
                               const SizedBox(height: 28),
 
                               // ── Botón enviar código ──
-                              _BotonEnviarCodigo(
-                                alPresionar: () {
-                                  _nodoEnfoqueEmail.unfocus();
-                                  _llaveFormulario.currentState?.validate();
-                                },
+                              BotonCarga(
+                                alPresionar: _procesarRecuperacion,
+                                notificadorCargando: _estaCargando,
                               ),
                               const SizedBox(height: 24),
 
@@ -224,79 +228,45 @@ class _PantallaRecuperarContrasenaState
       ),
     );
   }
-}
 
-/// Botón animado para enviar el código de recuperación.
-class _BotonEnviarCodigo extends StatefulWidget {
-  final VoidCallback alPresionar;
+  /// Método para procesar la solicitud de recuperación de contraseña.
+  Future<void> _procesarRecuperacion() async {
+    _nodoEnfoqueEmail.unfocus();
 
-  const _BotonEnviarCodigo({required this.alPresionar});
+    if (_llaveFormulario.currentState!.validate()) {
+      _estaCargando.value = true;
 
-  @override
-  State<_BotonEnviarCodigo> createState() => _BotonEnviarCodigoState();
-}
+      final respuesta = await _servicioUsuarios.recuperarContrasena(
+        _controladorEmail.text.trim(),
+      );
 
-class _BotonEnviarCodigoState extends State<_BotonEnviarCodigo> {
-  bool _estaHover = false;
+      _estaCargando.value = false;
 
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _estaHover = true),
-      onExit: (_) => setState(() => _estaHover = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: _estaHover
-                ? [const Color(0xFF8B80FF), const Color(0xFF5A52E0)]
-                : [const Color(0xFF9B8BFC), const Color(0xFF6C63FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      if (!mounted) return;
+
+      if (respuesta.exito) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(respuesta.mensaje),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6C63FF)
-                  .withOpacity(_estaHover ? 0.45 : 0.30),
-              blurRadius: _estaHover ? 20 : 12,
-              offset: Offset(0, _estaHover ? 6 : 4),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.alPresionar,
-            borderRadius: BorderRadius.circular(16),
-            splashColor: Colors.white.withOpacity(0.1),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.send_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Enviar código',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                  ),
-                ],
-              ),
-            ),
+        );
+        // Esperamos un momento y volvemos al login
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          }
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(respuesta.mensaje),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
           ),
-        ),
-      ),
-    );
+        );
+      }
+    }
   }
 }
