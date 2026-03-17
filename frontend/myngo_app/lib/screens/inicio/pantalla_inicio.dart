@@ -177,10 +177,6 @@ class _BarraMyngoState extends State<_BarraMyngo> {
   }
 
   Future<void> _cargarConteo() async {
-    if (widget.indiceSeleccionado == 2) {
-      if (mounted) setState(() => _notifCount = 0);
-      return;
-    }
     final count = await _servicioNotificaciones.obtenerConteoNoLeidas();
     if (mounted) setState(() => _notifCount = count);
   }

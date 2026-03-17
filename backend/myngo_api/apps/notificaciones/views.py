@@ -75,6 +75,7 @@ class MarcarTodasLeidas(APIView):
 
     def post(self, request):
         actualizadas = Notificacion.objects.filter(
-            usuario=request.user, leida=False
-        ).update(leida=True)
+            usuario=request.user, 
+            leida=False
+        ).exclude(tipo='PETICION_UNION').update(leida=True)
         return Response({"actualizadas": actualizadas})
