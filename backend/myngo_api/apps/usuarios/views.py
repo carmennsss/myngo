@@ -78,10 +78,17 @@ class RegistroUsuarios(APIView):
             datos_usuario = signer.unsign_object(token, max_age=3600)
             
             # 2. Ahora que el email está verificado, CREAMOS al usuario
-            serializer = UsuarioSerializer(data=datos_usuario)
-            if serializer.is_valid():
-                serializer.save()
-                return HttpResponse(f"""
+            datos_limpios = datos_usuario.copy()
+            # Quitamos los campos que no son del modelo si existen
+            # Para robustez, buscamos tanto 'password' como 'contrasena'
+            password = datos_limpios.pop('password', datos_limpios.pop('contrasena', None))
+            
+            usuario = Usuario.objects.create_user(
+                email=datos_limpios['email'],
+                password=password,
+                nombre_usuario=datos_limpios['nombre_usuario']
+            )
+            return HttpResponse(f"""
     <html>
         <head>
             <style>
@@ -121,9 +128,10 @@ class LoginUsuario(APIView):
         En caso de error, devuelve un mensaje descriptivo y el código HTTP correspondiente.
         """
         email = request.data.get('email')
-        contrasena = request.data.get('contrasena')
+        # Buscamos tanto 'password' (nuevo) como 'contrasena' (antiguo) por robustez
+        password = request.data.get('password') or request.data.get('contrasena')
 
-        if not email or not contrasena:
+        if not email or not password:
             return Response({
                 "exito": False,
                 "mensaje": "Email y contraseña son obligatorios"
@@ -131,11 +139,15 @@ class LoginUsuario(APIView):
 
         try:
             usuario = Usuario.objects.get(email=email)
-            if usuario.contrasena == contrasena: 
+            if usuario.check_password(password): 
+                from rest_framework.authtoken.models import Token
+                token, _ = Token.objects.get_or_create(user=usuario)
+                
                 serializer = UsuarioSerializer(usuario)
                 return Response({
                     "exito": True,
                     "mensaje": "Inicio de sesión exitoso",
+                    "token": token.key,
                     "datos": serializer.data
                 }, status=status.HTTP_200_OK)
             else:
@@ -254,7 +266,7 @@ class RecuperarPassword(APIView):
             # Por ahora, para demostrar la funcionalidad, simularemos el cambio
             # o simplemente informaremos al usuario. 
             # Para que sea "real", vamos a actualizar su contraseña al código temporal.
-            usuario.contrasena = codigo
+            usuario.set_password(codigo)
             usuario.save()
 
             # Personalización del correo

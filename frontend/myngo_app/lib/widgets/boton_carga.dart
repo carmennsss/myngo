@@ -12,10 +12,14 @@ class BotonCarga extends StatelessWidget {
   /// Escucha los cambios de estado (cargando/no cargando).
   final ValueNotifier<bool> notificadorCargando;
 
+  /// Texto opcional que se muestra en el botón.
+  final String? texto;
+
   const BotonCarga({
     super.key,
     required this.alPresionar,
     required this.notificadorCargando,
+    this.texto,
   });
 
   @override
@@ -54,9 +58,9 @@ class BotonCarga extends StatelessWidget {
                           strokeWidth: 3,
                         ),
                       )
-                    : const Text(
-                        'Iniciar Sesión',
-                        style: TextStyle(
+                    : Text(
+                        texto ?? 'Iniciar Sesión',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

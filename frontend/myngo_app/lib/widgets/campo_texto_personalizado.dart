@@ -32,6 +32,12 @@ class CampoTextoPersonalizado extends StatefulWidget {
   /// Función opcional para validar el contenido del campo.
   final String? Function(String?)? validador;
 
+  /// Máximo número de líneas (para áreas de texto).
+  final int? maxLineas;
+
+  /// Mínimo número de líneas.
+  final int? minLineas;
+
   const CampoTextoPersonalizado({
     super.key,
     required this.etiqueta,
@@ -43,6 +49,8 @@ class CampoTextoPersonalizado extends StatefulWidget {
     this.alCambiarVisibilidad,
     this.tipoTeclado,
     this.validador,
+    this.maxLineas = 1,
+    this.minLineas,
   });
 
   @override
@@ -62,6 +70,8 @@ class _CampoTextoPersonalizadoState extends State<CampoTextoPersonalizado> {
       onChanged: widget.alCambiar,
       keyboardType: widget.tipoTeclado,
       validator: widget.validador,
+      maxLines: widget.maxLineas,
+      minLines: widget.minLineas,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         labelText: widget.etiqueta,

@@ -5,14 +5,13 @@ import 'screens/login/pantalla_login.dart';
 import 'screens/registro/pantalla_registro.dart';
 import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
 import 'screens/inicio/pantalla_inicio.dart';
+import 'screens/comunidades/pantalla_comunidades.dart';
 
-/// Punto de entrada principal de la aplicación Myngo.
 void main() {
-  usePathUrlStrategy(); // Elimina el # de las URLs en Flutter Web
+  usePathUrlStrategy(); 
   runApp(const MiAplicacion());
 }
 
-/// Widget raíz que configura el tema global y la navegación inicial.
 class MiAplicacion extends StatelessWidget {
   const MiAplicacion({super.key});
 
@@ -35,6 +34,7 @@ class MiAplicacion extends StatelessWidget {
         '/registro': (context) => const PantallaRegistro(),
         '/recuperar_contrasena': (context) => const PantallaRecuperarContrasena(),
         '/inicio': (context) => const PantallaInicio(),
+        '/comunidades': (context) => const PantallaComunidades(),
       },
     );
   }

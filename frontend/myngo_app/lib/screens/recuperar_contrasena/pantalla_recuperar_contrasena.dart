@@ -191,6 +191,7 @@ class _PantallaRecuperarContrasenaState
                               BotonCarga(
                                 alPresionar: _procesarRecuperacion,
                                 notificadorCargando: _estaCargando,
+                                texto: 'ENVIAR CÓDIGO',
                               ),
                               const SizedBox(height: 24),
 

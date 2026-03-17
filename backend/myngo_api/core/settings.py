@@ -34,6 +34,8 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
 
+AUTH_USER_MODEL = 'usuarios.Usuario'
+
 
 # Application definition
 
@@ -46,7 +48,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Librerías externas
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
+    'storages',
 
     # Las aplicaciones
     'usuarios',
@@ -145,6 +149,45 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Configuración de AWS S3 para Archivos Media
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='')
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "bucket_name": "myngo-538675137521-eu-north-1-an",
+            "region_name": "eu-north-1",
+            "access_key": env('AWS_ACCESS_KEY_ID', default=''),
+            "secret_key": env('AWS_SECRET_ACCESS_KEY', default=''),
+            "querystring_auth": False,
+            "file_overwrite": False,
+            # Usamos el endpoint regional para evitar el 307 redirect de S3
+            # que Flutter no sigue correctamente.
+            "endpoint_url": "https://s3.eu-north-1.amazonaws.com",
+            "custom_domain": "myngo-538675137521-eu-north-1-an.s3.eu-north-1.amazonaws.com",
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+MEDIA_URL = "https://myngo-538675137521-eu-north-1-an.s3.eu-north-1.amazonaws.com/"
+
+# REST Framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+}
 
 # Configuración de Correo Electrónico (SMTP Gmail)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
