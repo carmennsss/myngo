@@ -338,6 +338,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                   BotonCarga(
                     alPresionar: _iniciarSesion,
                     notificadorCargando: _estaCargando,
+                    texto: 'INICIAR SESIÓN',
                   ),
                   const SizedBox(height: 20),
 
