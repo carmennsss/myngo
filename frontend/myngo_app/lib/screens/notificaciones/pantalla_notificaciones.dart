@@ -31,13 +31,20 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         _estaCargando = false;
       });
       
-      // Si hay notificaciones no leídas, las marcamos todas como leídas en el servidor
-      if (_notificaciones.any((n) => !n.leida)) {
+      // Si hay notificaciones no leídas (que no sean peticiones), las marcamos en el servidor
+      final tieneNoLeidasNormales = _notificaciones.any((n) => !n.leida && n.tipo != 'PETICION_UNION');
+      
+      if (tieneNoLeidasNormales) {
         await _servicioNotificaciones.marcarTodasLeidas();
-        // Opcional: Actualizar el estado local para que el estilo cambie visualmente de inmediato
+        // Actualizar el estado local solo para las normales (las peticiones se quedan como NO leídas)
         if (mounted) {
           setState(() {
-            _notificaciones = _notificaciones.map((n) => n.copyWith(leida: true)).toList();
+            _notificaciones = _notificaciones.map((n) {
+              if (n.tipo != 'PETICION_UNION') {
+                return n.copyWith(leida: true);
+              }
+              return n;
+            }).toList();
           });
         }
       }
