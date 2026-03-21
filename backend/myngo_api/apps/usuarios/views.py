@@ -1,8 +1,8 @@
 from django.http import HttpResponse
-from .serializers import UsuarioSerializer,SeguimientoSerializer
+from .serializers import UsuarioSerializer,SeguimientoSerializer,PerfilSerializer
 from .models import Usuario,Seguimiento,Perfil
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status,generics,filters
 from rest_framework.views import APIView
 from django.core.mail import send_mail
 from django.conf import settings
@@ -10,6 +10,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import random
 import string
+from rest_framework.permissions import IsAuthenticated
 from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 
 signer = TimestampSigner()
@@ -88,6 +89,7 @@ class RegistroUsuarios(APIView):
                 password=password,
                 nombre_usuario=datos_limpios['nombre_usuario']
             )
+            perfil=Perfil.objects.create(usuario=usuario,biografia="",url_avatar="",puntos=0)
             return HttpResponse(f"""
     <html>
         <head>
@@ -205,14 +207,35 @@ class SeguimientoUsuarios(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
 class DatosUsuarios(APIView):
-    def get(self,request):
-        usuarios=Usuario.objects.all()
-        serializer=UsuarioSerializer(usuarios,many=True)
-        return Response({
-            "exito":True,
-            "mensaje":"Todos los usuarios del sistema",
-            "datos":serializer.data
-        })
+    def get(self,request,usuario_id=None):
+        if usuario_id:
+            usuario=Usuario.objects.get(id=usuario_id)
+            if usuario:
+                serializer=UsuarioSerializer(usuario)
+                return Response({
+                    "exito":True,
+                    "mensaje":"Los dartos del usuario"+usuario_id,
+                    "datos":serializer.data
+                })
+            else:
+                return Response({
+                    "exito":False,
+                    "mensaje":"No existe el usuario con id "+usuario_id,
+                },status=status.HTTP_404_NOT_FOUND)
+        else:
+            usuarios=Usuario.objects.all()
+            if usuarios:
+                serializer=UsuarioSerializer(usuarios,many=True)
+                return Response({
+                    "exito":True,
+                    "mensaje":"Todos los usuarios del sistema",
+                    "datos":serializer.data
+                })
+            else:
+                return Response({
+                    "exito":False,
+                    "mensaje":"No hay usuarios en el sistema",
+                },status=status.HTTP_204_NO_CONTENT)
     def put(self,request):
         usuario_id=request.data.get('id')
         try:
@@ -222,7 +245,7 @@ class DatosUsuarios(APIView):
                 serializer.save()
                 return Response({
                     "exito": True, 
-                    "mensaje": "Perfil actualizado", 
+                    "mensaje": "usuario actualizado", 
                     "datos": serializer.data
                 })
             return Response({"exito": False, "errores": serializer.errors}, status=400)
@@ -237,8 +260,17 @@ class DatosUsuarios(APIView):
                 "errores": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)  
 
+class GestionPerfiles(generics.ListCreateAPIView):
+    """
+    ESta clase sirve para listar todas los perfiles o crear uno nuevo.
+    Soporta búsqueda por nombre.
+    """
+    queryset = Perfil.objects.all().order_by('-fecha_actualizacion')
+    serializer_class = PerfilSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['usuario.nombre_usuario']
+    permission_classes = [IsAuthenticated]
 
-        
 
 class RecuperarPassword(APIView):
     """

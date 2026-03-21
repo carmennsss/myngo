@@ -319,9 +319,9 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
         ),
       );
 
-      // El usuario pidió redirigir al inicio, así que enviamos a /inicio 
+      // Redirigimos al inicio de sesión (login) para forzar al usuario a validar su cuenta
       Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) Navigator.pushReplacementNamed(context, '/inicio'); 
+        if (mounted) Navigator.pushReplacementNamed(context, '/login'); 
       });
 
     } else {
