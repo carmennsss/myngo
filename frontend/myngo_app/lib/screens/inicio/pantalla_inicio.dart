@@ -7,6 +7,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_usuarios.dart';
 import '../notificaciones/pantalla_notificaciones.dart';
+import '../perfiles/pantalla_perfiles.dart';
 
 class PantallaInicio extends StatefulWidget {
   const PantallaInicio({super.key});
@@ -21,7 +22,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
   final List<Widget> _vistas = [
     const _SeccionMisComunidades(), // Índice 0
     const PantallaComunidades(),    // Índice 1
-    const Center(child: Text('Explorar Perfiles', style: TextStyle(fontSize: 24))), // Índice 2 (¡Nuevo!)
+    const PantallaPerfiles(),       // Índice 2
     const PantallaNotificaciones(), // Índice 3
     const Center(child: Text('Mensajes Privados', style: TextStyle(fontSize: 24))), // Índice 4
     const Center(child: Text('Mi Perfil y Puntos', style: TextStyle(fontSize: 24))), // Índice 5
