@@ -161,6 +161,33 @@ class TarjetaComunidad extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          if (comunidad.esMiembro || (comunidad.creadorId != null && comunidad.creadorId == comunidad.id)) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF9B8BFC), Color(0xFF6C63FF)],
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'ENTRAR',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(width: 2),
+                                  Icon(Icons.auto_awesome, size: 10, color: Colors.white),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
