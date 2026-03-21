@@ -5,6 +5,7 @@ import '../comunidades/widgets/tarjeta_comunidad.dart';
 import '../../models/comunidad.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
+import '../../services/servicio_usuarios.dart';
 import '../notificaciones/pantalla_notificaciones.dart';
 
 class PantallaInicio extends StatefulWidget {
@@ -18,11 +19,12 @@ class _PantallaInicioState extends State<PantallaInicio> {
   int _indiceSeleccionado = 0;
 
   final List<Widget> _vistas = [
-    const _SeccionMisComunidades(),
-    const PantallaComunidades(),
-    const PantallaNotificaciones(),
-    const Center(child: Text('Mensajes Privados', style: TextStyle(fontSize: 24))),
-    const Center(child: Text('Mi Perfil y Puntos', style: TextStyle(fontSize: 24))),
+    const _SeccionMisComunidades(), // Índice 0
+    const PantallaComunidades(),    // Índice 1
+    const Center(child: Text('Explorar Perfiles', style: TextStyle(fontSize: 24))), // Índice 2 (¡Nuevo!)
+    const PantallaNotificaciones(), // Índice 3
+    const Center(child: Text('Mensajes Privados', style: TextStyle(fontSize: 24))), // Índice 4
+    const Center(child: Text('Mi Perfil y Puntos', style: TextStyle(fontSize: 24))), // Índice 5
   ];
 
   void _alPulsar(int index) => setState(() => _indiceSeleccionado = index);
@@ -92,7 +94,9 @@ class _SeccionMisComunidadesState extends State<_SeccionMisComunidades> {
               style: TextStyle(color: Color(0xFF9094A6), fontWeight: FontWeight.bold),
             ),
             TextButton(
-              onPressed: () {}, // Aquí podríamos cambiar el índice a 1 para explorar
+               onPressed: () {
+                 context.findAncestorStateOfType<_PantallaInicioState>()?._alPulsar(1);
+               },
               child: const Text('¡Explora y únete a una! ✨'),
             ),
           ],
@@ -225,7 +229,6 @@ class _BarraMyngoState extends State<_BarraMyngo> {
                   alPulsar: widget.alPulsar,
                   icono: Icons.home_outlined,
                   iconoActivo: Icons.home_rounded,
-                  esAsset: true,
                 ),
                 _IconNav(
                   indice: 1,
@@ -234,28 +237,57 @@ class _BarraMyngoState extends State<_BarraMyngo> {
                   icono: Icons.groups_outlined,
                   iconoActivo: Icons.groups_rounded,
                 ),
-                // Notificaciones con badge
-                _IconNavConBadge(
+                // Nuevo icono para Explorar Perfiles
+                _IconNav(
                   indice: 2,
                   seleccionado: widget.indiceSeleccionado == 2,
+                  alPulsar: widget.alPulsar,
+                  icono: Icons.person_search_outlined,
+                  iconoActivo: Icons.person_search_rounded,
+                ),
+                // Notificaciones con badge (ahora es el índice 3)
+                _IconNavConBadge(
+                  indice: 3,
+                  seleccionado: widget.indiceSeleccionado == 3,
                   alPulsar: widget.alPulsar,
                   icono: Icons.notifications_none_rounded,
                   iconoActivo: Icons.notifications_rounded,
                   count: _notifCount,
                 ),
                 _IconNav(
-                  indice: 3,
-                  seleccionado: widget.indiceSeleccionado == 3,
+                  indice: 4,
+                  seleccionado: widget.indiceSeleccionado == 4,
                   alPulsar: widget.alPulsar,
                   icono: Icons.chat_bubble_outline_rounded,
                   iconoActivo: Icons.chat_bubble_rounded,
                 ),
                 _IconNav(
-                  indice: 4,
-                  seleccionado: widget.indiceSeleccionado == 4,
+                  indice: 5,
+                  seleccionado: widget.indiceSeleccionado == 5,
                   alPulsar: widget.alPulsar,
                   icono: Icons.person_outline_rounded,
                   iconoActivo: Icons.person_rounded,
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  height: 24,
+                  width: 1.5,
+                  color: const Color(0xFFE2E4EC),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.logout_rounded),
+                  color: const Color(0xFF9094A6),
+                  hoverColor: const Color(0xFFFF6B6B).withOpacity(0.1),
+                  splashRadius: 24,
+                  tooltip: 'Cerrar Sesión',
+                  onPressed: () async {
+                    final servicio = ServicioUsuarios();
+                    await servicio.cerrarSesion();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                    }
+                  },
                 ),
               ],
             ),

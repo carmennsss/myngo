@@ -153,21 +153,27 @@ STATIC_URL = 'static/'
 # Configuración de AWS S3 para Archivos Media
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='')
-
+AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME').strip()
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
-            "bucket_name": "myngo-538675137521-eu-north-1-an",
-            "region_name": "eu-north-1",
-            "access_key": env('AWS_ACCESS_KEY_ID', default=''),
-            "secret_key": env('AWS_SECRET_ACCESS_KEY', default=''),
-            "querystring_auth": False,
+            "bucket_name": AWS_STORAGE_BUCKET_NAME,
+            "region_name": AWS_S3_REGION_NAME,
+            "access_key": AWS_ACCESS_KEY_ID,
+            "secret_key": AWS_SECRET_ACCESS_KEY ,
+            
+            # CAMBIO CLAVE: Activamos la firma de URLs
+            "querystring_auth": True, 
+            "querystring_expire": 3600, # La URL caduca en 1 hora
+            
             "file_overwrite": False,
-            # Usamos el endpoint regional para evitar el 307 redirect de S3
-            # que Flutter no sigue correctamente.
-            "endpoint_url": "https://s3.eu-north-1.amazonaws.com",
-            "custom_domain": "myngo-538675137521-eu-north-1-an.s3.eu-north-1.amazonaws.com",
+            "endpoint_url": f"https://s3.{AWS_S3_REGION_NAME}.amazonaws.com",
+            
+            # ELIMINA O COMENTA custom_domain si vas a usar URLs firmadas, 
+            # S3Boto3 lo gestiona mejor automáticamente cuando querystring_auth es True.
+            # "custom_domain": "myngo-538675137521-eu-north-1-an.s3.eu-north-1.amazonaws.com",
         },
     },
     "staticfiles": {
@@ -175,8 +181,7 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = "https://myngo-538675137521-eu-north-1-an.s3.eu-north-1.amazonaws.com/"
-
+MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
 # REST Framework configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -194,7 +199,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='myngoadmin@gmail.com')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='myngoadministrator@gmail.com')
 # IMPORTANTE: Usar "Contraseña de Aplicación" de Google, no la normal.
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='xvip punk tbnf twyd') 
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD') 
 DEFAULT_FROM_EMAIL = f"Myngo <{EMAIL_HOST_USER}>"

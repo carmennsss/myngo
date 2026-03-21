@@ -3,6 +3,7 @@ import '../../widgets/campo_texto_personalizado.dart';
 import '../../widgets/boton_carga.dart';
 import '../../widgets/gatos_animados.dart';
 import '../../services/servicio_usuarios.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Pantalla de inicio de sesión de la aplicación.
 /// 
@@ -94,11 +95,29 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   /// Controla la visibilidad enmascarada del campo de contraseña.
   bool _esPasswordVisible = false;
 
+  /// Estado de la casilla "Recuérdame"
+  bool _recordarme = false;
+
   @override
   void initState() {
     super.initState();
     _nodoEnfoqueEmail.addListener(_alCambiarEnfoque);
     _nodoEnfoquePassword.addListener(_alCambiarEnfoque);
+    _cargarCredencialesGuardadas();
+  }
+
+  Future<void> _cargarCredencialesGuardadas() async {
+    final prefs = await SharedPreferences.getInstance();
+    final emailGuardado = prefs.getString('recordar_email');
+    final passGuardada = prefs.getString('recordar_pass');
+    
+    if (emailGuardado != null && passGuardada != null && mounted) {
+      setState(() {
+        _recordarme = true;
+        _controladorEmail.text = emailGuardado;
+        _controladorPassword.text = passGuardada;
+      });
+    }
   }
 
   @override
@@ -172,6 +191,16 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
       if (!mounted) return;
 
       if (respuesta.exito) {
+        final prefs = await SharedPreferences.getInstance();
+        if (_recordarme) {
+          await prefs.setString('recordar_email', _controladorEmail.text);
+          await prefs.setString('recordar_pass', _controladorPassword.text);
+        } else {
+          await prefs.remove('recordar_email');
+          await prefs.remove('recordar_pass');
+        }
+
+        if (!mounted) return;
         setState(() {
           _estadoGatos = EstadoMonstruo.feliz;
         });
@@ -306,8 +335,14 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                       Row(
                         children: [
                           Checkbox(
-                            value: true,
-                            onChanged: (valor) {},
+                            value: _recordarme,
+                            onChanged: (valor) {
+                              if (valor != null) {
+                                setState(() {
+                                  _recordarme = valor;
+                                });
+                              }
+                            },
                             activeColor: const Color(0xFF6C63FF),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
