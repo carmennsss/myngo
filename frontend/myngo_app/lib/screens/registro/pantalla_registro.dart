@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../widgets/campo_texto_personalizado.dart';
 import '../../widgets/gatos_registro_animados.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../services/servicio_usuarios.dart';
 /// Pantalla de registro con fondo degradado, idéntica en estética al login
 class PantallaRegistro extends StatefulWidget {
@@ -80,7 +83,6 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
   EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
   double _ratioMirada = 0.5;
   bool _esPasswordVisible = false;
-  bool _aceptaTerminos = false;
 
   @override
   void initState() {
@@ -154,80 +156,187 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
 
     // 2. Validación de los campos de texto
     if (_llaveFormulario.currentState!.validate()) {
-      
-      // 3. Validación extra: ¿Aceptó los términos?
-      if (!_aceptaTerminos) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Debes aceptar los términos y condiciones'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        setState(() => _estadoGatos = EstadoMonstruo.triste);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
-        });
-        return;
-      }
-
-      // 4. Activamos estado de carga
-      _estaCargando.value = true;
-      setState(() {
-        _estadoGatos = EstadoMonstruo.calculando;
-      });
-
-      // 5. Llamada al servicio (Asíncrona)
-      final respuesta = await _servicioUsuarios.registrarse(
-        _controladorNombre.text,
-        _controladorEmail.text,
-        _controladorPassword.text,
-      );
-
-      _estaCargando.value = false;
-
-      // Comprobamos que la pantalla siga existiendo
-      if (!mounted) return;
-
-      // 6. Gestionamos la respuesta de Django
-      if (respuesta.exito) {
-        setState(() => _estadoGatos = EstadoMonstruo.feliz);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Revisa tu correo para activar tu cuenta!'),
-            backgroundColor: Colors.blueAccent, // Color informativo
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 5),
-          ),
-        );
-
-        // En lugar de ir a /inicio, lo mandamos al login para que entre 
-        // una vez pulse el link del correo
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) Navigator.pushReplacementNamed(context, '/login');
-        });
-
-      } else {
-        // Error (Email ya existe, nombre muy corto, etc.)
-        setState(() => _estadoGatos = EstadoMonstruo.triste);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(respuesta.mensaje),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        
-        // Volver al estado normal tras el susto
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
-        });
-      }
+      // 3. Mostrar el diálogo con el PDF de las reglas
+      _mostrarDialogoReglas();
     } else {
       // Formulario inválido localmente
       setState(() => _estadoGatos = EstadoMonstruo.triste);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
+      });
+    }
+  }
+
+  Future<void> _mostrarDialogoReglas() async {
+    bool acepto = false;
+    bool declino = false;
+
+    // Instanciamos el Future una sola vez antes de abrir el diálogo
+    // Esto evita que se vuelva a hacer la petición al marcar el checkbox.
+    final futureDescargaPdf = http.get(Uri.parse('http://127.0.0.1:8000/documentos/reglas_comunidad/'))
+      .then((res) async {
+        if (res.statusCode != 200) throw Exception('Error API');
+        final datos = jsonDecode(res.body);
+        final urlPdf = datos['reglas_comunidad'];
+        return await http.get(Uri.parse(urlPdf));
+      });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Reglas de la Comunidad'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 500, // Altura adecuada para ver el PDF
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: FutureBuilder<http.Response>(
+                        future: futureDescargaPdf, // Usamos la variable guardada
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.statusCode != 200) {
+                            return Center(child: Text('Error: ${snapshot.error}'));
+                          } else {
+                            final bytes = snapshot.data!.bodyBytes;
+                            if (bytes.isEmpty) {
+                              return const Center(child: Text('El PDF descargado está vacío.'));
+                            }
+                            // Usar el visor de memoria es mucho más estable en múltiples plataformas
+                            return SfPdfViewer.memory(
+                              bytes,
+                              onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Fallo visor: ${details.description}')),
+                                  );
+                                });
+                              },
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: acepto,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              acepto = val ?? false;
+                              if (acepto) declino = false;
+                            });
+                          },
+                        ),
+                        const Expanded(child: Text('Acepto los términos y condiciones')),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: declino,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              declino = val ?? false;
+                              if (declino) acepto = false;
+                            });
+                          },
+                        ),
+                        const Expanded(child: Text('Declino los términos')),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Cerrar diálogo
+                    // Si declina, lo ponemos triste
+                    setState(() => _estadoGatos = EstadoMonstruo.triste);
+                    Future.delayed(const Duration(seconds: 2), () {
+                      if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
+                    });
+                  },
+                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: acepto
+                      ? () {
+                          Navigator.pop(context); // Cerrar diálogo
+                          _procesarRegistro(); // Ejecutar registro
+                        }
+                      : null, // Deshabilitado si no aceptó
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6C63FF),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Continuar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _procesarRegistro() async {
+    // 4. Activamos estado de carga
+    _estaCargando.value = true;
+    setState(() {
+      _estadoGatos = EstadoMonstruo.calculando;
+    });
+
+    // 5. Llamada al servicio (Asíncrona)
+    final respuesta = await _servicioUsuarios.registrarse(
+      _controladorNombre.text,
+      _controladorEmail.text,
+      _controladorPassword.text,
+    );
+
+    _estaCargando.value = false;
+
+    // Comprobamos que la pantalla siga existiendo
+    if (!mounted) return;
+
+    // 6. Gestionamos la respuesta de Django
+    if (respuesta.exito) {
+      setState(() => _estadoGatos = EstadoMonstruo.feliz);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Revisa tu correo para activar tu cuenta!'),
+          backgroundColor: Colors.blueAccent, // Color informativo
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 5),
+        ),
+      );
+
+      // El usuario pidió redirigir al inicio, así que enviamos a /inicio 
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) Navigator.pushReplacementNamed(context, '/inicio'); 
+      });
+
+    } else {
+      // Error (Email ya existe, nombre muy corto, etc.)
+      setState(() => _estadoGatos = EstadoMonstruo.triste);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(respuesta.mensaje),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      // Volver al estado normal tras el susto
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
       });
@@ -343,45 +452,6 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                       }
                       return null;
                     },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Checkbox: Términos y condiciones ──
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _aceptaTerminos,
-                        onChanged: (valor) {
-                          setState(() {
-                            _aceptaTerminos = valor ?? false;
-                          });
-                        },
-                        activeColor: const Color(0xFF6C63FF),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontSize: 13,
-                            ),
-                            children: const [
-                              TextSpan(text: 'Acepto los '),
-                              TextSpan(
-                                text: 'Términos y condiciones',
-                                style: TextStyle(
-                                  color: Color(0xFF6C63FF),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                   const SizedBox(height: 24),
 

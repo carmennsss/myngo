@@ -5,6 +5,7 @@ import '../comunidades/widgets/tarjeta_comunidad.dart';
 import '../../models/comunidad.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
+import '../../services/servicio_usuarios.dart';
 import '../notificaciones/pantalla_notificaciones.dart';
 
 class PantallaInicio extends StatefulWidget {
@@ -225,7 +226,6 @@ class _BarraMyngoState extends State<_BarraMyngo> {
                   alPulsar: widget.alPulsar,
                   icono: Icons.home_outlined,
                   iconoActivo: Icons.home_rounded,
-                  esAsset: true,
                 ),
                 _IconNav(
                   indice: 1,
@@ -256,6 +256,27 @@ class _BarraMyngoState extends State<_BarraMyngo> {
                   alPulsar: widget.alPulsar,
                   icono: Icons.person_outline_rounded,
                   iconoActivo: Icons.person_rounded,
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  height: 24,
+                  width: 1.5,
+                  color: const Color(0xFFE2E4EC),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.logout_rounded),
+                  color: const Color(0xFF9094A6),
+                  hoverColor: const Color(0xFFFF6B6B).withOpacity(0.1),
+                  splashRadius: 24,
+                  tooltip: 'Cerrar Sesión',
+                  onPressed: () async {
+                    final servicio = ServicioUsuarios();
+                    await servicio.cerrarSesion();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                    }
+                  },
                 ),
               ],
             ),
