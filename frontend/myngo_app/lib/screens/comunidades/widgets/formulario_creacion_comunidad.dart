@@ -61,6 +61,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
         urlPortada: '', // Se enviará vía Multipart si hay imagen
         esPublica: _esPublica,
         esVerificada: false,
+        esMiembro: true,
         ratingMedio: 0.0,
         fechaCreacion: DateTime.now(),
       );

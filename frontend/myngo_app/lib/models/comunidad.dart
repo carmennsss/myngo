@@ -8,6 +8,7 @@ class Comunidad {
   final String urlPortada;
   final bool esPublica;
   final bool esVerificada;
+  bool esMiembro;
   final double ratingMedio;
   final DateTime fechaCreacion;
 
@@ -20,6 +21,7 @@ class Comunidad {
     required this.urlPortada,
     required this.esPublica,
     required this.esVerificada,
+    required this.esMiembro,
     required this.ratingMedio,
     required this.fechaCreacion,
   });
@@ -35,6 +37,7 @@ class Comunidad {
       urlPortada: json['url_portada'] ?? '',
       esPublica: json['es_publica'] ?? true,
       esVerificada: json['es_verificada'] ?? false,
+      esMiembro: json['es_miembro'] ?? false,
       ratingMedio: double.tryParse(json['rating_medio'].toString()) ?? 0.0,
       fechaCreacion: DateTime.parse(json['fecha_creacion']),
     );

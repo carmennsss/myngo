@@ -7,9 +7,19 @@ import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
 import 'screens/inicio/pantalla_inicio.dart';
 import 'screens/comunidades/pantalla_comunidades.dart';
 
+import 'package:provider/provider.dart';
+import 'providers/post_provider.dart';
+
 void main() {
   usePathUrlStrategy(); 
-  runApp(const MiAplicacion());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PostProvider()),
+      ],
+      child: const MiAplicacion(),
+    ),
+  );
 }
 
 class MiAplicacion extends StatelessWidget {

@@ -1,0 +1,41 @@
+Analyzing myngo_app...                                          
+
+   info - The imported package 'flutter_web_plugins' isn't a dependency of the importing package - lib\main.dart:2:8 - depend_on_referenced_packages
+   info - The file name 'ImagenesEnColeccion.dart' isn't a lower_case_with_underscores identifier - lib\models\ImagenesEnColeccion.dart:1:1 - file_names
+warning - Unused import: '../../models/respuesta_api.dart' - lib\screens\comunidades\pantalla_comunidades.dart:4:8 - unused_import
+warning - Unused import: '../../models/respuesta_api.dart' - lib\screens\comunidades\pantalla_detalle_comunidad.dart:5:8 - unused_import
+  error - 'esMiembro' can't be used as a setter because it's final - lib\screens\comunidades\pantalla_detalle_comunidad.dart:77:40 - assignment_to_final
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\pantalla_detalle_comunidad.dart:178:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\pantalla_detalle_comunidad.dart:374:67 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\pantalla_detalle_comunidad.dart:376:59 - deprecated_member_use
+  error - The class 'EdgeInsets' doesn't have a constant constructor 'top' - lib\screens\comunidades\pantalla_detalle_comunidad.dart:435:48 - const_with_undefined_constructor
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\pantalla_detalle_comunidad.dart:458:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\pantalla_detalle_comunidad.dart:458:74 - deprecated_member_use
+  error - The named parameter 'esMiembro' is required, but there's no corresponding argument - lib\screens\comunidades\widgets\formulario_creacion_comunidad.dart:56:30 - missing_required_argument
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\comunidades\widgets\formulario_creacion_comunidad.dart:184:17 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\widgets\tarjeta_comunidad.dart:39:50 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\screens\comunidades\widgets\tarjeta_comunidad.dart:61:51 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\comunidades\widgets\tarjeta_comunidad.dart:61:55 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\widgets\tarjeta_comunidad.dart:78:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\widgets\tarjeta_comunidad.dart:92:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\widgets\tarjeta_comunidad.dart:223:31 - deprecated_member_use
+  error - Target of URI doesn't exist: '../../models/publicacion.dart' - lib\screens\comunidades\widgets\tarjeta_publicacion.dart:2:8 - uri_does_not_exist
+  error - Undefined class 'Publicacion' - lib\screens\comunidades\widgets\tarjeta_publicacion.dart:6:9 - undefined_class
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\comunidades\widgets\tarjeta_publicacion.dart:18:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\inicio\pantalla_inicio.dart:193:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\inicio\pantalla_inicio.dart:347:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\login\pantalla_login.dart:228:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\notificaciones\pantalla_notificaciones.dart:130:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\notificaciones\pantalla_notificaciones.dart:134:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\notificaciones\pantalla_notificaciones.dart:223:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\recuperar_contrasena\pantalla_recuperar_contrasena.dart:95:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\recuperar_contrasena\pantalla_recuperar_contrasena.dart:130:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\registro\pantalla_registro.dart:246:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\registro\pantalla_registro.dart:399:58 - deprecated_member_use
+   info - The imported package 'http_parser' isn't a dependency of the importing package - lib\services\servicio_comunidades.dart:3:8 - depend_on_referenced_packages
+   info - Unnecessary braces in a string interpolation - lib\services\servicio_comunidades.dart:78:52 - unnecessary_brace_in_string_interps
+   info - The variable name 'nombre_usuario' isn't a lowerCamelCase identifier - lib\services\servicio_usuarios.dart:63:52 - non_constant_identifier_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\boton_carga.dart:40:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\gatos_registro_animados.dart:626:22 - deprecated_member_use
+  error - The name 'MyApp' isn't a class - test\widget_test.dart:16:35 - creation_with_non_type
+
