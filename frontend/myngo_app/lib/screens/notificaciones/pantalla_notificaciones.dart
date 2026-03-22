@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_comunidades.dart';
+import '../../services/servicio_perfiles.dart';
 import '../../models/notificacion.dart';
 import 'package:intl/intl.dart';
 
@@ -14,6 +15,7 @@ class PantallaNotificaciones extends StatefulWidget {
 class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
   final _servicioNotificaciones = ServicioNotificaciones();
   final _servicioComunidades = ServicioComunidades();
+  final _servicioPerfiles = ServicioPerfiles();
   List<Notificacion> _notificaciones = [];
   bool _estaCargando = true;
 
@@ -31,30 +33,32 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         _estaCargando = false;
       });
       
-      // Si hay notificaciones no leídas (que no sean peticiones), las marcamos en el servidor
-      final tieneNoLeidasNormales = _notificaciones.any((n) => !n.leida && n.tipo != 'PETICION_UNION');
+      // Si hay notificaciones no leídas, las marcamos en el servidor (esto quitará el punto rojo)
+      final tieneNoLeidas = _notificaciones.any((n) => !n.leida);
       
-      if (tieneNoLeidasNormales) {
+      if (tieneNoLeidas) {
         await _servicioNotificaciones.marcarTodasLeidas();
-        // Actualizar el estado local solo para las normales (las peticiones se quedan como NO leídas)
         if (mounted) {
           setState(() {
-            _notificaciones = _notificaciones.map((n) {
-              if (n.tipo != 'PETICION_UNION') {
-                return n.copyWith(leida: true);
-              }
-              return n;
-            }).toList();
+            _notificaciones = _notificaciones.map((n) => n.copyWith(leida: true)).toList();
           });
         }
       }
     }
   }
 
-  Future<void> _responder(int? peticionId, bool aceptar) async {
-    if (peticionId == null) return;
+  Future<void> _responder(Notificacion notif, bool aceptar) async {
+    if (notif.referenciaId == null) return;
     
-    final respuesta = await _servicioComunidades.responderPeticion(peticionId, aceptar);
+    dynamic respuesta;
+    // Si la notificación pertenece a una comunidad
+    if (notif.nombreComunidad != null && notif.nombreComunidad!.isNotEmpty) {
+      respuesta = await _servicioComunidades.responderPeticion(notif.referenciaId!, aceptar);
+    } else {
+      // Si la notificación es sobre el seguimiento de un usuario
+      respuesta = await _servicioPerfiles.responderPeticion(notif.referenciaId!, aceptar);
+    }
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -87,7 +91,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
                     itemCount: _notificaciones.length,
                     itemBuilder: (context, index) => _TarjetaNotificacion(
                       notificacion: _notificaciones[index],
-                      alResponder: (aceptar) => _responder(_notificaciones[index].referenciaId, aceptar),
+                      alResponder: (aceptar) => _responder(_notificaciones[index], aceptar),
                     ),
                   ),
                 ),
@@ -120,9 +124,9 @@ class _TarjetaNotificacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Solo mostramos botones si es una petición pendiente Y no ha sido leída (procesada)
-    final bool esPeticion = notificacion.tipo == 'PETICION_UNION' && !notificacion.leida;
-    
+    // Mostramos botones si es una petición Y sigue en estado SOLICITUD en la base de datos
+    final bool esPeticion = notificacion.tipo == 'PETICION_UNION' && notificacion.estadoPeticion == 'SOLICITUD';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),

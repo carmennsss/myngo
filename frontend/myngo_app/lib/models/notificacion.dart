@@ -6,6 +6,7 @@ class Notificacion {
   final String? nombreGenerador;
   final String? nombreComunidad;
   final int? referenciaId;
+  final String? estadoPeticion;
   final DateTime fechaNotificacion;
 
   Notificacion({
@@ -16,6 +17,7 @@ class Notificacion {
     this.nombreGenerador,
     this.nombreComunidad,
     this.referenciaId,
+    this.estadoPeticion,
     required this.fechaNotificacion,
   });
 
@@ -28,6 +30,7 @@ class Notificacion {
       nombreGenerador: json['nombre_generador'],
       nombreComunidad: json['nombre_comunidad'],
       referenciaId: json['referencia_id'],
+      estadoPeticion: json['estado_peticion'],
       fechaNotificacion: DateTime.parse(json['fecha_notificacion']),
     );
   }
@@ -40,6 +43,7 @@ class Notificacion {
     String? nombreGenerador,
     String? nombreComunidad,
     int? referenciaId,
+    String? estadoPeticion,
     DateTime? fechaNotificacion,
   }) {
     return Notificacion(
@@ -50,6 +54,7 @@ class Notificacion {
       nombreGenerador: nombreGenerador ?? this.nombreGenerador,
       nombreComunidad: nombreComunidad ?? this.nombreComunidad,
       referenciaId: referenciaId ?? this.referenciaId,
+      estadoPeticion: estadoPeticion ?? this.estadoPeticion,
       fechaNotificacion: fechaNotificacion ?? this.fechaNotificacion,
     );
   }

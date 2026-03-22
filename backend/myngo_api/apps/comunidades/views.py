@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .models import Comunidad, Miembros_comunidades
+from usuarios.models import Seguimiento
 from .serializers import ComunidadSerializer, MiembroComunidadSerializer
 from notificaciones.models import Notificacion
 from django.db import models
@@ -26,7 +27,6 @@ class ComunidadListCreate(generics.ListCreateAPIView):
             usuario=self.request.user,
             comunidad=comunidad,
             rol="Administrador",
-            estado_peticion="ACEPTADO"
         )
 
 class MisComunidadesList(generics.ListAPIView):
@@ -40,7 +40,7 @@ class MisComunidadesList(generics.ListAPIView):
         usuario = self.request.user
         return Comunidad.objects.filter(
             models.Q(creador=usuario) | 
-            models.Q(miembros_comunidades__usuario=usuario, miembros_comunidades__estado_peticion="ACEPTADO")
+            models.Q(miembros_comunidades__usuario=usuario)
         ).distinct().order_by('-fecha_creacion')
 
 class UnirseComunidad(APIView):
@@ -56,47 +56,48 @@ class UnirseComunidad(APIView):
             return Response({"error": "La comunidad no existe"}, status=status.HTTP_404_NOT_FOUND)
 
         usuario = request.user
+        if Miembros_comunidades.objects.filter(usuario=usuario, comunidad=comunidad).exists():
+            return Response({"mensaje": "Ya eres miembro de esta comunidad.", "estado": "ACEPTADO"}, status=status.HTTP_200_OK)
         
         # Verificar si ya es miembro o tiene petición
-        miembro_existente = Miembros_comunidades.objects.filter(usuario=usuario, comunidad=comunidad).first()
-        if miembro_existente:
-            if miembro_existente.estado_peticion == "RECHAZADO":
+        solicitud = Seguimiento.objects.filter(seguidor=usuario, seguida_comunidad=comunidad).first()
+        if solicitud:#Existe solicitud
+            if solicitud.estado == "DENEGADO":
                 # Si fue rechazado, permitir volver a intentar
-                miembro_existente.estado_peticion = "PENDIENTE" if not comunidad.es_publica else "ACEPTADO"
-                miembro_existente.save()
+                solicitud.estado = "SOLICITUD" if not comunidad.es_publica else "ACEPTADO"
+                solicitud.save()
+                if solicitud.estado == "ACEPTADO":
+                    Miembros_comunidades.objects.get_or_create(usuario=usuario, comunidad=comunidad)
+                return Response({"mensaje": "Solicitud reintentada", "estado": solicitud.estado}, status=status.HTTP_200_OK)
             else:
                 estado_msg = {
-                    "PENDIENTE": "Ya tienes una solicitud pendiente de aprobación.",
+                    "SOLICITUD": "Ya tienes una solicitud pendiente de aprobación.",
                     "ACEPTADO": "Ya eres miembro de esta comunidad.",
-                    "RECHAZADO": "Tu solicitud ha sido rechazada anteriormente."
-                }.get(miembro_existente.estado_peticion, f"Estado actual: {miembro_existente.estado_peticion}")
+                    "DENEGADO": "Tu solicitud ha sido rechazada anteriormente."
+                }.get(solicitud.estado, f"Estado actual: {solicitud.estado}")
                 
                 return Response({
                     "mensaje": estado_msg,
-                    "estado": miembro_existente.estado_peticion
+                    "estado": solicitud.estado
                 }, status=status.HTTP_200_OK)
-        else:
+        else:#si no hay solicitud
             # Lógica según privacidad
-            estado = "ACEPTADO" if comunidad.es_publica else "PENDIENTE"
-            miembro_existente = Miembros_comunidades.objects.create(
-                usuario=usuario,
-                comunidad=comunidad,
-                estado_peticion=estado
-            )
-
-        if not comunidad.es_publica and miembro_existente.estado_peticion == "PENDIENTE":
-            # Notificar al administrador (creador)
-            Notificacion.objects.create(
-                usuario=comunidad.creador,
-                tipo="PETICION_UNION",
-                mensaje=f"¡Miau! {usuario.nombre_usuario} quiere unirse a tu comunidad '{comunidad.nombre}'.",
-                referencia_usuario=usuario,
-                referencia_comunidad=comunidad,
-                referencia_id=miembro_existente.id
-            )
-
-        mensaje = "Te has unido a la comunidad" if comunidad.es_publica else "Solicitud enviada a la comunidad privada"
-        return Response({"mensaje": mensaje, "estado": miembro_existente.estado_peticion}, status=status.HTTP_201_CREATED)
+            estado = "ACEPTADO" if comunidad.es_publica else "SOLICITUD"
+            if not comunidad.es_publica and estado == "SOLICITUD":#si la comunidad es privada
+                solicitud=Seguimiento.objects.create(seguidor=usuario,seguido_comunidad=comunidad,estado=estado)
+                # Notificar al administrador (creador)
+                Notificacion.objects.create(
+                    usuario=comunidad.creador,
+                    tipo="PETICION_UNION",
+                    mensaje=f"¡Miau! {usuario.nombre_usuario} quiere unirse a tu comunidad '{comunidad.nombre}'.",
+                    referencia_usuario=usuario,
+                    referencia_comunidad=comunidad,
+                    referencia_id=solicitud.id
+                )
+            else:#si es publica se crea el miembro directamente
+                Miembros_comunidades.objects.create(usuario=usuario,comunidad=comunidad)
+            mensaje = "Te has unido a la comunidad" if comunidad.es_publica else "Solicitud enviada a la comunidad privada"
+            return Response({"mensaje": mensaje, "estado": estado}, status=status.HTTP_201_CREATED)
 
 class ResponderPeticionUnion(APIView):
     """
@@ -106,42 +107,33 @@ class ResponderPeticionUnion(APIView):
 
     def post(self, request, pk):
         try:
-            peticion = Miembros_comunidades.objects.get(pk=pk)
-        except Miembros_comunidades.DoesNotExist:
+            # LAS PETICIONES PENDIENTES ESTÁN EN SEGUIMIENTO
+            peticion = Seguimiento.objects.get(pk=pk)
+        except Seguimiento.DoesNotExist:
             return Response({"error": "La petición no existe"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Verificar que el usuario actual es el creador de la comunidad
-        if peticion.comunidad.creador != request.user:
-            return Response({"error": "No tienes permiso para responder a esta petición"}, status=status.HTTP_403_FORBIDDEN)
+        if peticion.seguida_comunidad.creador != request.user:
+            return Response({"error": "No tienes permiso"}, status=status.HTTP_403_FORBIDDEN)
 
         aceptar = request.data.get('aceptar', False)
         
         if aceptar:
-            peticion.estado_peticion = "ACEPTADO"
-            peticion.save()
-            # Notificar al usuario que su petición fue aceptada
+            # 1. Crear el registro oficial de miembro
+            Miembros_comunidades.objects.get_or_create(
+                usuario=peticion.seguidor,
+                comunidad=peticion.seguida_comunidad
+            )
+            # 2. Notificar y borrar la petición (para no duplicar)
             Notificacion.objects.create(
-                usuario=peticion.usuario,
+                usuario=peticion.seguidor,
                 tipo="PETICION_ACEPTADA",
-                mensaje=f"¡Miau! Has sido aceptado en la comunidad '{peticion.comunidad.nombre}'.",
-                referencia_comunidad=peticion.comunidad
+                mensaje=f"¡Miau! Has sido aceptado en '{peticion.seguida_comunidad.nombre}'.",
+                referencia_comunidad=peticion.seguida_comunidad
             )
+            peticion.delete() # Ya es miembro, no hace falta la solicitud
         else:
-            peticion.estado_peticion = "RECHAZADO"
+            # Si se rechaza, la marcamos como DENEGADO en Seguimiento
+            peticion.estado = "DENEGADO"
             peticion.save()
-            # Notificar al usuario que su petición fue rechazada
-            Notificacion.objects.create(
-                usuario=peticion.usuario,
-                tipo="PETICION_RECHAZADA",
-                mensaje=f"Lo sentimos, tu solicitud para unirte a '{peticion.comunidad.nombre}' ha sido rechazada.",
-                referencia_comunidad=peticion.comunidad
-            )
-
-        # Marcar la notificación original como leída (si existe)
-        Notificacion.objects.filter(
-            usuario=request.user, 
-            tipo="PETICION_UNION", 
-            referencia_id=peticion.id
-        ).update(leida=True)
-
+            
         return Response({"mensaje": "Respuesta enviada"}, status=status.HTTP_200_OK)

@@ -1,8 +1,7 @@
 from django.urls import path
-from .views import RegistroUsuarios, LoginUsuario,SeguimientoUsuarios,DatosUsuarios,RecuperarPassword,GestionPerfiles
+from .views import RegistroUsuarios, LoginUsuario,SeguimientoUsuarios,DatosUsuarios,RecuperarPassword,GestionPerfiles,SeguirPerfil,ResponderPeticionUnion
 
 urlpatterns = [
-    path('',DatosUsuarios.as_view(),name="datos_usuarios"),
     path('registrar/', RegistroUsuarios.as_view(), name="registrar"),
     path('login/', LoginUsuario.as_view(), name="login"),
     path('enviar_solicitud/',SeguimientoUsuarios.as_view(),name="enviar_solicitud"),
@@ -10,7 +9,8 @@ urlpatterns = [
     path('actualizar_solicitud/', SeguimientoUsuarios.as_view(), name='actualizar_solicitud'),
     path('actualizar_usuario/',DatosUsuarios.as_view(),name="actualizar_usuario"),
     path('confirmar/<str:token>/', RegistroUsuarios.as_view()),
-    path('perfiles/', GestionPerfiles.as_view(), name='listar-perfiles'),
-    path('perfiles/<str:nombre_usuario>/', GestionPerfiles.as_view(), name='detalle-perfil'),
-   
+    path('', GestionPerfiles.as_view(), name='listar-perfiles'),
+    path('<str:nombre_usuario>/', SeguirPerfil.as_view(), name='detalle-perfil'),
+    path('<str:nombre_usuario>/solicitud', SeguirPerfil.as_view(), name='seguir-perfil'),
+    path('peticiones/<int:pk>/responder/', ResponderPeticionUnion.as_view(), name='responder-peticion'),
 ]

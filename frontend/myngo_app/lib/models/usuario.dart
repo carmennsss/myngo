@@ -12,6 +12,9 @@ class Usuario {
   final String? biografia;
   final String? urlAvatar;
   final int? puntos;
+  final int numeroSeguidores;
+  final int numeroSeguidos;
+  final String? estadoSeguimiento;
 
   Usuario({
     required this.id,
@@ -25,6 +28,9 @@ class Usuario {
     this.biografia,
     this.urlAvatar,
     this.puntos,
+    this.numeroSeguidores = 0,
+    this.numeroSeguidos = 0,
+    this.estadoSeguimiento,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -42,6 +48,9 @@ class Usuario {
       biografia: json['biografia'],
       urlAvatar: json['url_avatar'],
       puntos: json['puntos'],
+      numeroSeguidores: json['numero_seguidores'] ?? 0,
+      numeroSeguidos: json['numero_seguidos'] ?? 0,
+      estadoSeguimiento: json['estado_seguimiento'],
     );
   }
 }

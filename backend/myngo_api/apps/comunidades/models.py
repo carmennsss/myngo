@@ -34,7 +34,6 @@ class Miembros_comunidades(models.Model):
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE)
     rol=models.CharField(max_length=20,default="Miembro")
-    estado_peticion=models.CharField(max_length=20,default="ACEPTADO")
     fecha_union=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
