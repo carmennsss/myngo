@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../models/comunidad.dart';
-import '../../models/respuesta_api.dart';
 import '../../models/publicacion.dart';
 import '../../models/imagen_galeria.dart';
 import '../../models/sala_chat.dart';
@@ -13,7 +14,6 @@ import '../../providers/post_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-/// Pantalla que muestra los detalles de una comunidad específica.
 class PantallaDetalleComunidad extends StatefulWidget {
   final Comunidad comunidad;
 
@@ -74,13 +74,15 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       setState(() => _estaCargandoPeticion = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(respuesta.mensaje),
-          backgroundColor: respuesta.exito ? Colors.green : Colors.redAccent,
+          content: Text(respuesta.mensaje, style: GoogleFonts.inter()),
+          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
         ),
       );
       if (respuesta.exito) {
-        setState(() { widget.comunidad.esMiembro = true; });
-        _cargarDatosSeccion(0);
+        if (respuesta.datos?['estado'] == 'ACEPTADO') {
+          setState(() { widget.comunidad.esMiembro = true; });
+          _cargarDatosSeccion(0);
+        }
       }
     }
   }
@@ -99,8 +101,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Widget _buildPreview(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF121212),
       body: CustomScrollView(
+        physics: const ClampingScrollPhysics(),
         slivers: [
           _buildSliverAppBar(),
           SliverToBoxAdapter(
@@ -110,7 +113,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeaderInfo(),
-                  const Divider(height: 48, thickness: 1, color: Color(0xFFF1F3F9)),
+                  const Divider(height: 48, thickness: 1, color: Color(0xFF2A2A2A)),
                   _buildAboutSection(),
                   const SizedBox(height: 100),
                 ],
@@ -125,15 +128,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Widget _buildDashboard(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4FF),
+      backgroundColor: const Color(0xFF121212),
       body: NestedScrollView(
+        physics: const ClampingScrollPhysics(),
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           _buildSliverAppBar(isDashboard: true),
           SliverPersistentHeader(
             pinned: true,
             delegate: _SubNavDelegate(
               selectedIndex: _indiceSeccion,
-              onTap: (index) => setState(() => _indiceSeccion = index),
+              onTap: (index) {
+                setState(() => _indiceSeccion = index);
+                _cargarDatosSeccion(index);
+              },
             ),
           ),
         ],
@@ -149,9 +156,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       ),
       floatingActionButton: _indiceSeccion == 0 ? FloatingActionButton.extended(
         onPressed: () => _mostrarDialogoNuevoPost(context),
-        label: const Text('Miau Post', style: TextStyle(fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.add_photo_alternate_rounded),
-        backgroundColor: const Color(0xFF6C63FF),
+        label: Text('Miau Post', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+        icon: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
+        backgroundColor: const Color(0xFFF28B50),
       ) : null,
     );
   }
@@ -166,21 +173,26 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
-          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E1E), 
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32))
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Nueva Publicación 🐾', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              Text('Nueva Publicación 🐾', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 24),
               TextField(
                 controller: controlador,
                 maxLines: 4,
+                style: GoogleFonts.inter(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '¿Qué estás pensando, miau?',
+                  hintStyle: GoogleFonts.inter(color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
+                  fillColor: const Color(0xFF121212),
                 ),
               ),
               const SizedBox(height: 16),
@@ -192,7 +204,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     image: DecorationImage(
-                      image: kIsWeb ? NetworkImage(imagenSeleccionada!.path) as ImageProvider : NetworkImage(imagenSeleccionada!.path), // En móvil XFile.path suele ser path local, pero para web/móvil cruzado mejor usar estrategias según plataforma. Simplificamos para que compile.
+                      image: kIsWeb ? NetworkImage(imagenSeleccionada!.path) as ImageProvider : NetworkImage(imagenSeleccionada!.path),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -204,7 +216,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                       final img = await ImagePicker().pickImage(source: ImageSource.gallery);
                       if (img != null) setModalState(() => imagenSeleccionada = img);
                     },
-                    icon: const Icon(Icons.image_search_rounded, color: Color(0xFF6C63FF)),
+                    icon: const Icon(Icons.image_search_rounded, color: Color(0xFFF29C50)),
                   ),
                   const Spacer(),
                   Consumer<PostProvider>(
@@ -213,27 +225,32 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                         final exito = await provider.crearPost(
                           comunidadId: widget.comunidad.id,
                           texto: controlador.text,
-                          imagen: imagenSeleccionada, // Pasamos XFile directamente
+                          imagen: imagenSeleccionada,
                         );
                         
                         if (exito && mounted) {
                           Navigator.pop(context);
-                          _cargarDatosSeccion(0); // Recargar feed
+                          _cargarDatosSeccion(0);
                         } else if (provider.state == PostState.moderationRejected) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(provider.errorMessage), backgroundColor: Colors.orange.shade800),
+                            SnackBar(content: Text(provider.errorMessage), backgroundColor: const Color(0xFFD95F43)),
                           );
                         }
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C63FF), foregroundColor: Colors.white),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF28B50), 
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
                       child: provider.state == PostState.loading 
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Publicar'),
+                        : Text('Publicar', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -241,14 +258,61 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
+  void _mostrarAjustesComunidad(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Ajustes de Comunidad', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.edit_rounded, color: Color(0xFFF29C50)),
+              title: Text('Editar Información', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+              onTap: () { Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.group_add_rounded, color: Color(0xFFF29C50)),
+              title: Text('Gestionar Peticiones', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+              onTap: () { Navigator.pop(context); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.security_rounded, color: Color(0xFFF29C50)),
+              title: Text('Moderación', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+              onTap: () { Navigator.pop(context); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSliverAppBar({bool isDashboard = false}) {
+    final esCreador = _miId != null && _miId == widget.comunidad.creadorId;
+
     return SliverAppBar(
       expandedHeight: isDashboard ? 200 : 250,
       pinned: true,
-      backgroundColor: const Color(0xFF6C63FF),
+      backgroundColor: const Color(0xFF121212),
+      iconTheme: const IconThemeData(color: Colors.white),
+      actions: [
+        if (isDashboard && esCreador)
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => _mostrarAjustesComunidad(context),
+          ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         title: isDashboard ? Text(widget.comunidad.nombre, 
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)) : null,
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)) : null,
         background: Stack(
           fit: StackFit.expand,
           children: [
@@ -256,22 +320,30 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               ? Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFFE0C3FC), Color(0xFF8EC5FC)],
+                      colors: [Color(0xFF248EA6), Color(0xFFF29C50)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                   ),
                 )
               : Image.network(
-                  widget.comunidad.urlPortada, 
+                  widget.comunidad.urlPortada.startsWith('http') ? widget.comunidad.urlPortada : 'http://127.0.0.1:8000${widget.comunidad.urlPortada}',
                   fit: BoxFit.cover,
                   headers: const {'Access-Control-Allow-Origin': '*'},
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF2A2A2A), Color(0xFF1E1E1E)],
+                      ),
+                    ),
+                    child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                  ),
                 ),
             if (isDashboard)
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.black.withOpacity(0.4), Colors.transparent],
+                    colors: [const Color(0xFF121212), Colors.transparent],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
@@ -293,7 +365,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             Expanded(
               child: Text(
                 widget.comunidad.nombre,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF2D3142)),
+                style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white),
               ),
             ),
             _ChipPrivacidad(esPublica: widget.comunidad.esPublica),
@@ -302,12 +374,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         const SizedBox(height: 16),
         Row(
           children: [
-            const Icon(Icons.person, size: 16, color: Color(0xFF6C63FF)),
+            const Icon(Icons.person, size: 16, color: Color(0xFFF29C50)),
             const SizedBox(width: 8),
-            Text('Por ${widget.comunidad.creadorNombre}', style: const TextStyle(color: Color(0xFF9094A6), fontWeight: FontWeight.bold)),
+            Text('Por ${widget.comunidad.creadorNombre}', style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold)),
             const Spacer(),
-            const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
-            Text(' ${widget.comunidad.ratingMedio}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            const Icon(Icons.star_rounded, color: Color(0xFFF29C50), size: 20),
+            Text(' ${widget.comunidad.ratingMedio.toStringAsFixed(1)}', style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
           ],
         ),
       ],
@@ -318,26 +390,44 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Sobre esta comunidad 🐾', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3142))),
-        const SizedBox(height: 8),
+        Text('Sobre esta comunidad 🐾', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 12),
         Text(
           widget.comunidad.descripcion.isEmpty 
             ? 'Sin descripción todavía.' 
             : widget.comunidad.descripcion,
-          style: TextStyle(fontSize: 15, color: Colors.grey.shade700, height: 1.5),
+          style: GoogleFonts.inter(fontSize: 15, color: Colors.grey.shade400, height: 1.5),
         ),
       ],
     );
   }
 
   Widget _buildJoinButton() {
+    if (_miId == null) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        color: const Color(0xFF121212),
+        child: ElevatedButton(
+          onPressed: () => Navigator.pushNamed(context, '/login'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2A2A2A),
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: Text('INICIA SESIÓN PARA UNIRTE 🐾', 
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
-      color: Colors.white,
+      color: const Color(0xFF121212),
       child: ElevatedButton(
         onPressed: _estaCargandoPeticion ? null : _gestionarMembresia,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF6C63FF),
+          backgroundColor: const Color(0xFFF28B50),
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -345,26 +435,29 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         child: _estaCargandoPeticion
           ? const CircularProgressIndicator(color: Colors.white)
           : Text(widget.comunidad.esPublica ? 'UNIRSE AHORA ✨' : 'SOLICITAR ENTRAR 🐾', 
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-  int _indiceGaleria = 0; // 0: Muro, 1: Colecciones
-
-  // --- SECCIONES DEL DASHBOARD ---
+  int _indiceGaleria = 0; 
 
   Widget _buildPostFeed() {
-    if (_estaCargandoDatos && _publicaciones.isEmpty) return const Center(child: CircularProgressIndicator());
+    if (_estaCargandoDatos && _publicaciones.isEmpty) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     
     return RefreshIndicator(
+      color: const Color(0xFFF28B50),
+      backgroundColor: const Color(0xFF1E1E1E),
       onRefresh: () => _cargarDatosSeccion(0),
       child: _publicaciones.isEmpty 
-        ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.feed_outlined, size: 64, color: Colors.grey.shade300), const SizedBox(height: 16), const Text('Aún no hay publicaciones', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))]))
+        ? _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones')
         : ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             itemCount: _publicaciones.length,
-            itemBuilder: (context, index) => TarjetaPublicacion(publicacion: _publicaciones[index]),
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.only(bottom: 24.0),
+              child: TarjetaPublicacion(publicacion: _publicaciones[index]),
+            ),
           ),
     );
   }
@@ -373,7 +466,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0),
           child: Row(
             children: [
               _buildMiniChip('Muro', _indiceGaleria == 0, () => setState(() => _indiceGaleria = 0)),
@@ -390,26 +483,27 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildGalleryWall() {
-    if (_estaCargandoDatos && _imagenesGaleria.isEmpty) return const Center(child: CircularProgressIndicator());
+    if (_estaCargandoDatos && _imagenesGaleria.isEmpty) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     if (_imagenesGaleria.isEmpty) return _buildEmptyState(Icons.photo_library_outlined, 'No hay fotos todavía');
 
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.8),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.8),
       itemCount: _imagenesGaleria.length,
       itemBuilder: (context, index) {
         final img = _imagenesGaleria[index];
+        final url = img.urlS3.startsWith('http') ? img.urlS3 : 'http://127.0.0.1:8000${img.urlS3}';
         return Container(
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
+          decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF2A2A2A))),
           clipBehavior: Clip.antiAlias,
-          child: Image.network(img.urlS3, fit: BoxFit.cover),
+          child: Image.network(url, fit: BoxFit.cover),
         );
       },
     );
   }
 
   Widget _buildGalleryCollections() {
-    return _buildEmptyState(Icons.folder_open_rounded, 'Crea tu primera colección 文件夹');
+    return _buildEmptyState(Icons.folder_open_rounded, 'Crea tu primera colección');
   }
 
   Widget _buildMiniChip(String label, bool active, VoidCallback onTap) {
@@ -418,45 +512,51 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF6C63FF) : Colors.white,
+          color: active ? const Color(0xFFF28B50) : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: active ? const Color(0xFF6C63FF) : Colors.grey.shade200),
+          border: Border.all(color: active ? const Color(0xFFF28B50) : const Color(0xFF2A2A2A)),
         ),
-        child: Text(label, style: TextStyle(color: active ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+        child: Text(label, style: GoogleFonts.inter(color: active ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
       ),
     );
   }
 
   Widget _buildEmptyState(IconData icon, String message) {
     return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(icon, size: 64, color: Colors.grey.shade300),
+      Icon(icon, size: 64, color: Colors.grey.withOpacity(0.3)),
       const SizedBox(height: 16),
-      Text(message, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+      Text(message, style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold)),
     ]));
   }
 
   Widget _buildStore() {
     return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.purple.shade100),
+      Icon(Icons.shopping_bag_outlined, size: 80, color: const Color(0xFFF2D0BD).withOpacity(0.3)),
       const SizedBox(height: 16),
-      const Text('Próximamente: Tienda de Aspectos 🎨', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16)),
+      Text('Próximamente: Tienda de Aspectos 🎨', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16)),
     ]));
   }
 
   Widget _buildChat() {
-    if (_estaCargandoDatos && _salasChat.isEmpty) return const Center(child: CircularProgressIndicator());
+    if (_estaCargandoDatos && _salasChat.isEmpty) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _salasChat.length + 2, // General + Salas + Header
+      padding: const EdgeInsets.all(24),
+      itemCount: _salasChat.length + 2, 
       itemBuilder: (context, index) {
         if (index == 0) return _buildChatHeader();
         if (index == 1) return _buildGeneralChatTile();
         final sala = _salasChat[index - 2];
         return ListTile(
-          leading: CircleAvatar(backgroundColor: Colors.grey.shade100, child: const Icon(Icons.tag, color: Colors.grey)),
-          title: Text(sala.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-          trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          leading: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.tag, color: Colors.grey),
+          ),
+          title: Text(sala.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+          trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
           onTap: () {},
         );
       },
@@ -465,17 +565,18 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Widget _buildGeneralChatTile() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [const Color(0xFF6C63FF).withOpacity(0.1), Colors.white]),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFFF28B50).withOpacity(0.4)),
       ),
       child: ListTile(
-        leading: const CircleAvatar(backgroundColor: Color(0xFF6C63FF), child: Icon(Icons.forum_rounded, color: Colors.white, size: 18)),
-        title: const Text('Chat General ✨', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF6C63FF))),
-        subtitle: const Text('¡Habla con toda la comunidad!'),
-        trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF6C63FF)),
+        contentPadding: const EdgeInsets.all(16),
+        leading: const CircleAvatar(backgroundColor: Color(0xFFF28B50), child: Icon(Icons.forum_rounded, color: Colors.white, size: 20)),
+        title: Text('Chat General ✨', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white)),
+        subtitle: Text('¡Habla con toda la comunidad!', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)),
+        trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFF28B50)),
         onTap: () {},
       ),
     );
@@ -483,12 +584,16 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Widget _buildChatHeader() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.only(bottom: 24.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Salas de Chat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          TextButton.icon(onPressed: () {}, icon: const Icon(Icons.add_circle_outline, size: 20), label: const Text('Crear Sala')),
+          Text('Salas de Chat', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          TextButton.icon(
+            onPressed: () {}, 
+            icon: const Icon(Icons.add_circle_outline, size: 20, color: Color(0xFF248EA6)), 
+            label: Text('Crear Sala', style: GoogleFonts.inter(color: const Color(0xFF248EA6), fontWeight: FontWeight.bold))
+          ),
         ],
       ),
     );
@@ -504,8 +609,8 @@ class _SubNavDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Colors.white,
-      height: 60,
+      color: const Color(0xFF121212),
+      height: 70,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -520,24 +625,30 @@ class _SubNavDelegate extends SliverPersistentHeaderDelegate {
 
   Widget _buildItem(int index, IconData icon, String label) {
     final active = selectedIndex == index;
+    final color = active ? const Color(0xFFF28B50) : Colors.grey;
     return GestureDetector(
       onTap: () => onTap(index),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: active ? const Color(0xFF6C63FF) : Colors.grey, size: 24),
-          Text(label, style: TextStyle(color: active ? const Color(0xFF6C63FF) : Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
-          if (active)
-            Container(margin: const EdgeInsets.only(top: 4), height: 2, width: 20, color: const Color(0xFF6C63FF)),
-        ],
+      child: Container(
+        color: Colors.transparent, // expand tap area
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 4),
+            Text(label, style: GoogleFonts.inter(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            if (active)
+              Container(height: 3, width: 24, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+          ],
+        ),
       ),
     );
   }
 
   @override
-  double get maxExtent => 60;
+  double get maxExtent => 70;
   @override
-  double get minExtent => 60;
+  double get minExtent => 70;
   @override
   bool shouldRebuild(covariant _SubNavDelegate oldDelegate) => oldDelegate.selectedIndex != selectedIndex;
 }
@@ -551,7 +662,7 @@ class _ChipPrivacidad extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: esPublica ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+        color: esPublica ? const Color(0xFF248EA6).withOpacity(0.15) : const Color(0xFFD95F43).withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -560,15 +671,15 @@ class _ChipPrivacidad extends StatelessWidget {
           Icon(
             esPublica ? Icons.visibility_rounded : Icons.lock_rounded,
             size: 14,
-            color: esPublica ? Colors.green : Colors.orange,
+            color: esPublica ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Text(
             esPublica ? 'Pública' : 'Privada',
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w900,
-              color: esPublica ? Colors.green : Colors.orange,
+              color: esPublica ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
             ),
           ),
         ],

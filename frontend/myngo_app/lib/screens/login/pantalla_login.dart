@@ -37,14 +37,13 @@ class _PantallaLoginState extends State<PantallaLogin> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFE0C3FC),
-                Color(0xFF8EC5FC),
+                Color(0xFF1A1A1A),
+                Color(0xFF121212),
               ],
             ),
           ),
           child: Center(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: ConstrainedBox(
@@ -211,7 +210,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pushReplacementNamed(context, '/inicio');
+        Navigator.pushReplacementNamed(context, '/redesign');
       } else {
         setState(() {
           _estadoGatos = EstadoMonstruo.triste;
@@ -250,11 +249,11 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.5),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -280,7 +279,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                     '¡Hola de nuevo!',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2D3142),
+                      color: Colors.white,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -288,7 +287,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                   Text(
                     'Inicia sesión para continuar',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF9094A6),
+                      color: Colors.grey,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -343,7 +342,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                                 });
                               }
                             },
-                            activeColor: const Color(0xFF6C63FF),
+                            activeColor: const Color(0xFFF28B50),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -362,7 +361,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                           Navigator.pushNamed(context, '/recuperar_contrasena');
                         },
                         style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF6C63FF),
+                          foregroundColor: const Color(0xFFF28B50),
                         ),
                         child: const Text('¿Olvidaste tu contraseña?'),
                       ),
@@ -393,7 +392,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                           Navigator.pushNamed(context, '/registro');
                         },
                         style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF6C63FF),
+                          foregroundColor: const Color(0xFFF28B50),
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                         ),
                         child: const Text(

@@ -33,14 +33,13 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFE0C3FC), // Morado Pastel
-                Color(0xFF8EC5FC), // Azul Pastel
+                Color(0xFF1A1A1A),
+                Color(0xFF121212),
               ],
             ),
           ),
           child: Center(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: ConstrainedBox(
@@ -274,7 +273,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                         }
                       : null, // Deshabilitado si no aceptó
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6C63FF),
+                    backgroundColor: const Color(0xFFF28B50),
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('Continuar'),
@@ -348,11 +347,11 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     return Container(
       decoration: BoxDecoration(
         // Lavanda muy suave — diferente al blanco puro del login
-        color: const Color(0xFFF7F4FF),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6C63FF).withOpacity(0.12),
+            color: Colors.black.withOpacity(0.5),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -381,7 +380,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                     '¡Únete a Myngo!',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF2D3142),
+                          color: Colors.white,
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -389,7 +388,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                   Text(
                     'Crea tu cuenta para empezar',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF9094A6),
+                          color: Colors.grey,
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -462,11 +461,11 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF6C63FF), Color(0xFF5A52D5)],
+                        colors: [Color(0xFFF28B50), Color(0xFFF29C50)],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6C63FF).withOpacity(0.3),
+                          color: const Color(0xFFF28B50).withOpacity(0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 5),
                         ),
@@ -509,7 +508,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                           Navigator.pushReplacementNamed(context, '/login');
                         },
                         style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF6C63FF),
+                          foregroundColor: const Color(0xFFF28B50),
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                         ),
                         child: const Text(

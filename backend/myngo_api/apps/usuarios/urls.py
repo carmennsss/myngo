@@ -8,6 +8,8 @@ urlpatterns = [
   path('recuperar-password/', RecuperarPassword.as_view(), name='recuperar-password'),
     path('actualizar_solicitud/', SeguimientoUsuarios.as_view(), name='actualizar_solicitud'),
     path('actualizar_usuario/',DatosUsuarios.as_view(),name="actualizar_usuario"),
+    path('datos/', DatosUsuarios.as_view(), name="listar_datos_usuarios"),
+    path('datos/<int:usuario_id>/', DatosUsuarios.as_view(), name="detalle_datos_usuario"),
     path('confirmar/<str:token>/', RegistroUsuarios.as_view()),
     path('', GestionPerfiles.as_view(), name='listar-perfiles'),
     path('<str:nombre_usuario>/', SeguirPerfil.as_view(), name='detalle-perfil'),

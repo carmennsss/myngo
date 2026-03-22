@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import random
 import string
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 
 signer = TimestampSigner()
@@ -208,6 +208,8 @@ class SeguimientoUsuarios(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
 class DatosUsuarios(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
     def get(self,request,usuario_id=None):
         if usuario_id:
             usuario=Usuario.objects.get(id=usuario_id)
@@ -270,7 +272,8 @@ class GestionPerfiles(generics.ListCreateAPIView):
     serializer_class = PerfilSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['usuario__nombre_usuario']
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    authentication_classes = []
 class SeguirPerfil(APIView):
     permission_classes = [IsAuthenticated]
     def post(self,request,nombre_usuario):

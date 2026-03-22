@@ -94,8 +94,8 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
         left: 24,
         right: 24,
       ),
-      decoration: BoxDecoration(
-        color: Colors.white,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1E1E1E),
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Form(
@@ -106,7 +106,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
           children: [
             Text(
               'Nueva Comunidad 🐾',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D3142)),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24),
@@ -117,9 +117,9 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
               child: Container(
                 height: 120,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: const Color(0xFF121212),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey.shade200, style: BorderStyle.solid),
+                  border: Border.all(color: const Color(0xFF2A2A2A)),
                   image: _imagenSeleccionada != null
                       ? DecorationImage(
                           image: kIsWeb 
@@ -133,9 +133,9 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined, size: 40, color: Color(0xFF6C63FF)),
-                          SizedBox(height: 8),
-                          Text('Añadir foto de portada', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Icon(Icons.add_photo_alternate_outlined, size: 40, color: Color(0xFFF28B50)),
+                          const SizedBox(height: 8),
+                          Text('Añadir foto de portada', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                         ],
                       )
                     : null,
@@ -164,25 +164,26 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
             
             Container(
               decoration: BoxDecoration(
-                color: Color(0xFFF7F4FF),
+                color: const Color(0xFF121212),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _esPublica ? const Color(0xFF248EA6).withOpacity(0.3) : const Color(0xFFD95F43).withOpacity(0.3)),
               ),
               child: SwitchListTile(
                 title: Text(
                   _esPublica ? 'Comunidad Pública 🌍' : 'Comunidad Privada 🔒',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                 ),
                 subtitle: Text(
                   _esPublica ? 'Cualquier miau puede unirse libremente' : 'Solo con invitación o solicitud aceptada',
-                  style: TextStyle(fontSize: 12),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 secondary: Icon(
                   _esPublica ? Icons.pets_rounded : Icons.lock_person_rounded,
-                  color: Color(0xFF6C63FF),
+                  color: _esPublica ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
                 ),
                 value: _esPublica,
                 onChanged: (v) => setState(() => _esPublica = v),
-                activeColor: Color(0xFF6C63FF),
+                activeColor: const Color(0xFF248EA6),
               ),
             ),
             SizedBox(height: 24),

@@ -24,7 +24,7 @@ def check_membership():
         miembros = Miembros_comunidades.objects.filter(comunidad=comunidad)
         print(f"\nMiembros/Peticiones ({miembros.count()}):")
         for m in miembros:
-            print(f"- Usuario: {m.usuario.nombre_usuario} ({m.usuario.email}), Estado: {m.estado_peticion}, Rol: {m.rol}")
+            print(f"- Usuario: {m.usuario.nombre_usuario} ({m.usuario.email}), Rol: {m.rol}")
             
     except Comunidad.DoesNotExist:
         print(f"Comunidad {comunidad_id} no existe.")
@@ -61,7 +61,6 @@ def create_test_communities():
                 usuario=usuario,
                 comunidad=comunidad,
                 rol="Administrador",
-                estado_peticion="ACEPTADO"
             )
         else:
             print(f"Ya existe: {comunidad.nombre}")

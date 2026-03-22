@@ -30,6 +30,9 @@ class ServicioUsuarios {
           // Guardamos también el ID del usuario para comparaciones locales
           if (datosJson.containsKey('datos') && datosJson['datos']['id'] != null) {
             await prefs.setInt('usuario_id', datosJson['datos']['id']);
+            if (datosJson['datos']['nombre_usuario'] != null) {
+              await prefs.setString('nombre_usuario', datosJson['datos']['nombre_usuario']);
+            }
           }
         }
 
@@ -142,10 +145,54 @@ class ServicioUsuarios {
     }
   }
 
+  /// Obtiene el nombre del usuario logueado.
+  Future<String?> obtenerNombreUsuario() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('nombre_usuario');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Obtiene la lista pública de usuarios registrados.
+  Future<RespuestaApi<List<Usuario>>> listarUsuarios() async {
+    try {
+      final respuesta = await http.get(Uri.parse('$_urlBase/datos/'));
+      if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson['datos'] ?? [];
+        final usuarios = lista.map((js) => Usuario.fromJson(js)).toList();
+        return RespuestaApi(exito: true, mensaje: 'OK', datos: usuarios);
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al listar usuarios');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene los datos de un usuario concreto por su ID.
+  Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int id) async {
+    try {
+      final respuesta = await http.get(Uri.parse('$_urlBase/datos/$id/'));
+      if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+        return RespuestaApi.fromJson(
+          datosJson,
+          transformador: (json) => Usuario.fromJson(json),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener datos del usuario');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Cierra la sesión borrando el token y el ID.
   Future<void> cerrarSesion() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('usuario_id');
+    await prefs.remove('nombre_usuario');
   }
 }

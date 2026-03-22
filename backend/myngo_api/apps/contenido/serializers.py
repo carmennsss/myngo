@@ -3,12 +3,13 @@ from .models import Publicacion, Imagenes_galeria, Coleccion, Imagenes_en_colecc
 
 class PublicacionSerializer(serializers.ModelSerializer):
     autor_nombre = serializers.ReadOnlyField(source='autor.nombre_usuario')
+    comunidad_nombre = serializers.ReadOnlyField(source='comunidad.nombre')
 
     class Meta:
         model = Publicacion
         fields = [
-            'id', 'autor', 'autor_nombre', 'comunidad', 'titulo', 
-            'contenido_texto', 'url_archivo_s3', 'relacion_aspecto', 
+            'id', 'autor', 'autor_nombre', 'comunidad', 'comunidad_nombre',
+            'titulo', 'contenido_texto', 'url_archivo_s3', 'relacion_aspecto', 
             'fecha_creacion'
         ]
 

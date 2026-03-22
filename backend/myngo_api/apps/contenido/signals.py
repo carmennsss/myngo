@@ -18,7 +18,7 @@ def procesar_publicacion(sender, instance, created, **kwargs):
             Imagenes_galeria.objects.create(
                 propietario=instance.autor,
                 comunidad=instance.comunidad,
-                url_s3=instance.url_archivo_s3,
+                url_s3=instance.url_archivo_s3.name,
                 relacion_aspecto=instance.relacion_aspecto,
                 es_publica=True
             )

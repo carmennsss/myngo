@@ -3,6 +3,7 @@ class Publicacion {
   final int autorId;
   final String autorNombre;
   final int comunidadId;
+  final String comunidadNombre;
   final String titulo;
   final String contenidoTexto;
   final String urlArchivoS3;
@@ -15,6 +16,7 @@ class Publicacion {
     required this.autorId,
     required this.autorNombre,
     required this.comunidadId,
+    required this.comunidadNombre,
     required this.titulo,
     required this.contenidoTexto,
     required this.urlArchivoS3,
@@ -29,6 +31,7 @@ class Publicacion {
       autorId: json['autor'],
       autorNombre: json['autor_nombre'] ?? 'Anónimo',
       comunidadId: json['comunidad'] ?? 0,
+      comunidadNombre: json['comunidad_nombre'] ?? 'General',
       titulo: json['titulo'] ?? '',
       contenidoTexto: json['contenido_texto'] ?? '',
       urlArchivoS3: json['url_archivo_s3'] ?? '',

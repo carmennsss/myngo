@@ -35,16 +35,14 @@ class Usuario {
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
     return Usuario(
-      id: json['id'],
-      nombreUsuario: json['nombre_usuario'],
-      email: json['email'],
+      id: json['id'] ?? 0,
+      nombreUsuario: json['nombre_usuario'] ?? 'Desconocido',
+      email: json['email'] ?? '',
       contrasena: json['contrasena'],
-      // Solo se puede votar a usuarios y comunidades verificadas 
       esVerificado: json['es_verificado'] ?? false, 
-      esPublico: json['es_publico'] ?? true, // Por defecto público si no existe
-      // Rating basado en puntuación diaria de 0 a 5 
-      ratingActual: double.parse(json['rating_actual'].toString()), 
-      fechaRegistro: DateTime.parse(json['fecha_registro']),
+      esPublico: json['es_publico'] ?? true, 
+      ratingActual: json['rating_actual'] != null ? double.parse(json['rating_actual'].toString()) : 0.0, 
+      fechaRegistro: json['fecha_registro'] != null ? DateTime.parse(json['fecha_registro']) : DateTime.now(),
       biografia: json['biografia'],
       urlAvatar: json['url_avatar'],
       puntos: json['puntos'],

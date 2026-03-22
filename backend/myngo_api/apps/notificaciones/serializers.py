@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Notificacion
+from usuarios.models import Seguimiento
 
 class NotificacionSerializer(serializers.ModelSerializer):
     nombre_generador = serializers.ReadOnlyField(source='referencia_usuario.nombre_usuario')
@@ -16,16 +17,10 @@ class NotificacionSerializer(serializers.ModelSerializer):
 
     def get_estado_peticion(self, obj):
         if obj.tipo == 'PETICION_UNION':
-            if obj.referencia_comunidad:
-                from comunidades.models import Miembros_comunidades
-                try:
-                    return Miembros_comunidades.objects.get(pk=obj.referencia_id).estado_peticion
-                except Exception:
-                    return "INEXISTENTE"
-            elif obj.referencia_usuario:
-                from usuarios.models import Seguimiento
-                try:
-                    return Seguimiento.objects.get(pk=obj.referencia_id).estado
-                except Exception:
-                    return "INEXISTENTE"
+            
+            try:
+                # Tanto para comunidad como para usuario, la petición está en Seguimiento
+                return Seguimiento.objects.get(pk=obj.referencia_id).estado
+            except Exception:
+                return "INEXISTENTE"
         return None

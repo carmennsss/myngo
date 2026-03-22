@@ -20,11 +20,10 @@ class ComunidadSerializer(serializers.ModelSerializer):
     def get_es_miembro(self, obj):
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
-            # Es miembro si existe en la tabla y está aceptado
+            # Es miembro si existe en la tabla
             return Miembros_comunidades.objects.filter(
                 usuario=request.user, 
-                comunidad=obj, 
-                estado_peticion="ACEPTADO"
+                comunidad=obj
             ).exists()
         return False
 

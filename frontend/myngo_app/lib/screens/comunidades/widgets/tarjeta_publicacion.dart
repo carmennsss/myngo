@@ -1,84 +1,115 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/publicacion.dart';
 import 'package:intl/intl.dart';
 
 class TarjetaPublicacion extends StatelessWidget {
   final Publicacion publicacion;
-
-  const TarjetaPublicacion({super.key, required this.publicacion});
+  final VoidCallback? alPresionar;
+  
+  const TarjetaPublicacion({super.key, required this.publicacion, this.alPresionar});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1E1E1E), // Dark card background
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        border: Border.all(color: const Color(0xFF2A2A2A)), // Subtle border
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Cabecera: Autor e Info
+          // ── Header (User Info) ──────────────────────────────────
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                CircleAvatar(backgroundColor: Colors.purple.shade50, child: const Icon(Icons.person, color: Color(0xFF6C63FF))),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(publicacion.autorNombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    Text(DateFormat('dd MMM · HH:mm').format(publicacion.fechaCreacion), style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                  ],
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF248EA6).withOpacity(0.2), // Teal bg
+                  radius: 20,
+                  child: const Icon(Icons.person, color: Color(0xFF248EA6)), // Teal icon
                 ),
-                const Spacer(),
-                IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz_rounded, color: Colors.grey)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        publicacion.autorNombre?.isNotEmpty == true ? publicacion.autorNombre! : 'Usuario ${publicacion.autorId}',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        'hace 2 h', // Placeholder temporal
+                        style: GoogleFonts.inter(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.more_horiz, color: Colors.grey),
+                  onPressed: () {},
+                ),
               ],
             ),
           ),
 
-          // Título y Texto
+          // ── Content (Text) ──────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (publicacion.titulo.isNotEmpty)
-                  Text(publicacion.titulo, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF2D3142))),
-                const SizedBox(height: 8),
-                Text(publicacion.contenidoTexto, style: TextStyle(color: Colors.grey.shade700, height: 1.4)),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Imagen/Multimedia
-          if (publicacion.urlArchivoS3.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
-              clipBehavior: Clip.antiAlias,
-              child: AspectRatio(
-                aspectRatio: publicacion.relacionAspecto > 0 ? publicacion.relacionAspecto : 16 / 9,
-                child: Image.network(publicacion.urlArchivoS3, fit: BoxFit.cover),
+            child: Text(
+              publicacion.contenidoTexto?.isNotEmpty == true ? publicacion.contenidoTexto! : publicacion.titulo,
+              style: GoogleFonts.inter(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 15,
+                height: 1.5,
               ),
             ),
+          ),
+          const SizedBox(height: 12),
 
-          // Acciones (Likes, Comentarios)
+          // ── Content (Image if exists) ───────────────────────────
+          if (publicacion.urlArchivoS3.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  publicacion.urlArchivoS3.startsWith('http') ? publicacion.urlArchivoS3 : 'http://127.0.0.1:8000${publicacion.urlArchivoS3}',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 150,
+                    color: const Color(0xFF121212),
+                    child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                  ),
+                ),
+              ),
+            )
+          else
+            const SizedBox(height: 8),
+
+          // ── Interaction Row ─────────────────────────────────────
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                _buildAction(Icons.favorite_border_rounded, '12', Colors.redAccent),
-                const SizedBox(width: 16),
-                _buildAction(Icons.chat_bubble_outline_rounded, '4', Colors.blueAccent),
+                _buildInteractionButton(Icons.favorite_rounded, '0', const Color(0xFFD95F43)), // Rust red
+                const SizedBox(width: 24),
+                _buildInteractionButton(Icons.chat_bubble_outline_rounded, '0', Colors.grey),
                 const Spacer(),
-                const Icon(Icons.share_outlined, color: Colors.grey, size: 20),
+                _buildInteractionButton(Icons.send_rounded, '', Colors.grey),
+                const SizedBox(width: 16),
+                _buildInteractionButton(Icons.bookmark_border_rounded, '', Colors.grey),
               ],
             ),
           ),
@@ -87,12 +118,21 @@ class TarjetaPublicacion extends StatelessWidget {
     );
   }
 
-  Widget _buildAction(IconData icon, String label, Color color) {
+  Widget _buildInteractionButton(IconData icon, String count, Color color) {
     return Row(
       children: [
-        Icon(icon, size: 22, color: Colors.grey.shade600),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+        Icon(icon, size: 20, color: color),
+        if (count.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Text(
+            count,
+            style: GoogleFonts.inter(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ],
     );
   }

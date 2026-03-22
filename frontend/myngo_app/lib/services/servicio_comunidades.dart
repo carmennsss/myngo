@@ -138,6 +138,23 @@ class ServicioComunidades {
 
   // --- MÉTODOS DE CONTENIDO Y MENSAJERÍA ---
 
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGlobales({String ordering = '-fecha_creacion'}) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('${_urlContenido}publicaciones/?ordering=$ordering'),
+        headers: await _getHeaders(),
+      );
+      if (respuesta.statusCode == 200) {
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
+        return RespuestaApi(exito: true, datos: lista.map((p) => Publicacion.fromJson(p)).toList(), mensaje: 'Feed global cargado');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicaciones(int comunidadId, {String ordering = '-fecha_creacion'}) async {
     try {
       final respuesta = await http.get(
@@ -145,8 +162,9 @@ class ServicioComunidades {
         headers: await _getHeaders(),
       );
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(respuesta.body);
-        return RespuestaApi(exito: true, datos: datos.map((p) => Publicacion.fromJson(p)).toList(), mensaje: 'Publicaciones cargadas');
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
+        return RespuestaApi(exito: true, datos: lista.map((p) => Publicacion.fromJson(p)).toList(), mensaje: 'Publicaciones cargadas');
       }
       return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
     } catch (e) {

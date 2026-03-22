@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../models/comunidad.dart';
 
-/// Tarjeta compacta y divertida para mostrar una comunidad.
+// Tarjeta con diseño Dark y paleta dinámica para comunidades
 class TarjetaComunidad extends StatelessWidget {
   final Comunidad comunidad;
   final VoidCallback alPresionar;
@@ -13,12 +14,11 @@ class TarjetaComunidad extends StatelessWidget {
   });
 
   static const List<List<Color>> _paletas = [
-    [Color(0xFFE0C3FC), Color(0xFF8EC5FC)],
-    [Color(0xFFFBC2EB), Color(0xFFA6C1EE)],
-    [Color(0xFF84FAB0), Color(0xFF8FD3F4)],
-    [Color(0xFFA1C4FD), Color(0xFFC2E9FB)],
-    [Color(0xFFFFD1FF), Color(0xFFFAD0C4)],
-    [Color(0xFFFDEB71), Color(0xFFF8D800)],
+    [Color(0xFF248EA6), Color(0xFF1A6B7D)],
+    [Color(0xFFF29C50), Color(0xFFC77A38)],
+    [Color(0xFFF28B50), Color(0xFFC46A36)],
+    [Color(0xFFD95F43), Color(0xFFA6452E)],
+    [Color(0xFF248EA6), Color(0xFFD95F43)],
   ];
 
   @override
@@ -32,15 +32,9 @@ class TarjetaComunidad extends StatelessWidget {
         builder: (context, constraints) {
           return Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF1E1E1E), // Fondo oscuro para la tarjeta
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6C63FF).withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              border: Border.all(color: const Color(0xFF2A2A2A)), 
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
@@ -53,16 +47,16 @@ class TarjetaComunidad extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // Imagen o gradiente de fondo
+                        // Imagen o gradiente
                         tieneImagen
                             ? Image.network(
-                                comunidad.urlPortada,
+                                comunidad.urlPortada.startsWith('http') ? comunidad.urlPortada : 'http://127.0.0.1:8000${comunidad.urlPortada}',
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => _GradientePlaceholder(paleta: paleta),
                               )
                             : _GradientePlaceholder(paleta: paleta),
 
-                        // Degradado oscuro en la parte inferior para el texto
+                        // Degradado oscuro para fundirse con la zona de texto
                         Positioned(
                           bottom: 0,
                           left: 0,
@@ -75,51 +69,50 @@ class TarjetaComunidad extends StatelessWidget {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withOpacity(0.3),
+                                  const Color(0xFF1E1E1E).withOpacity(0.9), // Matching card background
                                 ],
                               ),
                             ),
                           ),
                         ),
 
-                        // Badge privacidad arriba-derecha
+                        // Badge privacidad
                         Positioned(
                           top: 8,
                           right: 8,
                           child: Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.92),
+                              color: const Color(0xFF121212).withOpacity(0.8),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               comunidad.esPublica
                                   ? Icons.public_rounded
                                   : Icons.lock_rounded,
-                              size: 12,
+                              size: 14,
                               color: comunidad.esPublica
-                                  ? const Color(0xFF6C63FF)
-                                  : Colors.orange,
+                                  ? const Color(0xFF248EA6) // Teal
+                                  : const Color(0xFFD95F43), // Rust
                             ),
                           ),
                         ),
 
-                        // Rating abajo-izquierda
+                        // Rating
                         if (comunidad.ratingMedio > 0)
                           Positioned(
                             bottom: 6,
                             left: 8,
                             child: Row(
                               children: [
-                                const Icon(Icons.star_rounded, color: Colors.amber, size: 12),
-                                const SizedBox(width: 2),
+                                const Icon(Icons.star_rounded, color: Color(0xFFF29C50), size: 14),
+                                const SizedBox(width: 4),
                                 Text(
-                                  '${comunidad.ratingMedio}',
-                                  style: const TextStyle(
+                                  comunidad.ratingMedio.toStringAsFixed(1),
+                                  style: GoogleFonts.inter(
                                     color: Colors.white,
-                                    fontSize: 11,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    shadows: [Shadow(blurRadius: 2)],
                                   ),
                                 ),
                               ],
@@ -129,23 +122,22 @@ class TarjetaComunidad extends StatelessWidget {
                     ),
                   ),
 
-                  // ── Nombre y creador ──────────────────────────
+                  // ── Nombre y Creador ──────────────────────────
                   Expanded(
-                    flex: 4,
+                    flex: 5,
                     child: Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      color: const Color(0xFF1E1E1E),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             comunidad.nombre,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: Color(0xFF2D3142),
-                              letterSpacing: -0.2,
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.white,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -153,38 +145,38 @@ class TarjetaComunidad extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             '🐾 ${comunidad.creadorNombre}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF9094A6),
-                              fontWeight: FontWeight.w500,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.grey,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          const Spacer(),
                           if (comunidad.esMiembro || (comunidad.creadorId != null && comunidad.creadorId == comunidad.id)) ...[
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF9B8BFC), Color(0xFF6C63FF)],
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF28B50),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'ENTRAR',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'ENTRAR',
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(width: 2),
-                                  Icon(Icons.auto_awesome, size: 10, color: Colors.white),
-                                ],
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -219,8 +211,8 @@ class _GradientePlaceholder extends StatelessWidget {
       child: Center(
         child: Icon(
           Icons.pets_rounded,
-          size: 36,
-          color: Colors.white.withOpacity(0.55),
+          size: 40,
+          color: Colors.white.withOpacity(0.3),
         ),
       ),
     );

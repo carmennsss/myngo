@@ -34,26 +34,33 @@ class ResponderSolicitudUnion(APIView):
         # Flujo Comunidad
         if notificacion.referencia_comunidad:
             try:
-                peticion = Miembros_comunidades.objects.get(pk=notificacion.referencia_id)
-            except Miembros_comunidades.DoesNotExist:
+                # Las peticiones de unión están en Seguimiento
+                peticion = Seguimiento.objects.get(pk=notificacion.referencia_id)
+            except Seguimiento.DoesNotExist:
                 return Response({"error": "Petición no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
             if accion == "ACEPTAR":
-                peticion.estado_peticion = "ACEPTADO"
+                peticion.estado = "ACEPTADO"
                 peticion.save()
-                mensaje_notif = f"¡Miau! Tu solicitud para unirte a '{peticion.comunidad.nombre}' ha sido aceptada. ✨"
+                # Crear el registro oficial de miembro
+                Miembros_comunidades.objects.get_or_create(
+                    usuario=peticion.seguidor,
+                    comunidad=peticion.seguida_comunidad
+                )
+                mensaje_notif = f"¡Miau! Tu solicitud para unirte a '{peticion.seguida_comunidad.nombre}' ha sido aceptada. ✨"
             elif accion == "RECHAZAR":
-                peticion.delete()
-                mensaje_notif = f"Lo sentimos, tu solicitud para unirte a '{peticion.comunidad.nombre}' ha sido rechazada. 🐾"
+                peticion.estado = "DENEGADO"
+                peticion.save()
+                mensaje_notif = f"Lo sentimos, tu solicitud para unirte a '{peticion.seguida_comunidad.nombre}' ha sido rechazada. 🐾"
             else:
                 return Response({"error": "Acción no válida"}, status=status.HTTP_400_BAD_REQUEST)
 
             # Notificar al usuario solicitante
             Notificacion.objects.create(
-                usuario=peticion.usuario,
+                usuario=peticion.seguidor,
                 tipo="RESPUESTA_PETICION",
                 mensaje=mensaje_notif,
-                referencia_comunidad=peticion.comunidad
+                referencia_comunidad=peticion.seguida_comunidad
             )
 
         # Flujo Usuario Privado

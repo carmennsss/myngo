@@ -27,7 +27,7 @@ class DocumentosUtilidad(APIView):
 
 class PublicacionList(generics.ListAPIView):
     serializer_class = PublicacionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ['fecha_creacion']
 
@@ -40,20 +40,29 @@ class PublicacionList(generics.ListAPIView):
         qs = Publicacion.objects.filter(es_valido_ia=True)
         
         if comunidad_id:
-            comunidad = Comunidad.objects.get(id=comunidad_id)
+            try:
+                comunidad = Comunidad.objects.get(id=comunidad_id)
+            except Comunidad.DoesNotExist:
+                return Publicacion.objects.none()
+
             if not comunidad.es_publica:
-                # Verificar membresía aceptada
-                es_miembro = Seguimiento.objects.filter(
-                    seguidor=user, 
-                    seguida_comunidad=comunidad, 
-                    estado='ACEPTADO'
-                ).exists()
-                if not es_miembro and comunidad.creador != user:
+                if user.is_authenticated:
+                    # Verificar membresía aceptada
+                    es_miembro = Seguimiento.objects.filter(
+                        seguidor=user, 
+                        seguida_comunidad=comunidad, 
+                        estado='ACEPTADO'
+                    ).exists()
+                    if not es_miembro and comunidad.creador != user:
+                        return Publicacion.objects.none()
+                else:
+                    # Usuario anónimo no puede ver comunidad privada
                     return Publicacion.objects.none()
             
             return qs.filter(comunidad_id=comunidad_id).order_by('-fecha_creacion')
         
-        return Publicacion.objects.none()
+        # Feed Global: últimas publicaciones de comunidades públicas
+        return qs.filter(comunidad__es_publica=True).order_by('-fecha_creacion')
 
 class PublicacionCreate(generics.CreateAPIView):
     serializer_class = PublicacionSerializer

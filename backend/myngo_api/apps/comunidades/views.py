@@ -1,13 +1,12 @@
 from rest_framework import generics, filters, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from .models import Comunidad, Miembros_comunidades
 from usuarios.models import Seguimiento
 from .serializers import ComunidadSerializer, MiembroComunidadSerializer
 from notificaciones.models import Notificacion
 from django.db import models
-
 class ComunidadListCreate(generics.ListCreateAPIView):
     """
     Vista para listar todas las comunidades o crear una nueva.
@@ -17,7 +16,8 @@ class ComunidadListCreate(generics.ListCreateAPIView):
     serializer_class = ComunidadSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['nombre', 'descripcion']
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    authentication_classes = []
 
     def perform_create(self, serializer):
         # El creador es siempre el usuario logueado
