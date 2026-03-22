@@ -13,7 +13,7 @@ import random
 import string
 from rest_framework.permissions import IsAuthenticated
 from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
-
+from django.core.cache import cache
 signer = TimestampSigner()
 class RegistroUsuarios(APIView):
     """
@@ -120,20 +120,22 @@ class RegistroUsuarios(APIView):
             return HttpResponse("<h1>Enlace caducado o inválido.</h1>", status=400)
 
 class LoginUsuario(APIView):
-    """
-    Vista para gestionar la autenticación de usuarios.
-    """
     def post(self, request):
-        """
-        Valida las credenciales del usuario (email y contraseña).
-        
-        En caso de éxito, devuelve la información básica del usuario.
-        En caso de error, devuelve un mensaje descriptivo y el código HTTP correspondiente.
-        """
         email = request.data.get('email')
-        # Buscamos tanto 'password' (nuevo) como 'contrasena' (antiguo) por robustez
         password = request.data.get('password') or request.data.get('contrasena')
+        
+        # 1. Clave de intentos
+        key = f"login_attempts:{email}"
+        
+        # 2. Obtener intentos 
+        intentos = cache.get(key, 0)
 
+        if intentos >= 3:
+            return Response({
+                "exito": False,
+                "mensaje": "Cuenta bloqueada temporalmente por seguridad. Inténtalo más tarde (máx. 1 hora)."
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         if not email or not password:
             return Response({
                 "exito": False,
@@ -143,6 +145,9 @@ class LoginUsuario(APIView):
         try:
             usuario = Usuario.objects.get(email=email)
             if usuario.check_password(password): 
+                # SI EL LOGIN ES CORRECTO -> REINICIAMOS INTENTOS
+                cache.delete(key) # Borrar rastro al acertar
+                
                 from rest_framework.authtoken.models import Token
                 token, _ = Token.objects.get_or_create(user=usuario)
                 
@@ -153,17 +158,22 @@ class LoginUsuario(APIView):
                     "token": token.key,
                     "datos": serializer.data
                 }, status=status.HTTP_200_OK)
-            else:
+            else: 
+                # FALLO DE CONTRASEÑA
+                intentos += 1
+                cache.set(key, intentos, timeout=3600)
+                
+                restantes = 3 - intentos
                 return Response({
                     "exito": False,
-                    "mensaje": "Contraseña incorrecta"
+                    "mensaje": f"Contraseña incorrecta. Te quedan {restantes} intentos."
                 }, status=status.HTTP_401_UNAUTHORIZED)
+
         except Usuario.DoesNotExist:
             return Response({
                 "exito": False,
                 "mensaje": "Usuario no encontrado"
             }, status=status.HTTP_404_NOT_FOUND)
-        
 class SeguimientoUsuarios(APIView):
     def post(self,request):
         serializer=SeguimientoSerializer(data=request.data)
