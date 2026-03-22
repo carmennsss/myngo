@@ -21,10 +21,27 @@ class PerfilSerializer(serializers.ModelSerializer):
     es_verificado = serializers.BooleanField(source='usuario.es_verificado', read_only=True)
     rating_actual = serializers.FloatField(source='usuario.rating_actual', read_only=True)
     fecha_registro = serializers.DateTimeField(source='usuario.fecha_registro', read_only=True)
+    numero_seguidores = serializers.SerializerMethodField()
+    numero_seguidos = serializers.SerializerMethodField()
+    estado_seguimiento = serializers.SerializerMethodField()
 
     class Meta:
         model = Perfil
         fields = '__all__'
+
+    def get_numero_seguidores(self, obj):
+        return obj.usuario.seguidores.filter(estado='ACEPTADO').count()
+
+    def get_numero_seguidos(self, obj):
+        return obj.usuario.siguiendo.filter(estado='ACEPTADO').count()
+
+    def get_estado_seguimiento(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            seguimiento = obj.usuario.seguidores.filter(seguidor=request.user).first()
+            if seguimiento:
+                return seguimiento.estado
+        return None
 
 class SeguimientoSerializer(serializers.ModelSerializer):
     class Meta:

@@ -273,9 +273,9 @@ class GestionPerfiles(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 class SeguirPerfil(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self,request,id):
+    def post(self,request,nombre_usuario):
         try:
-            perfil=Perfil.objects.get(id=id)
+            perfil=Perfil.objects.get(usuario__nombre_usuario=nombre_usuario)
         except Perfil.DoesNotExist:
              return Response({"error": "El perfil no existe"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -308,6 +308,49 @@ class SeguirPerfil(APIView):
             mensaje = "Has seguido a este perfil" if perfil.es_publico else "Solicitud enviada a al perfil"
             return Response({"mensaje": mensaje, "estado": seguimiento.estado}, status=status.HTTP_201_CREATED)
             
+class ResponderPeticionUnion(APIView):
+    """
+    Permite al administrador de una comunidad aceptar o rechazar una petición de unión.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            # LAS PETICIONES PENDIENTES ESTÁN EN SEGUIMIENTO
+            peticion = Seguimiento.objects.get(pk=pk)
+        except Seguimiento.DoesNotExist:
+            return Response({"error": "La petición no existe"}, status=status.HTTP_404_NOT_FOUND)
+
+        if peticion.seguido_usuario!= request.user:
+            return Response({"error": "No tienes permiso"}, status=status.HTTP_403_FORBIDDEN)
+
+        aceptar = request.data.get('aceptar', False)
+        
+        if aceptar:
+            # 1. Crear el registro oficial de miembro
+            peticion.estado="ACEPTADO"
+            peticion.save()
+            # 2. Notificar y borrar la petición (para no duplicar)
+            Notificacion.objects.create(
+                usuario=peticion.seguidor,
+                tipo="PETICION_ACEPTADA",
+                mensaje=f"¡Miau! El usuario '{peticion.seguido_usuario.nombre_usuario}' ha aceptado la solicitud de amistad.",
+                referencia_usuario=peticion.seguido_usuario
+            )
+        else:
+            # Si se rechaza, la marcamos como DENEGADO en Seguimiento
+            peticion.estado = "DENEGADO"
+            peticion.save()
+            
+        # 3. Marcar la notificación original de esta petición como leída
+        from notificaciones.models import Notificacion as NotifModelo
+        NotifModelo.objects.filter(
+            usuario=request.user, 
+            tipo="PETICION_UNION", 
+            referencia_id=peticion.id
+        ).update(leida=True)
+            
+        return Response({"mensaje": "Respuesta enviada"}, status=status.HTTP_200_OK)
 
 class RecuperarPassword(APIView):
     """

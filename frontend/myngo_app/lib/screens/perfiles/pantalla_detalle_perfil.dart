@@ -1,15 +1,96 @@
 import 'package:flutter/material.dart';
 import '../../models/usuario.dart';
+import '../../services/servicio_perfiles.dart';
+import '../../services/servicio_usuarios.dart';
 import 'package:intl/intl.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
-class PantallaDetallePerfil extends StatelessWidget {
+class PantallaDetallePerfil extends StatefulWidget {
   final Usuario usuario;
-
   const PantallaDetallePerfil({super.key, required this.usuario});
 
   @override
+  State<PantallaDetallePerfil> createState() => _PantallaDetallePerfilState();
+}
+
+class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
+  int? _currentUserId;
+  bool _isLoading = false;
+  String? _estadoSeguimiento;
+
+  @override
+  void initState() {
+    super.initState();
+    _estadoSeguimiento = widget.usuario.estadoSeguimiento;
+    _cargarUsuario();
+  }
+
+  Future<void> _cargarUsuario() async {
+    final id = await ServicioUsuarios().obtenerIdUsuario();
+    if (mounted) {
+      setState(() => _currentUserId = id);
+    }
+  }
+
+  Future<void> _enviarSolicitud() async {
+    setState(() => _isLoading = true);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final respuesta = await ServicioPerfiles().enviarSolicitud(widget.usuario.nombreUsuario);
+    
+    if (mounted) {
+      if (respuesta.exito) {
+        setState(() {
+          _estadoSeguimiento = respuesta.datos; // Puede ser null si se dejó de seguir
+        });
+      }
+      setState(() => _isLoading = false);
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(respuesta.mensaje),
+          backgroundColor: respuesta.exito ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _manejarPulsacionBoton() async {
+    if (_estadoSeguimiento == 'ACEPTADO' || _estadoSeguimiento == 'SOLICITUD') {
+      // Preguntar antes de dejar de seguir o cancelar
+      final bool? confirmar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('¿Estás seguro?'),
+          content: Text(_estadoSeguimiento == 'ACEPTADO' 
+            ? '¿Quieres dejar de seguir a @${widget.usuario.nombreUsuario}?' 
+            : '¿Quieres cancelar la solicitud enviada a @${widget.usuario.nombreUsuario}?'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Sí, desenlazar', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (confirmar != true) return;
+    }
+    await _enviarSolicitud();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final usuario = widget.usuario;
     final inicial = usuario.nombreUsuario.isNotEmpty 
         ? usuario.nombreUsuario[0].toUpperCase() 
         : '?';
@@ -108,6 +189,34 @@ class PantallaDetallePerfil extends StatelessWidget {
                       _ChipPrivacidad(esPublica: usuario.esPublico),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  // Seguidores y Seguidos
+                  Row(
+                    children: [
+                      Text(
+                        '${usuario.numeroSeguidores}',
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF2D3142)),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text('Seguidores', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      const SizedBox(width: 20),
+                      Text(
+                        '${usuario.numeroSeguidos}',
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF2D3142)),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text('Siguiendo', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (_currentUserId != null && _currentUserId != usuario.id)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        height: 36,
+                        child: _construirBotonAccion(usuario),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   
                   // Fila de Info (Rating, Fecha, Puntos)
@@ -199,37 +308,49 @@ class PantallaDetallePerfil extends StatelessWidget {
           ),
         ],
       ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          // TODO: Añadir lógica a este botón en el futuro
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6C63FF),
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-          ),
-          child: Text(
-            usuario.esPublico ? 'SEGUIR ✨' : 'SOLICITAR SEGUIMIENTO 🐾',
-            style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
-          ),
-        ),
+    );
+  }
+
+  Widget _construirBotonAccion(Usuario usuario) {
+    String texto;
+    IconData icono;
+    Color colorFondo;
+    Color colorTexto = Colors.white;
+
+    if (_estadoSeguimiento == 'ACEPTADO') {
+      texto = 'Siguiendo';
+      icono = Icons.person_remove_rounded;
+      colorFondo = Colors.grey.shade200;
+      colorTexto = const Color(0xFF2D3142);
+    } else if (_estadoSeguimiento == 'SOLICITUD') {
+      texto = 'Pendiente';
+      icono = Icons.cancel_rounded;
+      colorFondo = Colors.grey.shade200;
+      colorTexto = const Color(0xFF2D3142);
+    } else {
+      // No le sigue o fue denegado
+      texto = usuario.esPublico ? 'Seguir' : 'Solicitar';
+      icono = usuario.esPublico ? Icons.person_add_alt_1_rounded : Icons.lock_person_rounded;
+      colorFondo = const Color(0xFF6C63FF);
+    }
+
+    return ElevatedButton.icon(
+      onPressed: _isLoading ? null : _manejarPulsacionBoton,
+      icon: Icon(icono, size: 18, color: colorTexto),
+      label: Text(
+        texto,
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: colorTexto),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorFondo,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
 }
+
 
 // Chip Auxiliar de Privacidad
 class _ChipPrivacidad extends StatelessWidget {
