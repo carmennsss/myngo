@@ -36,6 +36,12 @@ ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'tabla_cache_myngo',
+    }
+}
 
 # Application definition
 
