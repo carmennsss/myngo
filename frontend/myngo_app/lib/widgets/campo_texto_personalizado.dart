@@ -73,13 +73,16 @@ class _CampoTextoPersonalizadoState extends State<CampoTextoPersonalizado> {
       maxLines: widget.maxLineas,
       minLines: widget.minLineas,
       autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: widget.etiqueta,
-        prefixIcon: Icon(widget.icono),
+        labelStyle: const TextStyle(color: Colors.grey),
+        prefixIcon: Icon(widget.icono, color: Colors.grey),
         suffixIcon: widget.esContrasena
             ? IconButton(
                 icon: Icon(
                   _textoOculto ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
                 ),
                 onPressed: () {
                   setState(() {
@@ -93,22 +96,22 @@ class _CampoTextoPersonalizadoState extends State<CampoTextoPersonalizado> {
             : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 2),
+          borderSide: const BorderSide(color: Color(0xFFF28B50), width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.redAccent),
+          borderSide: const BorderSide(color: Color(0xFFD95F43)),
         ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: const Color(0xFF121212),
       ),
     );
   }

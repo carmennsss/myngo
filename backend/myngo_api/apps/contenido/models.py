@@ -8,7 +8,7 @@ class Publicacion(models.Model):
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True, blank=True)
     titulo=models.CharField(max_length=200,null=True, blank=True)
     contenido_texto=models.TextField(null=True, blank=True)
-    url_archivo_s3=models.CharField(max_length=500)
+    url_archivo_s3=models.ImageField(upload_to='publicaciones/archivos/', max_length=500, null=True, blank=True)
     relacion_aspecto=models.FloatField(default=1.0)
     es_valido_ia=models.BooleanField(default=True)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
@@ -18,7 +18,7 @@ class Imagenes_galeria(models.Model):
         db_table = 'imagenes_galeria'
     propietario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE)
-    url_s3=models.CharField(max_length=500)
+    url_s3=models.ImageField(upload_to='galeria/', max_length=500)
     relacion_aspecto=models.FloatField(default=1.0)
     es_publica=models.BooleanField(default=True)
     fecha_subida=models.DateTimeField(auto_now_add=True)

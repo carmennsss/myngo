@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_perfiles.dart';
@@ -62,8 +63,8 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(respuesta.mensaje),
-          backgroundColor: respuesta.exito ? Colors.green : Colors.redAccent,
+          content: Text(respuesta.mensaje, style: GoogleFonts.inter()),
+          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
         ),
       );
       if (respuesta.exito) _cargarNotificaciones();
@@ -73,21 +74,24 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4FF),
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('Notificaciones 🔔', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Notificaciones 🔔', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: const Color(0xFF2D3142),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _estaCargando
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6C63FF)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
           : _notificaciones.isEmpty
               ? _buildEmptyState()
               : RefreshIndicator(
+                  color: const Color(0xFFF28B50),
+                  backgroundColor: const Color(0xFF1E1E1E),
                   onRefresh: _cargarNotificaciones,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
                     itemCount: _notificaciones.length,
                     itemBuilder: (context, index) => _TarjetaNotificacion(
                       notificacion: _notificaciones[index],
@@ -103,13 +107,13 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_none_rounded, size: 80, color: Colors.grey.shade300),
+          Icon(Icons.notifications_none_rounded, size: 80, color: Colors.grey.withOpacity(0.3)),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Todo tranquilo por aquí...',
-            style: TextStyle(color: Color(0xFF9094A6), fontWeight: FontWeight.bold, fontSize: 16),
+            style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          const Text('Vuelve más tarde para ver tus avisos.', style: TextStyle(color: Colors.grey)),
+          Text('Vuelve más tarde para ver tus avisos.', style: GoogleFonts.inter(color: Colors.grey.shade600)),
         ],
       ),
     );
@@ -128,18 +132,14 @@ class _TarjetaNotificacion extends StatelessWidget {
     final bool esPeticion = notificacion.tipo == 'PETICION_UNION' && notificacion.estadoPeticion == 'SOLICITUD';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: notificacion.leida ? Colors.white.withOpacity(0.6) : Colors.white,
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6C63FF).withOpacity(notificacion.leida ? 0.02 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(
+          color: notificacion.leida ? const Color(0xFF2A2A2A) : const Color(0xFFF28B50).withOpacity(0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,23 +147,24 @@ class _TarjetaNotificacion extends StatelessWidget {
           Row(
             children: [
               _buildIcon(),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       notificacion.mensaje,
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontWeight: notificacion.leida ? FontWeight.normal : FontWeight.bold,
-                        color: const Color(0xFF2D3142),
+                        color: Colors.white,
                         fontSize: 14,
+                        height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       DateFormat('dd MMM, HH:mm').format(notificacion.fechaNotificacion),
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -172,24 +173,26 @@ class _TarjetaNotificacion extends StatelessWidget {
           ),
           if (esPeticion) ...[
             const SizedBox(height: 16),
+            const Divider(color: Color(0xFF2A2A2A), height: 1),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
                   onPressed: () => alResponder(false),
-                  style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                  child: const Text('Rechazar'),
+                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF2D0BD)), // Peach for decline
+                  child: Text('Rechazar', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: () => alResponder(true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6C63FF),
+                    backgroundColor: const Color(0xFFF28B50), // Vibrant orange for accept
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  child: const Text('Aceptar 🐾'),
+                  child: Text('Aceptar 🐾', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -206,15 +209,15 @@ class _TarjetaNotificacion extends StatelessWidget {
     switch (notificacion.tipo) {
       case 'PETICION_UNION':
         icon = Icons.person_add_rounded;
-        color = const Color(0xFF6C63FF);
+        color = const Color(0xFFF29C50); // Orange/Yellowish
         break;
       case 'PETICION_ACEPTADA':
         icon = Icons.celebration_rounded;
-        color = Colors.green;
+        color = const Color(0xFF248EA6); // Teal
         break;
       case 'PETICION_RECHAZADA':
         icon = Icons.error_outline_rounded;
-        color = Colors.redAccent;
+        color = const Color(0xFFD95F43); // Rust
         break;
       default:
         icon = Icons.notifications_rounded;
@@ -222,10 +225,11 @@ class _TarjetaNotificacion extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: const Color(0xFF121212),
         shape: BoxShape.circle,
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Icon(icon, size: 20, color: color),
     );

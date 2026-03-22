@@ -70,14 +70,13 @@ class _PantallaRecuperarContrasenaState
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFFE0C3FC),
-              Color(0xFF8EC5FC),
+              Color(0xFF1A1A1A),
+              Color(0xFF121212),
             ],
           ),
         ),
         child: Center(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: ConstrainedBox(
@@ -88,11 +87,11 @@ class _PantallaRecuperarContrasenaState
                     position: _slideAnim,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFF1E1E1E),
                         borderRadius: BorderRadius.circular(32),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withOpacity(0.5),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -117,8 +116,8 @@ class _PantallaRecuperarContrasenaState
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
                                     colors: [
-                                      Color(0xFF9B8BFC),
-                                      Color(0xFF6C63FF),
+                                      Color(0xFFF28B50),
+                                      Color(0xFFF29C50),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -126,7 +125,7 @@ class _PantallaRecuperarContrasenaState
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF6C63FF)
+                                      color: const Color(0xFFF28B50)
                                           .withOpacity(0.35),
                                       blurRadius: 18,
                                       offset: const Offset(0, 8),
@@ -148,7 +147,7 @@ class _PantallaRecuperarContrasenaState
                                     .headlineMedium
                                     ?.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF2D3142),
+                                      color: Colors.white,
                                     ),
                                 textAlign: TextAlign.center,
                               ),
@@ -161,7 +160,7 @@ class _PantallaRecuperarContrasenaState
                                     .textTheme
                                     .bodyMedium
                                     ?.copyWith(
-                                      color: const Color(0xFF9094A6),
+                                      color: Colors.grey,
                                       height: 1.5,
                                     ),
                                 textAlign: TextAlign.center,
@@ -211,7 +210,7 @@ class _PantallaRecuperarContrasenaState
                                   ),
                                   label: const Text('Volver al inicio de sesión'),
                                   style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFF6C63FF),
+                                    foregroundColor: const Color(0xFFF28B50),
                                   ),
                                 ),
                               ),

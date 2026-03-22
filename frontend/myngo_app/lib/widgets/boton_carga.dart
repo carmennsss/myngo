@@ -33,11 +33,11 @@ class BotonCarga extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: const LinearGradient(
-              colors: [Color(0xFF6C63FF), Color(0xFF5A52D5)],
+              colors: [Color(0xFFF28B50), Color(0xFFF29C50)],
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6C63FF).withOpacity(0.3),
+                color: const Color(0xFFF28B50).withOpacity(0.3),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
