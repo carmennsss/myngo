@@ -26,11 +26,11 @@ class ServicioPerfiles {
       final respuesta = await http.get(uri, headers: await _getHeaders());
 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        final List<dynamic> listaJson = datosJson['datos'] ?? [];
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> listaJson = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         return RespuestaApi(
           exito: true,
-          mensaje: datosJson['mensaje'] ?? 'Perfiles cargados',
+          mensaje: 'Perfiles cargados',
           datos: listaJson.map((j) => Usuario.fromJson(j)).toList(),
         );
       }

@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from .serializers import UsuarioSerializer,SeguimientoSerializer,PerfilSerializer
 from .models import Usuario,Seguimiento,Perfil
+from notificaciones.models import Notificacion
 from rest_framework.response import Response
 from rest_framework import status,generics,filters
 from rest_framework.views import APIView
@@ -268,9 +269,45 @@ class GestionPerfiles(generics.ListCreateAPIView):
     queryset = Perfil.objects.all().order_by('-fecha_actualizacion')
     serializer_class = PerfilSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['usuario.nombre_usuario']
+    search_fields = ['usuario__nombre_usuario']
     permission_classes = [IsAuthenticated]
+class SeguirPerfil(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self,request,id):
+        try:
+            perfil=Perfil.objects.get(id=id)
+        except Perfil.DoesNotExist:
+             return Response({"error": "El perfil no existe"}, status=status.HTTP_404_NOT_FOUND)
 
+        usuario=request.user
+        if perfil.usuario == usuario:
+            return Response({"error": "No puedes seguirte a ti mismo"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        seguimiento=Seguimiento.objects.filter(seguidor=usuario,seguido_usuario=perfil.usuario).first()
+        if seguimiento:#Si existe
+            if seguimiento.estado == "SOLICITUD":#si esta en solcitud
+                return Response({"mensaje":"Ya has mandado una solcitud a este usuario"},status=status.HTTP_200_OK)
+            elif seguimiento.estado == "DENEGADO":#Si esta denegado se vuelve a enviar
+                seguimiento.estado="SOLICITUD"
+                seguimiento.save()
+                return Response({"mensaje": "Solicitud reintentada", "estado": seguimiento.estado}, status=status.HTTP_200_OK)
+            else:#Si esta aceptado deja de seguir
+                seguimiento.delete()
+                return Response({"mensaje":"Has dejado de seguir a este usuario"}, status=status.HTTP_200_OK)
+        else:#Si no existe
+            estado = "ACEPTADO" if perfil.es_publico else "SOLICITUD"
+            seguimiento=Seguimiento.objects.create(seguidor=usuario,seguido_usuario=perfil.usuario,estado=estado)
+            if not perfil.es_publico and seguimiento.estado == "SOLICITUD":
+                notificacion=Notificacion.objects.create(
+                usuario=perfil.usuario,
+                tipo="PETICION_UNION",
+                mensaje=f"¡Miau! {usuario.nombre_usuario} quiere seguirte.",
+                referencia_usuario=usuario,
+                referencia_id=seguimiento.id
+            )
+            mensaje = "Has seguido a este perfil" if perfil.es_publico else "Solicitud enviada a al perfil"
+            return Response({"mensaje": mensaje, "estado": seguimiento.estado}, status=status.HTTP_201_CREATED)
+            
 
 class RecuperarPassword(APIView):
     """
