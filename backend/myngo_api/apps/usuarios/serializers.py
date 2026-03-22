@@ -16,6 +16,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class PerfilSerializer(serializers.ModelSerializer):
+    nombre_usuario = serializers.CharField(source='usuario.nombre_usuario', read_only=True)
+    email = serializers.EmailField(source='usuario.email', read_only=True)
+    es_verificado = serializers.BooleanField(source='usuario.es_verificado', read_only=True)
+    rating_actual = serializers.FloatField(source='usuario.rating_actual', read_only=True)
+    fecha_registro = serializers.DateTimeField(source='usuario.fecha_registro', read_only=True)
+
     class Meta:
         model = Perfil
         fields = '__all__'

@@ -54,6 +54,7 @@ class Perfil(models.Model):
         ],
         help_text="Los puntos no pueden exceder los 5,000."
     )
+    es_publico=models.BooleanField(default=True)
     fecha_actualizacion=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

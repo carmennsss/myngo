@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../models/respuesta_api.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_perfiles.dart';
+import 'pantalla_detalle_perfil.dart';
 
 class PantallaPerfiles extends StatefulWidget {
   const PantallaPerfiles({super.key});
@@ -131,14 +133,12 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
                             ),
                             trailing: const Icon(Icons.chevron_right, color: Color(0xFFB0B3C6)),
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Navegando a /perfiles/${usuario.nombreUsuario}'),
-                                  backgroundColor: const Color(0xFF6C63FF),
-                                  behavior: SnackBarBehavior.floating,
-                                )
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PantallaDetallePerfil(usuario: usuario),
+                                ),
                               );
-                              // TODO: Añadir Navigator.push a PantallaDetallePerfil(nombreUsuario: usuario.nombreUsuario)
                             },
                           ),
                         );
