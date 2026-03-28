@@ -24,7 +24,7 @@ urlpatterns = [
     path('comunidades/', include('comunidades.urls')),
     path('notificaciones/', include('notificaciones.urls')),
     path('documentos/', include('contenido.urls')),
-    
+
     path('contenido/', include('contenido.urls')),
     path('mensajeria/', include('mensajeria.urls')),
 ]
