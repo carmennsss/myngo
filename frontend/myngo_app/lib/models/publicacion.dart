@@ -6,7 +6,7 @@ class Publicacion {
   final String comunidadNombre;
   final String titulo;
   final String contenidoTexto;
-  final String urlArchivoS3;
+  final String? urlImagen;     // URL de la imagen en galería (puede ser null si es solo texto)
   final double relacionAspecto;
   final bool esValidoIa;
   final DateTime fechaCreacion;
@@ -19,7 +19,7 @@ class Publicacion {
     required this.comunidadNombre,
     required this.titulo,
     required this.contenidoTexto,
-    required this.urlArchivoS3,
+    this.urlImagen,
     required this.relacionAspecto,
     this.esValidoIa = true,
     required this.fechaCreacion,
@@ -34,7 +34,7 @@ class Publicacion {
       comunidadNombre: json['comunidad_nombre'] ?? 'General',
       titulo: json['titulo'] ?? '',
       contenidoTexto: json['contenido_texto'] ?? '',
-      urlArchivoS3: json['url_archivo_s3'] ?? '',
+      urlImagen: json['url_imagen'] as String?,
       relacionAspecto: (json['relacion_aspecto'] ?? 1.0).toDouble(),
       fechaCreacion: DateTime.parse(json['fecha_creacion']),
     );

@@ -158,7 +158,12 @@ class ServicioUsuarios {
   /// Obtiene la lista pública de usuarios registrados.
   Future<RespuestaApi<List<Usuario>>> listarUsuarios() async {
     try {
-      final respuesta = await http.get(Uri.parse('$_urlBase/datos/'));
+      final token = await obtenerToken();
+      final uri = Uri.parse('$_urlBase/datos/');
+      final respuesta = await http.get(
+        uri,
+        headers: token != null ? {'Authorization': 'Token $token'} : null,
+      );
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson['datos'] ?? [];

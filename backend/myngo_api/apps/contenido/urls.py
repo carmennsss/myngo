@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PublicacionList, PublicacionCreate, PublicacionDetail, GaleriaList,DocumentosUtilidad
+from .views import PublicacionList, PublicacionCreate, PublicacionDetail, GaleriaList,DocumentosUtilidad,InicioGaleria
 
 urlpatterns = [
     path('publicaciones/', PublicacionList.as_view(), name='publicacion-list'),
@@ -7,4 +7,5 @@ urlpatterns = [
     path('publicaciones/<int:pk>/', PublicacionDetail.as_view(), name='publicacion-detail'),
     path('galeria/', GaleriaList.as_view(), name='galeria-list'),
     path('reglas_comunidad/',DocumentosUtilidad.as_view(),name="reglas_comunidad"),
+    path('inicio_galeria/',InicioGaleria.as_view(),name="inicio_galeria"),
 ]

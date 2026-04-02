@@ -219,7 +219,7 @@ class SeguimientoUsuarios(APIView):
         
 class DatosUsuarios(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []
+    
     def get(self,request,usuario_id=None):
         if usuario_id:
             usuario=Usuario.objects.get(id=usuario_id)
@@ -237,6 +237,10 @@ class DatosUsuarios(APIView):
                 },status=status.HTTP_404_NOT_FOUND)
         else:
             usuarios=Usuario.objects.all()
+            # EXCLUIR AL USUARIO LOGUEADO
+            if request.user and request.user.is_authenticated:
+                usuarios = usuarios.exclude(id=request.user.id)
+                
             if usuarios:
                 serializer=UsuarioSerializer(usuarios,many=True)
                 return Response({
@@ -275,15 +279,24 @@ class DatosUsuarios(APIView):
 
 class GestionPerfiles(generics.ListCreateAPIView):
     """
-    ESta clase sirve para listar todas los perfiles o crear uno nuevo.
+    Esta clase sirve para listar todos los perfiles o crear uno nuevo.
+    Excluye al propio usuario para no poder seguirse a sí mismo.
     Soporta búsqueda por nombre.
     """
-    queryset = Perfil.objects.all().order_by('-fecha_actualizacion')
     serializer_class = PerfilSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['usuario__nombre_usuario']
     permission_classes = [IsAuthenticatedOrReadOnly]
-    authentication_classes = []
+    
+    def get_queryset(self):
+        # Obtenemos todos los perfiles
+        perfiles = Perfil.objects.all().order_by('-fecha_actualizacion')
+        
+        # Si el usuario está autenticado, excluimos su propio perfil
+        if self.request.user and self.request.user.is_authenticated:
+            perfiles = perfiles.exclude(usuario=self.request.user)
+            
+        return perfiles
 class SeguirPerfil(APIView):
     permission_classes = [IsAuthenticated]
     def post(self,request,nombre_usuario):
@@ -384,13 +397,9 @@ class RecuperarPassword(APIView):
         try:
             usuario = Usuario.objects.get(email=email)
             
-            # Generamos un código simple de 6 caracteres para el TFG
             codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
             
-            # En un sistema real, guardaríamos este código en DB asociado al usuario
-            # Por ahora, para demostrar la funcionalidad, simularemos el cambio
-            # o simplemente informaremos al usuario. 
-            # Para que sea "real", vamos a actualizar su contraseña al código temporal.
+           
             usuario.set_password(codigo)
             usuario.save()
 

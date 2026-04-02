@@ -40,6 +40,7 @@ class PostProvider with ChangeNotifier {
     required int comunidadId,
     required String texto,
     dynamic imagen,
+    String? etiquetas,
   }) async {
     _state = PostState.loading;
     notifyListeners();
@@ -51,6 +52,7 @@ class PostProvider with ChangeNotifier {
         comunidadId: comunidadId,
         texto: texto,
         imagen: imagen,
+        etiquetas: etiquetas,
       );
 
       if (res.exito) {

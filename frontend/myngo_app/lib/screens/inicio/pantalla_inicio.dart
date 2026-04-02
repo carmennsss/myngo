@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
-import '../comunidades/pantalla_comunidades.dart';
-import '../comunidades/pantalla_detalle_comunidad.dart';
-import '../comunidades/widgets/tarjeta_comunidad.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../models/comunidad.dart';
+import '../../models/publicacion.dart';
+import '../../models/imagen_galeria.dart';
+import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
-import '../../services/servicio_usuarios.dart';
+import '../../services/servicio_inicio.dart';
+import '../comunidades/pantalla_comunidades.dart';
+import '../comunidades/pantalla_detalle_comunidad.dart';
 import '../notificaciones/pantalla_notificaciones.dart';
-import '../perfiles/pantalla_perfiles.dart';
+import '../perfiles/pantalla_perfil_usuario.dart';
 
+// --- MAIN SCREEN ---
 class PantallaInicio extends StatefulWidget {
   const PantallaInicio({super.key});
 
@@ -17,122 +25,652 @@ class PantallaInicio extends StatefulWidget {
 }
 
 class _PantallaInicioState extends State<PantallaInicio> {
+  bool _estaLogueado = false;
+  int? _miId;
+  String? _miNombre;
+  List<Comunidad> _misComunidades = [];
+  bool _cargandoInicial = true;
   int _indiceSeleccionado = 0;
+  int _notifCount = 0;
+  static bool _sesionComprobada = false; 
 
-  final List<Widget> _vistas = [
-    const _SeccionMisComunidades(), // Índice 0
-    const PantallaComunidades(),    // Índice 1
-    const PantallaPerfiles(),       // Índice 2
-    const PantallaNotificaciones(), // Índice 3
-    const Center(child: Text('Mensajes Privados', style: TextStyle(fontSize: 24))), // Índice 4
-    const Center(child: Text('Mi Perfil y Puntos', style: TextStyle(fontSize: 24))), // Índice 5
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _inicializarDatos();
+  }
 
-  void _alPulsar(int index) => setState(() => _indiceSeleccionado = index);
+  Future<void> _inicializarDatos() async {
+    final prefs = await SharedPreferences.getInstance();
+    final recordarme = prefs.containsKey('recordar_email');
+    
+    final servicioUsuarios = ServicioUsuarios();
+    
+    // Eliminada la destrucción agresiva de sesión para no romper Web al recargar (F5)
+
+    final token = await servicioUsuarios.obtenerToken();
+    if (token != null) {
+      _estaLogueado = true;
+      _miId = await servicioUsuarios.obtenerIdUsuario();
+      _miNombre = await servicioUsuarios.obtenerNombreUsuario();
+      final resComunidades = await ServicioComunidades().listarComunidadesPropias();
+      if (resComunidades.exito) {
+        _misComunidades = resComunidades.datos ?? [];
+      }
+      _notifCount = await ServicioNotificaciones().obtenerConteoNoLeidas();
+    }
+    if (mounted) {
+      setState(() {
+        _cargandoInicial = false;
+      });
+    }
+  }
+
+  void _alPulsarNav(int index) {
+      // Proteger notificaciones y mensajes si no está logueado
+      if ((index == 2 || index == 3) && !_estaLogueado) {
+          Navigator.pushNamed(context, '/login');
+          return;
+      }
+      setState(() { _indiceSeleccionado = index; });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_cargandoInicial) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF121212), 
+        body: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
+      );
+    }
+
+    final List<Widget> vistasCentrales = [
+      const FeedGaleria(),
+      const PantallaComunidades(), // Explorar Comunidades
+      const PantallaNotificaciones(), // Notificaciones
+      const Center(child: Text('Mensajes Privados', style: TextStyle(color: Colors.white, fontSize: 24))), // Mensajes
+    ];
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4FF),
-      appBar: _BarraMyngo(
-        indiceSeleccionado: _indiceSeleccionado,
-        alPulsar: _alPulsar,
+      backgroundColor: const Color(0xFF121212),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 800;
+
+          return Row(
+            children: [
+              // 20% Sidebar Derecho (Oculto en móvil)
+              if (!isMobile)
+                SizedBox(
+                  width: 250,
+                  child: SidebarIzquierdo(
+                    estaLogueado: _estaLogueado,
+                    comunidades: _misComunidades,
+                    indiceSeleccionado: _indiceSeleccionado,
+                    onNavSelected: _alPulsarNav,
+                  ),
+                ),
+
+              // 55% Feed Central
+              Expanded(
+                flex: 5,
+                child: Column(
+                  children: [
+                    TopBar(estaLogueado: _estaLogueado, nombreUsuario: _miNombre, miId: _miId),
+                    Expanded(
+                      child: IndexedStack(
+                        index: _indiceSeleccionado,
+                        children: vistasCentrales,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 25% Lateral Derecho (Oculto en pantallas medianas/pequeñas)
+              if (constraints.maxWidth > 1100 && _indiceSeleccionado == 0)
+                const SizedBox(
+                  width: 320, 
+                  child: LateralDerecho(),
+                ),
+            ],
+          );
+        },
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 260),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        child: KeyedSubtree(
-          key: ValueKey<int>(_indiceSeleccionado),
-          child: _vistas[_indiceSeleccionado],
+    );
+  }
+}
+
+// --- SIDEBAR IZQUIERDO ---
+class SidebarIzquierdo extends StatelessWidget {
+  final bool estaLogueado;
+  final List<Comunidad> comunidades;
+  final int indiceSeleccionado;
+  final ValueChanged<int> onNavSelected;
+
+  const SidebarIzquierdo({
+    super.key,
+    required this.estaLogueado,
+    required this.comunidades,
+    required this.indiceSeleccionado,
+    required this.onNavSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF1E1E1E),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Text(
+              'MYNGO',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF248EA6), // Teal para el Logo MYNGO
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+          _NavItem(icon: Icons.home_filled, title: 'Inicio', isActive: indiceSeleccionado == 0, onTap: () => onNavSelected(0)),
+          _NavItem(icon: Icons.explore_rounded, title: 'Explorar', isActive: indiceSeleccionado == 1, onTap: () => onNavSelected(1)),
+          _NavItem(icon: Icons.notifications_rounded, title: 'Notificaciones', isActive: indiceSeleccionado == 2, onTap: () => onNavSelected(2)),
+          _NavItem(icon: Icons.mail_rounded, title: 'Mensajes', isActive: indiceSeleccionado == 3, onTap: () => onNavSelected(3)),
+          
+          if (estaLogueado) ...[
+            const SizedBox(height: 40),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Text(
+                'MIS COMUNIDADES',
+                style: GoogleFonts.inter(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: comunidades.isEmpty 
+               ? Center(child: Text('Nada por aquí 🐾', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)))
+               : ListView.builder(
+                physics: const ClampingScrollPhysics(),
+                itemCount: comunidades.length,
+                itemBuilder: (context, index) {
+                  final c = comunidades[index];
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => PantallaDetalleComunidad(comunidad: c)),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: _ComunidadItem(
+                      name: c.nombre, 
+                      imageUrl: c.urlPortada.isNotEmpty ? c.urlPortada : 'https://picsum.photos/100', 
+                      level: c.ratingMedio.toStringAsFixed(1)
+                    ),
+                  );
+                },
+              ),
+            ),
+          ] else const Spacer(),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final dynamic icon;
+  final String title;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavItem({required this.icon, required this.title, this.isActive = false, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? const Color(0xFFF28B50) : Colors.white70;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                color: color,
+                fontSize: 16,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _SeccionMisComunidades extends StatefulWidget {
-  const _SeccionMisComunidades();
+class _ComunidadItem extends StatelessWidget {
+  final String name;
+  final String imageUrl;
+  final String level;
+
+  const _ComunidadItem({required this.name, required this.imageUrl, required this.level});
 
   @override
-  State<_SeccionMisComunidades> createState() => _SeccionMisComunidadesState();
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: const Color(0xFF248EA6).withOpacity(0.1),
+                child: ClipOval(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -4,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF28B50),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    level,
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              name,
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _SeccionMisComunidadesState extends State<_SeccionMisComunidades> {
-  final _servicio = ServicioComunidades();
-  List<Comunidad> _misComunidades = [];
-  bool _estaCargando = true;
+// --- TOP BAR ---
+class TopBar extends StatelessWidget {
+  final bool estaLogueado;
+  final String? nombreUsuario;
+  final int? miId;
+  
+  const TopBar({super.key, required this.estaLogueado, this.nombreUsuario, this.miId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF121212),
+        border: Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
+      ),
+      child: Row(
+        children: [
+          // Barra de búsqueda
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFF2A2A2A)),
+              ),
+              child: TextField(
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Buscar en Myngo...',
+                  hintStyle: GoogleFonts.inter(color: Colors.grey),
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Icon(Icons.search, color: Colors.grey, size: 20),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 24),
+          // Perfil de usuario / Login states
+          if (estaLogueado)
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1E1E1E),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 16),
+                PopupMenuButton<String>(
+                  offset: const Offset(0, 50),
+                  color: const Color(0xFF1E1E1E),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  onSelected: (value) async {
+                    if (value == 'perfil' && miId != null) {
+                       // Mostrar un loader simple o navegar tras petición
+                       final res = await ServicioUsuarios().obtenerDatosUsuario(miId!);
+                       if (res.exito && res.datos != null && context.mounted) {
+                          Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaPerfilUsuario(usuario: res.datos!)));
+                       }
+                    } else if (value == 'configuracion') {
+                      // Placeholder
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Pantalla de configuración próximamente 🛠️'))
+                        );
+                      }
+                    } else if (value == 'logout') {
+                      await ServicioUsuarios().cerrarSesion();
+                      if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'perfil',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person_outline, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Text('Mi Perfil', style: GoogleFonts.inter(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'configuracion',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Text('Configuración', style: GoogleFonts.inter(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(height: 1),
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.logout, color: Color(0xFFF28B50), size: 20),
+                          const SizedBox(width: 12),
+                          Text('Cerrar Sesión', style: GoogleFonts.inter(color: const Color(0xFFF28B50))),
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: Row(
+                    children: [
+                      if (nombreUsuario != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12.0),
+                          child: Text(
+                            nombreUsuario!,
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      const CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Color(0xFF1E1E1E),
+                        child: ClipOval(
+                          child: Image(
+                            image: NetworkImage('https://picsum.photos/103'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+               children: [
+                   TextButton(
+                      onPressed: () => Navigator.pushNamed(context, '/login'),
+                      child: Text('Iniciar Sesión', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold))
+                   ),
+                   const SizedBox(width: 8),
+                   ElevatedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/registro'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF28B50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+                      ),
+                      child: Text('Regístrate', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold))
+                   ),
+               ]
+            )
+        ],
+      ),
+    );
+  }
+}
+
+// --- FEED CENTRAL (GALERÍA PINTEREST) ---
+class FeedGaleria extends StatefulWidget {
+  const FeedGaleria({super.key});
+
+  @override
+  State<FeedGaleria> createState() => _FeedGaleriaState();
+}
+
+class _FeedGaleriaState extends State<FeedGaleria> {
+  final _servicio = ServicioInicio();
+  final TextEditingController _searchController = TextEditingController();
+  List<ImagenGaleria> _imagenes = [];
+  bool _cargando = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _cargarPropias();
+    _cargarGaleria();
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Future<void> _cargarPropias() async {
-    final respuesta = await _servicio.listarComunidadesPropias();
+  Future<void> _cargarGaleria() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    // ¡AQUÍ PASAMOS EL PARÁMETRO AL SERVICIO!
+    final res = await _servicio.obtenerGaleriaInicio(query: _searchController.text);
     if (mounted) {
       setState(() {
-        _misComunidades = respuesta.datos ?? [];
-        _estaCargando = false;
+        _cargando = false;
+        if (res.exito) {
+          _imagenes = res.datos ?? [];
+        } else {
+          _error = res.mensaje;
+        }
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_estaCargando) return const Center(child: CircularProgressIndicator());
+    if (_cargando) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    }
     
-    if (_misComunidades.isEmpty) {
+    if (_error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.pets_rounded, size: 64, color: Color(0xFFB0B3C6)),
-            const SizedBox(height: 16),
-            const Text(
-              'Aún no eres parte de ninguna comunidad.',
-              style: TextStyle(color: Color(0xFF9094A6), fontWeight: FontWeight.bold),
-            ),
-            TextButton(
-               onPressed: () {
-                 context.findAncestorStateOfType<_PantallaInicioState>()?._alPulsar(1);
-               },
-              child: const Text('¡Explora y únete a una! ✨'),
+            const Icon(Icons.wifi_off_rounded, size: 56, color: Colors.grey),
+            const SizedBox(height: 12),
+            Text(_error!, style: GoogleFonts.inter(color: Colors.grey)),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _cargarGaleria,
+              icon: const Icon(Icons.refresh_rounded, color: Color(0xFFF28B50)),
+              label: Text('Reintentar', style: GoogleFonts.inter(color: const Color(0xFFF28B50))),
             ),
           ],
         ),
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Mis Comunidades 🐾',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D3142)),
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.75,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: _misComunidades.length,
-            itemBuilder: (context, index) => TarjetaComunidad(
-              comunidad: _misComunidades[index],
-              alPresionar: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PantallaDetalleComunidad(comunidad: _misComunidades[index]),
+
+    return RefreshIndicator(
+      onRefresh: _cargarGaleria,
+      color: const Color(0xFFF28B50),
+      backgroundColor: const Color(0xFF1E1E1E),
+      child: CustomScrollView(
+        slivers: [
+          // ¡NUEVA BARRA DE BÚSQUEDA!
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: TextField(
+                controller: _searchController,
+                onSubmitted: (texto) {
+                  _cargarGaleria(); // Se vuelve a cargar al pulsar "Enter"
+                },
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Buscar por etiquetas (ej. arte, paisaje...)',
+                  hintStyle: GoogleFonts.inter(color: Colors.grey),
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E1E),
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.grey),
+                    onPressed: () {
+                      _searchController.clear();
+                      _cargarGaleria();
+                    },
                   ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: Color(0xFFF28B50)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (_imagenes.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.photo_library_outlined, size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text('Aún no hay imágenes para mostrar.', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text('Busca otra etiqueta o sigue comunidades para ver contenido.', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13), textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+            padding: const EdgeInsets.all(24.0),
+            sliver: SliverMasonryGrid.count(
+              crossAxisCount: MediaQuery.of(context).size.width < 600 ? 2 : 3,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childCount: _imagenes.length,
+              itemBuilder: (context, index) {
+                final imagen = _imagenes[index];
+                // Altura variable para dar el efecto Pinterest, o basada en relación de aspecto si está disponible.
+                double aspectRatio = imagen.relacionAspecto > 0 ? imagen.relacionAspecto : 1.0;
+                // Limitamos la relación de aspecto extrema para que no haya imágenes larguísimas
+                aspectRatio = aspectRatio.clamp(0.5, 2.0);
+
+                return Stack(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: aspectRatio,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: CachedNetworkImage(
+                          imageUrl: imagen.urlS3.startsWith('http') ? imagen.urlS3 : 'http://127.0.0.1:8000${imagen.urlS3}',
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: const Color(0xFF1E1E1E),
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50)),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: const Color(0xFF1E1E1E),
+                            child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Efecto hover (Capa opcional si quieres estilo Pinterest real)
+                    Positioned.fill(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          hoverColor: Colors.black.withOpacity(0.2),
+                          onTap: () {
+                            // TODO: Abrir imagen en grande o ver post
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -143,350 +681,93 @@ class _SeccionMisComunidadesState extends State<_SeccionMisComunidades> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppBar personalizado de Myngo
-// ─────────────────────────────────────────────────────────────────────────────
-class _BarraMyngo extends StatefulWidget implements PreferredSizeWidget {
-  final int indiceSeleccionado;
-  final ValueChanged<int> alPulsar;
-
-  const _BarraMyngo({
-    required this.indiceSeleccionado,
-    required this.alPulsar,
-  });
-
-  @override
-  Size get preferredSize => const Size.fromHeight(60);
-
-  @override
-  State<_BarraMyngo> createState() => _BarraMyngoState();
-}
-
-class _BarraMyngoState extends State<_BarraMyngo> {
-  final _servicioNotificaciones = ServicioNotificaciones();
-  int _notifCount = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _cargarConteo();
-  }
-
-  @override
-  void didUpdateWidget(_BarraMyngo oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Refresh count when switching to or from notifications tab
-    if (widget.indiceSeleccionado != oldWidget.indiceSeleccionado) {
-      _cargarConteo();
-    }
-  }
-
-  Future<void> _cargarConteo() async {
-    final count = await _servicioNotificaciones.obtenerConteoNoLeidas();
-    if (mounted) setState(() => _notifCount = count);
-  }
+// --- LATERAL DERECHO ---
+class LateralDerecho extends StatelessWidget {
+  const LateralDerecho({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 60 + MediaQuery.of(context).padding.top,
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6C63FF).withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+      color: const Color(0xFF1E1E1E),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Ranking
+          Text('RANKING SEMANAL', style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF121212),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF2A2A2A)),
+            ),
+            child: const Column(
+              children: [
+                _RankingItem(pos: 1, name: 'Arte Digital', points: '12K pt'),
+                _RankingItem(pos: 2, name: 'Fotografía', points: '9.5K pt'),
+                _RankingItem(pos: 3, name: 'Desarrollo Web', points: '8.2K pt', isLast: true),
+              ],
+            ),
+          ),
+          const SizedBox(height: 40),
+          // Galería
+          Text('GALERÍA POPULAR', style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 16),
+          Expanded(
+            child: GridView.count(
+              physics: const ClampingScrollPhysics(),
+              crossAxisCount: 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              children: List.generate(6, (index) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: 'https://picsum.photos/id/${10 + index}/200',
+                    fit: BoxFit.cover,
+                  ),
+                );
+              }),
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: [
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color(0xFF9B8BFC), Color(0xFF6C63FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              child: const Text(
-                'Myngo',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-            const Spacer(),
-            Row(
-              children: [
-                _IconNav(
-                  indice: 0,
-                  seleccionado: widget.indiceSeleccionado == 0,
-                  alPulsar: widget.alPulsar,
-                  icono: Icons.home_outlined,
-                  iconoActivo: Icons.home_rounded,
-                ),
-                _IconNav(
-                  indice: 1,
-                  seleccionado: widget.indiceSeleccionado == 1,
-                  alPulsar: widget.alPulsar,
-                  icono: Icons.groups_outlined,
-                  iconoActivo: Icons.groups_rounded,
-                ),
-                // Nuevo icono para Explorar Perfiles
-                _IconNav(
-                  indice: 2,
-                  seleccionado: widget.indiceSeleccionado == 2,
-                  alPulsar: widget.alPulsar,
-                  icono: Icons.person_search_outlined,
-                  iconoActivo: Icons.person_search_rounded,
-                ),
-                // Notificaciones con badge (ahora es el índice 3)
-                _IconNavConBadge(
-                  indice: 3,
-                  seleccionado: widget.indiceSeleccionado == 3,
-                  alPulsar: widget.alPulsar,
-                  icono: Icons.notifications_none_rounded,
-                  iconoActivo: Icons.notifications_rounded,
-                  count: _notifCount,
-                ),
-                _IconNav(
-                  indice: 4,
-                  seleccionado: widget.indiceSeleccionado == 4,
-                  alPulsar: widget.alPulsar,
-                  icono: Icons.chat_bubble_outline_rounded,
-                  iconoActivo: Icons.chat_bubble_rounded,
-                ),
-                _IconNav(
-                  indice: 5,
-                  seleccionado: widget.indiceSeleccionado == 5,
-                  alPulsar: widget.alPulsar,
-                  icono: Icons.person_outline_rounded,
-                  iconoActivo: Icons.person_rounded,
-                ),
-                const SizedBox(width: 16),
-                Container(
-                  height: 24,
-                  width: 1.5,
-                  color: const Color(0xFFE2E4EC),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded),
-                  color: const Color(0xFF9094A6),
-                  hoverColor: const Color(0xFFFF6B6B).withOpacity(0.1),
-                  splashRadius: 24,
-                  tooltip: 'Cerrar Sesión',
-                  onPressed: () async {
-                    final servicio = ServicioUsuarios();
-                    await servicio.cerrarSesion();
-                    if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Icono individual de navegación en la AppBar
-// ─────────────────────────────────────────────────────────────────────────────
-class _IconNav extends StatefulWidget {
-  final int indice;
-  final bool seleccionado;
-  final ValueChanged<int> alPulsar;
-  final IconData icono;
-  final IconData iconoActivo;
-  final bool esAsset;
+class _RankingItem extends StatelessWidget {
+  final int pos;
+  final String name;
+  final String points;
+  final bool isLast;
 
-  const _IconNav({
-    required this.indice,
-    required this.seleccionado,
-    required this.alPulsar,
-    required this.icono,
-    required this.iconoActivo,
-    this.esAsset = false,
-  });
-
-  @override
-  State<_IconNav> createState() => _IconNavState();
-}
-
-class _IconNavState extends State<_IconNav>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _escala;
-
-  static const _colorActivo = Color(0xFF6C63FF);
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 140),
-      lowerBound: 0.80,
-      upperBound: 1.0,
-      value: 1.0,
-    );
-    _escala = _ctrl;
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _onTapDown(_) => _ctrl.reverse();
-  void _onTapUp(_) {
-    _ctrl.forward();
-    widget.alPulsar(widget.indice);
-  }
-
-  void _onTapCancel() => _ctrl.forward();
+  const _RankingItem({required this.pos, required this.name, required this.points, this.isLast = false});
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        widget.seleccionado ? _colorActivo : const Color(0xFFB0B3C6);
-
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      behavior: HitTestBehavior.opaque,
-      child: ScaleTransition(
-        scale: _escala,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: widget.seleccionado
-                ? _colorActivo.withOpacity(0.10)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Icono principal
-              widget.esAsset
-                  ? Image.asset(
-                      'assets/icons/home.png',
-                      width: 24,
-                      height: 24,
-                      color: color,
-                      colorBlendMode: BlendMode.srcIn,
-                    )
-                  : AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        widget.seleccionado
-                            ? widget.iconoActivo
-                            : widget.icono,
-                        key: ValueKey<bool>(widget.seleccionado),
-                        color: color,
-                        size: 24,
-                      ),
-                    ),
-
-              // Punto indicador abajo del icono cuando está seleccionado
-              Positioned(
-                bottom: 5,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  width: widget.seleccionado ? 5 : 0,
-                  height: widget.seleccionado ? 5 : 0,
-                  decoration: BoxDecoration(
-                    color: _colorActivo,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Icono de notificaciones con badge numérico
-// ─────────────────────────────────────────────────────────────────────────────
-class _IconNavConBadge extends StatelessWidget {
-  final int indice;
-  final bool seleccionado;
-  final ValueChanged<int> alPulsar;
-  final IconData icono;
-  final IconData iconoActivo;
-  final int count;
-
-  const _IconNavConBadge({
-    required this.indice,
-    required this.seleccionado,
-    required this.alPulsar,
-    required this.icono,
-    required this.iconoActivo,
-    required this.count,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        _IconNav(
-          indice: indice,
-          seleccionado: seleccionado,
-          alPulsar: alPulsar,
-          icono: icono,
-          iconoActivo: iconoActivo,
-        ),
-        if (count > 0)
-          Positioned(
-            top: 2,
-            right: 2,
-            child: AnimatedScale(
-              scale: count > 0 ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                decoration: const BoxDecoration(
-                  color: Colors.redAccent,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  count > 9 ? '+9' : '$count',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    height: 1.2,
-                  ),
-                ),
-              ),
+    final isFirst = pos == 1;
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 16.0),
+      child: Row(
+        children: [
+          Text(
+            '#$pos', 
+            style: GoogleFonts.inter(
+              color: isFirst ? const Color(0xFFF28B50) : Colors.grey, 
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
             ),
           ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(name, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+          Text(points, style: GoogleFonts.inter(color: Colors.grey, fontSize: 12)),
+        ],
+      ),
     );
   }
 }

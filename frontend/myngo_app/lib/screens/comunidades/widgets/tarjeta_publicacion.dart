@@ -79,18 +79,24 @@ class TarjetaPublicacion extends StatelessWidget {
           const SizedBox(height: 12),
 
           // ── Content (Image if exists) ───────────────────────────
-          if (publicacion.urlArchivoS3.isNotEmpty)
+          if (publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  publicacion.urlArchivoS3.startsWith('http') ? publicacion.urlArchivoS3 : 'http://127.0.0.1:8000${publicacion.urlArchivoS3}',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 150,
-                    color: const Color(0xFF121212),
-                    child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      publicacion.urlImagen!,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 150,
+                        color: const Color(0xFF121212),
+                        child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                      ),
+                    ),
                   ),
                 ),
               ),
