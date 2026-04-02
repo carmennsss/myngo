@@ -4,14 +4,24 @@ from .models import Publicacion, Imagenes_galeria, Coleccion, Imagenes_en_colecc
 class PublicacionSerializer(serializers.ModelSerializer):
     autor_nombre = serializers.ReadOnlyField(source='autor.nombre_usuario')
     comunidad_nombre = serializers.ReadOnlyField(source='comunidad.nombre')
+    url_imagen = serializers.SerializerMethodField()
+    etiquetas = serializers.ReadOnlyField(source='imagen.etiquetas')
 
     class Meta:
         model = Publicacion
         fields = [
             'id', 'autor', 'autor_nombre', 'comunidad', 'comunidad_nombre',
-            'titulo', 'contenido_texto', 'url_archivo_s3', 'relacion_aspecto', 
-            'fecha_creacion'
+            'titulo', 'contenido_texto', 'imagen', 'url_imagen', 'relacion_aspecto',
+            'etiquetas', 'fecha_creacion'
         ]
+
+    def get_url_imagen(self, obj):
+        if obj.imagen and obj.imagen.url_s3:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.imagen.url_s3.url)
+            return obj.imagen.url_s3.url
+        return None
 
 class ImagenGaleriaSerializer(serializers.ModelSerializer):
     class Meta:

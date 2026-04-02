@@ -1,3 +1,4 @@
+from comunidades.models import Miembros_comunidades
 from rest_framework import generics, filters, permissions
 from .models import Publicacion, Imagenes_galeria, Coleccion
 from .serializers import PublicacionSerializer, ImagenGaleriaSerializer, ColeccionSerializer
@@ -9,7 +10,7 @@ from core import settings
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
 from usuarios.models import Seguimiento
-
+from django.db.models import Q
 class DocumentosUtilidad(APIView):
     """
     Endpoint para obtener las rutas de documentos legales de Myngo.
@@ -68,9 +69,36 @@ class PublicacionCreate(generics.CreateAPIView):
     serializer_class = PublicacionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(autor=self.request.user)
+    def create(self, request, *args, **kwargs):
+        archivo = request.FILES.get('url_archivo_s3')
+        imagen_galeria = None
 
+        # 1. Si viene imagen, crearla primero en Imagenes_galeria
+        if archivo:
+            try:
+                imagen_galeria = Imagenes_galeria.objects.create(
+                    propietario=request.user,
+                    comunidad_id=request.data.get('comunidad') or None,
+                    url_s3=archivo,
+                    relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
+                    etiquetas=request.data.get('etiquetas', ''),
+                )
+            except Exception as e:
+                return Response({'error': f'Error al guardar imagen: {e}'}, status=400)
+
+        # 2. Crear la publicación con la FK a la imagen
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(autor=request.user, imagen=imagen_galeria)
+        return Response(serializer.data, status=201)
+class PublicacionDelete(generics.DestroyAPIView):
+    serializer_class= PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def perform_destroy(self, instance):
+        if instance.imagen:
+            instance.imagen.delete()
+        instance.delete()
+        return Response(status=200)
 class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Publicacion.objects.all()
     serializer_class = PublicacionSerializer
@@ -85,3 +113,22 @@ class GaleriaList(generics.ListAPIView):
         if comunidad_id:
             return Imagenes_galeria.objects.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
         return Imagenes_galeria.objects.none()
+class InicioGaleria(generics.ListAPIView):
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    def get_queryset(self):
+        usuario = self.request.user if self.request.user.is_authenticated else None
+        etiquetas = self.request.query_params.get('etiquetas', None)
+        
+        if usuario:
+            comunidades_usuario=Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
+            usuarios_seguidos=Seguimiento.objects.filter(seguidor=usuario,estado='ACEPTADO',seguido_usuario__isnull=False).values_list('seguido_usuario_id',flat=True)
+            imagenes=Imagenes_galeria.objects.filter(Q(comunidad_id__in=comunidades_usuario)|Q(comunidad__es_publica=True)|Q(propietario_id__in=usuarios_seguidos)|Q(propietario__perfil__es_publico=True)).distinct()
+        else:
+            imagenes=Imagenes_galeria.objects.filter(Q(comunidad__es_publica=True)|Q(propietario__perfil__es_publico=True)).distinct()
+            
+        if etiquetas:
+            imagenes = imagenes.filter(etiquetas__icontains=etiquetas)
+            
+        return imagenes.order_by('?')[:50]

@@ -13,15 +13,9 @@ def procesar_publicacion(sender, instance, created, **kwargs):
                 instance.es_valido_ia = False
                 instance.save(update_fields=['es_valido_ia'])
 
-        # 2. Integración automática en Galería
-        if instance.url_archivo_s3 and instance.comunidad:
-            Imagenes_galeria.objects.create(
-                propietario=instance.autor,
-                comunidad=instance.comunidad,
-                url_s3=instance.url_archivo_s3.name,
-                relacion_aspecto=instance.relacion_aspecto,
-                es_publica=True
-            )
+        # 2. La imagen ya está vinculada via FK (instance.imagen)
+        # No es necesario crear un registro adicional en Imagenes_galeria
+        # porque el propio create de la publicacion recibe el ID de la imagen ya creada.
 
 @receiver(post_save, sender=Comentario)
 def procesar_comentario(sender, instance, created, **kwargs):

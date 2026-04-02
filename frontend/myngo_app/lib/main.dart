@@ -6,7 +6,6 @@ import 'screens/registro/pantalla_registro.dart';
 import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
 import 'screens/inicio/pantalla_inicio.dart';
 import 'screens/comunidades/pantalla_comunidades.dart';
-import 'screens/pantalla_principal.dart';
 
 import 'package:provider/provider.dart';
 import 'providers/post_provider.dart';
@@ -41,14 +40,13 @@ class MiAplicacion extends StatelessWidget {
         useMaterial3: true,
         textTheme: GoogleFonts.interTextTheme(),
       ),
-      initialRoute: '/redesign',
+      initialRoute: '/inicio',
       routes: {
         '/login': (context) => const PantallaLogin(),
         '/registro': (context) => const PantallaRegistro(),
         '/recuperar_contrasena': (context) => const PantallaRecuperarContrasena(),
         '/inicio': (context) => const PantallaInicio(),
         '/comunidades': (context) => const PantallaComunidades(),
-        '/redesign': (context) => const PantallaPrincipalRedesign(),
       },
     );
   }

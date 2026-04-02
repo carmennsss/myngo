@@ -210,7 +210,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pushReplacementNamed(context, '/redesign');
+        Navigator.pushReplacementNamed(context, '/inicio');
       } else {
         setState(() {
           _estadoGatos = EstadoMonstruo.triste;

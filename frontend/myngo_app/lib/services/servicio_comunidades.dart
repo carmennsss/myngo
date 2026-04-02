@@ -208,6 +208,7 @@ class ServicioComunidades {
     required int comunidadId,
     required String texto,
     dynamic imagen, // Puede ser XFile o File
+    String? etiquetas,
   }) async {
     try {
       final tokenInfo = await _servicioUsuarios.obtenerToken();
@@ -220,6 +221,9 @@ class ServicioComunidades {
       
       request.fields['comunidad'] = comunidadId.toString();
       request.fields['contenido_texto'] = texto;
+      if (etiquetas != null && etiquetas.trim().isNotEmpty) {
+        request.fields['etiquetas'] = etiquetas.trim();
+      }
       
       if (imagen != null) {
         if (kIsWeb && imagen is XFile) {

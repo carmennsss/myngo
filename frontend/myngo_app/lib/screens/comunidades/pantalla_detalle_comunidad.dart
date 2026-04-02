@@ -144,14 +144,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             ),
           ),
         ],
-        body: IndexedStack(
-          index: _indiceSeccion,
-          children: [
-            _buildPostFeed(),
-            _buildStore(),
-            _buildGallery(),
-            _buildChat(),
-          ],
+        body: Builder(
+          builder: (context) {
+            if (_indiceSeccion == 0) return _buildPostFeed();
+            if (_indiceSeccion == 1) return _buildStore();
+            if (_indiceSeccion == 2) return _buildGallery();
+            if (_indiceSeccion == 3) return _buildChat();
+            return const SizedBox(); // Fallback
+          },
         ),
       ),
       floatingActionButton: _indiceSeccion == 0 ? FloatingActionButton.extended(
@@ -165,6 +165,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   void _mostrarDialogoNuevoPost(BuildContext context) {
     final controlador = TextEditingController();
+    final controladorEtiquetas = TextEditingController();
     XFile? imagenSeleccionada;
     
     showModalBottomSheet(
@@ -197,17 +198,34 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               ),
               const SizedBox(height: 16),
               if (imagenSeleccionada != null)
-                Container(
-                  height: 150,
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    image: DecorationImage(
-                      image: kIsWeb ? NetworkImage(imagenSeleccionada!.path) as ImageProvider : NetworkImage(imagenSeleccionada!.path),
-                      fit: BoxFit.cover,
+                Column(
+                  children: [
+                    Container(
+                      height: 150,
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        image: DecorationImage(
+                          image: kIsWeb ? NetworkImage(imagenSeleccionada!.path) as ImageProvider : NetworkImage(imagenSeleccionada!.path),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                  ),
+                    TextField(
+                      controller: controladorEtiquetas,
+                      style: GoogleFonts.inter(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Etiquetas (ej. arte, animales, juegos...)',
+                        hintStyle: GoogleFonts.inter(color: Colors.grey),
+                        prefixIcon: const Icon(Icons.sell_outlined, color: Colors.grey),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               Row(
                 children: [
@@ -226,6 +244,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                           comunidadId: widget.comunidad.id,
                           texto: controlador.text,
                           imagen: imagenSeleccionada,
+                          etiquetas: controladorEtiquetas.text,
                         );
                         
                         if (exito && mounted) {

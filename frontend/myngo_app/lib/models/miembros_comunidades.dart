@@ -3,7 +3,6 @@ class MiembrosComunidades {
   final int usuarioId;
   final int comunidadId;
   final String rol; // 'MIEMBRO' o 'ADMIN' 
-  final String estadoPeticion; // 'ACEPTADO' o 'PENDIENTE' [cite: 44]
   final DateTime fechaUnion;
 
   MiembrosComunidades({
@@ -11,7 +10,6 @@ class MiembrosComunidades {
     required this.usuarioId,
     required this.comunidadId,
     required this.rol,
-    required this.estadoPeticion,
     required this.fechaUnion,
   });
 
@@ -21,7 +19,6 @@ class MiembrosComunidades {
       usuarioId: json['usuario'],
       comunidadId: json['comunidad'],
       rol: json['rol'] ?? 'Miembro',
-      estadoPeticion: json['estado_peticion'] ?? 'ACEPTADO',
       fechaUnion: DateTime.parse(json['fecha_union']),
     );
   }
