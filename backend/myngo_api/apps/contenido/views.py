@@ -108,10 +108,11 @@ class PublicacionDelete(generics.DestroyAPIView):
         
         # Si el que borra no es el autor (es admin), notificar
         if instance.autor != request.user:
+            titulo_seguro = instance.titulo or "Sin título"
             Notificacion.objects.create(
                 usuario=instance.autor,
                 tipo="CONTENIDO_BORRADO",
-                mensaje=f"Tu post '{instance.titulo[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
+                mensaje=f"Tu post '{titulo_seguro[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
                 referencia_comunidad=instance.comunidad
             )
             
@@ -127,13 +128,14 @@ class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         razon = request.data.get('razon', 'Incumplimiento de normas')
+        titulo_seguro = instance.titulo or "Sin título"
         
         # Si el que borra no es el autor (es admin), notificar
         if instance.autor != request.user:
             Notificacion.objects.create(
                 usuario=instance.autor,
                 tipo="CONTENIDO_BORRADO",
-                mensaje=f"Tu post '{instance.titulo[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
+                mensaje=f"Tu post '{titulo_seguro[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
                 referencia_comunidad=instance.comunidad
             )
             
