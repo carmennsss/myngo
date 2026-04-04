@@ -43,6 +43,7 @@ class MenuOpcionesContenido extends StatelessWidget {
         final esAdminComunidad = userId == creadorComunidadId;
 
         return PopupMenuButton<String>(
+          key: ValueKey('menu_${tipoObjeto}_$objetoId'),
           icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
           color: const Color(0xFF2A2A2A),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -129,7 +130,7 @@ class MenuOpcionesContenido extends StatelessWidget {
                 final razon = razonController.text.trim();
                 Navigator.pop(context);
                 
-                RespuestaApi res;
+                RespuestaApi res = RespuestaApi(exito: false, mensaje: 'Operación cancelada');
                 final servicioGaleria = ServicioGaleria();
                 final servicioComunidades = ServicioComunidades();
 
@@ -139,8 +140,8 @@ class MenuOpcionesContenido extends StatelessWidget {
                   res = await servicioGaleria.eliminarImagen(objetoId, razon: esModeracion ? razon : null);
                 } else if (tipoObjeto == 'COMUNIDAD') {
                   res = await servicioComunidades.eliminarComunidad(objetoId);
-                } else {
-                  return;
+                } else if (tipoObjeto == 'COMENTARIO') {
+                  res = await servicioComunidades.eliminarComentario(objetoId, razon: esModeracion ? razon : null);
                 }
 
                 if (res.exito) {

@@ -7,6 +7,7 @@ from .views import (
 urlpatterns = [
     path('', ComunidadListCreate.as_view(), name='comunidad-list'),
     path('mis-comunidades/', MisComunidadesList.as_view(), name='mis-comunidades'),
+    path('propias/', MisComunidadesList.as_view(), name='comunidades-propias'),
     path('<int:pk>/', ComunidadDetail.as_view(), name='comunidad-detail'),
     path('<int:pk>/unirse/', UnirseComunidad.as_view(), name='unirse-comunidad'),
     path('<int:pk>/admin-dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),

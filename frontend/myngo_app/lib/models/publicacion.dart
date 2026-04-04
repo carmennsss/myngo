@@ -11,6 +11,9 @@ class Publicacion {
   final double relacionAspecto;
   final bool esValidoIa;
   final DateTime fechaCreacion;
+  final int likesCount;
+  final int comentariosCount;
+  final bool usuarioDioLike;
 
   Publicacion({
     required this.id,
@@ -25,6 +28,9 @@ class Publicacion {
     required this.relacionAspecto,
     this.esValidoIa = true,
     required this.fechaCreacion,
+    this.likesCount = 0,
+    this.comentariosCount = 0,
+    this.usuarioDioLike = false,
   });
 
   factory Publicacion.fromJson(Map<String, dynamic> json) {
@@ -43,6 +49,9 @@ class Publicacion {
         fechaCreacion: json['fecha_creacion'] != null 
             ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now() 
             : DateTime.now(),
+        likesCount: int.tryParse(json['likes_count']?.toString() ?? '0') ?? 0,
+        comentariosCount: int.tryParse(json['comentarios_count']?.toString() ?? '0') ?? 0,
+        usuarioDioLike: json['usuario_dio_like'] == true,
       );
     } catch (e) {
       print('Error parsing Publicacion: $e');
@@ -58,5 +67,41 @@ class Publicacion {
         fechaCreacion: DateTime.now(),
       );
     }
+  }
+
+  Publicacion copyWith({
+    int? id,
+    int? autorId,
+    String? autorNombre,
+    int? comunidadId,
+    String? comunidadNombre,
+    int? creadorComunidadId,
+    String? titulo,
+    String? contenidoTexto,
+    String? urlImagen,
+    double? relacionAspecto,
+    bool? esValidoIa,
+    DateTime? fechaCreacion,
+    int? likesCount,
+    int? comentariosCount,
+    bool? usuarioDioLike,
+  }) {
+    return Publicacion(
+      id: id ?? this.id,
+      autorId: autorId ?? this.autorId,
+      autorNombre: autorNombre ?? this.autorNombre,
+      comunidadId: comunidadId ?? this.comunidadId,
+      comunidadNombre: comunidadNombre ?? this.comunidadNombre,
+      creadorComunidadId: creadorComunidadId ?? this.creadorComunidadId,
+      titulo: titulo ?? this.titulo,
+      contenidoTexto: contenidoTexto ?? this.contenidoTexto,
+      urlImagen: urlImagen ?? this.urlImagen,
+      relacionAspecto: relacionAspecto ?? this.relacionAspecto,
+      esValidoIa: esValidoIa ?? this.esValidoIa,
+      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+      likesCount: likesCount ?? this.likesCount,
+      comentariosCount: comentariosCount ?? this.comentariosCount,
+      usuarioDioLike: usuarioDioLike ?? this.usuarioDioLike,
+    );
   }
 }

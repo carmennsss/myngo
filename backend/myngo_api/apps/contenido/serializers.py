@@ -8,12 +8,17 @@ class PublicacionSerializer(serializers.ModelSerializer):
     url_imagen = serializers.SerializerMethodField()
     etiquetas = serializers.ReadOnlyField(source='imagen.etiquetas')
 
+    likes_count = serializers.SerializerMethodField()
+    comentarios_count = serializers.SerializerMethodField()
+    usuario_dio_like = serializers.SerializerMethodField()
+
     class Meta:
         model = Publicacion
         fields = [
             'id', 'autor', 'autor_nombre', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'url_imagen', 
-            'relacion_aspecto', 'etiquetas', 'fecha_creacion'
+            'relacion_aspecto', 'etiquetas', 'fecha_creacion',
+            'likes_count', 'comentarios_count', 'usuario_dio_like'
         ]
 
     def get_url_imagen(self, obj):
@@ -23,6 +28,18 @@ class PublicacionSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.imagen.url_s3.url)
             return obj.imagen.url_s3.url
         return None
+
+    def get_likes_count(self, obj):
+        return Me_gustas.objects.filter(publicacion=obj).count()
+
+    def get_comentarios_count(self, obj):
+        return Comentario.objects.filter(publicacion=obj).count()
+
+    def get_usuario_dio_like(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Me_gustas.objects.filter(publicacion=obj, usuario=request.user).exists()
+        return False
 
 class ImagenGaleriaSerializer(serializers.ModelSerializer):
     url_archivo = serializers.SerializerMethodField()
@@ -88,9 +105,18 @@ class MeGustasSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ComentarioSerializer(serializers.ModelSerializer):
+    autor_nombre = serializers.ReadOnlyField(source='autor.nombre_usuario')
+    autor_foto = serializers.SerializerMethodField()
+
     class Meta:
         model = Comentario
-        fields = '__all__'
+        fields = ['id', 'publicacion', 'autor', 'autor_nombre', 'autor_foto', 'contenido', 'fecha_creacion']
+        read_only_fields = ['autor', 'publicacion']
+
+    def get_autor_foto(self, obj):
+        if hasattr(obj.autor, 'perfil') and obj.autor.perfil.url_avatar:
+            return obj.autor.perfil.url_avatar
+        return None
 
 class ReporteSerializer(serializers.ModelSerializer):
     informador_nombre = serializers.ReadOnlyField(source='informador.nombre_usuario')

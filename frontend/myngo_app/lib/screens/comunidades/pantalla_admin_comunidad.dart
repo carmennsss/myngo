@@ -77,7 +77,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
   Widget _buildSolicitudesTab() {
-    final solicitudes = _datos?['solicitudes_pendientes'] as List? ?? [];
+    final dynamic rawSolicitudes = _datos != null ? _datos!['solicitudes_pendientes'] : null;
+    final List solicitudes = (rawSolicitudes is List) ? rawSolicitudes : [];
+    
     if (solicitudes.isEmpty) {
       return _buildEmptyState(Icons.people_outline, 'No hay solicitudes pendientes');
     }
@@ -86,15 +88,20 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
       padding: const EdgeInsets.all(16),
       itemCount: solicitudes.length,
       itemBuilder: (context, index) {
-        final sol = solicitudes[index];
+        final dynamic sol = solicitudes[index];
+        if (sol == null || sol is! Map) return const SizedBox.shrink();
+        
+        final String nombre = sol['usuario_nombre']?.toString() ?? 'Usuario';
+        final String fecha = sol['fecha']?.toString().split('T')[0] ?? 'Reciente';
+
         return Card(
           color: const Color(0xFF1E1E1E),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xFF248EA6), child: Icon(Icons.person, color: Colors.white)),
-            title: Text(sol['usuario_nombre'], style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-            subtitle: Text('Pidió unirse el ${sol['fecha'].toString().split('T')[0]}', style: const TextStyle(color: Colors.white54)),
+            title: Text(nombre, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+            subtitle: Text('Pidió unirse el $fecha', style: const TextStyle(color: Colors.white54)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -115,7 +122,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
   Widget _buildReportesTab() {
-    final reportes = _datos?['reportes_activos'] as List? ?? [];
+    final dynamic rawReportes = _datos != null ? _datos!['reportes_activos'] : null;
+    final List reportes = (rawReportes is List) ? rawReportes : [];
+    
     if (reportes.isEmpty) {
       return _buildEmptyState(Icons.check_circle_outline, 'No hay reportes activos 🐾');
     }
@@ -124,7 +133,14 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
       padding: const EdgeInsets.all(16),
       itemCount: reportes.length,
       itemBuilder: (context, index) {
-        final rep = reportes[index];
+        final dynamic rep = reportes[index];
+        if (rep == null || rep is! Map) return const SizedBox.shrink();
+
+        final String tipo = rep['tipo_objeto']?.toString() ?? 'CONTENIDO';
+        final String informador = rep['informador_nombre']?.toString() ?? 'Anónimo';
+        final String motivo = rep['motivo']?.toString() ?? 'Sin motivo';
+        final String? comentario = rep['comentario']?.toString();
+
         return Card(
           color: const Color(0xFF1E1E1E),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -139,25 +155,26 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                      child: Text(rep['tipo_objeto'], style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: Text(tipo, style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
                     const Spacer(),
-                    Text('Reportado por ${rep['informador_nombre']}', style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                    Text('Reportado por $informador', style: const TextStyle(color: Colors.white38, fontSize: 10)),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Motivo: ${rep['motivo']}', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                if (rep['comentario'] != null) ...[
+                Text('Motivo: $motivo', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                if (comentario != null) ...[
                   const SizedBox(height: 4),
-                  Text(rep['comentario'], style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text(comentario, style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 ],
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
-                      onPressed: () => _verContenido(rep['objeto_id'], rep['tipo_objeto']), 
-                      child: const Text('Ver Contenido', style: TextStyle(color: Color(0xFF248EA6)))
+                    IconButton(
+                      onPressed: () => _resolverReporte(rep['id'], 'DESESTIMADO'), 
+                      icon: const Icon(Icons.verified_user_rounded, color: Colors.greenAccent),
+                      tooltip: 'Cumple las normas',
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
@@ -277,8 +294,6 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     }
 
     if (resBorrado?.exito == true) {
-      // 2. Resolver el reporte
-      await _servicioModeracion.resolverReporte(reporteId, 'RESUELTO', mensaje: 'Contenido eliminado por moderación: $razon');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contenido eliminado y reporte resuelto')));
         _cargarDatos();
@@ -288,6 +303,15 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         setState(() => _cargando = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al moderar: ${resBorrado?.mensaje}')));
       }
+    }
+  }
+
+  Future<void> _resolverReporte(int reporteId, String estado) async {
+    setState(() => _cargando = true);
+    final res = await _servicioModeracion.resolverReporte(reporteId, estado);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+      _cargarDatos();
     }
   }
 }

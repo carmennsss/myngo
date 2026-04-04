@@ -70,13 +70,15 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       if (index == 0) {
         setState(() { _publicaciones = []; }); // Limpiamos para feedback visual
         final res = await _servicio.obtenerPublicaciones(widget.comunidad.id);
-        if (res.exito && mounted) setState(() => _publicaciones = res.datos ?? []);
+        if (res.exito && mounted) setState(() => _publicaciones = res.datos ?? <Publicacion>[]);
       } else if (index == 2) {
         setState(() { _galeriaKey = UniqueKey(); }); // Forzamos reconstrucción de la grilla
         await _cargarColecciones();
       } else if (index == 3) {
         final res = await _servicio.obtenerSalasChat(widget.comunidad.id);
-        if (res.exito && mounted) setState(() => _salasChat = res.datos ?? []);
+        if (res.exito && mounted) {
+          setState(() => _salasChat = res.datos ?? <SalaChat>[]);
+        }
       }
     } finally {
       if (mounted) setState(() => _estaCargandoDatos = false);
@@ -787,22 +789,28 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                       child: Container(
                         color: color.withValues(alpha: 0.1),
-                        child: col.previsualizaciones.isEmpty
-                            ? Center(child: Icon(col.esPrivada ? Icons.lock_outline_rounded : Icons.folder_open_rounded, color: color, size: 24))
-                            : GridView.builder(
+                        child: (col.previsualizaciones is List && col.previsualizaciones.isNotEmpty)
+                            ? GridView.builder(
+                                shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
                                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 2,
-                                  crossAxisSpacing: 1,
-                                  mainAxisSpacing: 1,
+                                  crossAxisSpacing: 4,
+                                  mainAxisSpacing: 4,
                                 ),
-                                itemCount: col.previsualizaciones.length,
-                                itemBuilder: (context, i) => CachedNetworkImage(
-                                  imageUrl: col.previsualizaciones[i],
-                                  fit: BoxFit.cover,
-                                  placeholder: (c,u) => Container(color: Colors.white10),
-                                ),
-                              ),
+                                itemCount: col.previsualizaciones.length > 4 ? 4 : col.previsualizaciones.length,
+                                itemBuilder: (context, i) {
+                                  final String? url = col.previsualizaciones[i]?.toString();
+                                  if (url == null || url.isEmpty) return Container(color: Colors.white10);
+                                  return CachedNetworkImage(
+                                    imageUrl: url,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(color: Colors.white10),
+                                    errorWidget: (context, url, error) => const Icon(Icons.error, size: 10),
+                                  );
+                                },
+                              )
+                            : Center(child: Icon(col.esPrivada ? Icons.lock_outline_rounded : Icons.folder_open_rounded, color: color, size: 24)),
                       ),
                     ),
                   ),
