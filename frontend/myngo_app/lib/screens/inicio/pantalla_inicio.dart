@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../models/comunidad.dart';
-import '../../models/publicacion.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_inicio.dart';
+import '../perfiles/pantalla_perfiles.dart';
 import '../comunidades/pantalla_comunidades.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
 import '../notificaciones/pantalla_notificaciones.dart';
-import '../perfiles/pantalla_perfil_usuario.dart';
+import '../galeria/pantalla_mis_cosas.dart';
+import '../perfiles/pantalla_detalle_perfil.dart';
 
 // --- MAIN SCREEN ---
 class PantallaInicio extends StatefulWidget {
@@ -31,8 +31,8 @@ class _PantallaInicioState extends State<PantallaInicio> {
   List<Comunidad> _misComunidades = [];
   bool _cargandoInicial = true;
   int _indiceSeleccionado = 0;
+  // ignore: unused_field
   int _notifCount = 0;
-  static bool _sesionComprobada = false; 
 
   @override
   void initState() {
@@ -41,9 +41,6 @@ class _PantallaInicioState extends State<PantallaInicio> {
   }
 
   Future<void> _inicializarDatos() async {
-    final prefs = await SharedPreferences.getInstance();
-    final recordarme = prefs.containsKey('recordar_email');
-    
     final servicioUsuarios = ServicioUsuarios();
     
     // Eliminada la destrucción agresiva de sesión para no romper Web al recargar (F5)
@@ -67,8 +64,8 @@ class _PantallaInicioState extends State<PantallaInicio> {
   }
 
   void _alPulsarNav(int index) {
-      // Proteger notificaciones y mensajes si no está logueado
-      if ((index == 2 || index == 3) && !_estaLogueado) {
+      // Proteger notificaciones, mensajes y mis cosas si no está logueado
+      if ((index >= 2 && index <= 4) && !_estaLogueado) {
           Navigator.pushNamed(context, '/login');
           return;
       }
@@ -89,6 +86,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
       const PantallaComunidades(), // Explorar Comunidades
       const PantallaNotificaciones(), // Notificaciones
       const Center(child: Text('Mensajes Privados', style: TextStyle(color: Colors.white, fontSize: 24))), // Mensajes
+      PantallaMisCosas(usuarioId: _miId ?? 0), // Mis Cosas
     ];
 
     return Scaffold(
@@ -181,6 +179,7 @@ class SidebarIzquierdo extends StatelessWidget {
           _NavItem(icon: Icons.explore_rounded, title: 'Explorar', isActive: indiceSeleccionado == 1, onTap: () => onNavSelected(1)),
           _NavItem(icon: Icons.notifications_rounded, title: 'Notificaciones', isActive: indiceSeleccionado == 2, onTap: () => onNavSelected(2)),
           _NavItem(icon: Icons.mail_rounded, title: 'Mensajes', isActive: indiceSeleccionado == 3, onTap: () => onNavSelected(3)),
+          _NavItem(icon: Icons.folder_special_rounded, title: 'Mis Cosas', isActive: indiceSeleccionado == 4, onTap: () => onNavSelected(4)),
           
           if (estaLogueado) ...[
             const SizedBox(height: 40),
@@ -209,9 +208,10 @@ class SidebarIzquierdo extends StatelessWidget {
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: _ComunidadItem(
-                      name: c.nombre, 
+                      name: c.nombre.isNotEmpty ? c.nombre : 'Comunidad', 
                       imageUrl: c.urlPortada.isNotEmpty ? c.urlPortada : 'https://picsum.photos/100', 
-                      level: c.ratingMedio.toStringAsFixed(1)
+                      level: c.ratingMedio.toStringAsFixed(1),
+                      pendingCount: c.conteoPendienteAdmin,
                     ),
                   );
                 },
@@ -263,8 +263,14 @@ class _ComunidadItem extends StatelessWidget {
   final String name;
   final String imageUrl;
   final String level;
+  final int pendingCount;
 
-  const _ComunidadItem({required this.name, required this.imageUrl, required this.level});
+  const _ComunidadItem({
+    required this.name, 
+    required this.imageUrl, 
+    required this.level,
+    this.pendingCount = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +309,29 @@ class _ComunidadItem extends StatelessWidget {
                   ),
                 ),
               ),
+              if (pendingCount > 0)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF1E1E1E), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Center(
+                      child: Text(
+                        pendingCount > 99 ? '99+' : pendingCount.toString(),
+                        style: GoogleFonts.inter(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(width: 12),
@@ -385,7 +414,7 @@ class TopBar extends StatelessWidget {
                        // Mostrar un loader simple o navegar tras petición
                        final res = await ServicioUsuarios().obtenerDatosUsuario(miId!);
                        if (res.exito && res.datos != null && context.mounted) {
-                          Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaPerfilUsuario(usuario: res.datos!)));
+                          Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: res.datos!)));
                        }
                     } else if (value == 'configuracion') {
                       // Placeholder
@@ -438,7 +467,7 @@ class TopBar extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(right: 12.0),
                           child: Text(
-                            nombreUsuario!,
+                            nombreUsuario ?? 'Usuario',
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -545,7 +574,7 @@ class _FeedGaleriaState extends State<FeedGaleria> {
           children: [
             const Icon(Icons.wifi_off_rounded, size: 56, color: Colors.grey),
             const SizedBox(height: 12),
-            Text(_error!, style: GoogleFonts.inter(color: Colors.grey)),
+            Text(_error ?? 'Ocurrió un error inesperado', style: GoogleFonts.inter(color: Colors.grey)),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _cargarGaleria,
@@ -642,7 +671,7 @@ class _FeedGaleriaState extends State<FeedGaleria> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: CachedNetworkImage(
-                          imageUrl: imagen.urlS3.startsWith('http') ? imagen.urlS3 : 'http://127.0.0.1:8000${imagen.urlS3}',
+                          imageUrl: imagen.urlArchivo,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
                             color: const Color(0xFF1E1E1E),

@@ -17,12 +17,14 @@ class MensajeChat {
 
   factory MensajeChat.fromJson(Map<String, dynamic> json) {
     return MensajeChat(
-      id: json['id'],
-      salaId: json['sala'],
-      emisorId: json['emisor'],
-      contenido: json['contenido'],
-      urlArchivoS3: json['url_archivo_s3'],
-      fechaEnvio: DateTime.parse(json['fecha_envio']),
+      id: json['id'] ?? 0,
+      salaId: json['sala'] ?? 0,
+      emisorId: json['emisor'] ?? 0,
+      contenido: json['contenido']?.toString(),
+      urlArchivoS3: json['url_archivo_s3']?.toString(),
+      fechaEnvio: json['fecha_envio'] != null 
+          ? DateTime.parse(json['fecha_envio']) 
+          : DateTime.now(),
     );
   }
 }

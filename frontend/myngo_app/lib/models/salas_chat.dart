@@ -15,11 +15,13 @@ class SalaChat {
 
   factory SalaChat.fromJson(Map<String, dynamic> json) {
     return SalaChat(
-      id: json['id'],
-      nombre: json['nombre'],
-      comunidadId: json['comunidad'],
+      id: json['id'] ?? 0,
+      nombre: json['nombre']?.toString(),
+      comunidadId: json['comunidad'] ?? 0,
       esGrupal: json['es_grupal'] ?? false,
-      fechaCreacion: DateTime.parse(json['fecha_creacion']),
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion']) 
+          : DateTime.now(),
     );
   }
 }

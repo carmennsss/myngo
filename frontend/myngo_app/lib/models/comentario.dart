@@ -17,12 +17,14 @@ class Comentario {
 
   factory Comentario.fromJson(Map<String, dynamic> json) {
     return Comentario(
-      id: json['id'],
-      publicacionId: json['publicacion'],
-      autorId: json['autor'],
-      contenido: json['contenido'],
+      id: json['id'] ?? 0,
+      publicacionId: json['publicacion'] ?? 0,
+      autorId: json['autor'] ?? 0,
+      contenido: json['contenido']?.toString() ?? '',
       esValidoIa: json['es_valido_ia'] ?? true,
-      fechaCreacion: DateTime.parse(json['fecha_creacion']),
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion']) 
+          : DateTime.now(),
     );
   }
 }

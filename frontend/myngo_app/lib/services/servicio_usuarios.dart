@@ -193,11 +193,9 @@ class ServicioUsuarios {
     }
   }
 
-  /// Cierra la sesión borrando el token y el ID.
+  /// Cierra la sesión borrando absolutamente todos los datos de SharedPreferences.
   Future<void> cerrarSesion() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('usuario_id');
-    await prefs.remove('nombre_usuario');
+    await prefs.clear();
   }
 }

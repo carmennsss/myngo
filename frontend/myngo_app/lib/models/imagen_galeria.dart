@@ -1,31 +1,45 @@
 class ImagenGaleria {
   final int id;
   final int propietarioId;
-  final int comunidadId;
-  final String urlS3;
+  final String? propietarioNombre;
+  final int? comunidadId;
+  final int? creadorComunidadId;
+  final String urlArchivo;
+  final String tipoArchivo; // 'I' o 'V'
   final double relacionAspecto;
   final bool esPublica;
   final DateTime fechaSubida;
+  final String? etiquetas;
 
   ImagenGaleria({
     required this.id,
     required this.propietarioId,
-    required this.comunidadId,
-    required this.urlS3,
+    this.propietarioNombre,
+    this.comunidadId,
+    this.creadorComunidadId,
+    required this.urlArchivo,
+    required this.tipoArchivo,
     required this.relacionAspecto,
     required this.esPublica,
     required this.fechaSubida,
+    this.etiquetas,
   });
 
   factory ImagenGaleria.fromJson(Map<String, dynamic> json) {
     return ImagenGaleria(
-      id: json['id'],
-      propietarioId: json['propietario'],
-      comunidadId: json['comunidad'],
-      urlS3: json['url_s3'],
+      id: json['id'] ?? 0,
+      propietarioId: json['propietario'] ?? 0,
+      propietarioNombre: json['propietario_nombre']?.toString() ?? 'Anónimo',
+      comunidadId: json['comunidad'] as int?,
+      creadorComunidadId: json['creador_comunidad_id'] as int?,
+      urlArchivo: json['url_archivo']?.toString() ?? json['url_s3']?.toString() ?? '',
+      tipoArchivo: json['tipo_archivo']?.toString() ?? 'I',
       relacionAspecto: (json['relacion_aspecto'] ?? 1.0).toDouble(),
       esPublica: json['es_publica'] ?? true,
-      fechaSubida: DateTime.parse(json['fecha_subida']),
+      fechaSubida: json['fecha_subida'] != null 
+          ? DateTime.parse(json['fecha_subida']) 
+          : DateTime.now(),
+      etiquetas: json['etiquetas']?.toString(),
     );
   }
 }

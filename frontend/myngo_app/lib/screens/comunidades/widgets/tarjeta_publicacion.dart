@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/publicacion.dart';
-import 'package:intl/intl.dart';
+import 'package:myngo_app/widgets/comunes/menu_opciones_contenido.dart';
+import '../pantalla_detalle_publicacion.dart';
 
 class TarjetaPublicacion extends StatelessWidget {
   final Publicacion publicacion;
   final VoidCallback? alPresionar;
+  final VoidCallback? onEliminado;
   
-  const TarjetaPublicacion({super.key, required this.publicacion, this.alPresionar});
+  const TarjetaPublicacion({
+    super.key, 
+    required this.publicacion, 
+    this.alPresionar,
+    this.onEliminado,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +25,18 @@ class TarjetaPublicacion extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFF2A2A2A)), // Subtle border
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PantallaDetallePublicacion(publicacion: publicacion),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Header (User Info) ──────────────────────────────────
           Padding(
@@ -39,7 +54,7 @@ class TarjetaPublicacion extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        publicacion.autorNombre?.isNotEmpty == true ? publicacion.autorNombre! : 'Usuario ${publicacion.autorId}',
+                        publicacion.autorNombre.isNotEmpty ? publicacion.autorNombre : 'Usuario ${publicacion.autorId}',
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -56,9 +71,16 @@ class TarjetaPublicacion extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_horiz, color: Colors.grey),
-                  onPressed: () {},
+                MenuOpcionesContenido(
+                  tipoObjeto: 'POST',
+                  objetoId: publicacion.id,
+                  autorId: publicacion.autorId,
+                  comunidadId: publicacion.comunidadId,
+                  creadorComunidadId: publicacion.creadorComunidadId,
+                  onEliminado: () {
+                    if (onEliminado != null) onEliminado!();
+                    if (alPresionar != null) alPresionar!();
+                  },
                 ),
               ],
             ),
@@ -68,7 +90,7 @@ class TarjetaPublicacion extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
-              publicacion.contenidoTexto?.isNotEmpty == true ? publicacion.contenidoTexto! : publicacion.titulo,
+              publicacion.contenidoTexto.isNotEmpty ? publicacion.contenidoTexto : publicacion.titulo,
               style: GoogleFonts.inter(
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 15,
@@ -121,6 +143,7 @@ class TarjetaPublicacion extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

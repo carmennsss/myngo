@@ -19,13 +19,14 @@ class Seguimiento {
 
   factory Seguimiento.fromJson(Map<String, dynamic> json) {
     return Seguimiento(
-      id: json['id'],
-      seguidorId: json['seguidor'],
-      seguidoUsuarioId: json['seguido_usuario'],
-      seguidaComunidadId: json['seguida_comunidad'],
-      // Para ver perfiles o comunidades privadas, deben aceptar el seguimiento 
-      estado: json['estado'] ?? 'Aceptado', 
-      fechaSeguimiento: DateTime.parse(json['fecha_seguimiento']),
+      id: json['id'] ?? 0,
+      seguidorId: json['seguidor'] ?? 0,
+      seguidoUsuarioId: json['seguido_usuario'] as int?,
+      seguidaComunidadId: json['seguida_comunidad'] as int?,
+      estado: json['estado']?.toString() ?? 'PENDIENTE', 
+      fechaSeguimiento: json['fecha_seguimiento'] != null 
+          ? DateTime.parse(json['fecha_seguimiento']) 
+          : DateTime.now(),
     );
   }
 }

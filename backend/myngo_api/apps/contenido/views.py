@@ -1,7 +1,7 @@
-from comunidades.models import Miembros_comunidades
-from rest_framework import generics, filters, permissions
-from .models import Publicacion, Imagenes_galeria, Coleccion
-from .serializers import PublicacionSerializer, ImagenGaleriaSerializer, ColeccionSerializer
+from rest_framework import generics, filters, permissions, viewsets, pagination
+from .models import Publicacion, Imagenes_galeria, Coleccion, Reporte, Comentario
+from .serializers import PublicacionSerializer, ImagenGaleriaSerializer, ColeccionSerializer, ReporteSerializer, ComentarioSerializer
+from rest_framework.decorators import action
 from .permissions import IsAuthorOrAdmin
 from comunidades.models import Comunidad
 from rest_framework.views import APIView,status
@@ -9,8 +9,15 @@ from rest_framework.response import Response
 from core import settings
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
-from usuarios.models import Seguimiento
+from usuarios.models import Seguimiento, Usuario
 from django.db.models import Q
+from comunidades.models import Miembros_comunidades
+from notificaciones.models import Notificacion
+
+class GaleriaPagination(pagination.LimitOffsetPagination):
+    default_limit = 20
+    max_limit = 100
+
 class DocumentosUtilidad(APIView):
     """
     Endpoint para obtener las rutas de documentos legales de Myngo.
@@ -94,25 +101,167 @@ class PublicacionCreate(generics.CreateAPIView):
 class PublicacionDelete(generics.DestroyAPIView):
     serializer_class= PublicacionSerializer
     permission_classes = [permissions.IsAuthenticated]
-    def perform_destroy(self, instance):
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        
+        # Si el que borra no es el autor (es admin), notificar
+        if instance.autor != request.user:
+            Notificacion.objects.create(
+                usuario=instance.autor,
+                tipo="CONTENIDO_BORRADO",
+                mensaje=f"Tu post '{instance.titulo[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.comunidad
+            )
+            
         if instance.imagen:
             instance.imagen.delete()
         instance.delete()
-        return Response(status=200)
+        return Response({"mensaje": "Publicación eliminada correctamente"}, status=status.HTTP_200_OK)
 class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Publicacion.objects.all()
     serializer_class = PublicacionSerializer
     permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
 
-class GaleriaList(generics.ListAPIView):
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        
+        # Si el que borra no es el autor (es admin), notificar
+        if instance.autor != request.user:
+            Notificacion.objects.create(
+                usuario=instance.autor,
+                tipo="CONTENIDO_BORRADO",
+                mensaje=f"Tu post '{instance.titulo[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.comunidad
+            )
+            
+        if instance.imagen:
+            instance.imagen.delete()
+        instance.delete()
+        return Response({"mensaje": "Publicación eliminada correctamente"}, status=status.HTTP_200_OK)
+
+class ImagenGaleriaDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Imagenes_galeria.objects.all()
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        
+        if instance.propietario != request.user:
+            Notificacion.objects.create(
+                usuario=instance.propietario,
+                tipo="CONTENIDO_BORRADO",
+                mensaje=f"Tu imagen de la galería ha sido borrada por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.comunidad
+            )
+        instance.delete()
+        return Response({"mensaje": "Imagen eliminada"}, status=status.HTTP_200_OK)
+
+class ReporteListCreate(generics.ListCreateAPIView):
+    queryset = Reporte.objects.all()
+    serializer_class = ReporteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(informador=self.request.user)
+
+class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comentario.objects.all()
+    serializer_class = ComentarioSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        
+        if instance.autor != request.user:
+            Notificacion.objects.create(
+                usuario=instance.autor,
+                tipo="COMENTARIO_BORRADO",
+                mensaje=f"Tu comentario ha sido borrado por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.publicacion.comunidad
+            )
+        instance.delete()
+        return Response({"mensaje": "Comentario eliminado"}, status=status.HTTP_200_OK)
+
+class GaleriaList(generics.ListCreateAPIView):
     serializer_class = ImagenGaleriaSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = GaleriaPagination
 
     def get_queryset(self):
         comunidad_id = self.request.query_params.get('comunidad_id')
+        propietario_id = self.request.query_params.get('usuario_id')
+        coleccion_id = self.request.query_params.get('coleccion_id')
+        
+        qs = Imagenes_galeria.objects.filter(es_publica=True)
+
+        if coleccion_id:
+            try:
+                from .models import Coleccion
+                coleccion = Coleccion.objects.get(id=coleccion_id)
+                # Omitimos la verificación de privacidad estricta temporalmente si es el autor
+                if coleccion.es_privada and getattr(coleccion, 'usuario', None) != self.request.user:
+                    return Imagenes_galeria.objects.none()
+                return coleccion.imagenes.all().order_by('-fecha_subida')
+            except Exception:
+                return Imagenes_galeria.objects.none()
+
         if comunidad_id:
-            return Imagenes_galeria.objects.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
-        return Imagenes_galeria.objects.none()
+            # Si es comunidad privada, verificar membresía
+            try:
+                comunidad = Comunidad.objects.get(id=comunidad_id)
+                if not comunidad.es_publica:
+                    es_miembro = Miembros_comunidades.objects.filter(
+                        comunidad=comunidad, usuario=self.request.user
+                    ).exists()
+                    if not es_miembro and comunidad.creador != self.request.user:
+                        return Imagenes_galeria.objects.none()
+                return Imagenes_galeria.objects.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
+            except Comunidad.DoesNotExist:
+                return Imagenes_galeria.objects.none()
+
+        if propietario_id:
+            # Si es mi galería, veo todo; si es de otro, solo lo público
+            if str(propietario_id) == str(self.request.user.id):
+                return Imagenes_galeria.objects.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+            return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+            
+        return qs.order_by('-fecha_subida')
+
+    def perform_create(self, serializer):
+        serializer.save(propietario=self.request.user)
+
+class GaleriaDetalleExtendido(generics.RetrieveAPIView):
+    queryset = Imagenes_galeria.objects.all()
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        imagen = self.get_object()
+        
+        # Buscar publicaciones asociadas a esta imagen
+        from .models import Publicacion, Coleccion
+        from .serializers import PublicacionSerializer, ColeccionSerializer
+        
+        pub = Publicacion.objects.filter(imagen=imagen).first()
+        pub_data = PublicacionSerializer(pub, context={'request': request}).data if pub else None
+
+        # Buscar colecciones donde aparece esta imagen (sólo mostramos las públicas o propias)
+        cols = Coleccion.objects.filter(imagenes=imagen)
+        cols = cols.filter(Q(es_privada=False) | Q(usuario=request.user))
+        cols_data = [{'id': c.id, 'nombre': c.nombre_coleccion, 'privada': c.es_privada} for c in cols]
+
+        return Response({
+            'imagen': self.get_serializer(imagen).data,
+            'publicacion': pub_data,
+            'colecciones': cols_data
+        })
+
 class InicioGaleria(generics.ListAPIView):
     serializer_class = ImagenGaleriaSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -132,3 +281,45 @@ class InicioGaleria(generics.ListAPIView):
             imagenes = imagenes.filter(etiquetas__icontains=etiquetas)
             
         return imagenes.order_by('?')[:50]
+
+class ColeccionViewSet(viewsets.ModelViewSet):
+    serializer_class = ColeccionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = GaleriaPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        comunidad_id = self.request.query_params.get('comunidad_id')
+        usuario_id = self.request.query_params.get('usuario_id')
+
+        if comunidad_id:
+            return Coleccion.objects.filter(comunidad_id=comunidad_id)
+        if usuario_id:
+            if str(usuario_id) == str(user.id):
+                return Coleccion.objects.filter(usuario_id=usuario_id)
+            return Coleccion.objects.filter(usuario_id=usuario_id, es_privada=False)
+        
+        return Coleccion.objects.filter(usuario=user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='gestionar-imagenes')
+    def gestionar_imagenes(self, request, pk=None):
+        coleccion = self.get_object()
+        imagen_id = request.data.get('imagen_id')
+        accion = request.data.get('accion') # 'add' o 'remove'
+
+        try:
+            imagen = Imagenes_galeria.objects.get(id=imagen_id)
+        except Imagenes_galeria.DoesNotExist:
+            return Response({'error': 'Imagen no encontrada'}, status=404)
+
+        if accion == 'add':
+            coleccion.imagenes.add(imagen)
+            return Response({'status': 'Imagen añadida'})
+        elif accion == 'remove':
+            coleccion.imagenes.remove(imagen)
+            return Response({'status': 'Imagen removida'})
+        
+        return Response({'error': 'Acción no válida'}, status=400)

@@ -19,14 +19,14 @@ class Perfil {
 
   factory Perfil.fromJson(Map<String, dynamic> json) {
     return Perfil(
-      id: json['id'],
-      usuarioId: json['usuario'],
-      biografia: json['biografia'],
-      urlAvatar: json['url_avatar'],
-      // Los puntos se generan por estrellas recibidas
-      // Máximo de 5.000 puntos por usuario
-      puntos: json['puntos'] ?? 0, 
-      fechaActualizacion: DateTime.parse(json['fecha_actualizacion']),
+      id: json['id'] ?? 0,
+      usuarioId: json['usuario'] ?? 0,
+      biografia: json['biografia']?.toString(),
+      urlAvatar: json['url_avatar']?.toString(),
+      puntos: (json['puntos'] ?? 0).toInt(), 
+      fechaActualizacion: json['fecha_actualizacion'] != null 
+          ? DateTime.parse(json['fecha_actualizacion']) 
+          : DateTime.now(),
     );
   }
 }

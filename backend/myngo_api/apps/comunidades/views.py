@@ -1,4 +1,4 @@
-from rest_framework import generics, filters, status
+from rest_framework import generics, filters, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -17,7 +17,6 @@ class ComunidadListCreate(generics.ListCreateAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ['nombre', 'descripcion']
     permission_classes = [IsAuthenticatedOrReadOnly]
-    authentication_classes = []
 
     def perform_create(self, serializer):
         # El creador es siempre el usuario logueado
@@ -56,6 +55,16 @@ class UnirseComunidad(APIView):
             return Response({"error": "La comunidad no existe"}, status=status.HTTP_404_NOT_FOUND)
 
         usuario = request.user
+        
+        # --- REQUISITO DE ACCESO POR RATING ---
+        if usuario.rating_medio < comunidad.min_rating_acceso:
+            return Response({
+                "error": f"¡Miau! No tienes suficiente reputación para unirte. "
+                         f"Se requiere un rating de {comunidad.min_rating_acceso}, "
+                         f"pero tu media es de {usuario.rating_medio}."
+            }, status=status.HTTP_403_FORBIDDEN)
+        # ---------------------------------------
+
         if Miembros_comunidades.objects.filter(usuario=usuario, comunidad=comunidad).exists():
             return Response({"mensaje": "Ya eres miembro de esta comunidad.", "estado": "ACEPTADO"}, status=status.HTTP_200_OK)
         
@@ -84,7 +93,7 @@ class UnirseComunidad(APIView):
             # Lógica según privacidad
             estado = "ACEPTADO" if comunidad.es_publica else "SOLICITUD"
             if not comunidad.es_publica and estado == "SOLICITUD":#si la comunidad es privada
-                solicitud=Seguimiento.objects.create(seguidor=usuario,seguido_comunidad=comunidad,estado=estado)
+                solicitud=Seguimiento.objects.create(seguidor=usuario,seguida_comunidad=comunidad,estado=estado)
                 # Notificar al administrador (creador)
                 Notificacion.objects.create(
                     usuario=comunidad.creador,
@@ -137,3 +146,52 @@ class ResponderPeticionUnion(APIView):
             peticion.save()
             
         return Response({"mensaje": "Respuesta enviada"}, status=status.HTTP_200_OK)
+
+class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comunidad.objects.all()
+    serializer_class = ComunidadSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_destroy(self, instance):
+        if instance.creador != self.request.user:
+            return Response({"error": "Solo el creador puede borrar la comunidad"}, status=403)
+        instance.delete()
+        return Response(status=204)
+
+class AdminDashboardView(APIView):
+    """
+    Dashboard centralizado para el administrador de la comunidad.
+    Retorna solicitudes de unión y reportes de contenido pendientes.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            comunidad = Comunidad.objects.get(pk=pk)
+        except Comunidad.DoesNotExist:
+            return Response({"error": "Comunidad no encontrada"}, status=404)
+
+        if comunidad.creador != request.user:
+            return Response({"error": "No eres el administrador de esta comunidad"}, status=403)
+
+        # 1. Solicitudes de unión pendientes
+        solicitudes = Seguimiento.objects.filter(seguida_comunidad=comunidad, estado='SOLICITUD')
+        solicitudes_data = [{
+            'id': s.id,
+            'usuario_nombre': s.seguidor.nombre_usuario,
+            'usuario_id': s.seguidor.id,
+            'fecha': s.fecha_seguimiento
+        } for s in solicitudes]
+
+        # 2. Reportes pendientes
+        from contenido.models import Reporte
+        from contenido.serializers import ReporteSerializer
+        reportes = Reporte.objects.filter(comunidad=comunidad, estado='PENDIENTE')
+        reportes_data = ReporteSerializer(reportes, many=True, context={'request': request}).data
+
+        return Response({
+            'comunidad_nombre': comunidad.nombre,
+            'solicitudes_pendientes': solicitudes_data,
+            'reportes_activos': reportes_data
+        })
+

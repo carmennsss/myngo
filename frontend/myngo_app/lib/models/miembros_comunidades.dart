@@ -15,11 +15,13 @@ class MiembrosComunidades {
 
   factory MiembrosComunidades.fromJson(Map<String, dynamic> json) {
     return MiembrosComunidades(
-      id: json['id'],
-      usuarioId: json['usuario'],
-      comunidadId: json['comunidad'],
-      rol: json['rol'] ?? 'Miembro',
-      fechaUnion: DateTime.parse(json['fecha_union']),
+      id: json['id'] ?? 0,
+      usuarioId: json['usuario'] ?? 0,
+      comunidadId: json['comunidad'] ?? 0,
+      rol: json['rol']?.toString() ?? 'MIEMBRO',
+      fechaUnion: json['fecha_union'] != null 
+          ? DateTime.parse(json['fecha_union']) 
+          : DateTime.now(),
     );
   }
 }

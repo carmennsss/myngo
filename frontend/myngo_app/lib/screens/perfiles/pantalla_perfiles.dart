@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/respuesta_api.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_perfiles.dart';
 import 'pantalla_detalle_perfil.dart';

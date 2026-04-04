@@ -17,11 +17,11 @@ class CatalogoMejoras {
 
   factory CatalogoMejoras.fromJson(Map<String, dynamic> json) {
     return CatalogoMejoras(
-      id: json['id'],
-      nombre: json['nombre'],
-      tipo: json['tipo'],
-      precioPuntos: json['precio_puntos'] ?? 0,
-      urlRecurso: json['url_recurso'],
+      id: json['id'] ?? 0,
+      nombre: json['nombre']?.toString() ?? 'Mejora',
+      tipo: json['tipo']?.toString() ?? 'OTRO',
+      precioPuntos: (json['precio_puntos'] ?? 0).toInt(),
+      urlRecurso: json['url_recurso']?.toString() ?? '',
     );
   }
 }

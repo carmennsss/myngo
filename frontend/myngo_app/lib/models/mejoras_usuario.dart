@@ -17,11 +17,13 @@ class MejorasUsuario {
 
   factory MejorasUsuario.fromJson(Map<String, dynamic> json) {
     return MejorasUsuario(
-      id: json['id'],
-      usuarioId: json['usuario'],
-      mejoraId: json['mejora'],
+      id: json['id'] ?? 0,
+      usuarioId: json['usuario'] ?? 0,
+      mejoraId: json['mejora'] ?? 0,
       estaEquipada: json['esta_equipada'] ?? false,
-      fechaAdquisicion: DateTime.parse(json['fecha_adquisicion']),
+      fechaAdquisicion: json['fecha_adquisicion'] != null 
+          ? DateTime.parse(json['fecha_adquisicion']) 
+          : DateTime.now(),
     );
   }
 }

@@ -19,13 +19,15 @@ class ImagenesGaleria {
 
   factory ImagenesGaleria.fromJson(Map<String, dynamic> json) {
     return ImagenesGaleria(
-      id: json['id'],
-      propietarioId: json['propietario'],
-      comunidadId: json['comunidad'],
-      urlS3: json['url_s3'],
-      relacionAspecto: json['relacion_aspecto']?.toDouble() ?? 1.0,
-      fechaSubida: DateTime.parse(json['fecha_subida']),
-      etiquetas: json['etiquetas'] ?? '',
+      id: json['id'] ?? 0,
+      propietarioId: json['propietario'] ?? 0,
+      comunidadId: json['comunidad'] ?? 0,
+      urlS3: json['url_s3']?.toString() ?? '',
+      relacionAspecto: (json['relacion_aspecto'] ?? 1.0).toDouble(),
+      fechaSubida: json['fecha_subida'] != null 
+          ? DateTime.parse(json['fecha_subida']) 
+          : DateTime.now(),
+      etiquetas: json['etiquetas']?.toString() ?? '',
     );
   }
 }
