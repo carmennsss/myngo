@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/publicacion.dart';
+import '../../models/comentario.dart';
 import '../../services/servicio_comunidades.dart';
+import '../../services/servicio_interaccion.dart';
 import 'widgets/tarjeta_publicacion.dart';
 
 class PantallaDetallePublicacion extends StatefulWidget {
@@ -19,8 +21,14 @@ class PantallaDetallePublicacion extends StatefulWidget {
 }
 
 class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion> {
-  final _servicio = ServicioComunidades();
+  final _servicioComunidades = ServicioComunidades();
+  final _servicioInteraccion = ServicioInteraccion();
+  final _comentarioController = TextEditingController();
+  
   Publicacion? _pub;
+  List<Comentario> _comentarios = [];
+  bool _cargandoComentarios = false;
+  bool _enviandoComentario = false;
   bool _cargando = false;
   String? _error;
 
@@ -29,6 +37,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     super.initState();
     if (widget.publicacion != null) {
       _pub = widget.publicacion;
+      _cargarComentarios();
     } else {
       _cargarPublicacion();
     }
@@ -36,23 +45,62 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
 
   Future<void> _cargarPublicacion() async {
     if (widget.publicacionId == null) return;
-    
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
-
-    final res = await _servicio.obtenerPublicacion(widget.publicacionId!);
-    
+    setState(() { _cargando = true; _error = null; });
+    final res = await _servicioComunidades.obtenerPublicacion(widget.publicacionId!);
     if (mounted) {
       setState(() {
         _cargando = false;
         if (res.exito) {
           _pub = res.datos;
+          _cargarComentarios();
         } else {
           _error = res.mensaje;
         }
       });
+    }
+  }
+
+  Future<void> _cargarComentarios() async {
+    if (_pub == null) return;
+    setState(() => _cargandoComentarios = true);
+    final res = await _servicioInteraccion.obtenerComentarios(_pub!.id);
+    if (mounted) {
+      setState(() {
+        _comentarios = res.datos ?? [];
+        _cargandoComentarios = false;
+        // Actualizamos el conteo local por si acaso el de la tarjeta difiere
+        if (_pub != null) {
+          _pub = _pub!.copyWith(comentariosCount: _comentarios.length);
+        }
+      });
+    }
+  }
+
+  void _volverConDatos() {
+    Navigator.pop(context, _pub);
+  }
+
+  Future<void> _enviarComentario() async {
+    final texto = _comentarioController.text.trim();
+    if (texto.isEmpty || _pub == null) return;
+
+    setState(() => _enviandoComentario = true);
+    final res = await _servicioInteraccion.crearComentario(_pub!.id, texto);
+    
+    if (mounted) {
+      setState(() => _enviandoComentario = false);
+      if (res.exito && res.datos != null) {
+        _comentarioController.clear();
+        setState(() {
+          _comentarios.add(res.datos!);
+          if (_pub != null) {
+            _pub = _pub!.copyWith(comentariosCount: _comentarios.length);
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Miau! Comentario enviado')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+      }
     }
   }
 
@@ -63,109 +111,154 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Detalle de Miau-Post', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text('Publicación', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.orangeAccent),
+          onPressed: _volverConDatos,
         ),
       ),
-      body: _buildContenido(),
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          _volverConDatos();
+        },
+        child: _buildContenido(),
+      ),
+      bottomNavigationBar: _buildInputComentario(),
     );
   }
 
   Widget _buildContenido() {
-    if (_cargando) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF248EA6)));
-    }
+    if (_cargando) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    if (_error != null) return _buildErrorState();
+    if (_pub == null) return const Center(child: Text('No encontrada', style: TextStyle(color: Colors.white70)));
 
-    if (_error != null) {
+    return RefreshIndicator(
+      onRefresh: _cargarComentarios,
+      color: const Color(0xFFF28B50),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TarjetaPublicacion(
+              publicacion: _pub!,
+              mostrarOpciones: false, // User requested: no dots when viewing post
+              onEliminado: () => Navigator.pop(context, true),
+              onLikeToggle: (liked, count) {
+                if (_pub != null) {
+                  _pub = _pub!.copyWith(usuarioDioLike: liked, likesCount: count);
+                }
+              },
+            ),
+            const SizedBox(height: 24),
+            Text('Comentarios (${_comentarios.length})', 
+              style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildListaComentarios(),
+            const SizedBox(height: 100), // Espacio para el input
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListaComentarios() {
+    if (_cargandoComentarios && _comentarios.isEmpty) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    }
+    if (_comentarios.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(vertical: 40),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 60),
-              const SizedBox(height: 16),
-              Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.white70)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _cargarPublicacion,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6)),
-                child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
-              ),
+              const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white24, size: 48),
+              const SizedBox(height: 12),
+              Text('¡Sé el primero en comentar!', style: GoogleFonts.inter(color: Colors.white24)),
             ],
           ),
         ),
       );
     }
 
-    if (_pub == null) return const Center(child: Text('No se encontró la publicación', style: TextStyle(color: Colors.white70)));
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          TarjetaPublicacion(
-            publicacion: _pub!,
-            onEliminado: () => Navigator.pop(context, true),
-          ),
-          const SizedBox(height: 24),
-          _buildInfoAdicional(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoAdicional() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _comentarios.length,
+      itemBuilder: (context, index) {
+        final c = _comentarios[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.shield_outlined, color: Color(0xFFF28B50), size: 18),
-              const SizedBox(width: 8),
-              Text('Vista de Moderación 🐾', 
-                style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontWeight: FontWeight.bold, fontSize: 16)),
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white10,
+                backgroundImage: c.autorFoto != null ? NetworkImage(c.autorFoto!) : null,
+                child: c.autorFoto == null ? const Icon(Icons.person, size: 18, color: Colors.white38) : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(c.autorNombre, style: GoogleFonts.inter(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(width: 8),
+                        Text('Reciente', style: GoogleFonts.inter(color: Colors.white24, fontSize: 10)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(c.contenido, style: GoogleFonts.inter(color: Colors.white.withOpacity(0.85), fontSize: 14, height: 1.4)),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildInfoRow(Icons.calendar_today, 'Publicado el', _pub!.fechaCreacion.toLocal().toString().split('.')[0]),
-          _buildInfoRow(Icons.tag, 'ID de Contenido', '#${_pub!.id}'),
-          _buildInfoRow(Icons.groups_rounded, 'Comunidad ID', '#${_pub!.comunidadId}'),
-          const SizedBox(height: 8),
-          const Divider(color: Colors.white10),
-          const SizedBox(height: 8),
-          Text(
-            'Si eres administrador de la comunidad, puedes borrar este contenido directamente desde el menú de opciones del post.',
-            style: GoogleFonts.inter(color: Colors.white54, fontSize: 12, height: 1.5),
+        );
+      },
+    );
+  }
+
+  Widget _buildInputComentario() {
+    return Container(
+      padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1E1E1E),
+        border: Border(top: BorderSide(color: Colors.white10)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _comentarioController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: null,
+              decoration: InputDecoration(
+                hintText: 'Añadir un comentario...',
+                hintStyle: const TextStyle(color: Colors.white24),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: _enviandoComentario ? null : _enviarComentario,
+            icon: _enviandoComentario 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50)))
+              : const Icon(Icons.send_rounded, color: Color(0xFFF28B50)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icono, String titulo, String valor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
-      child: Row(
-        children: [
-          Icon(icono, size: 18, color: Colors.grey),
-          const SizedBox(width: 12),
-          Text(titulo, style: GoogleFonts.inter(color: Colors.grey, fontSize: 14)),
-          const Spacer(),
-          Text(valor, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-        ],
-      ),
-    );
+  Widget _buildErrorState() {
+     return Center(child: Text(_error!, style: const TextStyle(color: Colors.white70)));
   }
 }

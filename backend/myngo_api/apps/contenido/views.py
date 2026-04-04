@@ -1,5 +1,5 @@
-from rest_framework import generics, filters, permissions, viewsets, pagination
-from .models import Publicacion, Imagenes_galeria, Coleccion, Reporte, Comentario
+from rest_framework import generics, filters, permissions, viewsets, pagination, serializers
+from .models import Publicacion, Imagenes_galeria, Coleccion, Reporte, Comentario, Me_gustas
 from .serializers import PublicacionSerializer, ImagenGaleriaSerializer, ColeccionSerializer, ReporteSerializer, ComentarioSerializer
 from rest_framework.decorators import action
 from .permissions import IsAuthorOrAdmin
@@ -105,6 +105,7 @@ class PublicacionDelete(generics.DestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         razon = request.data.get('razon', 'Incumplimiento de normas')
+        titulo_seguro = instance.titulo or "Sin título"
         
         # Si el que borra no es el autor (es admin), notificar
         if instance.autor != request.user:
@@ -115,6 +116,9 @@ class PublicacionDelete(generics.DestroyAPIView):
                 mensaje=f"Tu post '{titulo_seguro[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
                 referencia_comunidad=instance.comunidad
             )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='POST', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
             
         if instance.imagen:
             instance.imagen.delete()
@@ -138,6 +142,9 @@ class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
                 mensaje=f"Tu post '{titulo_seguro[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
                 referencia_comunidad=instance.comunidad
             )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='POST', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
             
         if instance.imagen:
             instance.imagen.delete()
@@ -160,6 +167,10 @@ class ImagenGaleriaDetail(generics.RetrieveUpdateDestroyAPIView):
                 mensaje=f"Tu imagen de la galería ha sido borrada por un administrador. Motivo: {razon}",
                 referencia_comunidad=instance.comunidad
             )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='IMAGEN', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
+        
         instance.delete()
         return Response({"mensaje": "Imagen eliminada"}, status=status.HTTP_200_OK)
 
@@ -187,6 +198,10 @@ class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
                 mensaje=f"Tu comentario ha sido borrado por un administrador. Motivo: {razon}",
                 referencia_comunidad=instance.publicacion.comunidad
             )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='COMENTARIO', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
+        
         instance.delete()
         return Response({"mensaje": "Comentario eliminado"}, status=status.HTTP_200_OK)
 
@@ -325,3 +340,57 @@ class ColeccionViewSet(viewsets.ModelViewSet):
             return Response({'status': 'Imagen removida'})
         
         return Response({'error': 'Acción no válida'}, status=400)
+
+class ToggleLikeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            publicacion = Publicacion.objects.get(pk=pk)
+        except Publicacion.DoesNotExist:
+            return Response({'error': 'Publicación no encontrada'}, status=404)
+
+        like, created = Me_gustas.objects.get_or_create(usuario=request.user, publicacion=publicacion)
+        
+        if not created:
+            like.delete()
+            return Response({'mensaje': 'Like eliminado', 'resultado': 'unliked'}, status=200)
+        
+        return Response({'mensaje': 'Like añadido', 'resultado': 'liked'}, status=201)
+
+class ComentarioListCreate(generics.ListCreateAPIView):
+    serializer_class = ComentarioSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        publicacion_id = self.kwargs.get('pk')
+        return Comentario.objects.filter(publicacion_id=publicacion_id).order_by('fecha_creacion')
+
+    def perform_create(self, serializer):
+        try:
+            publicacion = Publicacion.objects.get(pk=self.kwargs.get('pk'))
+        except Publicacion.DoesNotExist:
+            raise serializers.ValidationError("Publicación no encontrada")
+        serializer.save(autor=self.request.user, publicacion=publicacion)
+
+class ResolverReporteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            reporte = Reporte.objects.get(pk=pk)
+        except Reporte.DoesNotExist:
+            return Response({'error': 'Reporte no encontrado'}, status=404)
+
+        # Solo el creador de la comunidad (admin) puede resolver
+        if reporte.comunidad and reporte.comunidad.creador != request.user:
+            return Response({'error': 'No tienes permiso para resolver este reporte'}, status=403)
+
+        nuevo_estado = request.data.get('estado')
+        if nuevo_estado not in ['RESUELTO', 'DESESTIMADO']:
+            return Response({'error': 'Estado no válido'}, status=400)
+
+        reporte.estado = nuevo_estado
+        reporte.save()
+        
+        return Response({'mensaje': f'Reporte marcado como {nuevo_estado}'}, status=200)
