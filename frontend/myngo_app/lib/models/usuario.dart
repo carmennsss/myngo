@@ -34,21 +34,37 @@ class Usuario {
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
-    return Usuario(
-      id: json['id'] ?? 0,
-      nombreUsuario: json['nombre_usuario'] ?? 'Desconocido',
-      email: json['email'] ?? '',
-      contrasena: json['contrasena'],
-      esVerificado: json['es_verificado'] ?? false, 
-      esPublico: json['es_publico'] ?? true, 
-      ratingActual: json['rating_actual'] != null ? double.parse(json['rating_actual'].toString()) : 0.0, 
-      fechaRegistro: json['fecha_registro'] != null ? DateTime.parse(json['fecha_registro']) : DateTime.now(),
-      biografia: json['biografia'],
-      urlAvatar: json['url_avatar'],
-      puntos: json['puntos'],
-      numeroSeguidores: json['numero_seguidores'] ?? 0,
-      numeroSeguidos: json['numero_seguidos'] ?? 0,
-      estadoSeguimiento: json['estado_seguimiento'],
-    );
+    try {
+      return Usuario(
+        id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        nombreUsuario: json['nombre_usuario']?.toString() ?? 'Desconocido',
+        email: json['email']?.toString() ?? '',
+        contrasena: json['contrasena']?.toString(),
+        esVerificado: json['es_verificado'] == true, 
+        esPublico: json['es_publico'] != false, 
+        ratingActual: double.tryParse(json['rating_actual']?.toString() ?? '0.0') ?? 0.0, 
+        fechaRegistro: json['fecha_registro'] != null 
+            ? DateTime.tryParse(json['fecha_registro'].toString()) ?? DateTime.now() 
+            : DateTime.now(),
+        biografia: json['biografia']?.toString(),
+        urlAvatar: json['url_avatar']?.toString(),
+        puntos: int.tryParse(json['puntos']?.toString() ?? '0'),
+        numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
+        numeroSeguidos: int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
+        estadoSeguimiento: json['estado_seguimiento']?.toString(),
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error parsing Usuario: $e');
+      return Usuario(
+        id: 0,
+        nombreUsuario: 'Error',
+        email: '',
+        esVerificado: false,
+        esPublico: true,
+        ratingActual: 0.0,
+        fechaRegistro: DateTime.now(),
+      );
+    }
   }
 }

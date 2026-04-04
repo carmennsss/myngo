@@ -102,6 +102,8 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     super.initState();
     _nodoEnfoqueEmail.addListener(_alCambiarEnfoque);
     _nodoEnfoquePassword.addListener(_alCambiarEnfoque);
+    _controladorEmail.clear();
+    _controladorPassword.clear();
     _cargarCredencialesGuardadas();
   }
 
@@ -110,12 +112,20 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     final emailGuardado = prefs.getString('recordar_email');
     final passGuardada = prefs.getString('recordar_pass');
     
-    if (emailGuardado != null && passGuardada != null && mounted) {
-      setState(() {
-        _recordarme = true;
-        _controladorEmail.text = emailGuardado;
-        _controladorPassword.text = passGuardada;
-      });
+    if (mounted) {
+      if (emailGuardado != null && passGuardada != null) {
+        setState(() {
+          _recordarme = true;
+          _controladorEmail.text = emailGuardado;
+          _controladorPassword.text = passGuardada;
+        });
+      } else {
+        setState(() {
+          _recordarme = false;
+          _controladorEmail.clear();
+          _controladorPassword.clear();
+        });
+      }
     }
   }
 

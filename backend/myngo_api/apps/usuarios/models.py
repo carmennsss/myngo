@@ -40,6 +40,19 @@ class Usuario(AbstractBaseUser):
     def __str__(self):
         return f"{self.id} - {self.nombre_usuario}"
 
+    @property
+    def rating_medio(self):
+        """
+        Calcula la media de estrellas recibidas por este usuario.
+        """
+        from mejoras.models import Voto
+        votos = Voto.objects.filter(receptor_usuario=self)
+        if votos.count() < 10:
+            return 0.0 # O podrías devolver None, pero 0.0 indica "sin calificar" en la UI de Myngo
+        
+        media = votos.aggregate(models.Avg('estrellas'))['estrellas__avg']
+        return round(float(media), 2)
+
 class Perfil(models.Model):
     class Meta:
         db_table = 'perfiles'

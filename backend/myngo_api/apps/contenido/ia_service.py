@@ -4,7 +4,7 @@ from django.conf import settings
 
 # Sugerencia: El token debe estar en .env (HUGGING_FACE_TOKEN)
 HF_TOKEN = getattr(settings, 'HUGGING_FACE_TOKEN', 'hf_placeholder')
-API_URL = "https://api-inference.huggingface.co/models/unitary/toxic-bert"
+API_URL = "https://api-inference.huggingface.co/models/papuca/multilingual-toxic-xlm-roberta"
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 def validar_contenido_toxico(texto):
@@ -23,8 +23,6 @@ def validar_contenido_toxico(texto):
             response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
             if response.status_code == 200:
                 resultado = response.json()
-                # El modelo toxic-bert devuelve una lista de dicts [{'label': 'toxic', 'score': 0.001}, ...]
-                # Buscamos 'toxic' o 'obscene' etc.
                 for match in resultado[0]:
                     if match['label'] in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']:
                         if match['score'] > 0.7: # Umbral de tolerancia

@@ -19,12 +19,14 @@ class Voto {
 
   factory Voto.fromJson(Map<String, dynamic> json) {
     return Voto(
-      id: json['id'],
-      votanteId: json['votante'],
-      receptorUsuarioId: json['receptor_usuario'],
-      receptorComunidadId: json['receptor_comunidad'],
-      estrellas: json['estrellas'] ?? 0,
-      fechaVoto: DateTime.parse(json['fecha_voto']),
+      id: json['id'] ?? 0,
+      votanteId: json['votante'] ?? 0,
+      receptorUsuarioId: json['receptor_usuario'] as int?,
+      receptorComunidadId: json['receptor_comunidad'] as int?,
+      estrellas: (json['estrellas'] ?? 0).toInt(),
+      fechaVoto: json['fecha_voto'] != null 
+          ? DateTime.parse(json['fecha_voto']) 
+          : DateTime.now(),
     );
   }
 }

@@ -7,7 +7,7 @@ import '../../models/usuario.dart';
 import 'widgets/tarjeta_comunidad.dart';
 import 'widgets/formulario_creacion_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
-import '../perfiles/pantalla_perfil_usuario.dart';
+import '../perfiles/pantalla_detalle_perfil.dart';
 
 class PantallaComunidades extends StatefulWidget {
   const PantallaComunidades({super.key});
@@ -261,7 +261,7 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PantallaPerfilUsuario(usuario: usuario),
+                    builder: (context) => PantallaDetallePerfil(usuario: usuario),
                   ),
                 );
               },

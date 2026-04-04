@@ -153,7 +153,7 @@ class TarjetaComunidad extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const Spacer(),
-                          if (comunidad.esMiembro || (comunidad.creadorId != null && comunidad.creadorId == comunidad.id)) ...[
+                          if (comunidad.esMiembro) ...[
                             Align(
                               alignment: Alignment.bottomRight,
                               child: Container(

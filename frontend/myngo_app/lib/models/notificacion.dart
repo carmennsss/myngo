@@ -22,17 +22,30 @@ class Notificacion {
   });
 
   factory Notificacion.fromJson(Map<String, dynamic> json) {
-    return Notificacion(
-      id: json['id'],
-      tipo: json['tipo'],
-      mensaje: json['mensaje'],
-      leida: json['leida'],
-      nombreGenerador: json['nombre_generador'],
-      nombreComunidad: json['nombre_comunidad'],
-      referenciaId: json['referencia_id'],
-      estadoPeticion: json['estado_peticion'],
-      fechaNotificacion: DateTime.parse(json['fecha_notificacion']),
-    );
+    try {
+      return Notificacion(
+        id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        tipo: json['tipo']?.toString() ?? 'default',
+        mensaje: json['mensaje']?.toString() ?? 'Nueva notificación',
+        leida: json['leida'] == true,
+        nombreGenerador: json['nombre_generador']?.toString(),
+        nombreComunidad: json['nombre_comunidad']?.toString(),
+        referenciaId: int.tryParse(json['referencia_id']?.toString() ?? ''),
+        estadoPeticion: json['estado_peticion']?.toString(),
+        fechaNotificacion: json['fecha_notificacion'] != null 
+            ? DateTime.tryParse(json['fecha_notificacion'].toString()) ?? DateTime.now()
+            : DateTime.now(),
+      );
+    } catch (e) {
+      print('Error parsing Notificacion: $e');
+      return Notificacion(
+        id: 0,
+        tipo: 'error',
+        mensaje: 'Error de carga',
+        leida: true,
+        fechaNotificacion: DateTime.now(),
+      );
+    }
   }
 
   Notificacion copyWith({

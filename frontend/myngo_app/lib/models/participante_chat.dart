@@ -13,10 +13,12 @@ class ParticipanteChat {
 
   factory ParticipanteChat.fromJson(Map<String, dynamic> json) {
     return ParticipanteChat(
-      id: json['id'],
-      salaId: json['sala'],
-      usuarioId: json['usuario'],
-      fechaUnion: DateTime.parse(json['fecha_union']),
+      id: json['id'] ?? 0,
+      salaId: json['sala'] ?? 0,
+      usuarioId: json['usuario'] ?? 0,
+      fechaUnion: json['fecha_union'] != null 
+          ? DateTime.parse(json['fecha_union']) 
+          : DateTime.now(),
     );
   }
 }

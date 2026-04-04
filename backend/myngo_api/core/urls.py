@@ -27,5 +27,6 @@ urlpatterns = [
 
     path('contenido/', include('contenido.urls')),
     path('mensajeria/', include('mensajeria.urls')),
+    path('mejoras/', include('mejoras.urls')),
 ]
 

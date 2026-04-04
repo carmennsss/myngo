@@ -96,6 +96,7 @@ class ServicioComunidades {
       solicitud.fields['nombre'] = comunidad.nombre;
       solicitud.fields['descripcion'] = comunidad.descripcion;
       solicitud.fields['es_publica'] = comunidad.esPublica.toString();
+      solicitud.fields['min_rating_acceso'] = comunidad.minRatingAcceso.toString();
 
       if (imagen != null) {
         if (kIsWeb) {
@@ -249,7 +250,94 @@ class ServicioComunidades {
           mensaje: 'Publicación creada'
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${response.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al crear la publicación');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  Future<RespuestaApi> eliminarComunidad(int id) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      final response = await http.delete(
+        Uri.parse('$_urlBase$id/'),
+        headers: {'Authorization': 'Token $token'},
+      );
+
+      if (response.statusCode == 204) return RespuestaApi(exito: true, mensaje: 'Comunidad eliminada');
+      return RespuestaApi(exito: false, mensaje: 'Error al eliminar la comunidad');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  Future<RespuestaApi> editarComunidad(int id, Map<String, dynamic> datos) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      final response = await http.patch(
+        Uri.parse('$_urlBase$id/'),
+        headers: {
+          'Authorization': 'Token $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(datos),
+      );
+
+      if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Comunidad actualizada');
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar la comunidad');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  // --- MÉTODOS DE MODERACIÓN ---
+
+  Future<RespuestaApi<Publicacion>> obtenerPublicacion(int id) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('${_urlContenido}publicaciones/$id/'),
+        headers: await _getHeaders(),
+      );
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(
+          exito: true, 
+          datos: Publicacion.fromJson(jsonDecode(respuesta.body)),
+          mensaje: 'Publicación cargada'
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  Future<RespuestaApi> eliminarPublicacion(int id, {String? razon}) async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('${_urlContenido}publicaciones/$id/'),
+        headers: await _getHeaders(),
+        body: razon != null ? jsonEncode({'razon': razon}) : null,
+      );
+      if (respuesta.statusCode == 204 || respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Publicación eliminada');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  Future<RespuestaApi> eliminarComentario(int id, {String? razon}) async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('${_urlContenido}comentarios/$id/'),
+        headers: await _getHeaders(),
+        body: razon != null ? jsonEncode({'razon': razon}) : null,
+      );
+      if (respuesta.statusCode == 204 || respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Comentario eliminado');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
