@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.core.validators import MaxValueValidator, MinValueValidator
-
 class UsuarioManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -22,8 +21,6 @@ class Usuario(AbstractBaseUser):
         db_table = 'usuarios'
     nombre_usuario = models.CharField(max_length=150)
     email = models.EmailField(max_length=255, unique=True)
-    # Django utiliza 'password' internamente, pero mantendremos una referencia 
-    # si es necesario o simplemente usaremos el de AbstractBaseUser.
     es_verificado = models.BooleanField(default=False, null=True, blank=True)
     rating_actual = models.DecimalField(max_digits=3, decimal_places=2, default=0.00, 
         null=True, 
@@ -42,10 +39,10 @@ class Usuario(AbstractBaseUser):
 
     @property
     def rating_medio(self):
+        from mejoras.models import Voto
         """
         Calcula la media de estrellas recibidas por este usuario.
         """
-        from mejoras.models import Voto
         votos = Voto.objects.filter(receptor_usuario=self)
         if votos.count() < 10:
             return 0.0 # O podrías devolver None, pero 0.0 indica "sin calificar" en la UI de Myngo
@@ -54,11 +51,13 @@ class Usuario(AbstractBaseUser):
         return round(float(media), 2)
 
 class Perfil(models.Model):
+    from contenido.models import Imagenes_galeria
+
     class Meta:
         db_table = 'perfiles'
     usuario=models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='perfil')
     biografia=models.TextField(blank=True, null=True)
-    url_avatar=models.URLField(max_length=500, blank=True, null=True)
+    imagen=models.ForeignKey(Imagenes_galeria,on_delete=models.CASCADE,null=True,blank=True)
     puntos = models.IntegerField(
         default=0,
         validators=[

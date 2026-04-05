@@ -2,21 +2,36 @@ from rest_framework import serializers
 from .models import Usuario, Perfil, Seguimiento
 
 class UsuarioSerializer(serializers.ModelSerializer):
+    # Campos calculados y de relación
+    perfil_id = serializers.SerializerMethodField()  
     numero_seguidores = serializers.SerializerMethodField()
     numero_seguidos = serializers.SerializerMethodField()
     estado_seguimiento = serializers.SerializerMethodField()
+    url_avatar = serializers.SerializerMethodField()
+    biografia = serializers.SerializerMethodField()
+    es_publico = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
         fields = [
-            'id', 'nombre_usuario', 'email', 'es_verificado', 'rating_actual', 
-            'fecha_registro', 'password', 'numero_seguidores', 'numero_seguidos', 
-            'estado_seguimiento'
+           'id', 'perfil_id','nombre_usuario', 'email', 'es_verificado', 'rating_actual',
+            'fecha_registro', 'password', 'numero_seguidores', 'numero_seguidos',
+            'estado_seguimiento', 'url_avatar', 'biografia', 'es_publico'
         ]
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
+    # --- MÉTODOS PARA EXTRAER DATOS DEL PERFIL RELACIONADO ---
+    
+    def _get_perfil(self, obj):
+        # Intentamos obtener el perfil asociado al usuario
+        return getattr(obj, 'perfil', None)
+
+    def get_perfil_id(self, obj):
+        perfil = self._get_perfil(obj)
+        return perfil.id if perfil else 0
+    
     def get_numero_seguidores(self, obj):
         return obj.seguidores.filter(estado='ACEPTADO').count()
 
@@ -31,6 +46,23 @@ class UsuarioSerializer(serializers.ModelSerializer):
             if seguimiento:
                 return seguimiento.estado
         return None
+
+    def get_url_avatar(self, obj):
+        perfil = self._get_perfil(obj)
+        if perfil and perfil.imagen and perfil.imagen.url_s3:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(perfil.imagen.url_s3.url)
+            return perfil.imagen.url_s3.url
+        return None
+
+    def get_biografia(self, obj):
+        perfil = self._get_perfil(obj)
+        return perfil.biografia if perfil else ""
+        
+    def get_es_publico(self, obj):
+        perfil = self._get_perfil(obj)
+        return perfil.es_publico if perfil else True
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
@@ -47,6 +79,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     numero_seguidores = serializers.SerializerMethodField()
     numero_seguidos = serializers.SerializerMethodField()
     estado_seguimiento = serializers.SerializerMethodField()
+    imagen=serializers.SerializerMethodField()
 
     class Meta:
         model = Perfil
@@ -57,7 +90,10 @@ class PerfilSerializer(serializers.ModelSerializer):
 
     def get_numero_seguidos(self, obj):
         return obj.usuario.siguiendo.filter(estado='ACEPTADO').count()
-
+    def get_imagen(self,obj):
+        if obj.imagen:
+            return obj.imagen.id
+        return None  # Si no hay imagen, devolvemos None en lugar de romper el servidor
     def get_estado_seguimiento(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:

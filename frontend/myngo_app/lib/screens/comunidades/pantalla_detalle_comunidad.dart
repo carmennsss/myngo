@@ -17,7 +17,7 @@ import '../../models/coleccion.dart';
 import '../galeria/pantalla_detalle_coleccion.dart';
 import 'pantalla_admin_comunidad.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
+import '../../widgets/dialogo_crear_post.dart';
 
 class PantallaDetalleComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -343,115 +343,34 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   void _mostrarDialogoNuevoPost(BuildContext context) {
-    final controlador = TextEditingController();
-    final controladorEtiquetas = TextEditingController();
-    XFile? imagenSeleccionada;
-    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
-          decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E), 
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32))
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Nueva Publicación 🐾', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 24),
-              TextField(
-                controller: controlador,
-                maxLines: 4,
-                style: GoogleFonts.inter(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '¿Qué estás pensando, miau?',
-                  hintStyle: GoogleFonts.inter(color: Colors.grey),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  filled: true,
-                  fillColor: const Color(0xFF121212),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (imagenSeleccionada != null)
-                Column(
-                  children: [
-                    Container(
-                      height: 150,
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        image: DecorationImage(
-                          image: kIsWeb ? NetworkImage(imagenSeleccionada!.path) as ImageProvider : NetworkImage(imagenSeleccionada!.path),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    TextField(
-                      controller: controladorEtiquetas,
-                      style: GoogleFonts.inter(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Etiquetas (ej. arte, animales, juegos...)',
-                        hintStyle: GoogleFonts.inter(color: Colors.grey),
-                        prefixIcon: const Icon(Icons.sell_outlined, color: Colors.grey),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () async {
-                      final img = await ImagePicker().pickImage(source: ImageSource.gallery);
-                      if (img != null) setModalState(() => imagenSeleccionada = img);
-                    },
-                    icon: const Icon(Icons.image_search_rounded, color: Color(0xFFF29C50)),
-                  ),
-                  const Spacer(),
-                  Consumer<PostProvider>(
-                    builder: (context, provider, child) => ElevatedButton(
-                      onPressed: provider.state == PostState.loading ? null : () async {
-                        final exito = await provider.crearPost(
-                          comunidadId: widget.comunidad.id,
-                          texto: controlador.text,
-                          imagen: imagenSeleccionada,
-                          etiquetas: controladorEtiquetas.text,
-                        );
-                        
-                        if (exito && mounted) {
-                          Navigator.pop(context);
-                          _cargarDatosSeccion(0);
-                        } else if (provider.state == PostState.moderationRejected) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(provider.errorMessage), backgroundColor: const Color(0xFFD95F43)),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF28B50), 
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                      child: provider.state == PostState.loading 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text('Publicar', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+      builder: (context) => DialogoCrearPost(
+        titulo: 'Nueva Publicación 🐾',
+        onPublicar: (texto, imagen, etiquetas) async {
+          final provider = Provider.of<PostProvider>(context, listen: false);
+          final exito = await provider.crearPost(
+            comunidadId: widget.comunidad.id,
+            texto: texto,
+            imagen: imagen,
+            etiquetas: etiquetas,
+          );
+          
+          if (exito && mounted) {
+            _cargarDatosSeccion(0);
+            return true;
+          } else if (provider.state == PostState.moderationRejected) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(provider.errorMessage), backgroundColor: const Color(0xFFD95F43)),
+              );
+            }
+            return false;
+          }
+          return false;
+        },
       ),
     );
   }

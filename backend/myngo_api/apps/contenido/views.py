@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from core import settings
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
-from usuarios.models import Seguimiento, Usuario
+from usuarios.models import Seguimiento, Usuario, Perfil
 from django.db.models import Q
 from comunidades.models import Miembros_comunidades
 from notificaciones.models import Notificacion
@@ -40,20 +40,21 @@ class PublicacionList(generics.ListAPIView):
     ordering_fields = ['fecha_creacion']
 
     def get_queryset(self):
-        user = self.request.user
-        comunidad_id = self.request.query_params.get('comunidad_id')
-        
+        user = self.request.user #obtengo usuario
+        comunidad_id = self.request.query_params.get('comunidad_id') #obtengo comunidad
+        perfil_id=self.request.query_params.get('perfil_id') #obtengo perfil
+
         # Filtro base: Solo válidos por IA para usuarios normales
         # (Los admins podrían ver todo para moderar)
         qs = Publicacion.objects.filter(es_valido_ia=True)
         
-        if comunidad_id:
+        if comunidad_id:#si he recibido una comunidad
             try:
-                comunidad = Comunidad.objects.get(id=comunidad_id)
+                comunidad = Comunidad.objects.get(id=comunidad_id)#extraigo comunidad
             except Comunidad.DoesNotExist:
                 return Publicacion.objects.none()
 
-            if not comunidad.es_publica:
+            if not comunidad.es_publica:#si no es publica
                 if user.is_authenticated:
                     # Verificar membresía aceptada
                     es_miembro = Seguimiento.objects.filter(
@@ -61,14 +62,32 @@ class PublicacionList(generics.ListAPIView):
                         seguida_comunidad=comunidad, 
                         estado='ACEPTADO'
                     ).exists()
-                    if not es_miembro and comunidad.creador != user:
+                    if not es_miembro and comunidad.creador != user:#si el creador no es el usuario y no es miembro
                         return Publicacion.objects.none()
                 else:
                     # Usuario anónimo no puede ver comunidad privada
                     return Publicacion.objects.none()
             
-            return qs.filter(comunidad_id=comunidad_id).order_by('-fecha_creacion')
-        
+            return qs.filter(comunidad_id=comunidad_id).order_by('-fecha_creacion') #retorna publicaciones
+        if perfil_id: #si he recibido perfil (que en frontend es el id del usuario)
+            try:
+                perfil=Perfil.objects.get(id=perfil_id)#extraigo perfil
+            except Perfil.DoesNotExist:
+                return Publicacion.objects.none()
+            
+            if not perfil.es_publico:#si no es publico
+                if user.is_authenticated:
+                    #compruebo amistad
+                    es_miembro = Seguimiento.objects.filter(
+                        seguidor=user, 
+                        seguido_usuario=perfil.usuario, 
+                        estado='ACEPTADO'
+                    ).exists()
+                    if not es_miembro and perfil.usuario != user:#si no es amigo y no es el propietario
+                        return Publicacion.objects.none()
+                else:
+                    return Publicacion.objects.none()
+            return qs.filter(autor=perfil.usuario,comunidad__isnull=True).order_by('-fecha_creacion')#devuelve publicaciones
         # Feed Global: últimas publicaciones de comunidades públicas
         return qs.filter(comunidad__es_publica=True).order_by('-fecha_creacion')
 

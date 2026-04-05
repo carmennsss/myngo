@@ -14,6 +14,7 @@ import string
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 from django.core.cache import cache
+from contenido.models import Imagenes_galeria
 signer = TimestampSigner()
 class RegistroUsuarios(APIView):
     """
@@ -462,3 +463,53 @@ class RecuperarPassword(APIView):
                 "exito": False,
                 "mensaje": "No existe ningún usuario registrado con ese email"
             }, status=status.HTTP_404_NOT_FOUND)
+        
+class EditarPerfil(APIView):
+    permission_classes = [IsAuthenticated]
+    def patch(self,request):
+        perfil_id = request.data.get('perfil_id')
+        imagen = request.FILES.get('url_avatar')
+        if perfil_id:
+            try:
+                perfil = Perfil.objects.get(id=perfil_id)
+            except Perfil.DoesNotExist:
+                return Response({
+                    "exito": False,
+                    "mensaje": "No existe ningún perfil registrado con ese id"
+                }, status=status.HTTP_404_NOT_FOUND)
+            if imagen:
+                    imagen_nueva=Imagenes_galeria.objects.create(propietario=request.user,
+                    comunidad_id=request.data.get('comunidad') or None,
+                    url_s3=imagen,
+                    relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
+                    etiquetas=request.data.get('etiquetas', ''),)
+                    perfil.imagen=imagen_nueva
+            serializer = PerfilSerializer(perfil, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                
+                # Construimos la URL completa para devolverla a Flutter
+                url_avatar = None
+                if perfil.imagen and perfil.imagen.url_s3:
+                    url_avatar = request.build_absolute_uri(perfil.imagen.url_s3.url)
+                    
+                return Response({
+                    "exito": True,
+                    "mensaje": "Perfil actualizado correctamente",
+                    "url_avatar": url_avatar,
+                    "datos": serializer.data
+                }, status=status.HTTP_200_OK)
+            
+            return Response({
+                "exito": False,
+                "errores": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+        else:
+            return Response({
+                "exito":False,
+                "mensaje":"No se ha enviado ningun perfil para editar"
+            },status=status.HTTP_400_BAD_REQUEST)
+
+    

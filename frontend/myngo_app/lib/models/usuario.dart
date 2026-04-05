@@ -2,6 +2,7 @@
 
 class Usuario {
   final int id;
+  final int perfilId;
   final String nombreUsuario;
   final String email;
   final String? contrasena; 
@@ -18,6 +19,7 @@ class Usuario {
 
   Usuario({
     required this.id,
+    required this.perfilId,
     required this.nombreUsuario,
     required this.email,
     this.contrasena,
@@ -37,6 +39,7 @@ class Usuario {
     try {
       return Usuario(
         id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        perfilId: int.tryParse(json['perfil_id']?.toString()??'0')??0,
         nombreUsuario: json['nombre_usuario']?.toString() ?? 'Desconocido',
         email: json['email']?.toString() ?? '',
         contrasena: json['contrasena']?.toString(),
@@ -58,6 +61,7 @@ class Usuario {
       print('Error parsing Usuario: $e');
       return Usuario(
         id: 0,
+        perfilId: 0,
         nombreUsuario: 'Error',
         email: '',
         esVerificado: false,
