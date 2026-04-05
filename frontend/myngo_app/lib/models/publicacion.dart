@@ -44,7 +44,7 @@ class Publicacion {
         creadorComunidadId: int.tryParse(json['creador_comunidad_id']?.toString() ?? ''),
         titulo: json['titulo']?.toString() ?? '',
         contenidoTexto: json['contenido_texto']?.toString() ?? '',
-        urlImagen: json['url_imagen']?.toString(),
+        urlImagen: json['url_archivo_s3'] ?? json['url_imagen'],
         relacionAspecto: double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ?? 1.0,
         fechaCreacion: json['fecha_creacion'] != null 
             ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now() 

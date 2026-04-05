@@ -28,6 +28,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
   bool _estaLogueado = false;
   int? _miId;
   String? _miNombre;
+  String? _miAvatar;
   List<Comunidad> _misComunidades = [];
   bool _cargandoInicial = true;
   int _indiceSeleccionado = 0;
@@ -50,6 +51,13 @@ class _PantallaInicioState extends State<PantallaInicio> {
       _estaLogueado = true;
       _miId = await servicioUsuarios.obtenerIdUsuario();
       _miNombre = await servicioUsuarios.obtenerNombreUsuario();
+      // Cargar datos completos para obtener el avatar
+      if (_miId != null) {
+        final resPerfil = await servicioUsuarios.obtenerDatosUsuario(_miId!);
+        if (resPerfil.exito && resPerfil.datos != null) {
+          _miAvatar = resPerfil.datos!.urlAvatar;
+        }
+      }
       final resComunidades = await ServicioComunidades().listarComunidadesPropias();
       if (resComunidades.exito) {
         _misComunidades = resComunidades.datos ?? [];
@@ -114,7 +122,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
                 flex: 5,
                 child: Column(
                   children: [
-                    TopBar(estaLogueado: _estaLogueado, nombreUsuario: _miNombre, miId: _miId),
+                    TopBar(estaLogueado: _estaLogueado, nombreUsuario: _miNombre, miId: _miId, avatarUrl: _miAvatar, onReturnFromProfile: _inicializarDatos,),
                     Expanded(
                       child: IndexedStack(
                         index: _indiceSeleccionado,
@@ -353,8 +361,10 @@ class TopBar extends StatelessWidget {
   final bool estaLogueado;
   final String? nombreUsuario;
   final int? miId;
+  final String? avatarUrl;
+  final VoidCallback? onReturnFromProfile;
   
-  const TopBar({super.key, required this.estaLogueado, this.nombreUsuario, this.miId});
+  const TopBar({super.key, required this.estaLogueado, this.nombreUsuario, this.miId, this.avatarUrl, this.onReturnFromProfile});
 
   @override
   Widget build(BuildContext context) {
@@ -414,7 +424,8 @@ class TopBar extends StatelessWidget {
                        // Mostrar un loader simple o navegar tras petición
                        final res = await ServicioUsuarios().obtenerDatosUsuario(miId!);
                        if (res.exito && res.datos != null && context.mounted) {
-                          Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: res.datos!)));
+                          await Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: res.datos!)));
+                          if (onReturnFromProfile != null) onReturnFromProfile!();
                        }
                     } else if (value == 'configuracion') {
                       // Placeholder
@@ -475,14 +486,25 @@ class TopBar extends StatelessWidget {
                             ),
                           ),
                         ),
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 20,
-                        backgroundColor: Color(0xFF1E1E1E),
+                        backgroundColor: const Color(0xFF248EA6).withOpacity(0.3),
                         child: ClipOval(
-                          child: Image(
-                            image: NetworkImage('https://picsum.photos/103'),
-                            fit: BoxFit.cover,
-                          ),
+                          child: avatarUrl != null && avatarUrl!.isNotEmpty
+                            ? Image.network(
+                                avatarUrl!,
+                                fit: BoxFit.cover,
+                                width: 40,
+                                height: 40,
+                                errorBuilder: (_, __, ___) => Text(
+                                  (nombreUsuario ?? 'U')[0].toUpperCase(),
+                                  style: const TextStyle(color: Color(0xFF248EA6), fontWeight: FontWeight.bold),
+                                ),
+                              )
+                            : Text(
+                                (nombreUsuario ?? 'U')[0].toUpperCase(),
+                                style: const TextStyle(color: Color(0xFF248EA6), fontWeight: FontWeight.bold),
+                              ),
                         ),
                       ),
                       const Icon(Icons.arrow_drop_down, color: Colors.grey),
