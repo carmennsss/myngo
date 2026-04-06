@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Botón con estilo gradiente que integra un indicador de progreso.
 /// 
@@ -29,17 +30,19 @@ class BotonCarga extends StatelessWidget {
       builder: (context, estaCargando, hijo) {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          height: 56,
+          height: 62,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(28),
             gradient: const LinearGradient(
               colors: [Color(0xFFF28B50), Color(0xFFF29C50)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFF28B50).withOpacity(0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
+                color: const Color(0xFFF28B50).withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
@@ -47,24 +50,24 @@ class BotonCarga extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: estaCargando ? null : alPresionar,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(28),
               child: Center(
                 child: estaCargando
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
+                        height: 28,
+                        width: 28,
                         child: CircularProgressIndicator(
                           color: Colors.white,
                           strokeWidth: 3,
                         ),
                       )
                     : Text(
-                        texto ?? 'Iniciar Sesión',
-                        style: const TextStyle(
+                        texto?.toUpperCase() ?? 'CONTINUAR',
+                        style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
                         ),
                       ),
               ),

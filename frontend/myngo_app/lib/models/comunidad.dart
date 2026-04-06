@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Modelo que representa una comunidad en la aplicación Myngo.
 class Comunidad {
   final int id;
@@ -11,8 +13,11 @@ class Comunidad {
   bool esMiembro;
   bool esPendiente;
   int conteoPendienteAdmin;
+  final int miembrosCount;
   final double ratingMedio;
   final double minRatingAcceso;
+  final Color colorTema;
+  final String? miRol;
   final DateTime fechaCreacion;
 
   Comunidad({
@@ -27,14 +32,21 @@ class Comunidad {
     required this.esMiembro,
     this.esPendiente = false,
     this.conteoPendienteAdmin = 0,
+    this.miembrosCount = 0,
     required this.ratingMedio,
     this.minRatingAcceso = 0.0,
+    this.colorTema = const Color(0xFFC35E34),
+    this.miRol,
     required this.fechaCreacion,
   });
 
   /// Crea una instancia de [Comunidad] a partir de un mapa JSON.
   factory Comunidad.fromJson(Map<String, dynamic> json) {
     try {
+      String colorHex = json['color_tema']?.toString() ?? '#C35E34';
+      if (!colorHex.startsWith('#')) colorHex = '#$colorHex';
+      final color = Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+
       return Comunidad(
         id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
         nombre: json['nombre']?.toString() ?? 'Sin nombre',
@@ -47,8 +59,11 @@ class Comunidad {
         esMiembro: json['es_miembro'] == true,
         esPendiente: json['es_pendiente'] == true,
         conteoPendienteAdmin: int.tryParse(json['conteo_pendiente_admin']?.toString() ?? '0') ?? 0,
+        miembrosCount: int.tryParse(json['miembros_count']?.toString() ?? '0') ?? 0,
         ratingMedio: double.tryParse(json['rating_medio']?.toString() ?? '0.0') ?? 0.0,
         minRatingAcceso: double.tryParse(json['min_rating_acceso']?.toString() ?? '0.0') ?? 0.0,
+        colorTema: color,
+        miRol: json['mi_rol']?.toString(),
         fechaCreacion: json['fecha_creacion'] != null 
             ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now() 
             : DateTime.now(),
@@ -78,6 +93,7 @@ class Comunidad {
       'url_portada': urlPortada,
       'es_publica': esPublica,
       'min_rating_acceso': minRatingAcceso,
+      'color_tema': '#${colorTema.value.toRadixString(16).substring(2).toUpperCase()}',
     };
   }
-}
+}

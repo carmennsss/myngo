@@ -64,6 +64,10 @@ class ServicioGaleria {
 
       final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders());
 
+      if (respuesta.statusCode == 401) {
+        return RespuestaApi(exito: true, datos: [], mensaje: 'Inicia sesión para ver colecciones privadas 🐾');
+      }
+
       if (respuesta.statusCode == 200) {
         final dynamic jsonRes = jsonDecode(respuesta.body);
         final List<dynamic> lista = jsonRes is List ? jsonRes : (jsonRes['results'] ?? []);

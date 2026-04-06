@@ -39,6 +39,19 @@ class Usuario(AbstractBaseUser):
         return f"{self.id} - {self.nombre_usuario}"
 
     @property
+    def url_avatar(self):
+        """
+        Retorna la URL del avatar desde el perfil asociado.
+        """
+        try:
+            perfil = getattr(self, 'perfil', None)
+            if perfil and perfil.imagen and perfil.imagen.url_s3:
+                return perfil.imagen.url_s3.url
+        except Exception:
+            pass
+        return None
+
+    @property
     def rating_medio(self):
         from mejoras.models import Voto
         """

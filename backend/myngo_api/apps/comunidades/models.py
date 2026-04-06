@@ -11,6 +11,7 @@ class Comunidad(models.Model):
     es_verificada=models.BooleanField(default=False)
     rating_actual=models.DecimalField(max_digits=3,decimal_places=2,null=True,blank=True,default=0.00)
     min_rating_acceso=models.DecimalField(max_digits=3,decimal_places=2,default=0.00)
+    color_tema=models.CharField(max_length=7, default='#C35E34') # Hex Code
     fecha_creacion=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -30,11 +31,16 @@ class Comunidad(models.Model):
         return round(float(media), 2)
     
 class Miembros_comunidades(models.Model):
+    ROLES = [
+        ('Administrador', 'Administrador'),
+        ('Moderador', 'Moderador'),
+        ('Miembro', 'Miembro'),
+    ]
     class Meta:
         db_table = 'miembros_comunidades'
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE)
-    rol=models.CharField(max_length=20,default="Miembro")
+    rol=models.CharField(max_length=20, choices=ROLES, default="Miembro")
     fecha_union=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

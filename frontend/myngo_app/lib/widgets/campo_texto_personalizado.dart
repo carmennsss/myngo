@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Widget de campo de texto altamente personalizado con soporte para microinteracciones.
 /// 
@@ -73,45 +74,46 @@ class _CampoTextoPersonalizadoState extends State<CampoTextoPersonalizado> {
       maxLines: widget.maxLineas,
       minLines: widget.minLineas,
       autovalidateMode: AutovalidateMode.onUserInteraction,
-      style: const TextStyle(color: Colors.white),
+      style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 16),
       decoration: InputDecoration(
         labelText: widget.etiqueta,
-        labelStyle: const TextStyle(color: Colors.grey),
-        prefixIcon: Icon(widget.icono, color: Colors.grey),
+        labelStyle: GoogleFonts.outfit(
+          color: widget.nodoEnfoque.hasFocus 
+            ? const Color(0xFFC35E34) 
+            : const Color(0xFF4A4440).withOpacity(0.5), 
+          fontSize: 14
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Icon(
+            widget.icono, 
+            color: widget.nodoEnfoque.hasFocus 
+              ? const Color(0xFFC35E34) 
+              : const Color(0xFFC35E34).withOpacity(0.4), 
+            size: 22
+          ),
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         suffixIcon: widget.esContrasena
-            ? IconButton(
-                icon: Icon(
-                  _textoOculto ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey,
+            ? Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                  icon: Icon(
+                    _textoOculto ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                    color: const Color(0xFFC35E34).withOpacity(0.4),
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _textoOculto = !_textoOculto;
+                    });
+                    if (widget.alCambiarVisibilidad != null) {
+                      widget.alCambiarVisibilidad!(!_textoOculto);
+                    }
+                  },
                 ),
-                onPressed: () {
-                  setState(() {
-                    _textoOculto = !_textoOculto;
-                  });
-                  if (widget.alCambiarVisibilidad != null) {
-                    widget.alCambiarVisibilidad!(!_textoOculto);
-                  }
-                },
               )
             : null,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFF28B50), width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFD95F43)),
-        ),
-        filled: true,
-        fillColor: const Color(0xFF121212),
       ),
     );
   }

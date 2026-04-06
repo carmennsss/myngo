@@ -171,8 +171,10 @@ class AdminDashboardView(APIView):
         except Comunidad.DoesNotExist:
             return Response({"error": "Comunidad no encontrada"}, status=404)
 
-        if comunidad.creador != request.user:
-            return Response({"error": "No eres el administrador de esta comunidad"}, status=403)
+        if comunidad.creador != request.user and not Miembros_comunidades.objects.filter(
+            usuario=request.user, comunidad=comunidad, rol__in=['Administrador', 'Moderador']
+        ).exists():
+            return Response({"error": "No tienes permisos de gestión en esta comunidad"}, status=403)
 
         # 1. Solicitudes de unión pendientes
         solicitudes = Seguimiento.objects.filter(seguida_comunidad=comunidad, estado='SOLICITUD')
@@ -189,9 +191,79 @@ class AdminDashboardView(APIView):
         reportes = Reporte.objects.filter(comunidad=comunidad, estado='PENDIENTE')
         reportes_data = ReporteSerializer(reportes, many=True, context={'request': request}).data
 
+        # 3. Miembros de la comunidad (para gestión de roles)
+        miembros = Miembros_comunidades.objects.filter(comunidad=comunidad).select_related('usuario').order_by('rol', '-fecha_union')
+        miembros_data = [{
+            'id': m.id,
+            'usuario_id': m.usuario.id,
+            'usuario_nombre': m.usuario.nombre_usuario,
+            'usuario_avatar': m.usuario.url_avatar if m.usuario.url_avatar else None,
+            'rol': m.rol,
+            'fecha_union': m.fecha_union
+        } for m in miembros]
+
         return Response({
             'comunidad_nombre': comunidad.nombre,
             'solicitudes_pendientes': solicitudes_data,
-            'reportes_activos': reportes_data
+            'reportes_activos': reportes_data,
+            'miembros': miembros_data
         })
+
+class GestionarRolMiembro(APIView):
+    """
+    Permite al administrador cambiar el rol de un miembro (Miembro <-> Moderador).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            miembro = Miembros_comunidades.objects.get(pk=pk)
+        except Miembros_comunidades.DoesNotExist:
+            return Response({"error": "El miembro no existe"}, status=404)
+
+        if miembro.comunidad.creador != request.user:
+            return Response({"error": "No tienes permiso para cambiar roles"}, status=403)
+
+        nuevo_rol = request.data.get('rol')
+        if nuevo_rol not in ['Miembro', 'Moderador']:
+            return Response({"error": "Rol no válido"}, status=400)
+
+        miembro.rol = nuevo_rol
+        miembro.save()
+
+        # Notificar al usuario
+        Notificacion.objects.create(
+            usuario=miembro.usuario,
+            tipo="ROL_ACTUALIZADO",
+            mensaje=f"¡Miau! Tu rol en '{miembro.comunidad.nombre}' ha sido actualizado a {nuevo_rol}.",
+            referencia_comunidad=miembro.comunidad
+        )
+
+        return Response({"mensaje": f"Rol actualizado a {nuevo_rol}"})
+
+class ObtenerRolUsuarioEnComunidad(APIView):
+    """
+    Retorna el rol de un usuario específico dentro de una comunidad.
+    Útil para mostrar insignias en el perfil.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        usuario_id = request.query_params.get('usuario_id')
+        if not usuario_id:
+            return Response({"error": "usuario_id es requerido"}, status=400)
+            
+        try:
+            miembro = Miembros_comunidades.objects.filter(comunidad_id=pk, usuario_id=usuario_id).first()
+            if miembro:
+                return Response({"rol": miembro.rol})
+            
+            # Si es el creador pero no está en la tabla (raro pero posible)
+            comunidad = Comunidad.objects.get(id=pk)
+            if str(comunidad.creador_id) == str(usuario_id):
+                return Response({"rol": "Administrador"})
+                
+            return Response({"rol": "Visitante"})
+        except Exception:
+            return Response({"rol": "Visitante"})
 

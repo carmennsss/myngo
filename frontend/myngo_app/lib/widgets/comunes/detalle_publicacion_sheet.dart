@@ -3,9 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../models/publicacion.dart';
 import 'menu_opciones_contenido.dart';
+import '../../services/servicio_usuarios.dart';
+import '../../screens/perfiles/pantalla_detalle_perfil.dart';
 
 /// Bottom sheet estilo Instagram que muestra el detalle completo de un post.
-class DetallePublicacionSheet extends StatelessWidget {
+class DetallePublicacionSheet extends StatefulWidget {
   final Publicacion publicacion;
   final String avatarUrl;
   final VoidCallback? onEliminado;
@@ -36,7 +38,39 @@ class DetallePublicacionSheet extends StatelessWidget {
   }
 
   @override
+  State<DetallePublicacionSheet> createState() => _DetallePublicacionSheetState();
+}
+
+class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
+  bool _navegandoAPerfil = false;
+
+  void _irAPerfil(BuildContext context) async {
+    if (_navegandoAPerfil) return;
+    setState(() => _navegandoAPerfil = true);
+    
+    final res = await ServicioUsuarios().obtenerDatosUsuario(widget.publicacion.autorId);
+    
+    if (mounted) {
+      setState(() => _navegandoAPerfil = false);
+      if (res.exito && res.datos != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PantallaDetallePerfil(
+              usuario: res.datos!,
+              comunidadIdContexto: widget.publicacion.comunidadId,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final publicacion = widget.publicacion;
+    final avatarUrl = widget.avatarUrl;
+    final onEliminado = widget.onEliminado;
     final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
     final fecha = DateFormat('dd MMM yyyy · HH:mm').format(publicacion.fechaCreacion.toLocal());
 
@@ -69,49 +103,64 @@ class DetallePublicacionSheet extends StatelessWidget {
             // ── Cabecera: avatar + nombre + menú ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: const Color(0xFF248EA6).withOpacity(0.3),
-                    backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl.isEmpty
-                        ? Text(
-                            publicacion.autorNombre.isNotEmpty ? publicacion.autorNombre[0].toUpperCase() : '?',
-                            style: const TextStyle(color: Color(0xFF248EA6), fontWeight: FontWeight.bold),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '@${publicacion.autorNombre}',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          fecha,
-                          style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
-                        ),
-                      ],
+              child: GestureDetector(
+                onTap: () => _irAPerfil(context),
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFF248EA6).withOpacity(0.3),
+                      backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl.isEmpty
+                          ? Text(
+                              publicacion.autorNombre.isNotEmpty ? publicacion.autorNombre[0].toUpperCase() : '?',
+                              style: const TextStyle(color: Color(0xFF248EA6), fontWeight: FontWeight.bold),
+                            )
+                          : null,
                     ),
-                  ),
-                  MenuOpcionesContenido(
-                    tipoObjeto: 'POST',
-                    objetoId: publicacion.id,
-                    autorId: publicacion.autorId,
-                    onEliminado: () {
-                      Navigator.pop(context);
-                      if (onEliminado != null) onEliminado!();
-                    },
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '@${publicacion.autorNombre}',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (_navegandoAPerfil)
+                                const Padding(
+                                  padding: EdgeInsets.only(left: 8),
+                                  child: SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70)),
+                                ),
+                            ],
+                          ),
+                          Text(
+                            fecha,
+                            style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    MenuOpcionesContenido(
+                      tipoObjeto: 'POST',
+                      objetoId: publicacion.id,
+                      autorId: publicacion.autorId,
+                      comunidadId: publicacion.comunidadId,
+                      creadorComunidadId: publicacion.creadorComunidadId,
+                      onEliminado: () {
+                        Navigator.pop(context);
+                        if (onEliminado != null) onEliminado!();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
 

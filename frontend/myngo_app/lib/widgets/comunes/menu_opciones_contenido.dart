@@ -6,7 +6,6 @@ import 'package:myngo_app/services/servicio_galeria.dart';
 import 'package:myngo_app/services/servicio_comunidades.dart';
 import 'package:myngo_app/models/respuesta_api.dart';
 
-
 class MenuOpcionesContenido extends StatelessWidget {
   final String tipoObjeto; // 'POST', 'IMAGEN', 'COMUNIDAD', 'COMENTARIO'
   final int objetoId;
@@ -135,7 +134,7 @@ class MenuOpcionesContenido extends StatelessWidget {
                 final servicioComunidades = ServicioComunidades();
 
                 if (tipoObjeto == 'POST') {
-                  res = await servicioGaleria.eliminarPublicacion(objetoId, razon: esModeracion ? razon : null);
+                  res = await servicioComunidades.eliminarPublicacion(objetoId, razon: esModeracion ? razon : null);
                 } else if (tipoObjeto == 'IMAGEN') {
                   res = await servicioGaleria.eliminarImagen(objetoId, razon: esModeracion ? razon : null);
                 } else if (tipoObjeto == 'COMUNIDAD') {

@@ -93,6 +93,7 @@ class VotoAPIView(APIView):
         receptor = None
         
         # Base de búsqueda para evitar duplicados hoy
+        hoy = timezone.now().date()
         search_kwargs = {'votante': votante, 'fecha_voto__date': hoy}
         create_kwargs = {'votante': votante, 'estrellas': estrellas}
 
@@ -114,9 +115,17 @@ class VotoAPIView(APIView):
             return Response({"error": "Debes especificar un receptor (usuario o comunidad)."}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # Buscar si ya existe un voto hoy
+        # Buscar si ya existe un voto hoy para este RECEPTOR
         voto = Voto.objects.filter(**search_kwargs).first()
         
+        # SI EL VOTO ES NUEVO, COMPROBAR LÍMITE DE 50 PERSONAS/COMUNIDADES HOY
+        if not voto:
+            votos_hoy_count = Voto.objects.filter(votante=votante, fecha_voto__date=hoy).count()
+            if votos_hoy_count >= 50:
+                return Response({
+                    "error": "Has alcanzado el límite de 50 votos diarios. ¡Vuelve mañana! 🐾"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         if voto:
             voto.estrellas = estrellas
             voto.save()
@@ -132,7 +141,7 @@ class RankingUsuariosView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        # Query optimizada: Media histórica
+        # Rename annotation to avoid collision with 'rating_medio' property
         return Usuario.objects.annotate(
             rating_medio=Avg('votos_recibidos_perfil__estrellas')
         ).filter(rating_medio__isnull=False).order_by('-rating_medio')[:10]
@@ -140,11 +149,15 @@ class RankingUsuariosView(generics.ListAPIView):
         queryset = self.get_queryset()
         data = []
         for u in queryset:
+            url_foto = None
+            if hasattr(u, 'perfil') and u.perfil.imagen and u.perfil.imagen.url_s3:
+                url_foto = u.perfil.imagen.url_s3.url
+
             data.append({
                 "id": u.id,
                 "nombre": u.nombre_usuario,
-                "rating_medio": round(float(u.rating_medio), 2),
-                "url_foto": u.perfil.url_avatar if hasattr(u, 'perfil') else None
+                "rating_medio": round(float(u.rating_promedio or 0), 2),
+                "url_foto": url_foto
             })
         return Response(data)
 
@@ -154,8 +167,20 @@ class RankingComunidadesView(generics.ListAPIView):
 
     def get_queryset(self):
         return Comunidad.objects.annotate(
-            rating_medio=Avg('votos_recibidos_comunidad__estrellas')
-        ).filter(rating_medio__isnull=False).order_by('-rating_medio')[:10]
+            rating_promedio=Avg('votos_recibidos_comunidad__estrellas')
+        ).filter(rating_promedio__isnull=False).order_by('-rating_promedio')[:10]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        data = []
+        for c in queryset:
+            data.append({
+                "id": c.id,
+                "nombre": c.nombre,
+                "rating_medio": round(float(c.rating_promedio or 0), 2),
+                "url_foto": c.url_portada.url if c.url_portada else None
+            })
+        return Response(data)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()

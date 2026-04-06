@@ -27,7 +27,6 @@ class ServicioUsuarios {
         if (datosJson.containsKey('token')) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('auth_token', datosJson['token']);
-          // Guardamos también el ID del usuario para comparaciones locales
           if (datosJson.containsKey('datos') && datosJson['datos']['id'] != null) {
             await prefs.setInt('usuario_id', datosJson['datos']['id']);
             if (datosJson['datos']['nombre_usuario'] != null) {
@@ -125,7 +124,6 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene el token de acceso almacenado de forma persistente.
   Future<String?> obtenerToken() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -135,7 +133,6 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene el ID del usuario logueado.
   Future<int?> obtenerIdUsuario() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -145,7 +142,6 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene el nombre del usuario logueado.
   Future<String?> obtenerNombreUsuario() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -155,7 +151,16 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene la lista pública de usuarios registrados.
+  Future<RespuestaApi<Usuario>> obtenerDatosPropios() async {
+    try {
+      final id = await obtenerIdUsuario();
+      if (id == null) return RespuestaApi(exito: false, mensaje: 'Usuario no logueado');
+      return obtenerDatosUsuario(id);
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error: $e');
+    }
+  }
+
   Future<RespuestaApi<List<Usuario>>> listarUsuarios() async {
     try {
       final token = await obtenerToken();
@@ -176,7 +181,6 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene los datos de un usuario concreto por su ID.
   Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int id) async {
     try {
       final respuesta = await http.get(Uri.parse('$_urlBase/datos/$id/'));
@@ -193,7 +197,6 @@ class ServicioUsuarios {
     }
   }
 
-  /// Cierra la sesión borrando absolutamente todos los datos de SharedPreferences.
   Future<void> cerrarSesion() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

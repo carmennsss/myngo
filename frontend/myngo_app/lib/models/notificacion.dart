@@ -4,6 +4,7 @@ class Notificacion {
   final String mensaje;
   final bool leida;
   final String? nombreGenerador;
+  final int? idGenerador;
   final String? nombreComunidad;
   final int? referenciaId;
   final String? estadoPeticion;
@@ -15,6 +16,7 @@ class Notificacion {
     required this.mensaje,
     required this.leida,
     this.nombreGenerador,
+    this.idGenerador,
     this.nombreComunidad,
     this.referenciaId,
     this.estadoPeticion,
@@ -29,6 +31,7 @@ class Notificacion {
         mensaje: json['mensaje']?.toString() ?? 'Nueva notificación',
         leida: json['leida'] == true,
         nombreGenerador: json['nombre_generador']?.toString(),
+        idGenerador: int.tryParse(json['id_generador']?.toString() ?? ''),
         nombreComunidad: json['nombre_comunidad']?.toString(),
         referenciaId: int.tryParse(json['referencia_id']?.toString() ?? ''),
         estadoPeticion: json['estado_peticion']?.toString(),

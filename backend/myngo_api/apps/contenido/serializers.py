@@ -45,11 +45,14 @@ class ImagenGaleriaSerializer(serializers.ModelSerializer):
     url_archivo = serializers.SerializerMethodField()
     propietario_nombre = serializers.ReadOnlyField(source='propietario.nombre_usuario')
     creador_comunidad_id = serializers.ReadOnlyField(source='comunidad.creador.id')
+    comunidad_nombre = serializers.ReadOnlyField(source='comunidad.nombre')
+    usuario_es_miembro = serializers.SerializerMethodField()
 
     class Meta:
         model = Imagenes_galeria
         fields = [
-            'id', 'propietario', 'propietario_nombre', 'comunidad', 'creador_comunidad_id',
+            'id', 'propietario', 'propietario_nombre', 'comunidad', 'comunidad_nombre',
+            'creador_comunidad_id', 'usuario_es_miembro',
             'url_s3', 'url_archivo', 'tipo_archivo', 
             'relacion_aspecto', 'es_publica', 'fecha_subida', 'etiquetas'
         ]
@@ -62,6 +65,17 @@ class ImagenGaleriaSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.url_s3.url)
             return obj.url_s3.url
         return None
+
+    def get_usuario_es_miembro(self, obj):
+        if not obj.comunidad:
+            return False
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            from comunidades.models import Miembros_comunidades
+            return Miembros_comunidades.objects.filter(
+                comunidad=obj.comunidad, usuario=request.user
+            ).exists()
+        return False
 
 class ColeccionSerializer(serializers.ModelSerializer):
     propietario_nombre = serializers.ReadOnlyField(source='usuario.nombre_usuario')
