@@ -156,7 +156,7 @@ class LoginUsuario(APIView):
                 from rest_framework.authtoken.models import Token
                 token, _ = Token.objects.get_or_create(user=usuario)
                 
-                serializer = UsuarioSerializer(usuario)
+                serializer = UsuarioSerializer(usuario, context={'request': request})
                 return Response({
                     "exito": True,
                     "mensaje": "Inicio de sesión exitoso",
@@ -229,7 +229,7 @@ class DatosUsuarios(APIView):
         if usuario_id:
             usuario=Usuario.objects.get(id=usuario_id)
             if usuario:
-                serializer=UsuarioSerializer(usuario)
+                serializer=UsuarioSerializer(usuario, context={'request': request})
                 return Response({
                     "exito":True,
                     "mensaje": f"Los datos del usuario {usuario_id}",
@@ -247,7 +247,7 @@ class DatosUsuarios(APIView):
                 usuarios = usuarios.exclude(id=request.user.id)
                 
             if usuarios:
-                serializer=UsuarioSerializer(usuarios,many=True)
+                serializer=UsuarioSerializer(usuarios, many=True, context={'request': request})
                 return Response({
                     "exito":True,
                     "mensaje":"Todos los usuarios del sistema",

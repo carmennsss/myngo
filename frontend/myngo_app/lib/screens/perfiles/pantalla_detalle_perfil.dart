@@ -23,6 +23,7 @@ class PantallaDetallePerfil extends StatefulWidget {
   final int? comunidadIdContexto;
   final bool esIntegrada;
   final VoidCallback? onBack;
+  final VoidCallback? onPerfilActualizado;
 
   const PantallaDetallePerfil({
     super.key, 
@@ -30,6 +31,7 @@ class PantallaDetallePerfil extends StatefulWidget {
     this.comunidadIdContexto,
     this.esIntegrada = false,
     this.onBack,
+    this.onPerfilActualizado,
   });
 
   @override
@@ -190,6 +192,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
       ));
       if (respuesta.exito && respuesta.datos != null) {
         setState(() => _avatarLocal = respuesta.datos);
+        widget.onPerfilActualizado?.call();
       }
     }
   }

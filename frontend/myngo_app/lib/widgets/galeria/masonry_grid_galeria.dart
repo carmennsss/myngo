@@ -66,7 +66,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
       offset: _offset,
     );
 
-    if (respuesta.exito && respuesta.datos != null) {
+    if (respuesta.exito && respuesta.datos != null && mounted) {
       setState(() {
         _items.addAll(respuesta.datos!);
         _offset += _limit;

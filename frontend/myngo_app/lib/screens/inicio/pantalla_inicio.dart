@@ -12,6 +12,7 @@ import '../../services/servicio_mejoras.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
+import '../comunidades/pantalla_admin_comunidad.dart';
 import '../comunidades/pantalla_comunidades.dart';
 import '../notificaciones/pantalla_notificaciones.dart';
 import '../galeria/pantalla_mis_cosas.dart';
@@ -119,6 +120,15 @@ class _PantallaInicioState extends State<PantallaInicio> {
             onNavSelected: _alPulsarNav,
             onProfileSelected: _seleccionarUsuario,
           ),
+          if (_comunidadSeleccionada != null)
+            _BarraContextoComunidad(
+              comunidad: _comunidadSeleccionada!,
+              miId: _miId,
+              onCerrar: () => setState(() => _comunidadSeleccionada = null),
+              onComunidadActualizada: (comunidadActualizada) {
+                setState(() => _comunidadSeleccionada = comunidadActualizada);
+              },
+            ),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -156,6 +166,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
                              usuario: _usuarioSeleccionado!,
                              esIntegrada: true,
                              onBack: () => setState(() => _usuarioSeleccionado = null),
+                             onPerfilActualizado: () => _inicializarDatos(),
                            )
                          : IndexedStack(
                            index: _indiceSeleccionado,
@@ -588,6 +599,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('¡Vaya! Debes iniciar miau-sesión para unirte 🐾', style: GoogleFonts.outfit()),
         backgroundColor: const Color(0xFFC35E34),
+        duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: 'ENTRAR',
           textColor: Colors.white,
@@ -862,10 +874,17 @@ class _UserProfileHeader extends StatelessWidget {
               if (onProfileSelected != null) {
                 onProfileSelected!(res.datos!);
               } else {
-                Navigator.push(
+                await Navigator.push(
                   context, 
-                  MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: res.datos!))
+                  MaterialPageRoute(builder: (c) => PantallaDetallePerfil(
+                    usuario: res.datos!,
+                    // No callback here, but we can return true and refetch
+                  ))
                 );
+                // When we return from full screen pop, let's refresh just in case:
+                if (onProfileSelected != null) {
+                   // actually if onProfileSelected is null, we are NOT inline, we're likely calling from Cabecera directly. Wait, if we are in PantallaInicio, onProfileSelected IS NOT NULL! So this branch only runs when Cabecera is used outside (which there aren't any right now).
+                }
               }
             }
           } else if (value == 'config') {
@@ -917,11 +936,22 @@ class _UserProfileHeader extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 20, 
-              backgroundColor: Colors.white.withOpacity(0.3),
-              backgroundImage: avatarUrl != null ? CachedNetworkImageProvider(avatarUrl!) : null, 
-              child: avatarUrl == null ? const Icon(Icons.person, color: Colors.white) : null
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.3),
+                image: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                    ? DecorationImage(
+                        image: NetworkImage(avatarUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: (avatarUrl == null || avatarUrl!.isEmpty)
+                  ? const Icon(Icons.person, color: Colors.white)
+                  : null,
             ),
             const SizedBox(width: 14),
             Column(
@@ -1201,6 +1231,154 @@ class LateralDerecho extends StatelessWidget {
                   ),
                   child: Text('EMPEZAR YA', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w900)),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- BARRA DE CONTEXTO DE COMUNIDAD ---
+class _BarraContextoComunidad extends StatefulWidget {
+  final Comunidad comunidad;
+  final int? miId;
+  final VoidCallback onCerrar;
+  final Function(Comunidad)? onComunidadActualizada;
+
+  const _BarraContextoComunidad({
+    required this.comunidad,
+    this.miId,
+    required this.onCerrar,
+    this.onComunidadActualizada,
+  });
+
+  @override
+  State<_BarraContextoComunidad> createState() => _BarraContextoComunidadState();
+}
+
+class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
+  String _miRol = 'Miembro';
+  bool _cargandoRol = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _obtenerRol();
+  }
+
+  @override
+  void didUpdateWidget(_BarraContextoComunidad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.comunidad.id != widget.comunidad.id) {
+      _obtenerRol();
+    }
+  }
+
+  Future<void> _obtenerRol() async {
+    setState(() => _cargandoRol = true);
+    if (widget.miId == null) {
+      setState(() => _cargandoRol = false);
+      return;
+    }
+    final res = await ServicioComunidades().obtenerRolUsuarioEnComunidad(widget.comunidad.id, widget.miId!);
+    if (mounted) {
+      setState(() {
+        _miRol = res.datos ?? 'Miembro';
+        _cargandoRol = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final esCreador = widget.miId != null && widget.miId == widget.comunidad.creadorId;
+    final rolLabel = esCreador ? 'Creador' : _miRol;
+    final iconRol = esCreador ? Icons.stars_rounded : (rolLabel == 'Moderador' ? Icons.gavel_rounded : Icons.pets_rounded);
+    final colorRol = esCreador ? Colors.amber : (rolLabel == 'Moderador' ? const Color(0xFF248EA6) : const Color(0xFFC35E34));
+
+    return Container(
+      height: 70,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          // Fondo con imagen y Blur
+          if (widget.comunidad.urlPortada != null && widget.comunidad.urlPortada!.isNotEmpty)
+            Positioned.fill(
+              child: CachedNetworkImage(
+                imageUrl: widget.comunidad.urlPortada!,
+                fit: BoxFit.cover,
+                errorWidget: (context, url, error) => Container(color: widget.comunidad.colorTema),
+              ),
+            )
+          else
+            Positioned.fill(child: Container(color: widget.comunidad.colorTema)),
+          
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.black.withOpacity(0.8),
+                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Contenido
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  onPressed: widget.onCerrar,
+                  tooltip: 'Cerrar vista de comunidad',
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.comunidad.nombre,
+                      style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                    ),
+                    Row(
+                      children: [
+                        Icon(iconRol, size: 12, color: colorRol),
+                        const SizedBox(width: 4),
+                        Text(
+                          rolLabel.toUpperCase(),
+                          style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                if (esCreador || _miRol == 'Moderador')
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
+                    onPressed: () async {
+                      final actualizada = await Navigator.push<Comunidad>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PantallaAdminComunidad(comunidad: widget.comunidad),
+                        ),
+                      );
+                      if (actualizada != null && widget.onComunidadActualizada != null) {
+                        widget.onComunidadActualizada!(actualizada);
+                      }
+                    },
+                    tooltip: 'Administrar Comunidad',
+                  ),
               ],
             ),
           ),

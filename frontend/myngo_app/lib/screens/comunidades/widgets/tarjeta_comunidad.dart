@@ -119,17 +119,39 @@ class TarjetaComunidad extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 12),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.people_alt_rounded, size: 14, color: Colors.grey),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${comunidad.miembrosCount} Miembros',
-                          style: GoogleFonts.outfit(
-                            color: Colors.grey.shade500,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        Row(
+                          children: [
+                            const Icon(Icons.people_alt_rounded, size: 14, color: Colors.grey),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${comunidad.miembrosCount}',
+                              style: GoogleFonts.outfit(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: comunidad.esMiembro ? const Color(0xFF248EA6).withOpacity(0.1) : const Color(0xFFC35E34),
+                            borderRadius: BorderRadius.circular(12),
+                            border: comunidad.esMiembro ? Border.all(color: const Color(0xFF248EA6).withOpacity(0.2)) : null,
+                          ),
+                          child: Text(
+                            comunidad.esMiembro ? 'ENTRAR 🐾' : 'UNIRSE ✨',
+                            style: GoogleFonts.outfit(
+                              color: comunidad.esMiembro ? const Color(0xFF248EA6) : Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
                       ],

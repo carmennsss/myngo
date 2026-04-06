@@ -438,11 +438,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     );
 
     if (mounted) {
-      if (res.exito) {
+      if (res.exito && res.datos != null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('¡Ajustes actualizados! ✨'),
           backgroundColor: Colors.green,
         ));
+        Navigator.pop(context, res.datos); // Devuelve la comunidad actualizada
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: ${res.mensaje}'),

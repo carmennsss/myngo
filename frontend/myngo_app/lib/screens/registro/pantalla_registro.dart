@@ -16,6 +16,19 @@ class PantallaRegistro extends StatefulWidget {
 
 class _PantallaRegistroState extends State<PantallaRegistro> {
   Offset _posicionMouse = Offset.zero;
+  EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
+  double _ratioMirada = 0.5;
+
+  void _onGatosChange(EstadoMonstruo estado, double ratio) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _estadoGatos = estado;
+          _ratioMirada = ratio;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,25 +80,31 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(24),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF248EA6).withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.person_add_rounded, color: Color(0xFF248EA6), size: 80),
-                                  ),
-                                  const SizedBox(height: 32),
-                                  Text(
-                                    'UNETE A MYNGO',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFFC35E34),
-                                      fontSize: 64,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 4.0,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
+                                      Container(
+                                        padding: const EdgeInsets.all(24),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF248EA6).withOpacity(0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.person_add_rounded, color: Color(0xFF248EA6), size: 48),
+                                      ),
+                                      const SizedBox(height: 32),
+                                      GatosRegistroAnimados(
+                                        estado: _estadoGatos,
+                                        ratioMirada: _ratioMirada,
+                                        posicionMouseGlobal: _posicionMouse,
+                                      ),
+                                      const SizedBox(height: 32),
+                                      Text(
+                                        'UNETE',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFFC35E34),
+                                          fontSize: 64,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 4.0,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'Crea tu rincón y empieza a compartir con otros entusiastas de los michis. 🐾',
@@ -110,14 +129,11 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Center(
-                          child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 460),
-                                child: TarjetaRegistro(posicionMouse: _posicionMouse),
-                              ),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 460),
+                            child: TarjetaRegistro(
+                              posicionMouse: _posicionMouse,
+                              onGatosChange: _onGatosChange,
                             ),
                           ),
                         ),
@@ -147,8 +163,17 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        GatosRegistroAnimados(
+                          estado: _estadoGatos,
+                          ratioMirada: _ratioMirada,
+                          posicionMouseGlobal: _posicionMouse,
+                        ),
                         const SizedBox(height: 32),
-                        TarjetaRegistro(posicionMouse: _posicionMouse),
+                        TarjetaRegistro(
+                          posicionMouse: _posicionMouse,
+                          onGatosChange: _onGatosChange,
+                        ),
                       ],
                     ),
                   ),
@@ -189,7 +214,9 @@ class _BurbujaDecorativa extends StatelessWidget {
 
 class TarjetaRegistro extends StatefulWidget {
   final Offset posicionMouse;
-  const TarjetaRegistro({super.key, this.posicionMouse = Offset.zero});
+  final Function(EstadoMonstruo, double)? onGatosChange;
+
+  const TarjetaRegistro({super.key, this.posicionMouse = Offset.zero, this.onGatosChange});
 
   @override
   State<TarjetaRegistro> createState() => _TarjetaRegistroState();
@@ -237,34 +264,34 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
 
   void _alCambiarEnfoque() {
     if (_nodoEnfoquePassword.hasFocus) {
-      setState(() {
-        _estadoGatos = _esPasswordVisible
-            ? EstadoMonstruo.escondido
-            : EstadoMonstruo.mirando;
-      });
+      _estadoGatos = _esPasswordVisible
+          ? EstadoMonstruo.escondido
+          : EstadoMonstruo.mirando;
     } else if (_nodoEnfoqueEmail.hasFocus || _nodoEnfoqueNombre.hasFocus) {
-      setState(() {
-        _estadoGatos = EstadoMonstruo.mirando;
-      });
+      _estadoGatos = EstadoMonstruo.mirando;
     } else {
       if (_estadoGatos != EstadoMonstruo.feliz &&
           _estadoGatos != EstadoMonstruo.triste) {
-        setState(() {
-          _estadoGatos = EstadoMonstruo.inactivo;
-        });
+        _estadoGatos = EstadoMonstruo.inactivo;
       }
     }
+    _notificarCambioGato();
+  }
+
+  void _notificarCambioGato() {
+    widget.onGatosChange?.call(_estadoGatos, _ratioMirada);
   }
 
   void _alCambiarVisibilidadPassword(bool esVisible) {
     setState(() {
       _esPasswordVisible = esVisible;
-      if (_nodoEnfoquePassword.hasFocus) {
-        _estadoGatos = _esPasswordVisible
-            ? EstadoMonstruo.escondido
-            : EstadoMonstruo.mirando;
-      }
     });
+    if (_nodoEnfoquePassword.hasFocus) {
+      _estadoGatos = _esPasswordVisible
+          ? EstadoMonstruo.escondido
+          : EstadoMonstruo.mirando;
+      _notificarCambioGato();
+    }
   }
 
   void _actualizarPosicionMirada(String valor) {
@@ -272,6 +299,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
       setState(() {
         _ratioMirada = (valor.length / 30).clamp(0.0, 1.0);
       });
+      _notificarCambioGato();
     }
   }
 
@@ -283,9 +311,13 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     if (_llaveFormulario.currentState!.validate()) {
       _mostrarDialogoReglas();
     } else {
-      setState(() => _estadoGatos = EstadoMonstruo.triste);
+      _estadoGatos = EstadoMonstruo.triste;
+      _notificarCambioGato();
       Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
+        if (mounted) {
+          _estadoGatos = EstadoMonstruo.inactivo;
+          _notificarCambioGato();
+        }
       });
     }
   }
@@ -385,9 +417,13 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    setState(() => _estadoGatos = EstadoMonstruo.triste);
+                    _estadoGatos = EstadoMonstruo.triste;
+                    _notificarCambioGato();
                     Future.delayed(const Duration(seconds: 2), () {
-                      if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
+                      if (mounted) {
+                        _estadoGatos = EstadoMonstruo.inactivo;
+                        _notificarCambioGato();
+                      }
                     });
                   },
                   child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
@@ -416,9 +452,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
 
   Future<void> _procesarRegistro() async {
     _estaCargando.value = true;
-    setState(() {
-      _estadoGatos = EstadoMonstruo.calculando;
-    });
+    _estadoGatos = EstadoMonstruo.calculando;
+    _notificarCambioGato();
 
     final respuesta = await _servicioUsuarios.registrarse(
       _controladorNombre.text,
@@ -430,7 +465,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     if (!mounted) return;
 
     if (respuesta.exito) {
-      setState(() => _estadoGatos = EstadoMonstruo.feliz);
+      _estadoGatos = EstadoMonstruo.feliz;
+      _notificarCambioGato();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('¡Miau! Revisa tu correo para activar tu cuenta 📧'),
@@ -444,7 +480,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
         if (mounted) Navigator.pushReplacementNamed(context, '/login'); 
       });
     } else {
-      setState(() => _estadoGatos = EstadoMonstruo.triste);
+      _estadoGatos = EstadoMonstruo.triste;
+      _notificarCambioGato();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(respuesta.mensaje),
@@ -454,177 +491,131 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
         ),
       );
       Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
+        if (mounted) {
+          _estadoGatos = EstadoMonstruo.inactivo;
+          _notificarCambioGato();
+        }
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 32),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-        const Positioned(top: -28, left: 45, child: _OrejaGato(rotacion: -0.15)),
-        const Positioned(top: -28, right: 45, child: _OrejaGato(rotacion: 0.15)),
-        
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: const Color(0xFFF2D0BD).withOpacity(0.5), width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFF29C50).withOpacity(0.1),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(color: const Color(0xFFF2D0BD).withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF29C50).withOpacity(0.1),
+            blurRadius: 40,
+            offset: const Offset(0, 20),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              GatosRegistroAnimados(
-                estado: _estadoGatos,
-                ratioMirada: _ratioMirada,
-                posicionMouseGlobal: widget.posicionMouse,
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(40, 48, 40, 40),
+      child: Form(
+        key: _llaveFormulario,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '¡Únete a Myngo!',
+              style: GoogleFonts.outfit(
+                fontSize: 30,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF4A4440),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
-                child: Form(
-                  key: _llaveFormulario,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        '¡Únete a Myngo!',
-                        style: GoogleFonts.outfit(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF4A4440),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Crea tu rincón para empezar 🐾',
-                        style: GoogleFonts.outfit(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 40),
-                      CampoTextoPersonalizado(
-                        etiqueta: 'Nombre de usuario',
-                        icono: Icons.person_outline_rounded,
-                        controlador: _controladorNombre,
-                        nodoEnfoque: _nodoEnfoqueNombre,
-                        alCambiar: _actualizarPosicionMirada,
-                        validador: (valor) {
-                          if (valor == null || valor.isEmpty) return '¿Tu nombre? 🐾';
-                          if (valor.length < 3) return 'Mínimo 3 letras';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      CampoTextoPersonalizado(
-                        etiqueta: 'Email',
-                        icono: Icons.alternate_email_rounded,
-                        controlador: _controladorEmail,
-                        nodoEnfoque: _nodoEnfoqueEmail,
-                        alCambiar: _actualizarPosicionMirada,
-                        validador: (valor) {
-                          if (valor == null || valor.isEmpty) return 'Falta el email 📧';
-                          if (!valor.contains('@')) return 'Email no válido';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      CampoTextoPersonalizado(
-                        etiqueta: 'Contraseña',
-                        icono: Icons.lock_open_rounded,
-                        controlador: _controladorPassword,
-                        nodoEnfoque: _nodoEnfoquePassword,
-                        esContrasena: true,
-                        alCambiarVisibilidad: _alCambiarVisibilidadPassword,
-                        validador: (valor) {
-                          if (valor == null || valor.isEmpty) return 'La clave secreta 🔑';
-                          if (valor.length < 6) return 'Mínimo 6 caracteres';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      ValueListenableBuilder<bool>(
-                        valueListenable: _estaCargando,
-                        builder: (context, cargando, _) {
-                          return ElevatedButton(
-                            onPressed: cargando ? null : _crearCuenta,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF28B50),
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 62),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                              elevation: 10,
-                              shadowColor: const Color(0xFFF28B50).withOpacity(0.4),
-                            ),
-                            child: cargando 
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : Text('REGISTRARME 🐾', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-                          );
-                        }
-                      ),
-                      const SizedBox(height: 28),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('¿Ya eres parte?', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14)),
-                          TextButton(
-                            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                            style: TextButton.styleFrom(foregroundColor: const Color(0xFFF28B50)),
-                            child: const Text('Inicia sesión', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          ),
-                        ],
-                      ),
-                    ],
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Crea tu rincón para empezar 🐾',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            CampoTextoPersonalizado(
+              etiqueta: 'Nombre de usuario',
+              icono: Icons.person_outline_rounded,
+              controlador: _controladorNombre,
+              nodoEnfoque: _nodoEnfoqueNombre,
+              alCambiar: _actualizarPosicionMirada,
+              validador: (valor) {
+                if (valor == null || valor.isEmpty) return '¿Tu nombre? 🐾';
+                if (valor.length < 3) return 'Mínimo 3 letras';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            CampoTextoPersonalizado(
+              etiqueta: 'Email',
+              icono: Icons.alternate_email_rounded,
+              controlador: _controladorEmail,
+              nodoEnfoque: _nodoEnfoqueEmail,
+              alCambiar: _actualizarPosicionMirada,
+              validador: (valor) {
+                if (valor == null || valor.isEmpty) return 'Falta el email 📧';
+                if (!valor.contains('@')) return 'Email no válido';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            CampoTextoPersonalizado(
+              etiqueta: 'Contraseña',
+              icono: Icons.lock_open_rounded,
+              controlador: _controladorPassword,
+              nodoEnfoque: _nodoEnfoquePassword,
+              esContrasena: true,
+              alCambiarVisibilidad: _alCambiarVisibilidadPassword,
+              validador: (valor) {
+                if (valor == null || valor.isEmpty) return 'La clave secreta 🔑';
+                if (valor.length < 6) return 'Mínimo 6 caracteres';
+                return null;
+              },
+            ),
+            const SizedBox(height: 32),
+            ValueListenableBuilder<bool>(
+              valueListenable: _estaCargando,
+              builder: (context, cargando, _) {
+                return ElevatedButton(
+                  onPressed: cargando ? null : _crearCuenta,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF28B50),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 62),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                    elevation: 10,
+                    shadowColor: const Color(0xFFF28B50).withOpacity(0.4),
                   ),
+                  child: cargando 
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text('REGISTRARME 🐾', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                );
+              }
+            ),
+            const SizedBox(height: 28),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('¿Ya eres parte?', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14)),
+                TextButton(
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF28B50)),
+                  child: const Text('Inicia sesión', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      ),
-    );
-  }
-}
-
-class _OrejaGato extends StatelessWidget {
-  final double rotacion;
-  const _OrejaGato({required this.rotacion});
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: rotacion,
-      child: Container(
-        width: 48,
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(32),
-            topRight: Radius.circular(32),
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          ),
-          border: Border.all(color: const Color(0xFFF2D0BD).withOpacity(0.5), width: 2),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
+

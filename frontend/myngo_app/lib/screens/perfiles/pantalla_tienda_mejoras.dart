@@ -14,15 +14,30 @@ class PantallaTiendaMejoras extends StatelessWidget {
       length: 3,
       child: Column(
         children: [
-          TabBar(
-            indicatorColor: const Color(0xFFF28B50),
-            labelColor: const Color(0xFFF28B50),
-            unselectedLabelColor: Colors.grey,
-            tabs: const [
-              Tab(text: 'Avatares', icon: Icon(Icons.face_rounded, size: 20)),
-              Tab(text: 'Marcos', icon: Icon(Icons.crop_square_rounded, size: 20)),
-              Tab(text: 'Fondos', icon: Icon(Icons.wallpaper_rounded, size: 20)),
-            ],
+          Container(
+            margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2D0BD).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TabBar(
+              indicator: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.1), blurRadius: 8)],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: const Color(0xFFC35E34),
+              unselectedLabelColor: Colors.grey.shade500,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13),
+              unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
+              tabs: const [
+                Tab(text: 'Avatares'),
+                Tab(text: 'Marcos'),
+                Tab(text: 'Fondos'),
+              ],
+            ),
           ),
           const Expanded(
             child: TabBarView(
@@ -39,21 +54,30 @@ class PantallaTiendaMejoras extends StatelessWidget {
 
     if (esVistaIntegrada) {
       return Container(
-        color: const Color(0xFF1E1E1E),
+        color: const Color(0xFFFEF5F1),
         child: content,
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: const Color(0xFFFEF5F1),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: const Color(0xFFFEF5F1),
         elevation: 0,
-        title: Text(
-          'Tienda de Mejoras',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white),
+        scrolledUnderElevation: 0,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.storefront_rounded, color: Color(0xFFC35E34), size: 24),
+            const SizedBox(width: 10),
+            Text(
+              'Tienda de Mejoras',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440), fontSize: 20),
+            ),
+          ],
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
       ),
       body: content,
     );
@@ -85,7 +109,6 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
       _isLoading = true;
       _errorMensaje = null;
     });
-    
     final respuesta = await _servicioMejoras.obtenerMejorasCatalogo(widget.tipo);
     if (mounted) {
       setState(() {
@@ -102,46 +125,57 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
     }
     if (_errorMensaje != null) {
       return Center(
-        child: Text(
-          _errorMensaje!,
-          style: GoogleFonts.inter(color: Colors.red),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(_errorMensaje!, style: GoogleFonts.outfit(color: Colors.grey.shade500)),
+          ],
         ),
       );
     }
     if (_mejoras.isEmpty) {
       return Center(
-        child: Text(
-          'No hay ${widget.tipo}s disponibles por ahora.',
-          style: GoogleFonts.inter(color: Colors.grey),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inventory_2_rounded, size: 56, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(
+              'No hay ${widget.tipo}s disponibles aún 🐾',
+              style: GoogleFonts.outfit(color: Colors.grey.shade500, fontSize: 14),
+            ),
+          ],
         ),
       );
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 140, // Cartas mucho más pequeñas
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.55, // Más altura para que quepan títulos largos sin cortarse
+        maxCrossAxisExtent: 160,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.62,
       ),
       itemCount: _mejoras.length,
       itemBuilder: (context, index) {
         final mejora = _mejoras[index];
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF2A2A2A)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE8D5C4)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                color: const Color(0xFFC35E34).withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -150,58 +184,57 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                   child: Container(
-                    color: const Color(0xFF121212),
+                    color: const Color(0xFFFBE9E0),
                     child: mejora.urlRecurso.isNotEmpty
                         ? Image.network(
                             mejora.urlRecurso,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(
-                                child: Icon(Icons.broken_image_rounded, color: Colors.grey, size: 40),
-                              );
-                            },
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Icon(Icons.broken_image_rounded, color: Colors.grey.shade300, size: 36),
+                            ),
                           )
-                        : const Center(
-                            child: Icon(Icons.image_not_supported_rounded, color: Colors.grey, size: 40),
+                        : Center(
+                            child: Icon(Icons.image_not_supported_rounded, color: Colors.grey.shade300, size: 36),
                           ),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
                 child: Column(
                   children: [
                     Text(
                       mejora.nombre,
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF4A4440),
+                        fontWeight: FontWeight.w800,
                         fontSize: 12,
                       ),
                       textAlign: TextAlign.center,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF248EA6).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.5)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFF28B50), Color(0xFFC35E34)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.workspace_premium_rounded, color: Color(0xFFF28B50), size: 14),
+                          const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 13),
                           const SizedBox(width: 4),
                           Text(
-                            '${mejora.precioPuntos}',
-                            style: GoogleFonts.inter(
-                              color: const Color(0xFFF28B50),
-                              fontWeight: FontWeight.bold,
+                            '${mejora.precioPuntos} pts',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
                               fontSize: 11,
                             ),
                           ),

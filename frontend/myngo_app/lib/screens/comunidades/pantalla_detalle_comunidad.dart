@@ -187,12 +187,13 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       children: [
         Column(
           children: [
-            _buildCompactHeader(context),
             Container(
               height: 60,
               decoration: BoxDecoration(
                 color: _colorPagina(context),
-                border: Border(bottom: BorderSide(color: Colors.grey.withOpacity(0.1))),
+                border: Border(
+                  bottom: BorderSide(color: widget.comunidad.colorTema.withOpacity(0.2), width: 2),
+                ),
               ),
               child: _buildSubNav(context),
             ),
@@ -209,7 +210,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               onPressed: () => _mostrarDialogoNuevoPost(context),
               label: Text('Miau Post', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
               icon: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
-              backgroundColor: const Color(0xFFF28B50),
+              backgroundColor: widget.comunidad.colorTema,
             ),
           ),
       ],
@@ -352,6 +353,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Widget _buildNavItem(int index, String label, IconData icon) {
     final activo = _indiceSeccion == index;
+    final color = widget.comunidad.colorTema;
     return InkWell(
       onTap: () {
         setState(() => _indiceSeccion = index);
@@ -362,19 +364,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: activo ? const Color(0xFFC35E34) : Colors.transparent,
+              color: activo ? color : Colors.transparent,
               width: 3,
             ),
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: activo ? const Color(0xFFC35E34) : Colors.grey, size: 18),
+            Icon(icon, color: activo ? color : Colors.grey, size: 18),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.outfit(
-                color: activo ? const Color(0xFFC35E34) : Colors.grey,
+                color: activo ? color : Colors.grey,
                 fontWeight: activo ? FontWeight.bold : FontWeight.normal,
                 fontSize: 13,
                 letterSpacing: 0.5,
