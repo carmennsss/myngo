@@ -28,17 +28,55 @@ class MiAplicacion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Myngo App',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        scrollbars: false,
+      ),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFF28B50),
-          brightness: Brightness.dark,
-          surface: const Color(0xFF1E1E1E),
-        ),
-        scaffoldBackgroundColor: const Color(0xFF121212),
         useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(),
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFC35E34),
+          brightness: Brightness.light,
+          primary: const Color(0xFFC35E34),   // Terracotta Orange
+          secondary: const Color(0xFFF29C50), // Gold/Mandarina
+          tertiary: const Color(0xFF248EA6),  // Teal Contrast
+          surface: Colors.white,
+          onSurface: const Color(0xFF4A4440), // Warm Dark Grey
+          error: const Color(0xFFD95F43),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFFEF5F1), // Warm Peach Cream
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme).copyWith(
+          displayLarge: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.w900),
+          bodyLarge: GoogleFonts.outfit(color: const Color(0xFF4A4440).withOpacity(0.9)),
+        ),
+        cardTheme: CardThemeData(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          color: Colors.white,
+          elevation: 10,
+          shadowColor: const Color(0xFF4A4440).withOpacity(0.08),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFC35E34),
+            foregroundColor: Colors.white,
+            textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w900, letterSpacing: 1.0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            elevation: 4,
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: const Color(0xFFC35E34).withOpacity(0.1), width: 1.5)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: const Color(0xFFC35E34).withOpacity(0.1), width: 1.5)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Color(0xFFC35E34), width: 2)),
+          hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 13),
+          prefixIconColor: const Color(0xFFC35E34).withOpacity(0.5),
+          suffixIconColor: const Color(0xFFC35E34).withOpacity(0.5),
+          labelStyle: GoogleFonts.outfit(color: const Color(0xFF4A4440).withOpacity(0.7), fontSize: 14),
+        ),
       ),
       initialRoute: '/inicio',
       routes: {

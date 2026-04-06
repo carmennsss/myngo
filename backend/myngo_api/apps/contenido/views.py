@@ -401,9 +401,13 @@ class ResolverReporteView(APIView):
         except Reporte.DoesNotExist:
             return Response({'error': 'Reporte no encontrado'}, status=404)
 
-        # Solo el creador de la comunidad (admin) puede resolver
-        if reporte.comunidad and reporte.comunidad.creador != request.user:
-            return Response({'error': 'No tienes permiso para resolver este reporte'}, status=403)
+        # Solo el creador o moderadores de la comunidad pueden resolver
+        if reporte.comunidad:
+            es_gestor = reporte.comunidad.creador == request.user or Miembros_comunidades.objects.filter(
+                usuario=request.user, comunidad=reporte.comunidad, rol__in=['Administrador', 'Moderador']
+            ).exists()
+            if not es_gestor:
+                return Response({'error': 'No tienes permiso para resolver este reporte'}, status=403)
 
         nuevo_estado = request.data.get('estado')
         if nuevo_estado not in ['RESUELTO', 'DESESTIMADO']:

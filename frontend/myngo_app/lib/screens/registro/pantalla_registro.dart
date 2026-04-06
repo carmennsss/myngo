@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/campo_texto_personalizado.dart';
 import '../../widgets/gatos_registro_animados.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../services/servicio_usuarios.dart';
-/// Pantalla de registro con fondo degradado, idéntica en estética al login
+
 class PantallaRegistro extends StatefulWidget {
   const PantallaRegistro({super.key});
 
@@ -25,31 +26,135 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         });
       },
       child: Scaffold(
+        backgroundColor: const Color(0xFFFEF5F1),
         body: Container(
           width: double.infinity,
           height: double.infinity,
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1A1A1A),
-                Color(0xFF121212),
-              ],
-            ),
+            color: Color(0xFFFEF5F1),
           ),
-          child: Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 450,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth > 900;
+              
+              if (isDesktop) {
+                return Row(
+                  children: [
+                    // Lado Izquierdo: Visual/Fun Premium
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC35E34).withOpacity(0.02),
+                          border: Border(right: BorderSide(color: const Color(0xFFC35E34).withOpacity(0.05))),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Positioned(
+                              top: 60,
+                              left: 80,
+                              child: _BurbujaDecorativa(size: 200, color: const Color(0xFFC35E34).withOpacity(0.08)),
+                            ),
+                            Positioned(
+                              bottom: 120,
+                              right: 100,
+                              child: _BurbujaDecorativa(size: 180, color: const Color(0xFF248EA6).withOpacity(0.08)),
+                            ),
+                            
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 48.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF248EA6).withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.person_add_rounded, color: Color(0xFF248EA6), size: 80),
+                                  ),
+                                  const SizedBox(height: 32),
+                                  Text(
+                                    'UNETE A MYNGO',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFFC35E34),
+                                      fontSize: 64,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 4.0,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Crea tu rincón y empieza a compartir con otros entusiastas de los michis. 🐾',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFF4A4440).withOpacity(0.6),
+                                      fontSize: 16,
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 32),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Lado Derecho: Formulario
+                    Expanded(
+                      flex: 5,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Center(
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 460),
+                                child: TarjetaRegistro(posicionMouse: _posicionMouse),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              // Vista Móvil
+              return Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.pets, color: Color(0xFFC35E34), size: 32),
+                            const SizedBox(width: 12),
+                            Text(
+                              'MYNGO',
+                              style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 2),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        TarjetaRegistro(posicionMouse: _posicionMouse),
+                      ],
+                    ),
                   ),
-                  child: TarjetaRegistro(posicionMouse: _posicionMouse),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -57,7 +162,31 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   }
 }
 
-/// Tarjeta blanca central con sombras suaves — misma estructura que TarjetaLogin
+class _BurbujaDecorativa extends StatelessWidget {
+  final double size;
+  final Color color;
+  const _BurbujaDecorativa({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 40,
+            spreadRadius: 20,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class TarjetaRegistro extends StatefulWidget {
   final Offset posicionMouse;
   const TarjetaRegistro({super.key, this.posicionMouse = Offset.zero});
@@ -146,19 +275,14 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     }
   }
 
-  // Igual que _iniciarSesion en el login: valida y pone triste si hay error
   Future<void> _crearCuenta() async {
-    // 1. Quitamos el foco de los teclados para que bajen
     _nodoEnfoqueNombre.unfocus();
     _nodoEnfoqueEmail.unfocus();
     _nodoEnfoquePassword.unfocus();
 
-    // 2. Validación de los campos de texto
     if (_llaveFormulario.currentState!.validate()) {
-      // 3. Mostrar el diálogo con el PDF de las reglas
       _mostrarDialogoReglas();
     } else {
-      // Formulario inválido localmente
       setState(() => _estadoGatos = EstadoMonstruo.triste);
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
@@ -170,8 +294,6 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     bool acepto = false;
     bool declino = false;
 
-    // Instanciamos el Future una sola vez antes de abrir el diálogo
-    // Esto evita que se vuelva a hacer la petición al marcar el checkbox.
     final futureDescargaPdf = http.get(Uri.parse('http://127.0.0.1:8000/documentos/reglas_comunidad/'))
       .then((res) async {
         if (res.statusCode != 200) throw Exception('Error API');
@@ -187,68 +309,74 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Reglas de la Comunidad'),
+              backgroundColor: const Color(0xFF1E1E1E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(32), 
+                side: BorderSide(color: Colors.white.withOpacity(0.05)),
+              ),
+              title: Text('Reglas de la Comunidad 🐾', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
               content: SizedBox(
                 width: double.maxFinite,
-                height: 500, // Altura adecuada para ver el PDF
+                height: 500,
                 child: Column(
                   children: [
                     Expanded(
-                      child: FutureBuilder<http.Response>(
-                        future: futureDescargaPdf, // Usamos la variable guardada
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
-                          } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.statusCode != 200) {
-                            return Center(child: Text('Error: ${snapshot.error}'));
-                          } else {
-                            final bytes = snapshot.data!.bodyBytes;
-                            if (bytes.isEmpty) {
-                              return const Center(child: Text('El PDF descargado está vacío.'));
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: FutureBuilder<http.Response>(
+                          future: futureDescargaPdf,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+                            } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.statusCode != 200) {
+                              return Center(child: Text('Error al cargar reglas 😿', style: GoogleFonts.outfit(color: Colors.grey)));
+                            } else {
+                              final bytes = snapshot.data!.bodyBytes;
+                              return SfPdfViewer.memory(bytes);
                             }
-                            // Usar el visor de memoria es mucho más estable en múltiples plataformas
-                            return SfPdfViewer.memory(
-                              bytes,
-                              onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Fallo visor: ${details.description}')),
-                                  );
-                                });
-                              },
-                            );
-                          }
-                        },
+                          },
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: acepto,
-                          onChanged: (val) {
-                            setDialogState(() {
-                              acepto = val ?? false;
-                              if (acepto) declino = false;
-                            });
-                          },
-                        ),
-                        const Expanded(child: Text('Acepto los términos y condiciones')),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: declino,
-                          onChanged: (val) {
-                            setDialogState(() {
-                              declino = val ?? false;
-                              if (declino) acepto = false;
-                            });
-                          },
-                        ),
-                        const Expanded(child: Text('Declino los términos')),
-                      ],
+                    const SizedBox(height: 24),
+                    Theme(
+                      data: Theme.of(context).copyWith(unselectedWidgetColor: Colors.grey),
+                      child: Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () => setDialogState(() { acepto = true; declino = false; }),
+                            child: Row(
+                              children: [
+                                Radio<bool>(
+                                  value: true,
+                                  groupValue: acepto ? true : (declino ? false : null),
+                                  onChanged: (_) => setDialogState(() { acepto = true; declino = false; }),
+                                  activeColor: const Color(0xFFF28B50),
+                                ),
+                                Text('Acepto los miau-términos', style: GoogleFonts.outfit(color: Colors.white, fontSize: 14)),
+                              ],
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => setDialogState(() { declino = true; acepto = false; }),
+                            child: Row(
+                              children: [
+                                Radio<bool>(
+                                  value: true,
+                                  groupValue: declino ? true : (acepto ? false : null),
+                                  onChanged: (_) => setDialogState(() { declino = true; acepto = false; }),
+                                  activeColor: const Color(0xFFD95F43),
+                                ),
+                                Text('Declino y me voy 😿', style: GoogleFonts.outfit(color: Colors.white, fontSize: 14)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -256,27 +384,27 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context); // Cerrar diálogo
-                    // Si declina, lo ponemos triste
+                    Navigator.pop(context);
                     setState(() => _estadoGatos = EstadoMonstruo.triste);
                     Future.delayed(const Duration(seconds: 2), () {
                       if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
                     });
                   },
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                  child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
                 ),
                 ElevatedButton(
                   onPressed: acepto
                       ? () {
-                          Navigator.pop(context); // Cerrar diálogo
-                          _procesarRegistro(); // Ejecutar registro
+                          Navigator.pop(context);
+                          _procesarRegistro();
                         }
-                      : null, // Deshabilitado si no aceptó
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF28B50),
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('Continuar'),
+                  child: Text('CONTINUAR 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 ),
               ],
             );
@@ -287,13 +415,11 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
   }
 
   Future<void> _procesarRegistro() async {
-    // 4. Activamos estado de carga
     _estaCargando.value = true;
     setState(() {
       _estadoGatos = EstadoMonstruo.calculando;
     });
 
-    // 5. Llamada al servicio (Asíncrona)
     final respuesta = await _servicioUsuarios.registrarse(
       _controladorNombre.text,
       _controladorEmail.text,
@@ -301,41 +427,32 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     );
 
     _estaCargando.value = false;
-
-    // Comprobamos que la pantalla siga existiendo
     if (!mounted) return;
 
-    // 6. Gestionamos la respuesta de Django
     if (respuesta.exito) {
       setState(() => _estadoGatos = EstadoMonstruo.feliz);
-      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Revisa tu correo para activar tu cuenta!'),
-          backgroundColor: Colors.blueAccent, // Color informativo
+        SnackBar(
+          content: Text('¡Miau! Revisa tu correo para activar tu cuenta 📧'),
+          backgroundColor: const Color(0xFF248EA6),
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
 
-      // Redirigimos al inicio de sesión (login) para forzar al usuario a validar su cuenta
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) Navigator.pushReplacementNamed(context, '/login'); 
       });
-
     } else {
-      // Error (Email ya existe, nombre muy corto, etc.)
       setState(() => _estadoGatos = EstadoMonstruo.triste);
-      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(respuesta.mensaje),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: const Color(0xFFD95F43),
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
-      
-      // Volver al estado normal tras el susto
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => _estadoGatos = EstadoMonstruo.inactivo);
       });
@@ -344,188 +461,169 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        // Lavanda muy suave — diferente al blanco puro del login
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.only(top: 32),
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Gatos alternativos exclusivos del registro
-          GatosRegistroAnimados(
-            estado: _estadoGatos,
-            ratioMirada: _ratioMirada,
-            posicionMouseGlobal: widget.posicionMouse,
+        const Positioned(top: -28, left: 45, child: _OrejaGato(rotacion: -0.15)),
+        const Positioned(top: -28, right: 45, child: _OrejaGato(rotacion: 0.15)),
+        
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(color: const Color(0xFFF2D0BD).withOpacity(0.5), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF29C50).withOpacity(0.1),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
           ),
-
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-            child: Form(
-              key: _llaveFormulario,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ── Título ──
-                  Text(
-                    '¡Únete a Myngo!',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Crea tu cuenta para empezar',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // ── Campo: Nombre de usuario ──
-                  CampoTextoPersonalizado(
-                    etiqueta: 'Nombre de usuario',
-                    icono: Icons.person_outline,
-                    controlador: _controladorNombre,
-                    nodoEnfoque: _nodoEnfoqueNombre,
-                    alCambiar: _actualizarPosicionMirada,
-                    tipoTeclado: TextInputType.name,
-                    validador: (valor) {
-                      if (valor == null || valor.isEmpty) {
-                        return 'Por favor ingresa tu nombre de usuario';
-                      }
-                      if (valor.length < 3) {
-                        return 'El nombre debe tener al menos 3 caracteres';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Campo: Email ──
-                  CampoTextoPersonalizado(
-                    etiqueta: 'Correo Electrónico',
-                    icono: Icons.email_outlined,
-                    controlador: _controladorEmail,
-                    nodoEnfoque: _nodoEnfoqueEmail,
-                    alCambiar: _actualizarPosicionMirada,
-                    tipoTeclado: TextInputType.emailAddress,
-                    validador: (valor) {
-                      if (valor == null || valor.isEmpty) {
-                        return 'Por favor ingresa tu correo';
-                      }
-                      if (!valor.contains('@')) {
-                        return 'Ingresa un correo válido';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Campo: Contraseña ──
-                  CampoTextoPersonalizado(
-                    etiqueta: 'Contraseña',
-                    icono: Icons.lock_outline,
-                    controlador: _controladorPassword,
-                    nodoEnfoque: _nodoEnfoquePassword,
-                    esContrasena: true,
-                    alCambiarVisibilidad: _alCambiarVisibilidadPassword,
-                    validador: (valor) {
-                      if (valor == null || valor.isEmpty) {
-                        return 'Por favor ingresa una contraseña';
-                      }
-                      if (valor.length < 6) {
-                        return 'La contraseña debe tener al menos 6 caracteres';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // ── Botón Crear cuenta (misma estética que BotonCarga) ──
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF28B50), Color(0xFFF29C50)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFF28B50).withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _crearCuenta,
-                        borderRadius: BorderRadius.circular(16),
-                        child: const Center(
-                          child: Text(
-                            'Crear cuenta',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Enlace: Volver al login ──
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              GatosRegistroAnimados(
+                estado: _estadoGatos,
+                ratioMirada: _ratioMirada,
+                posicionMouseGlobal: widget.posicionMouse,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+                child: Form(
+                  key: _llaveFormulario,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        '¿Ya tienes cuenta?',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
+                        '¡Únete a Myngo!',
+                        style: GoogleFonts.outfit(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF4A4440),
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/login');
+                      const SizedBox(height: 8),
+                      Text(
+                        'Crea tu rincón para empezar 🐾',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 40),
+                      CampoTextoPersonalizado(
+                        etiqueta: 'Nombre de usuario',
+                        icono: Icons.person_outline_rounded,
+                        controlador: _controladorNombre,
+                        nodoEnfoque: _nodoEnfoqueNombre,
+                        alCambiar: _actualizarPosicionMirada,
+                        validador: (valor) {
+                          if (valor == null || valor.isEmpty) return '¿Tu nombre? 🐾';
+                          if (valor.length < 3) return 'Mínimo 3 letras';
+                          return null;
                         },
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFFF28B50),
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                        ),
-                        child: const Text(
-                          'Inicia sesión',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                      ),
+                      const SizedBox(height: 20),
+                      CampoTextoPersonalizado(
+                        etiqueta: 'Email',
+                        icono: Icons.alternate_email_rounded,
+                        controlador: _controladorEmail,
+                        nodoEnfoque: _nodoEnfoqueEmail,
+                        alCambiar: _actualizarPosicionMirada,
+                        validador: (valor) {
+                          if (valor == null || valor.isEmpty) return 'Falta el email 📧';
+                          if (!valor.contains('@')) return 'Email no válido';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      CampoTextoPersonalizado(
+                        etiqueta: 'Contraseña',
+                        icono: Icons.lock_open_rounded,
+                        controlador: _controladorPassword,
+                        nodoEnfoque: _nodoEnfoquePassword,
+                        esContrasena: true,
+                        alCambiarVisibilidad: _alCambiarVisibilidadPassword,
+                        validador: (valor) {
+                          if (valor == null || valor.isEmpty) return 'La clave secreta 🔑';
+                          if (valor.length < 6) return 'Mínimo 6 caracteres';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 32),
+                      
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _estaCargando,
+                        builder: (context, cargando, _) {
+                          return ElevatedButton(
+                            onPressed: cargando ? null : _crearCuenta,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF28B50),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 62),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                              elevation: 10,
+                              shadowColor: const Color(0xFFF28B50).withOpacity(0.4),
+                            ),
+                            child: cargando 
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : Text('REGISTRARME 🐾', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                          );
+                        }
+                      ),
+                      const SizedBox(height: 28),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('¿Ya eres parte?', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14)),
+                          TextButton(
+                            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                            style: TextButton.styleFrom(foregroundColor: const Color(0xFFF28B50)),
+                            child: const Text('Inicia sesión', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
+      ],
+      ),
+    );
+  }
+}
+
+class _OrejaGato extends StatelessWidget {
+  final double rotacion;
+  const _OrejaGato({required this.rotacion});
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: rotacion,
+      child: Container(
+        width: 48,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(32),
+            topRight: Radius.circular(32),
+            bottomLeft: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+          border: Border.all(color: const Color(0xFFF2D0BD).withOpacity(0.5), width: 2),
+        ),
       ),
     );
   }

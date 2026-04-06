@@ -9,9 +9,11 @@ import 'widgets/formulario_creacion_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import '../perfiles/pantalla_perfiles.dart';
+import '../../widgets/comunes/boton_tactil.dart';
 
 class PantallaComunidades extends StatefulWidget {
-  const PantallaComunidades({super.key});
+  final Function(Comunidad)? onComunidadSelected;
+  const PantallaComunidades({super.key, this.onComunidadSelected});
 
   @override
   State<PantallaComunidades> createState() => _PantallaComunidadesState();
@@ -49,7 +51,6 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
         });
       }
     } else {
-      // Si aún no tenemos los usuarios, los bajamos todos de golpe
       if (_usuariosOriginales.isEmpty) {
         final respuesta = await _servicioUsuarios.listarUsuarios();
         if (respuesta.exito && mounted) {
@@ -76,119 +77,125 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        title: Text('Explorar', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      backgroundColor: const Color(0xFFFEF5F1),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Pestañas (SubNav Ribbons)
+          // Header Moderno / Título
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+            padding: const EdgeInsets.fromLTRB(28, 24, 28, 12),
             child: Row(
               children: [
-                _buildTab('Comunidades', 0, Icons.grid_view_rounded),
-                const SizedBox(width: 12),
-                _buildTab('Perfiles', 1, Icons.people_alt_rounded),
+                Text(
+                  'EXPLORAR MUNDOS',
+                  style: GoogleFonts.outfit(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF4A4440),
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const Spacer(),
+                if (_indicePestana == 0)
+                  BotonTactil(
+                    onTap: () => _mostrarModalCreacion(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 28),
+                    ),
+                  ),
               ],
             ),
           ),
+
+          // Pestañas Bubble
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Row(
+              children: [
+                _buildPestana('COMUNIDADES', 0),
+                const SizedBox(width: 24),
+                _buildPestana('PERFILES', 1),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           
-          // Barra de Búsqueda conectada al nuevo estilo
-          if (_indicePestana == 0) // Ocultar si estamos en Perfiles
+          // Barra de Búsqueda Premium
+          if (_indicePestana == 0) 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFF2A2A2A)),
-                ),
-                child: TextField(
-                  controller: _controladorBusqueda,
-                  style: GoogleFonts.inter(color: Colors.white),
-                  onChanged: (valor) => _cargarDatos(filtro: valor),
-                  decoration: InputDecoration(
-                    hintText: 'Buscar comunidades...',
-                    hintStyle: GoogleFonts.inter(color: Colors.grey),
-                    prefixIcon: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Icon(Icons.search, color: Colors.grey, size: 20),
-                    ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+              child: TextField(
+                controller: _controladorBusqueda,
+                onChanged: (valor) => _cargarDatos(filtro: valor),
+                style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
+                decoration: InputDecoration(
+                  hintText: _indicePestana == 0 ? 'Busca una comunidad...' : 'Busca a un michi...',
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
                 ),
               ),
             ),
           
           Expanded(
-            child: _indicePestana == 0
-                ? (_estaCargando ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))) : _buildGridComunidades())
-                : const PantallaPerfiles(esModoIncrustado: true), // Carga la pantalla final de perfiles, con su propia searchbar
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _indicePestana == 0
+                  ? (_estaCargando 
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))) 
+                      : _buildGridComunidades())
+                  : const PantallaPerfiles(esModoIncrustado: true),
+            ),
           ),
         ],
       ),
-      floatingActionButton: _indicePestana == 0 ? FloatingActionButton.extended(
-        onPressed: () async {
-          final token = await _servicioUsuarios.obtenerToken();
-          if (token == null) {
-            if (mounted) Navigator.pushNamed(context, '/login');
-            return;
-          }
-          if (mounted) _mostrarModalCreacion(context);
-        },
-        label: Text('Crear Comunidad', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
-        icon: const Icon(Icons.add, color: Colors.white),
-        backgroundColor: const Color(0xFFF28B50),
-        elevation: 4,
-      ) : null,
     );
   }
 
-  Widget _buildTab(String label, int index, IconData icon) {
-    final active = _indicePestana == index;
-    return GestureDetector(
+  Widget _buildPestana(String texto, int index) {
+    bool activa = _indicePestana == index;
+    return BotonTactil(
       onTap: () {
-        if (!active) {
-          setState(() {
-            _indicePestana = index;
-            _controladorBusqueda.clear();
-          });
+        setState(() {
+          _indicePestana = index;
           _cargarDatos();
-        }
+        });
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFF28B50) : const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: active ? const Color(0xFFF28B50) : const Color(0xFF2A2A2A)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: active ? Colors.white : Colors.grey),
-            const SizedBox(width: 8),
-            Text(
-              label, 
-              style: GoogleFonts.inter(color: active ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)
+      child: Column(
+        children: [
+          Text(
+            texto,
+            style: GoogleFonts.outfit(
+              color: activa ? const Color(0xFFC35E34) : Colors.grey.shade500,
+              fontWeight: activa ? FontWeight.w900 : FontWeight.w600,
+              fontSize: 14,
             ),
-          ],
-        ),
+          ),
+          if (activa)
+            Container(margin: const EdgeInsets.only(top: 4), height: 3, width: 24, decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(2))),
+        ],
       ),
     );
   }
 
   Widget _buildGridComunidades() {
     if (_comunidades.isEmpty) {
-      return Center(child: Text('No hay comunidades todavía.', style: GoogleFonts.inter(color: Colors.grey)));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
+            const SizedBox(height: 16),
+            Text(
+              'No encontramos nada...',
+              style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
     }
     
     return RefreshIndicator(
@@ -196,80 +203,25 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
       backgroundColor: const Color(0xFF1E1E1E),
       onRefresh: () => _cargarDatos(),
       child: GridView.builder(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(24),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 250,
-          childAspectRatio: 0.8,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          maxCrossAxisExtent: 280,
+          childAspectRatio: 0.82,
+          crossAxisSpacing: 20,
+          mainAxisSpacing: 20,
         ),
         itemCount: _comunidades.length,
         itemBuilder: (context, index) => TarjetaComunidad(
           comunidad: _comunidades[index],
           alPresionar: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => PantallaDetalleComunidad(comunidad: _comunidades[index])),
-            );
+            if (widget.onComunidadSelected != null) {
+              widget.onComunidadSelected!(_comunidades[index]);
+            } else {
+              Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(comunidad: _comunidades[index])));
+            }
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildListaPerfiles() {
-    if (_usuariosFiltrados.isEmpty) {
-      return Center(child: Text('No se encontraron perfiles.', style: GoogleFonts.inter(color: Colors.grey)));
-    }
-
-    return RefreshIndicator(
-      color: const Color(0xFF248EA6), // Teal para usuarios
-      backgroundColor: const Color(0xFF1E1E1E),
-      onRefresh: () {
-        _usuariosOriginales.clear(); // forzar recarga
-        return _cargarDatos();
-      },
-      child: ListView.builder(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        itemCount: _usuariosFiltrados.length,
-        itemBuilder: (context, index) {
-          final usuario = _usuariosFiltrados[index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF2A2A2A)),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              leading: CircleAvatar(
-                backgroundColor: const Color(0xFF248EA6).withOpacity(0.2),
-                radius: 24,
-                child: const Icon(Icons.person, color: Color(0xFF248EA6)),
-              ),
-              title: Text(
-                usuario.nombreUsuario, 
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)
-              ),
-              subtitle: Text(
-                usuario.email,
-                style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFF29C50)),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PantallaDetallePerfil(usuario: usuario),
-                  ),
-                );
-              },
-            ),
-          );
-        },
       ),
     );
   }

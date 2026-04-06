@@ -4,41 +4,58 @@ import '../../models/catalogo_mejoras.dart';
 import '../../services/servicio_mejoras.dart';
 
 class PantallaTiendaMejoras extends StatelessWidget {
-  const PantallaTiendaMejoras({super.key});
+  final bool esVistaIntegrada;
+  
+  const PantallaTiendaMejoras({super.key, this.esVistaIntegrada = false});
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
+    final content = DefaultTabController(
       length: 3,
-      child: Scaffold(
-        backgroundColor: const Color(0xFF1E1E1E),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF121212),
-          elevation: 0,
-          title: Text(
-            'Tienda de Mejoras',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          iconTheme: const IconThemeData(color: Colors.white),
-          bottom: TabBar(
+      child: Column(
+        children: [
+          TabBar(
             indicatorColor: const Color(0xFFF28B50),
             labelColor: const Color(0xFFF28B50),
             unselectedLabelColor: Colors.grey,
             tabs: const [
-              Tab(text: 'Avatares', icon: Icon(Icons.face_rounded)),
-              Tab(text: 'Marcos', icon: Icon(Icons.crop_square_rounded)),
-              Tab(text: 'Fondos', icon: Icon(Icons.wallpaper_rounded)),
+              Tab(text: 'Avatares', icon: Icon(Icons.face_rounded, size: 20)),
+              Tab(text: 'Marcos', icon: Icon(Icons.crop_square_rounded, size: 20)),
+              Tab(text: 'Fondos', icon: Icon(Icons.wallpaper_rounded, size: 20)),
             ],
           ),
-        ),
-        body: const TabBarView(
-          children: [
-            _ListaMejorasTab(tipo: 'avatar'),
-            _ListaMejorasTab(tipo: 'marco'),
-            _ListaMejorasTab(tipo: 'fondo'),
-          ],
-        ),
+          const Expanded(
+            child: TabBarView(
+              children: [
+                _ListaMejorasTab(tipo: 'avatar'),
+                _ListaMejorasTab(tipo: 'marco'),
+                _ListaMejorasTab(tipo: 'fondo'),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+
+    if (esVistaIntegrada) {
+      return Container(
+        color: const Color(0xFF1E1E1E),
+        child: content,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E1E1E),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        title: Text(
+          'Tienda de Mejoras',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: content,
     );
   }
 }

@@ -14,12 +14,23 @@ import '../galeria/pantalla_galeria_principal.dart';
 import '../../models/publicacion.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../widgets/dialogo_crear_post.dart';
+import '../../services/servicio_comunidades.dart';
 import 'pantalla_tienda_mejoras.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario con diseño oscuro y sistema de votos.
 class PantallaDetallePerfil extends StatefulWidget {
   final Usuario usuario;
-  const PantallaDetallePerfil({super.key, required this.usuario});
+  final int? comunidadIdContexto;
+  final bool esIntegrada;
+  final VoidCallback? onBack;
+
+  const PantallaDetallePerfil({
+    super.key, 
+    required this.usuario, 
+    this.comunidadIdContexto,
+    this.esIntegrada = false,
+    this.onBack,
+  });
 
   @override
   State<PantallaDetallePerfil> createState() => _PantallaDetallePerfilState();
@@ -43,6 +54,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
   Timer? _timerReinicio;
   bool _mostrarPanelVoto = false;
   int _puntuacionTemporal = 0;
+  String? _rolEnComunidad;
 
   @override
   void initState() {
@@ -54,6 +66,19 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     _cargarUsuario();
     _cargarEstadoVoto();
     _cargarPublicaciones();
+    _cargarRolContextual();
+  }
+
+  Future<void> _cargarRolContextual() async {
+    if (widget.comunidadIdContexto != null) {
+      final res = await ServicioComunidades().obtenerRolUsuarioEnComunidad(
+        widget.comunidadIdContexto!, 
+        widget.usuario.id
+      );
+      if (res.exito && mounted) {
+        setState(() => _rolEnComunidad = res.datos);
+      }
+    }
   }
 
   @override
@@ -73,6 +98,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     if (_currentUserId == null) {
       await _cargarUsuario();
     }
+    
+    // Si no hay sesión iniciada, no intentamos cargar el estado del voto
+    if (_currentUserId == null) return;
     
     final respuesta = await ServicioMejoras().obtenerEstadoVoto(
       receptorUsuarioId: widget.usuario.id,
@@ -214,6 +242,16 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
   }
 
   Future<void> _manejarPulsacionBoton() async {
+    if (_currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Inicia sesión para poder seguir a otros usuarios 🐾'),
+          backgroundColor: Color(0xFFF28B50),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     if (_estadoSeguimiento == 'ACEPTADO' || _estadoSeguimiento == 'SOLICITUD') {
       final bool? confirmar = await showDialog<bool>(
         context: context,
@@ -258,11 +296,21 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
         : '?';
 
     final String fecha = DateFormat('dd MMM yyyy').format(usuario.fechaRegistro);
-
-    // Regla de 10 votos eliminada para test/producción
     final String ratingTexto = usuario.ratingActual.toStringAsFixed(1);
 
+    // Theme-aware colors
+    final colorScheme = Theme.of(context).colorScheme;
+    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final Color colorFondo = Theme.of(context).scaffoldBackgroundColor;
+    final Color colorTextoP = esOscuro ? Colors.white : const Color(0xFF2D2D2D);
+    final Color colorTextoS = esOscuro ? Colors.grey.shade400 : Colors.grey.shade600;
+    final Color colorCard = esOscuro ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color colorBorder = esOscuro ? const Color(0xFF2A2A2A) : Colors.black12;
+    final Color colorGradTop = esOscuro ? const Color(0xFF1E1E1E) : const Color(0xFFF5EBE6);
+    final Color colorGradBot = esOscuro ? const Color(0xFF121212) : colorFondo;
+
     return Scaffold(
+      backgroundColor: colorFondo,
       floatingActionButton: _currentUserId == usuario.id
           ? FloatingActionButton.extended(
               onPressed: _mostrarDialogoCrearPost,
@@ -279,12 +327,22 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
           SliverAppBar(
             expandedHeight: 250,
             pinned: true,
-            backgroundColor: const Color(0xFF121212),
+            stretch: true,
+            backgroundColor: colorGradBot,
+            surfaceTintColor: Colors.transparent,
+            leading: widget.esIntegrada ? IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), shape: BoxShape.circle),
+                child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+              ),
+              onPressed: widget.onBack,
+            ) : null,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF1E1E1E), Color(0xFF121212)],
+                    colors: [colorGradTop.withOpacity(0.5), Colors.transparent],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -370,7 +428,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                                   fontSize: 28,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -1,
-                                  color: Colors.white,
+                                  color: colorTextoP,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -385,22 +443,64 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                       _ChipPrivacidad(esPublica: usuario.esPublico),
                     ],
                   ),
+                  if (_rolEnComunidad != null && _rolEnComunidad != 'Visitante' && _rolEnComunidad != 'Miembro')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
+                              ? Colors.amber.withOpacity(0.1) 
+                              : const Color(0xFF248EA6).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
+                                ? Colors.amber.withOpacity(0.4) 
+                                : const Color(0xFF248EA6).withOpacity(0.4),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
+                                  ? Icons.stars_rounded 
+                                  : Icons.gavel_rounded, 
+                              color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
+                                  ? Colors.amber.shade700 
+                                  : const Color(0xFF248EA6), 
+                              size: 14
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') ? 'CREADOR' : 'MODERADOR',
+                              style: GoogleFonts.outfit(
+                                color: colorTextoP,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Text(
                         '${usuario.numeroSeguidores}',
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: colorTextoP),
                       ),
                       const SizedBox(width: 4),
-                      Text('Seguidores', style: GoogleFonts.inter(color: Colors.grey, fontSize: 14)),
+                      Text('Seguidores', style: GoogleFonts.inter(color: colorTextoS, fontSize: 14)),
                       const SizedBox(width: 20),
                       Text(
                         '${usuario.numeroSeguidos}',
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: colorTextoP),
                       ),
                       const SizedBox(width: 4),
-                      Text('Siguiendo', style: GoogleFonts.inter(color: Colors.grey, fontSize: 14)),
+                      Text('Siguiendo', style: GoogleFonts.inter(color: colorTextoS, fontSize: 14)),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -423,9 +523,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
+                      color: colorCard,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: colorBorder),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -435,21 +535,27 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                           color: const Color(0xFFF29C50),
                           valor: ratingTexto,
                           etiqueta: 'Media',
+                          colorTexto: colorTextoP,
+                          colorSecundario: colorTextoS,
                         ),
-                        Container(width: 1, height: 40, color: const Color(0xFF2A2A2A)),
+                        Container(width: 1, height: 40, color: colorBorder),
                         _StatColumn(
                           icono: Icons.calendar_today_rounded,
                           color: Colors.blueGrey,
                           valor: fecha,
                           etiqueta: 'Se unió',
+                          colorTexto: colorTextoP,
+                          colorSecundario: colorTextoS,
                         ),
                         if (usuario.puntos != null) ...[
-                          Container(width: 1, height: 40, color: const Color(0xFF2A2A2A)),
+                          Container(width: 1, height: 40, color: colorBorder),
                           _StatColumn(
                             icono: Icons.workspace_premium_rounded,
                             color: const Color(0xFFF28B50),
                             valor: usuario.puntos.toString(),
                             etiqueta: 'Puntos',
+                            colorTexto: colorTextoP,
+                            colorSecundario: colorTextoS,
                           ),
                         ],
                       ],
@@ -463,7 +569,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                     style: GoogleFonts.inter(
                       fontSize: 18, 
                       fontWeight: FontWeight.bold, 
-                      color: Colors.white
+                      color: colorTextoP,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -503,10 +609,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: _currentUserId == usuario.id ? const Color(0xFF1A1A1A) : Colors.transparent,
+                          color: _currentUserId == usuario.id ? colorCard : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           border: _currentUserId == usuario.id
-                              ? Border.all(color: const Color(0xFF2A2A2A), style: BorderStyle.solid)
+                              ? Border.all(color: colorBorder)
                               : null,
                         ),
                         child: Row(
@@ -519,7 +625,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                                   : _biografiaLocal!,
                                 style: GoogleFonts.inter(
                                   fontSize: 15, 
-                                  color: (_biografiaLocal == null || _biografiaLocal!.isEmpty) ? Colors.grey.shade600 : Colors.grey.shade400,
+                                  color: (_biografiaLocal == null || _biografiaLocal!.isEmpty) ? colorTextoS : colorTextoP,
                                   height: 1.6
                                 ),
                               ),
@@ -706,7 +812,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const PantallaTiendaMejoras(),
+                    builder: (context) => PantallaTiendaMejoras(),
                   ),
                 );
               },
@@ -837,6 +943,27 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
   }
 
   Widget _construirBotonVotar(Usuario usuario, String ratingActual) {
+    if (!usuario.esPublico && _estadoSeguimiento != 'ACEPTADO' && _currentUserId != usuario.id) {
+      final bool esAppClara = Theme.of(context).scaffoldBackgroundColor == const Color(0xFFFEF5F1);
+      final Color colorTextoS = esAppClara ? Colors.grey.shade700 : Colors.grey.shade400;
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: esAppClara ? Colors.black.withValues(alpha: 0.05) : const Color(0xFF2A2A2A).withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_rounded, color: colorTextoS, size: 20),
+            const SizedBox(width: 12),
+            Text('Solo los seguidores pueden votar', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: colorTextoS)),
+          ],
+        ),
+      );
+    }
+
     if (_haVotadoHoy) {
       return Container(
         width: double.infinity,
@@ -869,6 +996,16 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
       height: 54,
       child: ElevatedButton.icon(
         onPressed: () {
+          if (_currentUserId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Inicia sesión para puntuar a este usuario ⭐'),
+                backgroundColor: Color(0xFF248EA6),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
           setState(() {
             _mostrarPanelVoto = !_mostrarPanelVoto;
           });
@@ -1045,16 +1182,23 @@ class _StatColumn extends StatelessWidget {
   final Color color;
   final String? valor;
   final String? etiqueta;
+  final Color? colorTexto;
+  final Color? colorSecundario;
 
   const _StatColumn({
     required this.icono,
     required this.color,
     this.valor,
     this.etiqueta,
+    this.colorTexto,
+    this.colorSecundario,
   });
 
   @override
   Widget build(BuildContext context) {
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final textColor = colorTexto ?? (esOscuro ? Colors.white : const Color(0xFF2D2D2D));
+    final subColor = colorSecundario ?? (esOscuro ? Colors.grey.shade400 : Colors.grey.shade600);
     return Column(
       children: [
         Row(
@@ -1065,9 +1209,9 @@ class _StatColumn extends StatelessWidget {
             Text(
               valor ?? '0',
               style: GoogleFonts.inter(
-                fontWeight: FontWeight.w900, 
+                fontWeight: FontWeight.w900,
                 fontSize: 18,
-                color: Colors.white,
+                color: textColor,
               ),
             ),
           ],
@@ -1077,7 +1221,7 @@ class _StatColumn extends StatelessWidget {
           etiqueta ?? '',
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: Colors.grey,
+            color: subColor,
             fontWeight: FontWeight.w500,
           ),
         ),

@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/publicacion.dart';
 import '../models/imagen_galeria.dart';
 import '../models/respuesta_api.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio para la pantalla de inicio: galería aleatoria estilo Pinterest.
+/// Servicio para la pantalla de inicio.
 class ServicioInicio {
   static const String _urlBase = 'http://127.0.0.1:8000/contenido/';
   final _servicioUsuarios = ServicioUsuarios();
@@ -17,14 +18,12 @@ class ServicioInicio {
     };
   }
 
-  /// Obtiene imágenes aleatorias para el feed de inicio.
-  /// Incluye imágenes de comunidades públicas, comunidades del usuario,
-  /// perfiles públicos y perfiles que el usuario sigue.
-  Future<RespuestaApi<List<ImagenGaleria>>> obtenerGaleriaInicio({String? query}) async {
+  /// Obtiene publicaciones de comunidades públicas para el feed de inicio.
+  Future<RespuestaApi<List<Publicacion>>> obtenerPostsInicio({String? query}) async {
     try {
-      String url = '${_urlBase}inicio_galeria/';
+      String url = '${_urlBase}publicaciones/';
       if (query != null && query.trim().isNotEmpty) {
-        url += '?etiquetas=${Uri.encodeComponent(query.trim())}';
+        url += '?search=${Uri.encodeComponent(query.trim())}';
       }
       
       final respuesta = await http.get(
@@ -33,20 +32,31 @@ class ServicioInicio {
       );
 
       if (respuesta.statusCode == 200) {
-        final dynamic datos = jsonDecode(respuesta.body);
-        final List<dynamic> lista =
-            datos is List ? datos : (datos['results'] ?? []);
-        final imagenes = lista.map((i) => ImagenGaleria.fromJson(i)).toList();
+        final dynamic datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final List<dynamic> lista = datos is List ? datos : (datos['results'] ?? []);
+        final posts = lista.map((i) => Publicacion.fromJson(i)).toList();
+        
+        // Ordenar por popularidad (likes + comentarios) si no hay query
+        if (query == null || query.isEmpty) {
+          posts.sort((a, b) => (b.likesCount + b.comentariosCount).compareTo(a.likesCount + a.comentariosCount));
+        }
+
         return RespuestaApi(
           exito: true,
-          datos: imagenes,
-          mensaje: 'Galería de inicio cargada',
+          datos: posts,
+          mensaje: 'Posts de inicio cargados',
         );
       }
-      return RespuestaApi(
-        exito: false,
-        mensaje: 'Error: ${respuesta.statusCode}',
-      );
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Miau... No hemos podido conectar con el servidor. ¡Comprueba tu red! 🐾');
+    }
+  }
+
+  /// Obtiene imágenes aleatorias (mantenido por compatibilidad si se requiere en otras partes).
+  Future<RespuestaApi<List<ImagenGaleria>>> obtenerGaleriaInicio({String? query}) async {
+    try {
+      return RespuestaApi(exito: false, mensaje: 'No implementado');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

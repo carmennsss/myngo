@@ -6,16 +6,25 @@ class IsAuthorOrAdmin(permissions.BasePermission):
     editarlo o borrarlo.
     """
     def has_object_permission(self, request, view, obj):
-        # Lectura permitida (el filtrado se hace en el queryset)
         if request.method in permissions.SAFE_METHODS:
             return True
         
-        # Escritura solo autor
-        if obj.autor == request.user:
+        # Identificar autor/propietario
+        autor = getattr(obj, 'autor', getattr(obj, 'propietario', None))
+        if autor == request.user:
             return True
             
-        # O si es admin de la comunidad (suponiendo que existe lógica de admin)
-        if obj.comunidad and obj.comunidad.creador == request.user:
-            return True
+        # O si es admin/moderador de la comunidad
+        comunidad = getattr(obj, 'comunidad', None)
+        if comunidad:
+            if comunidad.creador == request.user:
+                return True
+            
+            from comunidades.models import Miembros_comunidades
+            return Miembros_comunidades.objects.filter(
+                usuario=request.user, 
+                comunidad=comunidad, 
+                rol__in=['Administrador', 'Moderador']
+            ).exists()
             
         return False

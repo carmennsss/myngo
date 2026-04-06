@@ -55,6 +55,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
 
   Future<void> _cargarMas() async {
     if (_cargando) return;
+    if (!mounted) return;
     setState(() => _cargando = true);
 
     final respuesta = await _servicioGaleria.obtenerGaleria(
@@ -74,6 +75,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         }
       });
     }
+    if (!mounted) return;
     setState(() => _cargando = false);
   }
 
@@ -82,6 +84,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     
     if (pickedFile != null) {
+      if (!mounted) return;
       setState(() => _subiendo = true);
       
       final res = await _servicioGaleria.subirImagenGaleria(
@@ -114,6 +117,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           ),
         );
       } else if (mounted) {
+        if (!mounted) return;
         setState(() => _subiendo = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(res.mensaje, style: GoogleFonts.outfit()), backgroundColor: Colors.red),

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
+import '../../services/servicio_comunidades.dart';
 
 class PantallaDetalleImagen extends StatefulWidget {
   final ImagenGaleria imagen;
@@ -15,12 +16,17 @@ class PantallaDetalleImagen extends StatefulWidget {
 
 class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
   final ServicioGaleria _servicioGaleria = ServicioGaleria();
+  final ServicioComunidades _servicioComunidades = ServicioComunidades();
+  
   bool _cargandoMetadatos = true;
   Map<String, dynamic>? _metadatos;
+  bool _estaUniendose = false;
+  late bool _esMiembro;
 
   @override
   void initState() {
     super.initState();
+    _esMiembro = widget.imagen.usuarioEsMiembro;
     _cargarDetalles();
   }
 
@@ -36,6 +42,29 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     }
   }
 
+  Future<void> _unirseAComunidad() async {
+    if (widget.imagen.comunidadId == null) return;
+    
+    setState(() => _estaUniendose = true);
+    final res = await _servicioComunidades.unirseAComunidad(widget.imagen.comunidadId!);
+    
+    if (mounted) {
+      setState(() {
+        _estaUniendose = false;
+        if (res.exito) _esMiembro = true;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.mensaje, style: GoogleFonts.outfit()),
+          backgroundColor: res.exito ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,13 +75,14 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
           Center(
             child: InteractiveViewer(
               minScale: 0.1,
-              maxScale: 4.0,
+              maxScale: 6.0,
               child: CachedNetworkImage(
                 imageUrl: widget.imagen.urlArchivo,
                 fit: BoxFit.contain,
                 width: double.infinity,
                 height: double.infinity,
-                placeholder: (c, u) => const CircularProgressIndicator(color: Color(0xFF248EA6)),
+                placeholder: (c, u) => const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                errorWidget: (c, u, e) => const Center(child: Icon(Icons.error_outline, color: Colors.white24, size: 48)),
               ),
             ),
           ),
@@ -60,14 +90,34 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
           // AppBar superpuesta transparente para volver
           Positioned(
             top: 0, left: 0, right: 0,
-            child: AppBar(
-              backgroundColor: Colors.black54,
-              elevation: 0,
-              iconTheme: const IconThemeData(color: Colors.white),
+            child: Container(
+              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black54, Colors.transparent],
+                ),
+              ),
+              child: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                actions: [
+                   IconButton(
+                    icon: const Icon(Icons.share_rounded, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
             ),
           ),
           
-          // Bottom Sheet de información superpuesta en la parte inferior
+          // Bottom Panel
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: _buildPanelInformacion(),
@@ -79,41 +129,100 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
 
   Widget _buildPanelInformacion() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [Colors.black87, Colors.black45, Colors.transparent],
+          colors: [
+            Colors.black.withOpacity(0.9),
+            Colors.black.withOpacity(0.7),
+            Colors.transparent,
+          ],
         ),
       ),
-      padding: const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 24),
+      padding: const EdgeInsets.fromLTRB(28, 60, 28, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Autor y Fecha
           Row(
             children: [
-              const Icon(Icons.person_outline_rounded, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                '@${widget.imagen.propietarioNombre ?? 'Desconocido'}',
-                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF248EA6).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person_rounded, color: Color(0xFF248EA6), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '@${widget.imagen.propietarioNombre ?? 'Desconocido'}',
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                  ),
+                  Text(
+                    'Subido el ${widget.imagen.fechaSubida.toLocal().toString().split(' ')[0]}',
+                    style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 12),
+                  ),
+                ],
               ),
               const Spacer(),
-              const Icon(Icons.calendar_today_rounded, color: Colors.grey, size: 12),
-              const SizedBox(width: 4),
-              Text(
-                widget.imagen.fechaSubida.toLocal().toString().split(' ')[0],
-                style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
-              ),
+              // Community Tag
+              if (widget.imagen.comunidadNombre != null)
+                _buildCommunityTag(),
             ],
           ),
+          
+          const SizedBox(height: 24),
+          
           if (_cargandoMetadatos)
-            const Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: LinearProgressIndicator(color: Color(0xFF248EA6)),
-            )
+            const Center(child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: LinearProgressIndicator(color: Color(0xFFF28B50), backgroundColor: Colors.white10),
+            ))
           else ..._buildSeccionesMetadatos(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommunityTag() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF28B50).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF28B50).withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.pets_rounded, color: Color(0xFFF28B50), size: 14),
+          const SizedBox(width: 8),
+          Text(
+            widget.imagen.comunidadNombre!,
+            style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontWeight: FontWeight.w900, fontSize: 12),
+          ),
+          if (!_esMiembro && widget.imagen.comunidadId != null) ...[
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: _estaUniendose ? null : _unirseAComunidad,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF28B50),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _estaUniendose 
+                  ? const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text('UNIRSE', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10)),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -125,28 +234,33 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     // Post mapping
     if (_metadatos != null && _metadatos!['publicacion'] != null) {
       final pub = _metadatos!['publicacion'];
-      widgets.add(const SizedBox(height: 16));
       widgets.add(
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Miau Post Vinculado', style: GoogleFonts.inter(color: const Color(0xFFF28B50), fontSize: 11, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(pub['titulo'] ?? 'Post sin título', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  const Icon(Icons.article_rounded, color: Color(0xFFF28B50), size: 16),
+                  const SizedBox(width: 8),
+                  Text('POST VINCULADO', style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(pub['titulo'] ?? 'Sin título', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
               if (pub['contenido_texto'] != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   pub['contenido_texto'],
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
+                  style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 14, height: 1.4),
                 ),
               ],
             ],
@@ -159,31 +273,36 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     if (_metadatos != null && _metadatos!['colecciones'] != null) {
       final List colList = _metadatos!['colecciones'];
       if (colList.isNotEmpty) {
-        widgets.add(const SizedBox(height: 16));
-        widgets.add(Text('En carpetas:', style: GoogleFonts.inter(color: Colors.grey, fontSize: 12)));
-        widgets.add(const SizedBox(height: 8));
+        widgets.add(const SizedBox(height: 24));
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text('EN CARPETAS', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+        ));
+        widgets.add(const SizedBox(height: 12));
         widgets.add(
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: colList.map((c) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF248EA6).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF248EA6)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(c['privada'] == true ? Icons.lock : Icons.folder, color: const Color(0xFF248EA6), size: 14),
-                    const SizedBox(width: 6),
-                    Text(c['nombre'] ?? 'Carpeta', style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              );
-            }).toList(),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: colList.map((c) {
+                return Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF248EA6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(c['privada'] == true ? Icons.lock_rounded : Icons.folder_rounded, color: const Color(0xFF248EA6), size: 16),
+                      const SizedBox(width: 8),
+                      Text(c['nombre'] ?? 'Carpeta', style: GoogleFonts.outfit(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         );
       }

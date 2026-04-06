@@ -40,7 +40,7 @@ class ServicioComunidades {
       );
       
       if (respuesta.statusCode == 200) {
-        final dynamic datosJson = jsonDecode(respuesta.body);
+        final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
         final List<dynamic> listaJson = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         final comunidades = listaJson.map((item) => Comunidad.fromJson(item)).toList();
         
@@ -50,6 +50,12 @@ class ServicioComunidades {
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
+  }
+
+  /// Obtiene comunidades populares para sugerencias.
+  Future<RespuestaApi<List<Comunidad>>> listarComunidadesPopulares() async {
+    // Por ahora usamos la lista general, pero podríamos filtrar por las más activas en el futuro.
+    return listarComunidades();
   }
 
   /// Obtiene las comunidades donde el usuario es creador o miembro.
@@ -65,6 +71,28 @@ class ServicioComunidades {
         final List<dynamic> listaJson = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         final comunidades = listaJson.map((item) => Comunidad.fromJson(item)).toList();
         return RespuestaApi(exito: true, mensaje: 'Mis comunidades obtenidas', datos: comunidades);
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene los detalles de una comunidad específica por su ID.
+  Future<RespuestaApi<Comunidad>> obtenerComunidad(int id) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlBase$id/'),
+        headers: await _getHeaders(),
+      );
+      
+      if (respuesta.statusCode == 200) {
+        final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(
+          exito: true, 
+          mensaje: 'Comunidad obtenida', 
+          datos: Comunidad.fromJson(datosJson)
+        );
       }
       return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
     } catch (e) {
@@ -126,11 +154,99 @@ class ServicioComunidades {
   Future<RespuestaApi<void>> responderPeticion(int idPeticion, bool aceptar) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('${_urlBase}peticiones/$idPeticion/responder/'),
+        Uri.parse('${_urlBase}responder-peticion/$idPeticion/'),
         headers: await _getHeaders(),
         body: jsonEncode({'aceptar': aceptar}),
       );
       if (respuesta.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Respuesta enviada');
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene los datos del panel de administración (solicitudes y reportes).
+  Future<RespuestaApi<Map<String, dynamic>>> obtenerAdminDashboard(int id) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('${_urlBase}$id/admin-dashboard/'),
+        headers: await _getHeaders(),
+      );
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Dashboard obtenido', datos: jsonDecode(utf8.decode(respuesta.bodyBytes)));
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Actualiza los ajustes de una comunidad (Nombre, Descripción, Color, Banner).
+  Future<RespuestaApi<Comunidad>> actualizarComunidad(int id, {
+    String? nombre, 
+    String? descripcion, 
+    String? colorTema,
+    XFile? banner
+  }) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      var solicitud = http.MultipartRequest('PATCH', Uri.parse('${_urlBase}$id/'));
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+
+      if (nombre != null) solicitud.fields['nombre'] = nombre;
+      if (descripcion != null) solicitud.fields['descripcion'] = descripcion;
+      if (colorTema != null) solicitud.fields['color_tema'] = colorTema;
+
+      if (banner != null) {
+        if (kIsWeb) {
+          final bytes = await banner.readAsBytes();
+          final ext = banner.name.split('.').last.toLowerCase();
+          final subtype = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp'}[ext] ?? 'jpeg';
+          solicitud.files.add(http.MultipartFile.fromBytes('url_portada', bytes, filename: banner.name, contentType: MediaType('image', subtype)));
+        } else {
+          solicitud.files.add(await http.MultipartFile.fromPath('url_portada', banner.path));
+        }
+      }
+
+      final respuestaStream = await solicitud.send();
+      final respuesta = await http.Response.fromStream(respuestaStream);
+
+      if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(exito: true, mensaje: 'Ajustes guardados ✨', datos: Comunidad.fromJson(datosJson));
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Cambia el rol de un miembro de la comunidad.
+  Future<RespuestaApi<void>> gestionarRolMiembro(int miembroId, String nuevoRol) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('${_urlBase}$miembroId/gestionar-rol-miembro/'),
+        headers: await _getHeaders(),
+        body: jsonEncode({'rol': nuevoRol}),
+      );
+      if (respuesta.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Rol actualizado');
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar el rol');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene el rol de un usuario en una comunidad específica.
+  Future<RespuestaApi<String>> obtenerRolUsuarioEnComunidad(int comunidadId, int usuarioId) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('${_urlBase}$comunidadId/obtener-rol-usuario/?usuario_id=$usuarioId'),
+        headers: await _getHeaders(),
+      );
+      if (respuesta.statusCode == 200) {
+        final datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(exito: true, mensaje: 'Rol obtenido', datos: datos['rol']);
+      }
       return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
