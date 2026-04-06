@@ -104,8 +104,8 @@ class PublicacionCreate(generics.CreateAPIView):
             try:
                 imagen_galeria = Imagenes_galeria.objects.create(
                     propietario=request.user,
-                    comunidad_id=request.data.get('comunidad') or None,
                     url_s3=archivo,
+                    comunidad_id=request.data.get('comunidad') or None,
                     relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
                     etiquetas=request.data.get('etiquetas', ''),
                 )

@@ -8,6 +8,7 @@ import 'widgets/tarjeta_comunidad.dart';
 import 'widgets/formulario_creacion_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
+import '../perfiles/pantalla_perfiles.dart';
 
 class PantallaComunidades extends StatefulWidget {
   const PantallaComunidades({super.key});
@@ -98,38 +99,39 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
           ),
           
           // Barra de Búsqueda conectada al nuevo estilo
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFF2A2A2A)),
-              ),
-              child: TextField(
-                controller: _controladorBusqueda,
-                style: GoogleFonts.inter(color: Colors.white),
-                onChanged: (valor) => _cargarDatos(filtro: valor),
-                decoration: InputDecoration(
-                  hintText: _indicePestana == 0 ? 'Buscar comunidades...' : 'Buscar creadores...',
-                  hintStyle: GoogleFonts.inter(color: Colors.grey),
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Icon(Icons.search, color: Colors.grey, size: 20),
+          if (_indicePestana == 0) // Ocultar si estamos en Perfiles
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFF2A2A2A)),
+                ),
+                child: TextField(
+                  controller: _controladorBusqueda,
+                  style: GoogleFonts.inter(color: Colors.white),
+                  onChanged: (valor) => _cargarDatos(filtro: valor),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar comunidades...',
+                    hintStyle: GoogleFonts.inter(color: Colors.grey),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Icon(Icons.search, color: Colors.grey, size: 20),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
-          ),
           
           Expanded(
-            child: _estaCargando
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
-              : _indicePestana == 0 ? _buildGridComunidades() : _buildListaPerfiles(),
+            child: _indicePestana == 0
+                ? (_estaCargando ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))) : _buildGridComunidades())
+                : const PantallaPerfiles(esModoIncrustado: true), // Carga la pantalla final de perfiles, con su propia searchbar
           ),
         ],
       ),

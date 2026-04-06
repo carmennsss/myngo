@@ -15,6 +15,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticate
 from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 from django.core.cache import cache
 from contenido.models import Imagenes_galeria
+from django.utils import timezone
 signer = TimestampSigner()
 class RegistroUsuarios(APIView):
     """
@@ -148,7 +149,10 @@ class LoginUsuario(APIView):
             if usuario.check_password(password): 
                 # SI EL LOGIN ES CORRECTO -> REINICIAMOS INTENTOS
                 cache.delete(key) # Borrar rastro al acertar
-                
+                if hasattr(usuario, 'perfil'):
+                    usuario.perfil.recalcular_puntos()
+                usuario.last_login = timezone.now()
+                usuario.save(update_fields=['last_login'])
                 from rest_framework.authtoken.models import Token
                 token, _ = Token.objects.get_or_create(user=usuario)
                 
@@ -480,9 +484,13 @@ class EditarPerfil(APIView):
             if imagen:
                     imagen_nueva=Imagenes_galeria.objects.create(propietario=request.user,
                     comunidad_id=request.data.get('comunidad') or None,
-                    url_s3=imagen,
                     relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
                     etiquetas=request.data.get('etiquetas', ''),)
+                    
+                    if request.data.get('es_perfil'):
+                        imagen_nueva._es_avatar = True
+                    imagen_nueva.url_s3=imagen
+                    imagen_nueva.save()
                     perfil.imagen=imagen_nueva
             serializer = PerfilSerializer(perfil, data=request.data, partial=True)
             if serializer.is_valid():

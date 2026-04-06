@@ -1,7 +1,7 @@
 from django.db import models
 from usuarios.models import Usuario
 from comunidades.models import Comunidad
-
+import os
 class Imagenes_galeria(models.Model):
     class Meta:
         db_table = 'imagenes_galeria'
@@ -10,10 +10,22 @@ class Imagenes_galeria(models.Model):
         ('I', 'Imagen'),
         ('V', 'Video'),
     ]
-
+    
+    def definir_ruta_almacenamiento(instance,filename):
+        ruta_s3=""
+    # Buscamos el atributo temporal 'es_avatar' que inyectaremos en la vista
+    # Si no existe, por defecto es False
+        es_avatar = getattr(instance, '_es_avatar', False)
+        
+        if es_avatar:
+            ruta_s3="perfiles/avatar"
+        else:
+            ruta_s3="publicaciones/archivos"
+        return os.path.join(ruta_s3, filename)
+    
     propietario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True,blank=True)
-    url_s3=models.ImageField(upload_to='publicaciones/archivos', max_length=500,null=True,blank=True)
+    url_s3=models.ImageField(upload_to=definir_ruta_almacenamiento, max_length=500,null=True,blank=True)
     tipo_archivo=models.CharField(max_length=1, choices=TIPO_ARCHIVO, default='I')
     relacion_aspecto=models.FloatField(default=1.0)
     es_publica=models.BooleanField(default=True)
