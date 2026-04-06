@@ -23,7 +23,7 @@ class Catalogo_mejoras(models.Model):
     nombre=models.CharField(max_length=100)
     tipo=models.CharField(max_length=50)
     precio_puntos=models.IntegerField()
-    url_recurso=models.URLField(max_length=500)
+    url_recurso=models.ImageField(upload_to='tienda/', max_length=500,null=True,blank=True)
 class Mejoras_usuario(models.Model):
     class Meta:
         db_table = 'mejoras_usuario'
