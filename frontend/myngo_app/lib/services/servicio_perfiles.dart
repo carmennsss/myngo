@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
+import '../models/perfil.dart';
 import '../models/publicacion.dart';
 import 'servicio_usuarios.dart';
 
@@ -21,7 +22,7 @@ class ServicioPerfiles {
     };
   }
 
-  Future<RespuestaApi<List<Usuario>>> listarPerfiles({String? busqueda}) async {
+  Future<RespuestaApi<List<Perfil>>> listarPerfiles({String? busqueda}) async {
     try {
       final uri = busqueda != null && busqueda.isNotEmpty 
           ? Uri.parse('$_urlBase/?search=$busqueda')
@@ -35,7 +36,7 @@ class ServicioPerfiles {
         return RespuestaApi(
           exito: true,
           mensaje: 'Perfiles cargados',
-          datos: listaJson.map((j) => Usuario.fromJson(j)).toList(),
+          datos: listaJson.map((j) => Perfil.fromJson(j)).toList(),
         );
       }
       return RespuestaApi(
@@ -223,7 +224,8 @@ class ServicioPerfiles {
       
       // Añadimos el perfil_id como campo de texto (convertido a String)
       request.fields['perfil_id'] = perfilId.toString();
-
+      //Le indicamos que es una imagen de perfil para almacenarlo en el s3 de avatares
+      request.fields['es_perfil']='True';
       if (imagen is XFile) {
         if (kIsWeb) {
           final bytes = await imagen.readAsBytes();

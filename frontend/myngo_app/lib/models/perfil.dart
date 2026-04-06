@@ -1,31 +1,45 @@
+import 'usuario.dart'; // Importante para el campo datosUsuario
 
 class Perfil {
-  final int id;
-  final int usuarioId; // Relación OneToOne con Usuario
   final String? biografia;
-  final int imagenId;
-  final int puntos; // Límite de 5000 puntos según anteproyecto
-  final DateTime fechaActualizacion;
-
+  final String? urlAvatar;
+  final int numeroSeguidores;
+  final int numeroSeguidos;
+  final String? estadoSeguimiento;
+  final Usuario? datosUsuario; // El "perro" que va dentro del "gato"
+String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
+  double get ratingActual => datosUsuario?.ratingActual ?? 0.0;
+  bool get esVerificado => datosUsuario?.esVerificado ?? false;
   Perfil({
-    required this.id,
-    required this.usuarioId,
     this.biografia,
-    required this.imagenId,
-    required this.puntos,
-    required this.fechaActualizacion,
+    this.urlAvatar,
+    required this.numeroSeguidores,
+    required this.numeroSeguidos,
+    this.estadoSeguimiento,
+    this.datosUsuario,
   });
 
   factory Perfil.fromJson(Map<String, dynamic> json) {
     return Perfil(
-      id: json['id'] ?? 0,
-      usuarioId: json['usuario'] ?? 0,
+      // 1. Biografía (String opcional)
       biografia: json['biografia']?.toString(),
-     imagenId: json['imagen']??0,
-      puntos: (json['puntos'] ?? 0).toInt(), 
-      fechaActualizacion: json['fecha_actualizacion'] != null 
-          ? DateTime.parse(json['fecha_actualizacion']) 
-          : DateTime.now(),
+
+      // 2. URL Avatar (String opcional generado por el SerializerMethodField)
+      urlAvatar: json['url_avatar']?.toString(),
+
+      // 3. Número de seguidores (int, con fallback a 0)
+      numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
+
+      // 4. Número de seguidos (int, con fallback a 0)
+      numeroSeguidos: int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
+
+      // 5. Estado de seguimiento (String opcional: 'ACEPTADO', 'SOLICITUD', etc.)
+      estadoSeguimiento: json['estado_seguimiento']?.toString(),
+
+      // 6. Datos del Usuario (Objeto anidado transformado por el UsuarioSerializer)
+      datosUsuario: json['datos_usuario'] != null 
+          ? Usuario.fromJson(json['datos_usuario']) 
+          : null,
     );
   }
 }

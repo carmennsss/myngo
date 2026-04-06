@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils import timezone
 class UsuarioManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -68,7 +69,37 @@ class Perfil(models.Model):
     )
     es_publico=models.BooleanField(default=True)
     fecha_actualizacion=models.DateTimeField(auto_now_add=True)
-
+    #Metodo que recalcula los puntos generados por ese perfil en los días inactivos
+    #sin pasarse del limite de 5.000 puntos
+    def recalcular_puntos(self):
+        last_login=self.usuario.last_login#ultimo login del usuario
+        fecha_actual=timezone.now().date()#saco la fecha actual
+        if last_login is None or last_login.date() < fecha_actual:#si no hay ultimo login o no es hoy
+            rating=self.usuario.rating_actual#saco el rating
+            dias_inactivo=1#dias inactivo por defecto 1 para que sume algo la primera vez
+            if last_login is not None:#si hay login
+                dias_inactivo=(fecha_actual-last_login).days#saco la diferencia en dias
+            puntos=0#para almacenar los puntos a sumar
+            #dependiendo del rating genera unos puntos
+            match rating:
+                case m if 0 <= m <= 1:
+                    puntos+=20
+                case m if 1 < m <= 2:
+                    puntos+=80
+                case m if 2 < m <= 3:
+                    puntos+=100
+                case m if 3< m <=4:
+                    puntos+=150
+                case m if 4<m <=4.5:
+                    puntos+=170
+                case m if m > 4.5:
+                    puntos+=200
+            #los nuevos puntos a sumar son los puntos por los dias inactivos
+            puntos_nuevos=puntos*dias_inactivo
+            #sacamos el minimo para nunca tener mas de 5.000 puntos
+            self.puntos = min(self.puntos + puntos_nuevos, 5000)
+            #actualizamos la base de datos
+            self.save()
     def __str__(self):
         return self # TODO
 class Seguimiento(models.Model):

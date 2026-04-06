@@ -258,10 +258,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
 
     final String fecha = DateFormat('dd MMM yyyy').format(usuario.fechaRegistro);
 
-    // Regla de 10 votos
-    final String ratingTexto = _totalVotosRecibidos >= 10 
-        ? usuario.ratingActual.toStringAsFixed(1)
-        : 'N/D';
+    // Regla de 10 votos eliminada para test/producción
+    final String ratingTexto = usuario.ratingActual.toStringAsFixed(1);
 
     return Scaffold(
       floatingActionButton: _currentUserId == usuario.id
@@ -411,10 +409,12 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                   const SizedBox(height: 16),
                   
                   // --- SECCIÓN DE VOTACIÓN (BOTÓN) ---
-                  _construirBotonVotar(usuario, ratingTexto),
-                  if (_mostrarPanelVoto && !_haVotadoHoy) ...[
-                    const SizedBox(height: 12),
-                    _construirPanelSeleccionVoto(usuario, ratingTexto),
+                  if (_currentUserId != usuario.id) ...[
+                    _construirBotonVotar(usuario, ratingTexto),
+                    if (_mostrarPanelVoto && !_haVotadoHoy) ...[
+                      const SizedBox(height: 12),
+                      _construirPanelSeleccionVoto(usuario, ratingTexto),
+                    ],
                   ],
                   const SizedBox(height: 24),
 
@@ -466,7 +466,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (!usuario.esPublico) 
+                  if (!usuario.esPublico&&usuario.id!=_currentUserId) 
                     Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),

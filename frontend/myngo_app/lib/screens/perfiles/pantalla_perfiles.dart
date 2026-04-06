@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../models/usuario.dart';
+import '../../models/perfil.dart';
 import '../../services/servicio_perfiles.dart';
 import 'pantalla_detalle_perfil.dart';
 
 class PantallaPerfiles extends StatefulWidget {
-  const PantallaPerfiles({super.key});
+  final bool esModoIncrustado;
+  const PantallaPerfiles({super.key, this.esModoIncrustado = false});
 
   @override
   State<PantallaPerfiles> createState() => _PantallaPerfilesState();
@@ -13,9 +15,8 @@ class PantallaPerfiles extends StatefulWidget {
 class _PantallaPerfilesState extends State<PantallaPerfiles> {
   final _servicio = ServicioPerfiles();
   final _controladorBusqueda = TextEditingController();
-  List<Usuario> _perfiles = [];
+  List<Perfil> _perfiles = [];
   bool _estaCargando = true;
-
   @override
   void initState() {
     super.initState();
@@ -46,8 +47,8 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
-      appBar: AppBar(
+      backgroundColor: widget.esModoIncrustado ? Colors.transparent : const Color(0xFFF8F9FE),
+      appBar: widget.esModoIncrustado ? null : AppBar(
         title: const Text('Explorar Perfiles', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -93,27 +94,36 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
                       padding: const EdgeInsets.all(12),
                       itemCount: _perfiles.length,
                       itemBuilder: (context, index) {
-                        final usuario = _perfiles[index];
+                        final perfil = _perfiles[index];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                           elevation: 2,
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            leading: CircleAvatar(
-                              radius: 28,
-                              backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),
-                              child: Text(
-                                usuario.nombreUsuario.isNotEmpty ? usuario.nombreUsuario[0].toUpperCase() : '?',
-                                style: const TextStyle(
-                                  color: Color(0xFF6C63FF), 
-                                  fontWeight: FontWeight.bold, 
-                                  fontSize: 22,
-                                ),
-                              ),
+                           leading: CircleAvatar(
+                          radius: 28,
+                          backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),
+                          // backgroundImage intentará cargar la URL de S3
+                          backgroundImage: (perfil.urlAvatar != null && perfil.urlAvatar!.isNotEmpty)
+                              ? NetworkImage(perfil.urlAvatar!)
+                              : null,
+                          // El child solo se muestra si backgroundImage es null o está cargando
+                          child: (perfil.urlAvatar == null || perfil.urlAvatar!.isEmpty)
+                              ? Text(
+                                  perfil.nombreUsuario.isNotEmpty 
+                                      ? perfil.nombreUsuario[0].toUpperCase() 
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Color(0xFF6C63FF),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 22,
+                                  ),
+                                )
+                              : null
                             ),
                             title: Text(
-                              usuario.nombreUsuario, 
+                              perfil.nombreUsuario, 
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)
                             ),
                             subtitle: Row(
@@ -121,10 +131,10 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
                                 const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
                                 const SizedBox(width: 4),
                                 Text(
-                                  usuario.ratingActual.toString(),
+                                 perfil.ratingActual.toString(),
                                   style: const TextStyle(fontWeight: FontWeight.w500),
                                 ),
-                                if (usuario.esVerificado) ...[
+                                if (perfil.esVerificado) ...[
                                   const SizedBox(width: 8),
                                   const Icon(Icons.verified, color: Colors.blue, size: 16),
                                 ],
@@ -132,13 +142,16 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
                             ),
                             trailing: const Icon(Icons.chevron_right, color: Color(0xFFB0B3C6)),
                             onTap: () {
+                            if (perfil.datosUsuario != null) {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => PantallaDetallePerfil(usuario: usuario),
+                                  // Le pasas directamente el objeto Usuario que ya viene dentro del Perfil
+                                  builder: (context) => PantallaDetallePerfil(usuario: perfil.datosUsuario!),
                                 ),
                               );
-                            },
+                            }
+                            }
                           ),
                         );
                       },

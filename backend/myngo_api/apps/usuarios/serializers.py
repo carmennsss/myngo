@@ -10,13 +10,14 @@ class UsuarioSerializer(serializers.ModelSerializer):
     url_avatar = serializers.SerializerMethodField()
     biografia = serializers.SerializerMethodField()
     es_publico = serializers.SerializerMethodField()
+    puntos = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
         fields = [
            'id', 'perfil_id','nombre_usuario', 'email', 'es_verificado', 'rating_actual',
             'fecha_registro', 'password', 'numero_seguidores', 'numero_seguidos',
-            'estado_seguimiento', 'url_avatar', 'biografia', 'es_publico'
+            'estado_seguimiento', 'url_avatar', 'biografia', 'es_publico', 'puntos'
         ]
         extra_kwargs = {
             'password': {'write_only': True}
@@ -64,6 +65,10 @@ class UsuarioSerializer(serializers.ModelSerializer):
         perfil = self._get_perfil(obj)
         return perfil.es_publico if perfil else True
 
+    def get_puntos(self, obj):
+        perfil = self._get_perfil(obj)
+        return perfil.puntos if perfil else 0
+
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         if password:
@@ -71,29 +76,27 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class PerfilSerializer(serializers.ModelSerializer):
-    nombre_usuario = serializers.CharField(source='usuario.nombre_usuario', read_only=True)
-    email = serializers.EmailField(source='usuario.email', read_only=True)
-    es_verificado = serializers.BooleanField(source='usuario.es_verificado', read_only=True)
-    rating_actual = serializers.FloatField(source='usuario.rating_actual', read_only=True)
-    fecha_registro = serializers.DateTimeField(source='usuario.fecha_registro', read_only=True)
     numero_seguidores = serializers.SerializerMethodField()
     numero_seguidos = serializers.SerializerMethodField()
     estado_seguimiento = serializers.SerializerMethodField()
-    imagen=serializers.SerializerMethodField()
-
+    url_avatar=serializers.SerializerMethodField()
+    datos_usuario = UsuarioSerializer(source='usuario', read_only=True)
     class Meta:
         model = Perfil
-        fields = '__all__'
+        fields =['biografia', 'url_avatar','numero_seguidores','numero_seguidos','datos_usuario','estado_seguimiento']
 
     def get_numero_seguidores(self, obj):
         return obj.usuario.seguidores.filter(estado='ACEPTADO').count()
 
     def get_numero_seguidos(self, obj):
         return obj.usuario.siguiendo.filter(estado='ACEPTADO').count()
-    def get_imagen(self,obj):
-        if obj.imagen:
-            return obj.imagen.id
-        return None  # Si no hay imagen, devolvemos None en lugar de romper el servidor
+    def get_url_avatar(self,obj):
+        if obj.imagen and obj.imagen.url_s3:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.imagen.url_s3.url)
+            return obj.imagen.url_s3.url
+        return None
     def get_estado_seguimiento(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
