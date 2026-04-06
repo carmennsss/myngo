@@ -4,11 +4,20 @@ from django.db.models import Avg
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Voto
-from .serializers import VotoSerializer, RankingSerializer, EstadoVotoSerializer
+from .models import Voto,Catalogo_mejoras
+from .serializers import VotoSerializer, RankingSerializer, EstadoVotoSerializer,CatalogoMejorasSerializer
 from usuarios.models import Usuario
 from comunidades.models import Comunidad
 
+class CatalogoMejoras(generics.ListAPIView):
+    serializer_class = CatalogoMejorasSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        tipo=self.kwargs.get('tipo')
+        mejoras=Catalogo_mejoras.objects.filter(tipo=tipo)
+        return mejoras
+    
 class VotoAPIView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
@@ -127,7 +136,6 @@ class RankingUsuariosView(generics.ListAPIView):
         return Usuario.objects.annotate(
             rating_medio=Avg('votos_recibidos_perfil__estrellas')
         ).filter(rating_medio__isnull=False).order_by('-rating_medio')[:10]
-
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         data = []

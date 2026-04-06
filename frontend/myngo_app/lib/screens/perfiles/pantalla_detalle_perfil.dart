@@ -14,6 +14,7 @@ import '../galeria/pantalla_galeria_principal.dart';
 import '../../models/publicacion.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../widgets/dialogo_crear_post.dart';
+import 'pantalla_tienda_mejoras.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario con diseño oscuro y sistema de votos.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -667,32 +668,61 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
   Widget _construirSeccionAcciones(Usuario usuario) {
     // Si es mi propio perfil, muestro solo Mi Galería (la bio/foto se editan con tap directo)
     if (_currentUserId == usuario.id) {
-      return SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PantallaGaleriaPrincipal(
-                  usuarioId: usuario.id,
-                  titulo: 'Mi Galería',
-                ),
+      return Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PantallaGaleriaPrincipal(
+                      usuarioId: usuario.id,
+                      titulo: 'Mi Galería',
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.collections_rounded, size: 18, color: Colors.white),
+              label: Text(
+                'Mi Galería',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
               ),
-            );
-          },
-          icon: const Icon(Icons.collections_rounded, size: 18, color: Colors.white),
-          label: Text(
-            'Mi Galería',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF248EA6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+            ),
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF248EA6),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PantallaTiendaMejoras(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.store_rounded, size: 18, color: Colors.white),
+              label: Text(
+                'Tienda de Mejoras',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF28B50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+            ),
           ),
-        ),
+        ],
       );
     }
 

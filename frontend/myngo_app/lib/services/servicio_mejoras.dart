@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/respuesta_api.dart';
+import '../models/catalogo_mejoras.dart';
 import './servicio_usuarios.dart';
 
 /// Servicio para gestionar las votaciones y el ranking.
@@ -77,6 +78,28 @@ class ServicioMejoras {
         return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener ranking');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene los elementos del catálogo según el tipo
+  Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasCatalogo(String tipo) async {
+    try {
+      final token = await ServicioUsuarios().obtenerToken();
+      final respuesta = await http.get(
+        Uri.parse('$_urlBase/tienda/$tipo'),
+        headers: {
+          'Authorization': 'Token $token',
+        },
+      );
+
+      if (respuesta.statusCode == 200) {
+        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final beneficios = datos.map((e) => CatalogoMejoras.fromJson(e)).toList();
+        return RespuestaApi(exito: true, mensaje: 'OK', datos: beneficios);
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
