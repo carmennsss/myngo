@@ -92,7 +92,7 @@ class RegistroUsuarios(APIView):
                 password=password,
                 nombre_usuario=datos_limpios['nombre_usuario']
             )
-            perfil=Perfil.objects.create(usuario=usuario,biografia="",url_avatar="",puntos=0)
+            perfil=Perfil.objects.create(usuario=usuario,biografia="",puntos=0)
             return HttpResponse(f"""
     <html>
         <head>
