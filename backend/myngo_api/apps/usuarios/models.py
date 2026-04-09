@@ -85,13 +85,13 @@ class Perfil(models.Model):
     #Metodo que recalcula los puntos generados por ese perfil en los días inactivos
     #sin pasarse del limite de 5.000 puntos
     def recalcular_puntos(self):
-        last_login=self.usuario.last_login#ultimo login del usuario
+        last_login=Usuario.objects.values_list('last_login', flat=True).get(pk=self.usuario_id)
         fecha_actual=timezone.now().date()#saco la fecha actual
         if last_login is None or last_login.date() < fecha_actual:#si no hay ultimo login o no es hoy
             rating=self.usuario.rating_actual#saco el rating
             dias_inactivo=1#dias inactivo por defecto 1 para que sume algo la primera vez
             if last_login is not None:#si hay login
-                dias_inactivo=(fecha_actual-last_login).days#saco la diferencia en dias
+                dias_inactivo=(fecha_actual-last_login.date()).days#saco la diferencia en dias
             puntos=0#para almacenar los puntos a sumar
             #dependiendo del rating genera unos puntos
             match rating:
