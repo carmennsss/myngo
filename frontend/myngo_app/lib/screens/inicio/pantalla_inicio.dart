@@ -36,6 +36,8 @@ class _PantallaInicioState extends State<PantallaInicio> {
   String? _miNombre;
   String? _miAvatar;
   int? _miId;
+  int? _puntos;
+  int _notificacionesSinLeer = 0;
   List<Comunidad> _misComunidades = [];
   Comunidad? _comunidadSeleccionada;
   Usuario? _usuarioSeleccionado;
@@ -59,10 +61,22 @@ class _PantallaInicioState extends State<PantallaInicio> {
             _miNombre = resDatos.datos!.nombreUsuario;
             _miAvatar = resDatos.datos!.urlAvatar;
             _miId = resDatos.datos!.id;
+            _puntos = resDatos.datos!.puntos;
           });
           _cargarComunidades();
+          _cargarNotificacionesSinLeer();
         }
       }
+    }
+  }
+
+  Future<void> _cargarNotificacionesSinLeer() async {
+    if (!_estaLogueado) return;
+    final conteo = await ServicioNotificaciones().obtenerConteoNoLeidas();
+    if (mounted) {
+      setState(() {
+        _notificacionesSinLeer = conteo;
+      });
     }
   }
 
@@ -99,7 +113,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
 
   List<Widget> get vistasCentrales => [
     FeedPublicaciones(onComunidadSelected: _seleccionarComunidad),
-    PantallaComunidades(onComunidadSelected: _seleccionarComunidad), // Explorar
+    PantallaComunidades(onComunidadSelected: _seleccionarComunidad, onComunidadCreada: _cargarComunidades), // Explorar
     const PantallaNotificaciones(),
     const Center(child: Text('Chat próximamente 💬', style: TextStyle(color: Colors.white))),
     PantallaMisCosas(usuarioId: _miId ?? 0),
@@ -117,6 +131,8 @@ class _PantallaInicioState extends State<PantallaInicio> {
             avatarUrl: _miAvatar,
             miId: _miId,
             indiceSeleccionado: _indiceSeleccionado,
+            puntos: _puntos,
+            notificacionesSinLeer: _notificacionesSinLeer,
             onNavSelected: _alPulsarNav,
             onProfileSelected: _seleccionarUsuario,
           ),
@@ -160,6 +176,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
                              comunidad: _comunidadSeleccionada!,
                              esIntegrada: true,
                              onBack: () => setState(() => _comunidadSeleccionada = null),
+                             onMembershipChanged: _cargarComunidades,
                            )
                          : _usuarioSeleccionado != null
                          ? PantallaDetallePerfil(
@@ -218,12 +235,14 @@ class SidebarIzquierdo extends StatelessWidget {
           titulo: 'Mis Comunidades (${comunidades.length})',
           contenido: comunidades.isEmpty 
            ? Text('Únete a una comunidad 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-           : Wrap(
-             spacing: 8,
-             runSpacing: 8,
-             children: comunidades.take(6).map((c) => _ComunidadAvatar(
-               comunidad: c, 
-               onTap: () => onComunidadSelected(c)
+           : Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: comunidades.map((c) => Padding(
+               padding: const EdgeInsets.only(bottom: 12.0),
+               child: _ComunidadAvatar(
+                 comunidad: c, 
+                 onTap: () => onComunidadSelected(c)
+               ),
              )).toList(),
            ),
         ),
@@ -723,10 +742,12 @@ class _CabeceraPro extends StatelessWidget {
   final String? avatarUrl;
   final int? miId;
   final int indiceSeleccionado;
+  final int? puntos;
+  final int notificacionesSinLeer;
   final ValueChanged<int> onNavSelected;
   final Function(Usuario)? onProfileSelected;
 
-  const _CabeceraPro({required this.estaLogueado, required this.nombreUsuario, required this.avatarUrl, this.miId, required this.indiceSeleccionado, required this.onNavSelected, this.onProfileSelected});
+  const _CabeceraPro({required this.estaLogueado, required this.nombreUsuario, required this.avatarUrl, this.miId, required this.indiceSeleccionado, required this.puntos, required this.notificacionesSinLeer, required this.onNavSelected, this.onProfileSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -742,17 +763,20 @@ class _CabeceraPro extends StatelessWidget {
       ),
       child: Row(
         children: [
-          BotonTactil(
-            onTap: () => onNavSelected(0),
-            child: Row(
-              children: [
-                const Icon(Icons.pets, color: Colors.white, size: 34),
-                const SizedBox(width: 14),
-                Text(
-                  'MYNGO',
-                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2),
-                ),
-              ],
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: BotonTactil(
+              onTap: () => onNavSelected(0),
+              child: Row(
+                children: [
+                  const Icon(Icons.pets, color: Colors.white, size: 34),
+                  const SizedBox(width: 14),
+                  Text(
+                    'MYNGO',
+                    style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2),
+                  ),
+                ],
+              ),
             ),
           ),
           const Spacer(),
@@ -767,14 +791,14 @@ class _CabeceraPro extends StatelessWidget {
                     const SizedBox(width: 12),
                     _CircularNavItem(icon: Icons.chat_bubble_rounded, title: 'Chats', isActive: indiceSeleccionado == 3, onTap: () => onNavSelected(3)),
                     const SizedBox(width: 12),
-                    _CircularNavItem(icon: Icons.notifications_rounded, title: 'Notificaciones', isActive: indiceSeleccionado == 2, onTap: () => onNavSelected(2), badge: estaLogueado ? '1' : null),
+                    _CircularNavItem(icon: Icons.notifications_rounded, title: 'Notificaciones', isActive: indiceSeleccionado == 2, onTap: () => onNavSelected(2), badge: estaLogueado && notificacionesSinLeer > 0 ? notificacionesSinLeer.toString() : null),
                   ],
                 ),
               ),
             ),
             const SizedBox(width: 40),
           ],
-          _UserProfileHeader(name: nombreUsuario, avatarUrl: avatarUrl, estaLogueado: estaLogueado, miId: miId, onProfileSelected: onProfileSelected),
+          _UserProfileHeader(name: nombreUsuario, avatarUrl: avatarUrl, estaLogueado: estaLogueado, miId: miId, onProfileSelected: onProfileSelected, puntos: puntos),
         ],
       ),
     );
@@ -836,24 +860,32 @@ class _UserProfileHeader extends StatelessWidget {
   final String? avatarUrl;
   final bool estaLogueado;
   final int? miId;
+  final int? puntos;
   final Function(Usuario)? onProfileSelected;
 
-  const _UserProfileHeader({this.name, this.avatarUrl, required this.estaLogueado, this.miId, this.onProfileSelected});
+  const _UserProfileHeader({this.name, this.avatarUrl, required this.estaLogueado, this.miId, this.onProfileSelected,this.puntos});
 
   @override
   Widget build(BuildContext context) {
     if (!estaLogueado) {
-      return BotonTactil(
-        onTap: () => Navigator.pushNamed(context, '/login'),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(0.3))),
-          child: Row(
-            children: [
-              const Icon(Icons.account_circle_outlined, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Text('INICIAR SESIÓN', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5)),
-            ],
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: BotonTactil(
+          onTap: () => Navigator.pushNamed(context, '/login'),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.account_circle_outlined, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Text('INICIAR SESIÓN', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5)),
+              ],
+            ),
           ),
         ),
       );
@@ -962,7 +994,7 @@ class _UserProfileHeader extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
-                  child: Text('350 Puntos', style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                  child: Text((puntos ?? 0).toString() + ' Puntos', style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -993,11 +1025,44 @@ class _ComunidadAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return BotonTactil(
       onTap: onTap,
-      child: CircleAvatar(
-        radius: 22,
-        backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-        backgroundImage: comunidad.urlPortada.isNotEmpty ? CachedNetworkImageProvider(comunidad.urlPortada) : null,
-        child: comunidad.urlPortada.isEmpty ? Text(comunidad.nombre[0].toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFC35E34))) : null,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: comunidad.colorTema.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: comunidad.colorTema.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: comunidad.colorTema.withOpacity(0.3),
+              backgroundImage: comunidad.urlPortada.isNotEmpty ? CachedNetworkImageProvider(comunidad.urlPortada) : null,
+              child: comunidad.urlPortada.isEmpty ? Text(comunidad.nombre[0].toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, color: comunidad.colorTema, fontSize: 14)) : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    comunidad.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF4A4440)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${comunidad.miembrosCount} Miembros',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

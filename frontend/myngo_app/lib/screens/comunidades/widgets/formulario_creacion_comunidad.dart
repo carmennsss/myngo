@@ -74,7 +74,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
 
       if (mounted) {
         if (respuesta.exito) {
-          Navigator.pop(context);
+          Navigator.pop(context, true);
           widget.alConfirmar();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('¡Comunidad creada 🐾!'), backgroundColor: Colors.green),

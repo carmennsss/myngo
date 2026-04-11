@@ -19,17 +19,22 @@ import 'pantalla_admin_comunidad.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/dialogo_crear_post.dart';
 import '../perfiles/pantalla_tienda_mejoras.dart';
+import 'widgets_preview/preview_header.dart';
+import 'widgets_preview/preview_about_section.dart';
+import 'widgets_preview/community_join_button.dart';
 
 class PantallaDetalleComunidad extends StatefulWidget {
   final Comunidad comunidad;
   final bool esIntegrada;
   final VoidCallback? onBack;
+  final VoidCallback? onMembershipChanged;
 
   const PantallaDetalleComunidad({
     super.key, 
     required this.comunidad, 
     this.esIntegrada = false,
     this.onBack,
+    this.onMembershipChanged,
   });
 
   @override
@@ -128,8 +133,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         if (respuesta.datos?['estado'] == 'ACEPTADO') {
           setState(() { widget.comunidad.esMiembro = true; });
           _cargarDatosSeccion(0);
+          // Notificar que se unió a la comunidad
+          widget.onMembershipChanged?.call();
         } else if (respuesta.datos?['estado'] == 'SOLICITUD') {
           setState(() { widget.comunidad.esPendiente = true; });
+          // Notificar que envió solicitud
+          widget.onMembershipChanged?.call();
         }
       }
     }
@@ -160,22 +169,107 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildPreview(BuildContext context) {
+    final esPublica = widget.comunidad.esPublica;
+    
+    // Para comunidades públicas, usar la misma estructura que el dashboard
+    if (esPublica) {
+      return Column(
+        children: [
+          Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: _colorPagina(context),
+              border: Border(
+                bottom: BorderSide(
+                  color: widget.comunidad.colorTema.withOpacity(0.2),
+                  width: 2,
+                ),
+              ),
+            ),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildPreviewNavItem(0, 'POSTS', Icons.grid_view_rounded),
+                _buildPreviewNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _indiceSeccion == 0 ? _buildPreviewPostFeed() : _buildPreviewGallery(),
+          ),
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: PreviewAboutSection(
+                    comunidad: widget.comunidad,
+                    esAppClara: _esAppClara(context),
+                    colorTextoPrincipal: _colorTextoPrincipal(context),
+                    colorTextoSecundario: _colorTextoSecundario(context),
+                    bgColor: _bgColor,
+                  ),
+                ),
+                CommunityJoinButton(
+                  comunidad: widget.comunidad,
+                  miId: _miId,
+                  estaCargandoPeticion: _estaCargandoPeticion,
+                  onLogin: () => Navigator.pushNamed(context, '/login'),
+                  onJoin: _gestionarMembresia,
+                  isPreview: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Para comunidades privadas, mantener la vista anterior
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       slivers: [
-        _buildSliverAppBar(context),
+        _buildSliverAppBar(context, isPreview: true),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderInfo(context),
-                Divider(height: 48, thickness: 1, color: _colorPagina(context).computeLuminance() > 0.5 ? Colors.black12 : const Color(0xFF2A2A2A)),
-                _buildAboutSection(context),
-                const SizedBox(height: 100),
+                PreviewHeader(
+                  comunidad: widget.comunidad,
+                  esAppClara: _esAppClara(context),
+                  colorTextoPrincipal: _colorTextoPrincipal(context),
+                  colorTextoSecundario: _colorTextoSecundario(context),
+                ),
+                Divider(
+                  height: 48,
+                  thickness: 1,
+                  color: _colorPagina(context).computeLuminance() > 0.5
+                      ? Colors.black12
+                      : const Color(0xFF2A2A2A),
+                ),
+                PreviewAboutSection(
+                  comunidad: widget.comunidad,
+                  esAppClara: _esAppClara(context),
+                  colorTextoPrincipal: _colorTextoPrincipal(context),
+                  colorTextoSecundario: _colorTextoSecundario(context),
+                  bgColor: _bgColor,
+                ),
+                const SizedBox(height: 24),
               ],
             ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: CommunityJoinButton(
+            comunidad: widget.comunidad,
+            miId: _miId,
+            estaCargandoPeticion: _estaCargandoPeticion,
+            onLogin: () => Navigator.pushNamed(context, '/login'),
+            onJoin: _gestionarMembresia,
+            isPreview: true,
           ),
         ),
       ],
@@ -620,19 +714,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context, {bool isDashboard = false}) {
+  Widget _buildSliverAppBar(BuildContext context, {bool isDashboard = false, bool isPreview = false}) {
     final esAdministrador = widget.comunidad.miRol == 'Administrador';
     final esModerador = widget.comunidad.miRol == 'Moderador';
     final puedeAdministrar = esAdministrador || esModerador;
 
     return SliverAppBar(
       expandedHeight: isDashboard ? 260 : 280,
-      pinned: true,
+      pinned: !isPreview, // No fijar en modo preview para evitar duplicación
       stretch: true,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       iconTheme: IconThemeData(color: _colorTextoPrincipal(context)),
-      leading: widget.esIntegrada ? IconButton(
+      leading: (widget.esIntegrada && !isPreview) ? IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), shape: BoxShape.circle),
@@ -697,192 +791,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderInfo(BuildContext context) {
-    final bool fondoClaro = _esAppClara(context);
-    final colorContainer = fondoClaro ? _bgColor.withValues(alpha: 0.1) : Colors.white10;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Text(
-                widget.comunidad.nombre,
-                style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w900, color: _colorTextoPrincipal(context), letterSpacing: -0.5),
-              ),
-            ),
-            _ChipPrivacidad(esPublica: widget.comunidad.esPublica),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: _bgColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _bgColor.withValues(alpha: fondoClaro ? 0.3 : 0.5)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.person_rounded, size: 14, color: _bgColor),
-                  const SizedBox(width: 6),
-                  Text('Por ${widget.comunidad.creadorNombre}', style: GoogleFonts.outfit(color: _colorTextoPrincipal(context), fontWeight: FontWeight.bold, fontSize: 13)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: colorContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.people_alt_rounded, color: _colorTextoSecundario(context), size: 14),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${widget.comunidad.miembrosCount} Miembros', 
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: _colorTextoPrincipal(context)),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            Row(
-              children: [
-                const Icon(Icons.star_rounded, color: Color(0xFFF29C50), size: 22),
-                const SizedBox(width: 4),
-                Text(
-                  widget.comunidad.ratingMedio.toStringAsFixed(1), 
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 18, color: _colorTextoPrincipal(context))
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAboutSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _esAppClara(context) ? Colors.black.withValues(alpha: 0.03) : const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _esAppClara(context) ? Colors.black12 : Colors.white10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome_rounded, color: _bgColor, size: 20),
-              const SizedBox(width: 8),
-              Text('Sobre esta comunidad', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: _colorTextoPrincipal(context))),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            widget.comunidad.descripcion.isEmpty 
-              ? '¡Un espacio misterioso! Aún no hay descripción para esta comunidad.' 
-              : widget.comunidad.descripcion,
-            style: GoogleFonts.inter(fontSize: 15, color: _colorTextoSecundario(context), height: 1.6),
-          ),
-          
-          if (widget.comunidad.minRatingAcceso > 0) ...[
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF29C50).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFF29C50).withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.stars_rounded, color: Color(0xFFF29C50), size: 28),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Requisito de Nivel 🐾',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold, 
-                            color: _colorTextoPrincipal(context), 
-                            fontSize: 15
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Necesitas una media de ${widget.comunidad.minRatingAcceso.toStringAsFixed(1)} ⭐ para unirte a este selecto grupo.',
-                          style: GoogleFonts.inter(
-                            color: _colorTextoSecundario(context), 
-                            fontSize: 13
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildJoinButton() {
-    if (_miId == null) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: ElevatedButton(
-          onPressed: () => Navigator.pushNamed(context, '/login'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2A2A2A),
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: Text('INICIA SESIÓN PARA UNIRTE 🐾', 
-              style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: ElevatedButton(
-        onPressed: _estaCargandoPeticion ? null : _gestionarMembresia,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFF28B50),
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        child: _estaCargandoPeticion
-          ? const CircularProgressIndicator(color: Colors.white)
-          : Text(
-              widget.comunidad.esPendiente 
-                ? 'SOLICITUD PENDIENTE 🐾' 
-                : (widget.comunidad.esPublica ? 'UNIRSE AHORA ✨' : 'SOLICITAR ENTRAR 🐾'), 
-              style: GoogleFonts.inter(fontWeight: FontWeight.bold)
-            ),
       ),
     );
   }
@@ -1032,6 +940,156 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
+  Widget _buildPreviewPostFeed() {
+    if (_estaCargandoDatos && _publicaciones.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+      );
+    }
+    
+    if (_publicaciones.isEmpty) {
+      return _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones');
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(24),
+      itemCount: _publicaciones.length,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 24.0),
+        child: GestureDetector(
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Inicia sesión para ver los detalles 👉', style: GoogleFonts.inter()),
+              backgroundColor: const Color(0xFF248EA6),
+              duration: const Duration(seconds: 3),
+            ),
+          ),
+          child: Opacity(
+            opacity: 0.7,
+            child: TarjetaPublicacion(
+              publicacion: _publicaciones[index],
+              comunidadId: widget.comunidad.id,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewGallery() {
+    if (_estaCargandoDatos) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+      );
+    }
+    
+    if (_colecciones.isEmpty) {
+      return _buildEmptyState(Icons.photo_library_rounded, 'Aún no hay contenido en la galería');
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: _colecciones.length,
+      itemBuilder: (context, index) {
+        final col = _colecciones[index];
+        final color = widget.comunidad.colorTema;
+        return InkWell(
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Inicia sesión para acceder a la galería 🔐', style: GoogleFonts.inter()),
+              backgroundColor: const Color(0xFF248EA6),
+              duration: const Duration(seconds: 3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                  child: Container(
+                    color: color.withValues(alpha: 0.1),
+                    child: (col.previsualizaciones is List && col.previsualizaciones.isNotEmpty)
+                        ? GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 4,
+                              mainAxisSpacing: 4,
+                            ),
+                            itemCount: col.previsualizaciones.length > 4 ? 4 : col.previsualizaciones.length,
+                            itemBuilder: (context, i) {
+                              final String? url = col.previsualizaciones[i]?.toString();
+                              if (url == null || url.isEmpty) return Container(color: Colors.white10);
+                              return CachedNetworkImage(
+                                imageUrl: url,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(color: Colors.white10),
+                                errorWidget: (context, url, error) => const Icon(Icons.error, size: 10),
+                              );
+                            },
+                          )
+                        : Center(child: Icon(col.esPrivada ? Icons.lock_outline_rounded : Icons.folder_open_rounded, color: color, size: 24)),
+                  ),
+                ),
+              ),
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Text(
+                  col.nombreColeccion.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 9),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPreviewNavItem(int index, String label, IconData icon) {
+    final activo = _indiceSeccion == index;
+    final color = widget.comunidad.colorTema;
+    return InkWell(
+      onTap: () => setState(() => _indiceSeccion = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: activo ? color : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: activo ? color : Colors.grey, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: activo ? color : Colors.grey,
+                fontWeight: activo ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMiniChip(String label, bool active, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -1173,39 +1231,4 @@ class _SubNavDelegate extends SliverPersistentHeaderDelegate {
   double get minExtent => 70;
   @override
   bool shouldRebuild(covariant _SubNavDelegate oldDelegate) => oldDelegate.selectedIndex != selectedIndex;
-}
-
-class _ChipPrivacidad extends StatelessWidget {
-  final bool esPublica;
-  const _ChipPrivacidad({required this.esPublica});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: esPublica ? const Color(0xFF248EA6).withOpacity(0.15) : const Color(0xFFD95F43).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            esPublica ? Icons.visibility_rounded : Icons.lock_rounded,
-            size: 14,
-            color: esPublica ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            esPublica ? 'Pública' : 'Privada',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              color: esPublica ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
