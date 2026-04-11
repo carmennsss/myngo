@@ -13,7 +13,8 @@ import '../../widgets/comunes/boton_tactil.dart';
 
 class PantallaComunidades extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
-  const PantallaComunidades({super.key, this.onComunidadSelected});
+  final VoidCallback? onComunidadCreada;
+  const PantallaComunidades({super.key, this.onComunidadSelected, this.onComunidadCreada});
 
   @override
   State<PantallaComunidades> createState() => _PantallaComunidadesState();
@@ -218,7 +219,13 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
             if (widget.onComunidadSelected != null) {
               widget.onComunidadSelected!(_comunidades[index]);
             } else {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(comunidad: _comunidades[index])));
+              Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
+                comunidad: _comunidades[index],
+                onMembershipChanged: () {
+                  _cargarDatos();
+                  widget.onComunidadCreada?.call();
+                },
+              )));
             }
           },
         ),
@@ -232,7 +239,10 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => FormularioCreacionComunidad(
-        alConfirmar: () => _cargarDatos(),
+        alConfirmar: () {
+          _cargarDatos();
+          widget.onComunidadCreada?.call();
+        },
       ),
     );
   }

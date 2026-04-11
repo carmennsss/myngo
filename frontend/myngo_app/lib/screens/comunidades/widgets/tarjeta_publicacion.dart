@@ -64,11 +64,6 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
         content: Text('¡Vaya! Debes iniciar miau-sesión para dar like 🐾', style: GoogleFonts.outfit()),
         backgroundColor: const Color(0xFFC35E34),
         duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'ENTRAR',
-          textColor: Colors.white,
-          onPressed: () => Navigator.pushNamed(context, '/login'),
-        ),
       ));
       return;
     }

@@ -188,7 +188,9 @@ class _TarjetaNotificacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool esPeticion = notif.tipo == 'PETICION_CO_ADMIN' || notif.tipo == 'PETICION_SEGUIMIENTO' || notif.tipo == 'PETICION_UNION';
+    // Solo mostrar botones si es una petición SIN responder (estado_peticion es null)
+    bool esPeticionPendiente = (notif.tipo == 'PETICION_CO_ADMIN' || notif.tipo == 'PETICION_SEGUIMIENTO' || notif.tipo == 'PETICION_UNION') && 
+                                (notif.estadoPeticion == null || notif.estadoPeticion!.isEmpty);
     final color = _getColorTipo(notif.tipo);
     final icon = _getIconoTipo(notif.tipo);
 
@@ -245,7 +247,7 @@ class _TarjetaNotificacion extends StatelessWidget {
                   Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFC35E34), shape: BoxShape.circle)),
               ],
             ),
-            if (esPeticion) ...[
+            if (esPeticionPendiente) ...[
               const SizedBox(height: 20),
               Row(
                 children: [
