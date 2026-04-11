@@ -4,6 +4,7 @@ import '../../widgets/campo_texto_personalizado.dart';
 import '../../widgets/gatos_registro_animados.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../services/servicio_usuarios.dart';
 
@@ -477,7 +478,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
       );
 
       Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) Navigator.pushReplacementNamed(context, '/login'); 
+        if (mounted) context.go('/login'); 
       });
     } else {
       _estadoGatos = EstadoMonstruo.triste;
@@ -606,7 +607,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
               children: [
                 Text('¿Ya eres parte?', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14)),
                 TextButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                  onPressed: () => context.go('/login'),
                   style: TextButton.styleFrom(foregroundColor: const Color(0xFFF28B50)),
                   child: const Text('Inicia sesión', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),

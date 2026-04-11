@@ -72,10 +72,8 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
       setState(() {
         _cargando = false;
         if (res.exito) {
-          // Solo mostramos posts con imagen válida para evitar huecos en el masonry
-          _posts = (res.datos ?? [])
-              .where((p) => p.urlImagen != null && p.urlImagen!.isNotEmpty)
-              .toList();
+          // Ya NO filtramos por imagen, permitimos posts de solo texto (Task 4)
+          _posts = res.datos ?? [];
           _posts.sort((a, b) => (b.likesCount + b.comentariosCount).compareTo(a.likesCount + a.comentariosCount));
         } else {
           _error = res.mensaje;
@@ -171,7 +169,16 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
                           ),
                         )
                       : _posts.isEmpty
-                          ? Center(child: Text('No hay posts activos 😿', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16)))
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.psychology_outlined, size: 64, color: Colors.grey),
+                                  const SizedBox(height: 16),
+                                  Text('Aún no hay publicaciones aquí 😿', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16)),
+                                ],
+                              ),
+                            )
                           : CustomScrollView(
                               controller: _scrollController,
                               physics: const BouncingScrollPhysics(),
@@ -184,11 +191,20 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
                                     crossAxisSpacing: 12,
                                     childCount: _posts.length,
                                     itemBuilder: (context, index) {
+                                      final post = _posts[index];
                                       return TarjetaPost(
-                                        post: _posts[index],
-                                        onJoin: () => _unirseAComunidad(_posts[index].comunidadId, index),
+                                        key: ValueKey('post_${post.id}'),
+                                        post: post,
+                                        onJoin: () => _unirseAComunidad(post.comunidadId, index),
                                         onComunidadSelected: widget.onComunidadSelected,
                                         onProfileSelected: widget.onProfileSelected,
+                                        onEliminado: () {
+                                          if (mounted) {
+                                            setState(() {
+                                              _posts.removeWhere((p) => p.id == post.id);
+                                            });
+                                          }
+                                        },
                                       );
                                     },
                                   ),

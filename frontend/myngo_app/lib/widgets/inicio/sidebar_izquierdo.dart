@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,12 +9,14 @@ class SidebarIzquierdo extends StatelessWidget {
   final bool estaLogueado;
   final List<Comunidad> comunidades;
   final Function(Comunidad) onComunidadSelected;
+  final Function(int, int) onReorder;
 
   const SidebarIzquierdo({
     super.key,
     required this.estaLogueado,
     required this.comunidades,
     required this.onComunidadSelected,
+    required this.onReorder,
   });
 
   @override
@@ -22,21 +25,26 @@ class SidebarIzquierdo extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _TarjetaSidebar(
-          titulo: 'Mis Comunidades (${comunidades.length})',
-          contenido: comunidades.isEmpty
+          titulo: 'Mis Michi-Grupos (${comunidades.length})',
+          contenido: comunidades.isEmpty 
            ? Text('Únete a una comunidad 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-           : Column(
-             crossAxisAlignment: CrossAxisAlignment.start,
-             children: comunidades.map((c) => Padding(
-               padding: const EdgeInsets.only(bottom: 12.0),
-               child: _ComunidadAvatarSidebar(
-                 comunidad: c,
+           : Wrap(
+             spacing: 12,
+             runSpacing: 12,
+             children: [
+               ...comunidades.take(7).map((c) => _ComunidadAvatarCompacto(
+                 comunidad: c, 
                  onTap: () => onComunidadSelected(c)
-               ),
-             )).toList(),
+               )),
+               if (comunidades.length > 7)
+                 _BotonVerMas(
+                   total: comunidades.length,
+                   onTap: () => _mostrarDialogoComunidades(context, comunidades, onComunidadSelected, onReorder),
+                 ),
+             ],
            ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         _TarjetaSidebar(
           titulo: 'Ranking Semanal',
           contenido: Column(
@@ -47,7 +55,7 @@ class SidebarIzquierdo extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         if (estaLogueado)
         _TarjetaSidebar(
           titulo: 'Mis Puntos y Rango',
@@ -76,7 +84,7 @@ class _TarjetaSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -88,7 +96,7 @@ class _TarjetaSidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(titulo, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           contenido,
         ],
       ),
@@ -140,6 +148,295 @@ class _ComunidadAvatarSidebar extends StatelessWidget {
   }
 }
 
+class _ComunidadAvatarCompacto extends StatelessWidget {
+  final Comunidad comunidad;
+  final VoidCallback onTap;
+  const _ComunidadAvatarCompacto({required this.comunidad, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: comunidad.nombre,
+      textStyle: GoogleFonts.outfit(fontSize: 12, color: Colors.white),
+      decoration: BoxDecoration(
+        color: const Color(0xFF4A4440),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: BotonTactil(
+        onTap: onTap,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: comunidad.colorTema.withOpacity(0.3), width: 2),
+            boxShadow: [
+              BoxShadow(color: comunidad.colorTema.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: CircleAvatar(
+            backgroundColor: comunidad.colorTema.withOpacity(0.1),
+            backgroundImage: comunidad.urlPortada.isNotEmpty 
+              ? CachedNetworkImageProvider(comunidad.urlPortada) 
+              : null,
+            child: comunidad.urlPortada.isEmpty 
+              ? Text(comunidad.nombre[0].toUpperCase(), 
+                  style: TextStyle(color: comunidad.colorTema, fontWeight: FontWeight.bold, fontSize: 16)) 
+              : null,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BotonVerMas extends StatelessWidget {
+  final int total;
+  final VoidCallback onTap;
+  const _BotonVerMas({required this.total, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return BotonTactil(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade200, width: 2),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Center(
+          child: Text('+${total - 7}', 
+            style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.grey.shade600)),
+        ),
+      ),
+    );
+  }
+}
+
+void _mostrarDialogoComunidades(
+    BuildContext context, 
+    List<Comunidad> comunidades, 
+    Function(Comunidad) onSelected,
+    Function(int, int) onReorder) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Cerrar',
+    barrierColor: Colors.black.withOpacity(0.4),
+    transitionDuration: const Duration(milliseconds: 350),
+    pageBuilder: (context, anim1, anim2) {
+      return StatefulBuilder(
+        builder: (context, setDialogState) => Align(
+          alignment: Alignment.center,
+          child: Material(
+            color: Colors.transparent,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                width: 480,
+                height: 650,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.15), blurRadius: 60, offset: const Offset(0, 20)),
+                  ],
+                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                ),
+                child: Column(
+                  children: [
+                    // Cabecera Premium
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(32, 32, 24, 24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF5F1),
+                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40)),
+                        border: Border(bottom: BorderSide(color: const Color(0xFFC35E34).withOpacity(0.05))),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(colors: [Color(0xFFF28B50), Color(0xFFC35E34)]),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+                                ),
+                                child: const Icon(Icons.sort_rounded, color: Colors.white, size: 24),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text('Mis Michi-Grupos', 
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 24, color: const Color(0xFF4A4440), letterSpacing: -0.5)
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.pop(context), 
+                                icon: const Icon(Icons.close_rounded, color: Colors.grey, size: 28),
+                                splashRadius: 24,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.touch_app_rounded, color: Color(0xFF248EA6), size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text('Mantén presionado y arrastra para reordenar tus favoritos 🐾', 
+                                  style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500)
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Lista Reordenable
+                    Expanded(
+                      child: ReorderableListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        itemCount: comunidades.length,
+                        onReorder: (oldIndex, newIndex) {
+                          setDialogState(() {
+                            onReorder(oldIndex, newIndex);
+                          });
+                        },
+                        proxyDecorator: (child, index, animation) {
+                          return Material(
+                            color: Colors.transparent,
+                            child: AnimatedBuilder(
+                              animation: animation,
+                              builder: (BuildContext context, Widget? childBuilder) {
+                                final animValue = Curves.easeInOut.transform(animation.value);
+                                final elevation = lerpDouble(0, 20, animValue)!;
+                                final scale = lerpDouble(1, 1.05, animValue)!;
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      boxShadow: [
+                                        BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.15 * animValue), blurRadius: elevation, offset: Offset(0, elevation / 2)),
+                                      ],
+                                    ),
+                                    child: childBuilder,
+                                  ),
+                                );
+                              },
+                              child: child,
+                            ),
+                          );
+                        },
+                        itemBuilder: (context, index) {
+                          final c = comunidades[index];
+                          return Container(
+                            key: ValueKey('dialog_${c.id}'),
+                            margin: const EdgeInsets.only(bottom: 12.0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: const Color(0xFFF2D0BD).withOpacity(0.3)),
+                              boxShadow: [
+                                BoxShadow(color: const Color(0xFF4A4440).withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(24),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(24),
+                                hoverColor: const Color(0xFFFEF5F1),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  onSelected(c);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle, 
+                                          border: Border.all(color: c.colorTema.withOpacity(0.3), width: 2)
+                                        ),
+                                        child: CircleAvatar(
+                                          radius: 26,
+                                          backgroundColor: c.colorTema.withOpacity(0.1),
+                                          backgroundImage: (c.urlPortada != null && c.urlPortada!.isNotEmpty) 
+                                            ? CachedNetworkImageProvider(c.urlPortada!) 
+                                            : null,
+                                          child: (c.urlPortada == null || c.urlPortada!.isEmpty) 
+                                            ? Text(c.nombre[0].toUpperCase(), style: TextStyle(color: c.colorTema, fontWeight: FontWeight.bold, fontSize: 18)) 
+                                            : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(c.nombre ?? 'Sin nombre', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF4A4440))),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.people_alt_rounded, size: 14, color: const Color(0xFF248EA6).withOpacity(0.7)),
+                                                const SizedBox(width: 4),
+                                                Text('${c.miembrosCount ?? 0} miembros', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      ReorderableDragStartListener(
+                                        index: index,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade50,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(Icons.drag_handle_rounded, color: Color(0xFFF2D0BD), size: 28),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, anim1, anim2, child) {
+      return Transform.scale(
+        scale: Curves.easeOutBack.transform(anim1.value),
+        child: Opacity(
+          opacity: anim1.value,
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 class _RankingItem extends StatelessWidget {
   final int puesto;
   final String nombre;
@@ -149,7 +446,7 @@ class _RankingItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         children: [
           CircleAvatar(radius: 14, backgroundColor: const Color(0xFFC35E34).withOpacity(0.1), child: Text(puesto.toString(), style: const TextStyle(fontSize: 11, color: Color(0xFFC35E34), fontWeight: FontWeight.bold))),

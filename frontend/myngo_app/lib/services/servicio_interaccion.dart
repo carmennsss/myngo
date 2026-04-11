@@ -26,7 +26,14 @@ class ServicioInteraccion {
           datos: jsonDecode(response.body)
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al procesar el like');
+      
+      String errorMsg = 'Error al procesar el like';
+      try {
+        final Map<String, dynamic> body = jsonDecode(response.body);
+        if (body.containsKey('error')) errorMsg = body['error'];
+      } catch (_) {}
+      
+      return RespuestaApi(exito: false, mensaje: errorMsg);
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -71,7 +78,16 @@ class ServicioInteraccion {
           datos: Comentario.fromJson(jsonDecode(response.body))
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al enviar comentario');
+      
+      String errorMsg = 'Error al enviar comentario';
+      try {
+        final Map<String, dynamic> body = jsonDecode(response.body);
+        if (body.containsKey('error') || body.containsKey('detail')) {
+            errorMsg = body['error'] ?? body['detail'];
+        }
+      } catch (_) {}
+      
+      return RespuestaApi(exito: false, mensaje: errorMsg);
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

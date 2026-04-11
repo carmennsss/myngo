@@ -73,6 +73,26 @@ class ServicioNotificaciones {
     }
   }
 
+  Future<RespuestaApi<void>> marcarLeida(int id) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      final respuesta = await http.post(
+        Uri.parse('$_baseUrl$id/marcar-leida/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Token $token',
+        },
+      );
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Notificación marcada como leída');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   Future<int> obtenerConteoNoLeidas() async {
     try {
       final token = await _servicioUsuarios.obtenerToken();

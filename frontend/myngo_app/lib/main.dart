@@ -9,6 +9,7 @@ import 'screens/comunidades/pantalla_comunidades.dart';
 
 import 'package:provider/provider.dart';
 import 'providers/post_provider.dart';
+import 'router.dart';
 
 void main() {
   usePathUrlStrategy(); 
@@ -27,7 +28,7 @@ class MiAplicacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         scrollbars: true,
@@ -105,24 +106,17 @@ class MiAplicacion extends StatelessWidget {
             }
             return const Color(0xFFC35E34).withOpacity(0.45); // Terracotta suave en reposo
           }),
-          // Track: muy sutil, combina con el fondo cálido
-          trackColor: WidgetStateProperty.resolveWith((states) {
-            if (states.any({WidgetState.hovered, WidgetState.dragged}.contains)) {
-              return const Color(0xFFC35E34).withOpacity(0.08);
-            }
-            return Colors.transparent;
-          }),
-          trackBorderColor: WidgetStateProperty.all(Colors.transparent),
-        ),
+        // Track: muy sutil, combina con el fondo cálido
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.any({WidgetState.hovered, WidgetState.dragged}.contains)) {
+            return const Color(0xFFC35E34).withOpacity(0.08);
+          }
+          return Colors.transparent;
+        }),
+        trackBorderColor: WidgetStateProperty.all(Colors.transparent),
       ),
-      initialRoute: '/inicio',
-      routes: {
-        '/login': (context) => const PantallaLogin(),
-        '/registro': (context) => const PantallaRegistro(),
-        '/recuperar_contrasena': (context) => const PantallaRecuperarContrasena(),
-        '/inicio': (context) => const PantallaInicio(),
-        '/comunidades': (context) => const PantallaComunidades(),
-      },
+    ),
+    routerConfig: appRouter,
     );
   }
 }

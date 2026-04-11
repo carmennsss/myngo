@@ -199,7 +199,24 @@ class ReporteListCreate(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(informador=self.request.user)
+        reporte = serializer.save(informador=self.request.user)
+        
+        # Si el reporte es dentro de una comunidad, avisar a los moderadores
+        if reporte.comunidad:
+            mods = Miembros_comunidades.objects.filter(
+                comunidad=reporte.comunidad,
+                rol__in=['Administrador', 'Moderador']
+            )
+            for mod in mods:
+                # Evitar que el propio informador se notifique a sí mismo si es mod
+                if mod.usuario != self.request.user:
+                    Notificacion.objects.create(
+                        usuario=mod.usuario,
+                        tipo='NUEVO_REPORTE',
+                        mensaje=f"¡Atención! Hay un nuevo reporte de {reporte.tipo_objeto} en '{reporte.comunidad.nombre}'.",
+                        referencia_comunidad=reporte.comunidad,
+                        referencia_id=reporte.id
+                    )
 
 class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comentario.objects.all()
@@ -418,12 +435,33 @@ class ToggleLikeView(APIView):
         except Publicacion.DoesNotExist:
             return Response({'error': 'Publicación no encontrada'}, status=404)
 
+        # RESTRICCIÓN: Solo miembros pueden dar Like si es de una comunidad
+        if publicacion.comunidad:
+            es_miembro = Miembros_comunidades.objects.filter(
+                usuario=request.user, 
+                comunidad=publicacion.comunidad
+            ).exists()
+            if not es_miembro:
+                return Response(
+                    {'error': 'Debes ser miembro de la comunidad para interactuar con este post 🐾'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
         like, created = Me_gustas.objects.get_or_create(usuario=request.user, publicacion=publicacion)
         
         if not created:
             like.delete()
             return Response({'mensaje': 'Like eliminado', 'resultado': 'unliked'}, status=200)
         
+        # Opcional: Crear notificación para el autor
+        if publicacion.autor != request.user:
+            Notificacion.objects.create(
+                usuario=publicacion.autor,
+                tipo='LIKE',
+                mensaje=f"A {request.user.nombre_usuario} le ha gustado tu miau-post ✨",
+                referencia_id=publicacion.id
+            )
+
         return Response({'mensaje': 'Like añadido', 'resultado': 'liked'}, status=201)
 
 class ComentarioListCreate(generics.ListCreateAPIView):
@@ -438,8 +476,27 @@ class ComentarioListCreate(generics.ListCreateAPIView):
         try:
             publicacion = Publicacion.objects.get(pk=self.kwargs.get('pk'))
         except Publicacion.DoesNotExist:
-            raise serializers.ValidationError("Publicación no encontrada")
+            raise serializers.ValidationError({"error": "La publicación no existe"})
+        
+        # RESTRICCIÓN: Solo miembros pueden comentar si es de una comunidad
+        if publicacion.comunidad:
+            es_miembro = Miembros_comunidades.objects.filter(
+                usuario=self.request.user, 
+                comunidad=publicacion.comunidad
+            ).exists()
+            if not es_miembro:
+                raise permissions.PermissionDenied("Debes ser miembro de la comunidad para comentar 🐾")
+
         serializer.save(autor=self.request.user, publicacion=publicacion)
+
+        # Notificación para el autor
+        if publicacion.autor != self.request.user:
+            Notificacion.objects.create(
+                usuario=publicacion.autor,
+                tipo='COMENTARIO',
+                mensaje=f"{self.request.user.nombre_usuario} ha comentado tu miau-post 🐾",
+                referencia_id=publicacion.id
+            )
 
 class ResolverReporteView(APIView):
     permission_classes = [permissions.IsAuthenticated]

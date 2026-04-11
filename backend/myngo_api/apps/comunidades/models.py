@@ -12,6 +12,7 @@ class Comunidad(models.Model):
     rating_actual=models.DecimalField(max_digits=3,decimal_places=2,null=True,blank=True,default=0.00)
     min_rating_acceso=models.DecimalField(max_digits=3,decimal_places=2,default=0.00)
     color_tema=models.CharField(max_length=7, default='#C35E34') # Hex Code
+    tienda_habilitada=models.BooleanField(default=False)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

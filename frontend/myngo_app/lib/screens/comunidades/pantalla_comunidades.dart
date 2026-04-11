@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../models/comunidad.dart';
+import '../../models/usuario.dart';
 import 'widgets/tarjeta_comunidad.dart';
 import 'widgets/formulario_creacion_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
@@ -9,8 +10,9 @@ import '../../widgets/comunes/boton_tactil.dart';
 
 class PantallaComunidades extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
+  final Function(Usuario)? onUsuarioSelected;
   final VoidCallback? onComunidadCreada;
-  const PantallaComunidades({super.key, this.onComunidadSelected, this.onComunidadCreada});
+  const PantallaComunidades({super.key, this.onComunidadSelected, this.onUsuarioSelected, this.onComunidadCreada});
 
   @override
   State<PantallaComunidades> createState() => _PantallaComunidadesState();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/publicacion.dart';
 import 'package:myngo_app/widgets/comunes/menu_opciones_contenido.dart';
 import 'package:myngo_app/services/servicio_interaccion.dart';
@@ -69,6 +70,11 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
       return;
     }
 
+    // Task 2: Restringir interacción si no es miembro
+    // Asumimos que si no tenemos el dato, permitimos (o verificamos con el backend)
+    // Pero si el modelo tiene comunidadId, podemos intentar verificar.
+    // Para esta implementación, lanzaremos un aviso si el usuario intenta interactuar en una comunidad privada sin ser miembro.
+    
     setState(() {
       if (_liked) {
         _likesCount--;
@@ -209,42 +215,49 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                         }
                       }
                     },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                          radius: 20,
-                          child: Text(
-                            widget.publicacion.autorNombre.isNotEmpty ? widget.publicacion.autorNombre[0].toUpperCase() : '?',
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                            radius: 20,
+                            child: Text(
+                              widget.publicacion.autorNombre.isNotEmpty ? widget.publicacion.autorNombre[0].toUpperCase() : '?',
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34)),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.publicacion.autorNombre.isNotEmpty ? widget.publicacion.autorNombre : 'Usuario ${widget.publicacion.autorId}',
-                              style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.w900,
-                                color: const Color(0xFF4A4440),
-                                fontSize: 15,
-                              ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  widget.publicacion.autorNombre.isNotEmpty ? widget.publicacion.autorNombre : 'Usuario ${widget.publicacion.autorId}',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF4A4440),
+                                    fontSize: 15,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  'Publicado recientemente 🐾', 
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            Text(
-                              'Publicado recientemente 🐾', 
-                              style: GoogleFonts.outfit(
-                                color: Colors.grey.shade500,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   if (widget.mostrarOpciones)
                     MenuOpcionesContenido(
                       tipoObjeto: 'POST',
@@ -286,12 +299,12 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 220),
+                        constraints: const BoxConstraints(maxHeight: 350), // Ajustado de 220 a 350 para mejor visibilidad
                         child: SizedBox(
                           width: double.infinity,
                           child: Image.network(
                             widget.publicacion.urlImagen!,
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover, // Cambiado a cover para llenar el espacio
                             errorBuilder: (context, error, stackTrace) => Container(
                               height: 120,
                               color: const Color(0xFFFEF5F1),

@@ -67,6 +67,8 @@ class CabeceraPro extends StatelessWidget {
                   children: [
                     _CircularNavItem(icon: Icons.explore_rounded, title: 'Explorar', isActive: indiceSeleccionado == 1, onTap: () => onNavSelected(1)),
                     const SizedBox(width: 12),
+                    _CircularNavItem(icon: Icons.storefront_rounded, title: 'Tienda', isActive: indiceSeleccionado == 4, onTap: () => onNavSelected(4)),
+                    const SizedBox(width: 12),
                     _CircularNavItem(icon: Icons.chat_bubble_rounded, title: 'Chats', isActive: indiceSeleccionado == 3, onTap: () => onNavSelected(3)),
                     const SizedBox(width: 12),
                     _CircularNavItem(

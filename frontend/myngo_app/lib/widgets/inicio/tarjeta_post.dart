@@ -7,6 +7,7 @@ import '../../models/comunidad.dart';
 import '../../models/coleccion.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_galeria.dart';
+import '../comunes/menu_opciones_contenido.dart';
 import 'dialogo_detalle_post.dart';
 
 /// Tarjeta de publicación del feed de inicio con botón de añadir a colección.
@@ -15,8 +16,16 @@ class TarjetaPost extends StatefulWidget {
   final VoidCallback onJoin;
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onProfileSelected;
+  final VoidCallback? onEliminado;
 
-  const TarjetaPost({super.key, required this.post, required this.onJoin, this.onComunidadSelected, this.onProfileSelected});
+  const TarjetaPost({
+    super.key, 
+    required this.post, 
+    required this.onJoin, 
+    this.onComunidadSelected, 
+    this.onProfileSelected,
+    this.onEliminado,
+  });
 
   @override
   State<TarjetaPost> createState() => _TarjetaPostState();
@@ -116,19 +125,42 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   cursor: SystemMouseCursors.click,
                   child: Stack(
                     children: [
-                      AspectRatio(
-                        aspectRatio: 4 / 5,
-                        child: CachedNetworkImage(
-                          imageUrl: widget.post.urlImagen!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(color: const Color(0xFFFEF5F1)),
-                          errorWidget: (_, __, ___) {
-                            // Colapsar el hueco: eliminar el bloque de imagen completo
-                            Future.microtask(() {
-                              if (mounted) setState(() => _imagenFallo = true);
-                            });
-                            return const SizedBox.shrink();
-                          },
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 400),
+                        child: AspectRatio(
+                          aspectRatio: 4 / 5,
+                          child: CachedNetworkImage(
+                            imageUrl: widget.post.urlImagen!,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(color: const Color(0xFFFEF5F1)),
+                            errorWidget: (_, __, ___) {
+                              // Colapsar el hueco: eliminar el bloque de imagen completo
+                              Future.microtask(() {
+                                if (mounted) setState(() => _imagenFallo = true);
+                              });
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ),
+                      ),
+                      // Menú de opciones (Task 3: z-index/visibility)
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black26,
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                          ),
+                          child: MenuOpcionesContenido(
+                            tipoObjeto: 'POST',
+                            objetoId: widget.post.id,
+                            autorId: widget.post.autorId,
+                            comunidadId: widget.post.comunidadId,
+                            onEliminado: widget.onEliminado, // Optimistic Update (Task 5)
+                            tituloPreview: widget.post.titulo,
+                          ),
                         ),
                       ),
                       Positioned(

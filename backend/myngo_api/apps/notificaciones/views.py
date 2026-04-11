@@ -120,3 +120,18 @@ class MarcarTodasLeidas(APIView):
             leida=False
         ).update(leida=True)
         return Response({"actualizadas": actualizadas})
+
+class MarcarNotificacionLeida(APIView):
+    """
+    Marca una notificación específica como leída.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            notificacion = Notificacion.objects.get(pk=pk, usuario=request.user)
+            notificacion.leida = True
+            notificacion.save()
+            return Response({"mensaje": "Notificación marcada como leída"})
+        except Notificacion.DoesNotExist:
+            return Response({"error": "Notificación no encontrada"}, status=status.HTTP_404_NOT_FOUND)

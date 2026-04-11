@@ -58,6 +58,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
   bool _mostrarPanelVoto = false;
   int _puntuacionTemporal = 0;
   String? _rolEnComunidad;
+  double _ratingLocal = 0.0; // Local state for Point 7
 
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     _estadoSeguimiento = widget.usuario.estadoSeguimiento;
     _biografiaLocal = widget.usuario.biografia;
     _avatarLocal = widget.usuario.urlAvatar;
+    _ratingLocal = widget.usuario.ratingActual; // Initialize local rating
     _totalVotosRecibidos = 0; 
     _cargarUsuario();
     _cargarEstadoVoto();
@@ -300,7 +302,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
         : '?';
 
     final String fecha = DateFormat('dd MMM yyyy').format(usuario.fechaRegistro);
-    final String ratingTexto = usuario.ratingActual.toStringAsFixed(1);
+    final String ratingTexto = _ratingLocal.toStringAsFixed(1);
 
     // Theme-aware colors
     final colorScheme = Theme.of(context).colorScheme;
@@ -1085,6 +1087,11 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                 if (respuesta.exito) {
                   setState(() {
                     _mostrarPanelVoto = false;
+                    // Task 7: Actualización manual del rating local si el backend no devuelve el objeto completo
+                    if (respuesta.datos is num) {
+                      // Si el backend devuelve la nueva media (como sugerido en la API propuesta)
+                      _ratingLocal = (respuesta.datos as num).toDouble();
+                    }
                   });
                   _cargarEstadoVoto(); 
                 }
