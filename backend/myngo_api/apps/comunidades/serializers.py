@@ -16,7 +16,8 @@ class ComunidadSerializer(serializers.ModelSerializer):
             'id', 'nombre', 'descripcion', 'creador', 'creador_nombre',
             'url_portada', 'es_publica', 'es_verificada', 'rating_medio', 
             'min_rating_acceso', 'color_tema', 'fecha_creacion', 'es_miembro', 'es_pendiente',
-            'conteo_pendiente_admin', 'mi_rol', 'miembros_count'
+            'conteo_pendiente_admin', 'mi_rol', 'miembros_count',
+            'tienda_habilitada'
         ]
         extra_kwargs = {
             'creador': {'read_only': True}
@@ -107,3 +108,4 @@ class MiembroComunidadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Miembros_comunidades
         fields = '__all__'
+

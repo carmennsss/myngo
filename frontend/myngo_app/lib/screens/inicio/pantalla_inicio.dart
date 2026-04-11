@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/comunes/boton_tactil.dart';
 import '../../models/comunidad.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
-import '../perfiles/pantalla_detalle_perfil.dart';
+import '../comunidades/pantalla_comunidades.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
 import '../explorar/pantalla_explorar.dart';
 import '../notificaciones/pantalla_notificaciones.dart';
+import '../perfiles/pantalla_detalle_perfil.dart';
+import '../comunidades/pantalla_admin_comunidad.dart';
+import '../perfiles/pantalla_tienda_mejoras.dart';
 import '../galeria/pantalla_mis_cosas.dart';
 import '../../widgets/comunes/vista_requerir_login.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import '../../services/servicio_inicio.dart';
+import '../../models/publicacion.dart';
 // Widgets de inicio
 import '../../widgets/inicio/cabecera_pro.dart';
 import '../../widgets/inicio/sidebar_izquierdo.dart';
@@ -18,9 +28,11 @@ import '../../widgets/inicio/feed_publicaciones.dart';
 import '../../widgets/inicio/barra_contexto_comunidad.dart';
 
 export '../../widgets/inicio/lateral_derecho.dart';
+import '../comunidades/widgets/tarjeta_publicacion.dart';
 
 class PantallaInicio extends StatefulWidget {
-  const PantallaInicio({super.key});
+  final StatefulNavigationShell? navigationShell;
+  const PantallaInicio({super.key, this.navigationShell});
 
   @override
   State<PantallaInicio> createState() => PantallaInicioState();
@@ -35,8 +47,6 @@ class PantallaInicioState extends State<PantallaInicio> {
   int? _puntos;
   int _notificacionesSinLeer = 0;
   List<Comunidad> _misComunidades = [];
-  Comunidad? _comunidadSeleccionada;
-  Usuario? _usuarioSeleccionado;
 
   @override
   void initState() {
@@ -74,38 +84,44 @@ class PantallaInicioState extends State<PantallaInicio> {
     if (res.exito && mounted) setState(() => _misComunidades = res.datos ?? []);
   }
 
-  void _alPulsarNav(int index) => setState(() {
-    _indiceSeleccionado = index;
-    _comunidadSeleccionada = null;
-    _usuarioSeleccionado = null;
-  });
+  void _alPulsarNav(int index) {
+    if (widget.navigationShell != null) {
+      widget.navigationShell!.goBranch(
+        index,
+        initialLocation: index == widget.navigationShell!.currentIndex,
+      );
+    } else {
+      setState(() {
+        _indiceSeleccionado = index;
+      });
+    }
+  }
 
-  void _seleccionarComunidad(Comunidad comunidad) => setState(() {
-    _comunidadSeleccionada = comunidad;
-    _usuarioSeleccionado = null;
-  });
+  void _seleccionarComunidad(Comunidad comunidad) {
+    context.go('/inicio/comunidades/${comunidad.id}', extra: comunidad);
+  }
 
   void seleccionarComunidad(Comunidad comunidad) => _seleccionarComunidad(comunidad);
 
-  void _seleccionarUsuario(Usuario usuario) => setState(() {
-    _usuarioSeleccionado = usuario;
-    _comunidadSeleccionada = null;
-  });
+  void _seleccionarUsuario(Usuario usuario) {
+    context.go('/inicio/perfiles/${usuario.id}', extra: usuario);
+  }
 
   void seleccionarUsuario(Usuario usuario) => _seleccionarUsuario(usuario);
+  void cargarComunidades() => _cargarComunidades();
+  void cargarNotificacionesSinLeer() => _cargarNotificacionesSinLeer();
 
-  List<Widget> get _vistasCentrales => [
-    FeedPublicaciones(onComunidadSelected: _seleccionarComunidad, onProfileSelected: _seleccionarUsuario),
-    PantallaExplorar(onComunidadSelected: _seleccionarComunidad, onComunidadCreada: _cargarComunidades),
-    PantallaNotificaciones(onNotificacionesLeidas: _cargarNotificacionesSinLeer),
-    const Center(child: Text('Chat próximamente 💬', style: TextStyle(color: Colors.white))),
-    PantallaMisCosas(usuarioId: _miId ?? 0),
-  ];
 
-  Widget _vistaProtegida(Widget original, String titulo) {
-    if (_estaLogueado) return original;
-    return VistaRequerirLogin(titulo: titulo);
+  void _reordenarComunidades(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final Comunidad item = _misComunidades.removeAt(oldIndex);
+      _misComunidades.insert(newIndex, item);
+    });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -118,19 +134,12 @@ class PantallaInicioState extends State<PantallaInicio> {
             nombreUsuario: _miNombre,
             avatarUrl: _miAvatar,
             miId: _miId,
-            indiceSeleccionado: _indiceSeleccionado,
+            indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
             puntos: _puntos,
             notificacionesSinLeer: _notificacionesSinLeer,
             onNavSelected: _alPulsarNav,
             onProfileSelected: _seleccionarUsuario,
           ),
-          if (_comunidadSeleccionada != null)
-            BarraContextoComunidad(
-              comunidad: _comunidadSeleccionada!,
-              miId: _miId,
-              onCerrar: () => setState(() => _comunidadSeleccionada = null),
-              onComunidadActualizada: (c) => setState(() => _comunidadSeleccionada = c),
-            ),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -143,52 +152,33 @@ class PantallaInicioState extends State<PantallaInicio> {
                         width: 320,
                         height: double.infinity,
                         color: const Color(0xFFFBE9E0),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                          child: SidebarIzquierdo(
-                            estaLogueado: _estaLogueado,
-                            comunidades: _misComunidades,
-                            onComunidadSelected: _seleccionarComunidad,
+                        child: ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                            child: SidebarIzquierdo(
+                              estaLogueado: _estaLogueado,
+                              comunidades: _misComunidades,
+                              onComunidadSelected: _seleccionarComunidad,
+                              onReorder: _reordenarComunidades,
+                            ),
                           ),
                         ),
                       ),
-                    Expanded(
-                      flex: 5,
-                      child: Container(
-                        padding: (_comunidadSeleccionada != null || _usuarioSeleccionado != null)
-                            ? EdgeInsets.zero
-                            : const EdgeInsets.symmetric(horizontal: 24),
-                        child: _comunidadSeleccionada != null
-                            ? PantallaDetalleComunidad(
-                                comunidad: _comunidadSeleccionada!,
-                                esIntegrada: true,
-                                onBack: () => setState(() => _comunidadSeleccionada = null),
-                                onMembershipChanged: _cargarComunidades,
-                              )
-                            : _usuarioSeleccionado != null
-                                ? PantallaDetallePerfil(
-                                    usuario: _usuarioSeleccionado!,
-                                    esIntegrada: true,
-                                    onBack: () => setState(() => _usuarioSeleccionado = null),
-                                    onPerfilActualizado: _inicializarDatos,
-                                  )
-                                : IndexedStack(
-                                    index: _indiceSeleccionado,
-                                    children: [
-                                      _vistasCentrales[0],
-                                      _vistasCentrales[1],
-                                      _vistaProtegida(_vistasCentrales[2], 'Tus Notificaciones'),
-                                      _vistaProtegida(_vistasCentrales[3], 'Tus Mensajes'),
-                                      _vistaProtegida(_vistasCentrales[4], 'Tu Rincón Michi'),
-                                    ],
-                                  ),
+                      Expanded(
+                        flex: 5,
+                        child: Container(
+                          padding: EdgeInsets.zero,
+                          child: (widget.navigationShell != null)
+                                    ? widget.navigationShell!
+                                    : const Center(child: Text('Error de Navegación 🐾', style: TextStyle(color: Colors.white))),
                       ),
                     ),
                   ],
                 );
               },
+              ),
             ),
-          ),
         ],
       ),
     );

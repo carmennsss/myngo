@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Voto, Catalogo_mejoras, Mejoras_usuario
+from .models import Voto, Catalogo_mejoras, Mejoras_usuario, PeticionMejora
 
 class VotoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,11 +20,21 @@ class EstadoVotoSerializer(serializers.Serializer):
     segundos_hasta_medianoche = serializers.IntegerField()
 
 class CatalogoMejorasSerializer(serializers.ModelSerializer):
+    nombre_creador = serializers.ReadOnlyField(source='creador.nombre_usuario')
     class Meta:
         model = Catalogo_mejoras
-        fields = '__all__'
+        fields = ['id', 'nombre', 'tipo', 'precio_puntos', 'url_recurso', 'comunidad', 'creador', 'nombre_creador', 'esta_activo', 'fecha_creacion']
+
+class PeticionMejoraSerializer(serializers.ModelSerializer):
+    nombre_usuario = serializers.ReadOnlyField(source='usuario.nombre_usuario')
+    nombre_comunidad = serializers.ReadOnlyField(source='comunidad.nombre')
+    class Meta:
+        model = PeticionMejora
+        fields = ['id', 'usuario', 'nombre_usuario', 'comunidad', 'nombre_comunidad', 'nombre', 'tipo', 'url_recurso', 'estado', 'precio_sugerido', 'fecha_creacion']
+        read_only_fields = ['id', 'usuario', 'estado', 'fecha_creacion']
 
 class MejorasUsuarioSerializer(serializers.ModelSerializer):
+    mejora_detalles = CatalogoMejorasSerializer(source='mejora', read_only=True)
     class Meta:
         model = Mejoras_usuario
-        fields = '__all__'
+        fields = ['id', 'usuario', 'mejora', 'mejora_detalles', 'esta_equipada', 'fecha_adquisicion']

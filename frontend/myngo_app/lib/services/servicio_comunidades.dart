@@ -186,6 +186,7 @@ class ServicioComunidades {
     String? nombre, 
     String? descripcion, 
     String? colorTema,
+    bool? tiendaHabilitada,
     XFile? banner
   }) async {
     try {
@@ -196,6 +197,7 @@ class ServicioComunidades {
       if (nombre != null) solicitud.fields['nombre'] = nombre;
       if (descripcion != null) solicitud.fields['descripcion'] = descripcion;
       if (colorTema != null) solicitud.fields['color_tema'] = colorTema;
+      if (tiendaHabilitada != null) solicitud.fields['tienda_habilitada'] = tiendaHabilitada.toString();
 
       if (banner != null) {
         if (kIsWeb) {

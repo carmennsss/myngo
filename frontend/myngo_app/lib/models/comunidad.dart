@@ -17,6 +17,7 @@ class Comunidad {
   final double ratingMedio;
   final double minRatingAcceso;
   final Color colorTema;
+  final bool tiendaHabilitada;
   final String? miRol;
   final DateTime fechaCreacion;
 
@@ -36,6 +37,7 @@ class Comunidad {
     required this.ratingMedio,
     this.minRatingAcceso = 0.0,
     this.colorTema = const Color(0xFFC35E34),
+    this.tiendaHabilitada = false,
     this.miRol,
     required this.fechaCreacion,
   });
@@ -63,23 +65,30 @@ class Comunidad {
         ratingMedio: double.tryParse(json['rating_medio']?.toString() ?? '0.0') ?? 0.0,
         minRatingAcceso: double.tryParse(json['min_rating_acceso']?.toString() ?? '0.0') ?? 0.0,
         colorTema: color,
+        tiendaHabilitada: json['tienda_habilitada'] == true,
         miRol: json['mi_rol']?.toString(),
         fechaCreacion: json['fecha_creacion'] != null 
             ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now() 
             : DateTime.now(),
       );
     } catch (e) {
-      print('Error parsing Comunidad: $e');
+      debugPrint('Error parsing Comunidad: $e');
       return Comunidad(
         id: 0,
         nombre: 'Error',
         descripcion: '',
-        creadorNombre: '',
+        creadorNombre: 'Sistema',
         urlPortada: '',
         esPublica: true,
         esVerificada: false,
         esMiembro: false,
+        esPendiente: false,
+        conteoPendienteAdmin: 0,
+        miembrosCount: 0,
         ratingMedio: 0.0,
+        minRatingAcceso: 0.0,
+        colorTema: const Color(0xFFC35E34),
+        tiendaHabilitada: false,
         fechaCreacion: DateTime.now(),
       );
     }
@@ -94,6 +103,7 @@ class Comunidad {
       'es_publica': esPublica,
       'min_rating_acceso': minRatingAcceso,
       'color_tema': '#${colorTema.value.toRadixString(16).substring(2).toUpperCase()}',
+      'tienda_habilitada': tiendaHabilitada,
     };
   }
-}
+}

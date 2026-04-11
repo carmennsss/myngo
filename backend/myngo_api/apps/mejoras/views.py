@@ -4,19 +4,217 @@ from django.db.models import Avg
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Voto,Catalogo_mejoras
-from .serializers import VotoSerializer, RankingSerializer, EstadoVotoSerializer,CatalogoMejorasSerializer
-from usuarios.models import Usuario
-from comunidades.models import Comunidad
+from .models import Voto, Catalogo_mejoras, PeticionMejora, Mejoras_usuario
+from .serializers import (
+    VotoSerializer, RankingSerializer, EstadoVotoSerializer,
+    CatalogoMejorasSerializer, PeticionMejoraSerializer, MejorasUsuarioSerializer
+)
+from usuarios.models import Usuario, Perfil
+from comunidades.models import Comunidad, Miembros_comunidades
+
+class CatalogoMejorasGlobales(generics.ListAPIView):
+    serializer_class = CatalogoMejorasSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Catalogo_mejoras.objects.filter(comunidad__isnull=True, esta_activo=True)
+
+class CatalogoMejorasComunidad(generics.ListAPIView):
+    serializer_class = CatalogoMejorasSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        comunidad_id = self.kwargs.get('comunidad_id')
+        # Si es moderador, ver todo. Si no, solo activos.
+        es_mod = Miembros_comunidades.objects.filter(
+            usuario=self.request.user, 
+            comunidad_id=comunidad_id, 
+            rol__in=['Administrador', 'Moderador']
+        ).exists()
+        
+        if es_mod:
+            return Catalogo_mejoras.objects.filter(comunidad_id=comunidad_id)
+        return Catalogo_mejoras.objects.filter(comunidad_id=comunidad_id, esta_activo=True)
+
+class PeticionMejoraCreate(generics.CreateAPIView):
+    serializer_class = PeticionMejoraSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        peticion = serializer.save(usuario=self.request.user)
+        # Notificar a los administradores y moderadores de la comunidad
+        from notificaciones.models import Notificacion
+        mods = Miembros_comunidades.objects.filter(
+            comunidad=peticion.comunidad,
+            rol__in=['Administrador', 'Moderador']
+        )
+        for mod in mods:
+            Notificacion.objects.create(
+                usuario=mod.usuario,
+                tipo='NUEVA_PROPUESTA_TIENDA',
+                mensaje=f"Hay una nueva propuesta de {peticion.tipo}: '{peticion.nombre}' para revisar en {peticion.comunidad.nombre}.",
+                referencia_comunidad=peticion.comunidad,
+                referencia_id=peticion.id
+            )
+
+class PeticionMejoraModeracionList(generics.ListAPIView):
+    serializer_class = PeticionMejoraSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        comunidad_id = self.kwargs.get('comunidad_id')
+        # Verificar que sea admin o moderador
+        es_mod = Miembros_comunidades.objects.filter(
+            usuario=self.request.user, 
+            comunidad_id=comunidad_id, 
+            rol__in=['Administrador', 'Moderador']
+        ).exists()
+        
+        if not es_mod:
+            return PeticionMejora.objects.none()
+            
+        return PeticionMejora.objects.filter(comunidad_id=comunidad_id, estado='PENDIENTE')
+
+class PeticionMejoraModerar(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            peticion = PeticionMejora.objects.get(pk=pk)
+        except PeticionMejora.DoesNotExist:
+            return Response({"error": "Petición no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Verificar permisos
+        es_mod = Miembros_comunidades.objects.filter(
+            usuario=request.user, 
+            comunidad=peticion.comunidad, 
+            rol__in=['Administrador', 'Moderador']
+        ).exists()
+        
+        if not es_mod:
+            return Response({"error": "No tienes permisos para moderar en esta comunidad"}, status=status.HTTP_403_FORBIDDEN)
+
+        decision = request.data.get('estado') # 'APROBADO' o 'RECHAZADO'
+        precio = int(request.data.get('precio', 0))
+
+        if decision not in ['APROBADO', 'RECHAZADO']:
+            return Response({"error": "Estado inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if decision == 'APROBADO' and precio < 100:
+             return Response({"error": "El precio para items de comunidad debe ser al menos 100."}, status=status.HTTP_400_BAD_REQUEST)
+
+        peticion.estado = decision
+        if decision == 'APROBADO':
+            # Crear el item en el catálogo, pero inactivo por defecto
+            Catalogo_mejoras.objects.create(
+                nombre=peticion.nombre,
+                tipo=peticion.tipo,
+                precio_puntos=precio,
+                url_recurso=peticion.url_recurso,
+                comunidad=peticion.comunidad,
+                creador=peticion.usuario,
+                esta_activo=True 
+            )
+        
+        peticion.save()
+
+        # Notificar al creador de la propuesta sobre la decisión
+        from notificaciones.models import Notificacion
+        tipo_notif = 'PROPUESTA_TIENDA_ACEPTADA' if decision == 'APROBADO' else 'PROPUESTA_TIENDA_RECHAZADA'
+        estado_text = "aceptada" if decision == 'APROBADO' else "rechazada"
+        
+        Notificacion.objects.create(
+            usuario=peticion.usuario,
+            tipo=tipo_notif,
+            mensaje=f"Tu propuesta '{peticion.nombre}' ha sido {estado_text} en {peticion.comunidad.nombre}.",
+            referencia_comunidad=peticion.comunidad,
+            referencia_id=peticion.id
+        )
+
+        return Response({"mensaje": f"Petición {decision.lower()} correctamente"})
+
+class ComprarMejoraView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            mejora = Catalogo_mejoras.objects.get(pk=pk)
+        except Catalogo_mejoras.DoesNotExist:
+            return Response({"error": "Mejora no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+        perfil = request.user.perfil
+        if perfil.puntos < mejora.precio_puntos:
+            return Response({"error": "No tienes suficientes puntos"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verificar si ya la tiene
+        if Mejoras_usuario.objects.filter(usuario=request.user, mejora=mejora).exists():
+            return Response({"error": "Ya posees esta mejora"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Restar puntos y otorgar mejora
+        perfil.puntos -= mejora.precio_puntos
+        perfil.save()
+
+        Mejoras_usuario.objects.create(usuario=request.user, mejora=mejora)
+
+        return Response({"mensaje": "Compra realizada con éxito", "puntos_restantes": perfil.puntos})
 
 class CatalogoMejoras(generics.ListAPIView):
     serializer_class = CatalogoMejorasSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        tipo=self.kwargs.get('tipo')
-        mejoras=Catalogo_mejoras.objects.filter(tipo=tipo)
+        tipo_raw = self.kwargs.get('tipo', '')
+        tipo = tipo_raw.capitalize() if tipo_raw else ''
+        mejoras = Catalogo_mejoras.objects.filter(tipo=tipo, esta_activo=True)
         return mejoras
+
+class GestionCatalogoComunidad(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, comunidad_id):
+        # Verificar permisos
+        es_mod = Miembros_comunidades.objects.filter(
+            usuario=request.user, 
+            comunidad_id=comunidad_id, 
+            rol__in=['Administrador', 'Moderador']
+        ).exists()
+        
+        if not es_mod:
+            return Response({"error": "No tienes permisos"}, status=status.HTTP_403_FORBIDDEN)
+            
+        items = Catalogo_mejoras.objects.filter(comunidad_id=comunidad_id)
+        serializer = CatalogoMejorasSerializer(items, many=True)
+        return Response(serializer.data)
+
+    def patch(self, request, comunidad_id):
+        item_id = request.data.get('item_id')
+        esta_activo = request.data.get('esta_activo')
+        precio = request.data.get('precio')
+
+        try:
+            item = Catalogo_mejoras.objects.get(pk=item_id, comunidad_id=comunidad_id)
+        except Catalogo_mejoras.DoesNotExist:
+            return Response({"error": "Item no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Verificar permisos
+        es_mod = Miembros_comunidades.objects.filter(
+            usuario=request.user, 
+            comunidad_id=comunidad_id, 
+            rol__in=['Administrador', 'Moderador']
+        ).exists()
+        
+        if not es_mod:
+            return Response({"error": "No tienes permisos"}, status=status.HTTP_403_FORBIDDEN)
+
+        if esta_activo is not None:
+            item.esta_activo = esta_activo
+        if precio is not None:
+            if int(precio) < 100:
+                return Response({"error": "El precio mínimo es 100"}, status=status.HTTP_400_BAD_REQUEST)
+            item.precio_puntos = int(precio)
+            
+        item.save()
+        return Response({"mensaje": "Catálogo actualizado", "esta_activo": item.esta_activo, "precio": item.precio_puntos})
     
 class VotoAPIView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -134,17 +332,31 @@ class VotoAPIView(APIView):
             voto = Voto.objects.create(**create_kwargs)
             mensaje = "Voto registrado correctamente."
 
-        return Response({"mensaje": mensaje, "estrellas": voto.estrellas}, status=status.HTTP_200_OK)
+        # Calcular datos actualizados para devolver al frontend
+        total_votos = Voto.objects.filter(
+            receptor_usuario=receptor if receptor_usuario_id else None,
+            receptor_comunidad=receptor if receptor_comunidad_id else None
+        ).count()
+        
+        rating_nuevo = receptor.rating_medio # Usa la property recalculada
+
+        return Response({
+            "mensaje": mensaje, 
+            "estrellas": voto.estrellas,
+            "rating_medio": rating_nuevo,
+            "total_votos": total_votos
+        }, status=status.HTTP_200_OK)
 
 class RankingUsuariosView(generics.ListAPIView):
     serializer_class = RankingSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        # Rename annotation to avoid collision with 'rating_medio' property
+        # Evitar colisión con 'rating_medio' property usando un alias temporal
         return Usuario.objects.annotate(
-            rating_medio=Avg('votos_recibidos_perfil__estrellas')
-        ).filter(rating_medio__isnull=False).order_by('-rating_medio')[:10]
+            rating_db=Avg('votos_recibidos_perfil__estrellas')
+        ).filter(rating_db__isnull=False).order_by('-rating_db')[:10]
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         data = []
@@ -156,7 +368,7 @@ class RankingUsuariosView(generics.ListAPIView):
             data.append({
                 "id": u.id,
                 "nombre": u.nombre_usuario,
-                "rating_medio": round(float(u.rating_promedio or 0), 2),
+                "rating_medio": u.rating_medio, # Usa la property que tiene el límite de 10
                 "url_foto": url_foto
             })
         return Response(data)
@@ -167,8 +379,8 @@ class RankingComunidadesView(generics.ListAPIView):
 
     def get_queryset(self):
         return Comunidad.objects.annotate(
-            rating_promedio=Avg('votos_recibidos_comunidad__estrellas')
-        ).filter(rating_promedio__isnull=False).order_by('-rating_promedio')[:10]
+            rating_db=Avg('votos_recibidos_comunidad__estrellas')
+        ).filter(rating_db__isnull=False).order_by('-rating_db')[:10]
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -177,19 +389,7 @@ class RankingComunidadesView(generics.ListAPIView):
             data.append({
                 "id": c.id,
                 "nombre": c.nombre,
-                "rating_medio": round(float(c.rating_promedio or 0), 2),
-                "url_foto": c.url_portada.url if c.url_portada else None
-            })
-        return Response(data)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        data = []
-        for c in queryset:
-            data.append({
-                "id": c.id,
-                "nombre": c.nombre,
-                "rating_medio": round(float(c.rating_medio), 2),
+                "rating_medio": c.rating_medio,
                 "url_foto": c.url_portada.url if c.url_portada else None
             })
         return Response(data)

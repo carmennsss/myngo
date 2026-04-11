@@ -12,9 +12,12 @@ import 'package:myngo_app/screens/galeria/pantalla_detalle_imagen.dart';
 import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
 
+import 'pantalla_moderacion_tienda.dart';
+
 class PantallaAdminComunidad extends StatefulWidget {
   final Comunidad comunidad;
-  const PantallaAdminComunidad({super.key, required this.comunidad});
+  final int initialTab;
+  const PantallaAdminComunidad({super.key, required this.comunidad, this.initialTab = 0});
 
   @override
   State<PantallaAdminComunidad> createState() => _PantallaAdminComunidadState();
@@ -33,14 +36,16 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   late TextEditingController _descCtrl;
   String? _colorSeleccionado;
   XFile? _nuevoBanner;
+  bool _tiendaHabilitada = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this, initialIndex: widget.initialTab);
     _nombreCtrl = TextEditingController(text: widget.comunidad.nombre);
     _descCtrl = TextEditingController(text: widget.comunidad.descripcion);
     _colorSeleccionado = widget.comunidad.colorTema.toHex();
+    _tiendaHabilitada = widget.comunidad.tiendaHabilitada;
     _cargarDatos();
   }
 
@@ -92,6 +97,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
             Tab(text: 'Solicitudes', icon: Icon(Icons.person_add_rounded)),
             Tab(text: 'Miembros', icon: Icon(Icons.people_rounded)),
             Tab(text: 'Reportes', icon: Icon(Icons.gavel_rounded)),
+            Tab(text: 'Tienda', icon: Icon(Icons.shopping_bag_rounded)),
             Tab(text: 'Ajustes', icon: Icon(Icons.settings_rounded)),
           ],
         ),
@@ -104,6 +110,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
               _buildSolicitudesTab(),
               _buildMiembrosTab(),
               _buildReportesTab(),
+              PantallaModeracionTienda(comunidad: widget.comunidad),
               _buildAjustesTab(),
             ],
           ),
@@ -375,6 +382,20 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         _buildEditableField('Nombre de la Comunidad', _nombreCtrl, Icons.title_rounded),
         const SizedBox(height: 16),
         _buildEditableField('Descripción (Miau-Biografía)', _descCtrl, Icons.description_rounded, maxLines: 3),
+        const SizedBox(height: 32),
+        _buildSeccionHeader('Funcionalidades'),
+        const SizedBox(height: 16),
+        _buildConfigItem(
+          icon: Icons.store_rounded,
+          title: 'Tienda de la Comunidad',
+          subtitle: _tiendaHabilitada ? 'La tienda está activada 🛍️' : 'Activa la tienda para recibir diseños',
+          trailing: Switch(
+            value: _tiendaHabilitada,
+            activeColor: const Color(0xFFC35E34),
+            onChanged: (val) => setState(() => _tiendaHabilitada = val),
+          ),
+          onTap: () => setState(() => _tiendaHabilitada = !_tiendaHabilitada),
+        ),
         const SizedBox(height: 40),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -434,6 +455,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
       nombre: _nombreCtrl.text,
       descripcion: _descCtrl.text,
       colorTema: _colorSeleccionado,
+      tiendaHabilitada: _tiendaHabilitada,
       banner: _nuevoBanner,
     );
 

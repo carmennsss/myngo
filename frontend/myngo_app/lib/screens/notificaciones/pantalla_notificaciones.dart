@@ -6,6 +6,8 @@ import '../../services/servicio_perfiles.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../models/notificacion.dart';
 import '../comunidades/pantalla_detalle_publicacion.dart';
+import '../comunidades/pantalla_detalle_comunidad.dart';
+import '../comunidades/pantalla_admin_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
@@ -90,14 +92,21 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
   }
 
   void _navegarADetalle(Notificacion notif) async {
+    // Marcar como leída localmente e informar al servidor
+    if (!notif.leida) {
+      _servicioNotificaciones.marcarLeida(notif.id);
+      setState(() {
+        final index = _notificaciones.indexWhere((n) => n.id == notif.id);
+        if (index != -1) {
+          _notificaciones[index] = _notificaciones[index].copyWith(leida: true);
+        }
+      });
+      widget.onNotificacionesLeidas?.call();
+    }
+
     if (notif.tipo == 'LIKE' || notif.tipo == 'COMENTARIO') {
       if (notif.referenciaId != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PantallaDetallePublicacion(publicacionId: notif.referenciaId),
-          ),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetallePublicacion(publicacionId: notif.referenciaId)));
       }
     } else if (['VOTO', 'SEGUIMIENTO', 'PETICION_ACEPTADA', 'PETICION_SEGUIMIENTO'].contains(notif.tipo)) {
       if (notif.idGenerador != null) {
@@ -116,50 +125,99 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
           }
         }
       }
+    } else if (notif.tipo == 'NUEVO_REPORTE' || notif.tipo == 'NUEVA_PROPUESTA_TIENDA') {
+      if (notif.idComunidad != null) {
+        final res = await _servicioComunidades.obtenerComunidad(notif.idComunidad!);
+        if (mounted && res.exito && res.datos != null) {
+          int initialTab = notif.tipo == 'NUEVO_REPORTE' ? 2 : 3;
+          Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaAdminComunidad(comunidad: res.datos!, initialTab: initialTab)));
+        }
+      }
+    } else if (['PROPUESTA_TIENDA_ACEPTADA', 'PROPUESTA_TIENDA_RECHAZADA', 'ROL_ACTUALIZADO', 'CONTENIDO_BORRADO'].contains(notif.tipo)) {
+      if (notif.idComunidad != null) {
+        final res = await _servicioComunidades.obtenerComunidad(notif.idComunidad!);
+        if (mounted && res.exito && res.datos != null) {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleComunidad(comunidad: res.datos!, initialIndex: (notif.tipo.contains('TIENDA')) ? 1 : 0)));
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1), // Peach Cream Universal
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
+    if (_estaCargando) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFEF5F1),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+      );
+    }
+
+    final interacciones = _notificaciones.where((n) => ['LIKE', 'COMENTARIO', 'VOTO'].contains(n.tipo)).toList();
+    final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE', 'NUEVA_PROPUESTA_TIENDA'].contains(n.tipo)).toList();
+    final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE', 'NUEVA_PROPUESTA_TIENDA'].contains(n.tipo)).toList();
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFEF5F1), // Peach Cream Universal
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 80,
+          title: Padding(
+            padding: const EdgeInsets.only(top: 20),
             child: Text(
               'NOTIFICACIONES',
               style: GoogleFonts.outfit(
-                fontSize: 34,
+                fontSize: 32,
                 fontWeight: FontWeight.w900,
-                color: const Color(0xFF4A4440), // Terracotta Grey
+                color: const Color(0xFF4A4440),
                 letterSpacing: 1.0,
               ),
             ),
           ),
-          Expanded(
-            child: _estaCargando
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-                : _notificaciones.isEmpty
-                    ? _buildVistaVacia()
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
-                        itemCount: _notificaciones.length,
-                        itemBuilder: (context, index) => _TarjetaNotificacion(
-                          notif: _notificaciones[index],
-                          isLast: index == _notificaciones.length - 1,
-                          onResponder: _responder,
-                          onTap: _navegarADetalle,
-                        ),
-                      ),
+          bottom: TabBar(
+            dividerColor: Colors.transparent,
+            isScrollable: true,
+            tabAlignment: TabAlignment.center,
+            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+            unselectedLabelColor: Colors.grey.shade500,
+            labelColor: const Color(0xFFC35E34),
+            indicatorColor: const Color(0xFFC35E34),
+            indicatorSize: TabBarIndicatorSize.label,
+            tabs: const [
+              Tab(text: 'Interacciones', icon: Icon(Icons.favorite_rounded)),
+              Tab(text: 'Solicitudes', icon: Icon(Icons.group_add_rounded)),
+              Tab(text: 'Alertas', icon: Icon(Icons.notifications_rounded)),
+            ],
           ),
-        ],
+        ),
+        body: TabBarView(
+          children: [
+            _buildListaTab(interacciones, 'No tienes nuevas interacciones.', Icons.favorite_border_rounded),
+            _buildListaTab(solicitudes, 'No tienes solicitudes pendientes.', Icons.group_add_rounded),
+            _buildListaTab(sistema, 'No tienes alertas del sistema.', Icons.notifications_none_rounded),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildVistaVacia() {
+  Widget _buildListaTab(List<Notificacion> lista, String mensajeVacio, IconData iconoVacio) {
+    if (lista.isEmpty) return _buildVistaVaciaEspecial(mensajeVacio, iconoVacio);
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      itemCount: lista.length,
+      itemBuilder: (context, index) => _TarjetaNotificacion(
+        notif: lista[index],
+        isLast: index == lista.length - 1,
+        onResponder: _responder,
+        onTap: _navegarADetalle,
+      ),
+    );
+  }
+
+  Widget _buildVistaVaciaEspecial(String mensaje, IconData icono) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -174,7 +232,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
                  BoxShadow(color: const Color(0xFF4A4440).withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10)),
               ],
             ),
-            child: Icon(Icons.notifications_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
+            child: Icon(icono, size: 64, color: Colors.grey.withOpacity(0.2)),
           ),
           const SizedBox(height: 24),
           Text(
@@ -183,13 +241,14 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Vuelve más tarde para ver tus avisos.', 
+            mensaje, 
             style: GoogleFonts.outfit(color: Colors.grey.shade500, fontSize: 14)
           ),
         ],
       ),
     );
   }
+
 }
 
 class _TarjetaNotificacion extends StatelessWidget {
@@ -207,7 +266,6 @@ class _TarjetaNotificacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Solo mostrar botones si es una petición SIN responder (estado_peticion es null)
     bool esPeticionPendiente = (notif.tipo == 'PETICION_CO_ADMIN' || notif.tipo == 'PETICION_SEGUIMIENTO' || notif.tipo == 'PETICION_UNION') && 
                                 (notif.estadoPeticion == null || notif.estadoPeticion!.isEmpty);
     final color = _getColorTipo(notif.tipo);
@@ -215,88 +273,91 @@ class _TarjetaNotificacion extends StatelessWidget {
 
     return BotonTactil(
       onTap: () => onTap(notif),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(color: const Color(0xFF4A4440).withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
-          ],
-          border: Border.all(color: Colors.black.withOpacity(0.02)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        notif.mensaje,
-                        style: GoogleFonts.outfit(
-                          fontSize: 15,
-                          fontWeight: notif.leida ? FontWeight.w500 : FontWeight.w800,
-                          color: const Color(0xFF4A4440),
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        DateFormat('dd MMM · HH:mm').format(notif.fechaNotificacion),
-                        style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade500),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!notif.leida)
-                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFC35E34), shape: BoxShape.circle)),
-              ],
-            ),
-            if (esPeticionPendiente) ...[
-              const SizedBox(height: 20),
+      child: Opacity(
+        opacity: notif.leida ? 0.4 : 1.0,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFF4A4440).withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
+            ],
+            border: Border.all(color: notif.leida ? Colors.transparent : const Color(0xFFC35E34).withOpacity(0.1)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: BotonTactil(
-                      onTap: () => onResponder(notif, true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
-                        alignment: Alignment.center,
-                        child: Text('ACEPTAR', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          notif.mensaje,
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: notif.leida ? FontWeight.w500 : FontWeight.w800,
+                            color: const Color(0xFF4A4440),
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          DateFormat('dd MMM · HH:mm').format(notif.fechaNotificacion),
+                          style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade500),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: BotonTactil(
-                      onTap: () => onResponder(notif, false),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                        alignment: Alignment.center,
-                        child: Text('RECHAZAR', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
-                    ),
-                  ),
+                  if (!notif.leida)
+                    Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFC35E34), shape: BoxShape.circle)),
                 ],
               ),
+              if (esPeticionPendiente) ...[
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: BotonTactil(
+                        onTap: () => onResponder(notif, true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
+                          alignment: Alignment.center,
+                          child: Text('ACEPTAR', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: BotonTactil(
+                        onTap: () => onResponder(notif, false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+                          alignment: Alignment.center,
+                          child: Text('RECHAZAR', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -312,6 +373,12 @@ class _TarjetaNotificacion extends StatelessWidget {
       case 'VOTO': return Icons.star_rounded;
       case 'PETICION_ACEPTADA': return Icons.check_circle_rounded;
       case 'PETICION_RECHAZADA': return Icons.error_outline_rounded;
+      case 'NUEVO_REPORTE': return Icons.report_problem_rounded;
+      case 'NUEVA_PROPUESTA_TIENDA': return Icons.storefront_rounded;
+      case 'PROPUESTA_TIENDA_ACEPTADA': return Icons.shopping_bag_rounded;
+      case 'PROPUESTA_TIENDA_RECHAZADA': return Icons.shopping_bag_outlined;
+      case 'ROL_ACTUALIZADO': return Icons.verified_user_rounded;
+      case 'CONTENIDO_BORRADO': return Icons.delete_sweep_rounded;
       default: return Icons.notifications_rounded;
     }
   }
@@ -326,6 +393,12 @@ class _TarjetaNotificacion extends StatelessWidget {
       case 'VOTO': return Colors.amber;
       case 'PETICION_ACEPTADA': return const Color(0xFF248EA6);
       case 'PETICION_RECHAZADA': return const Color(0xFFD95F43);
+      case 'NUEVO_REPORTE': return Colors.redAccent;
+      case 'NUEVA_PROPUESTA_TIENDA': return const Color(0xFFC35E34);
+      case 'PROPUESTA_TIENDA_ACEPTADA': return const Color(0xFF248EA6);
+      case 'PROPUESTA_TIENDA_RECHAZADA': return Colors.grey;
+      case 'ROL_ACTUALIZADO': return Colors.blueAccent;
+      case 'CONTENIDO_BORRADO': return const Color(0xFFD95F43);
       default: return const Color(0xFFF29C50);
     }
   }

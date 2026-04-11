@@ -5,6 +5,7 @@ import '../../widgets/boton_carga.dart';
 import '../../widgets/gatos_animados.dart';
 import '../../services/servicio_usuarios.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 
 class PantallaLogin extends StatefulWidget {
   const PantallaLogin({super.key});
@@ -252,7 +253,16 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     _nodoEnfoquePassword.addListener(_alCambiarEnfoque);
     _controladorEmail.clear();
     _controladorPassword.clear();
+    _checkExistingTokenAndRedirect(); // Task 6: Auto-redirección si ya hay sesión
     _cargarCredencialesGuardadas();
+  }
+
+  Future<void> _checkExistingTokenAndRedirect() async {
+    final token = await _servicioUsuarios.obtenerToken();
+    if (token != null && mounted) {
+      // Si ya hay token, vamos directo a inicio
+      context.go('/inicio');
+    }
   }
 
   Future<void> _cargarCredencialesGuardadas() async {
@@ -368,7 +378,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         );
-        Navigator.pushReplacementNamed(context, '/inicio');
+        context.go('/inicio');
       } else {
         setState(() {
           _estadoGatos = EstadoMonstruo.triste;

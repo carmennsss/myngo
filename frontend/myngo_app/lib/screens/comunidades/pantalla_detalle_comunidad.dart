@@ -16,18 +16,22 @@ import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
 import '../galeria/pantalla_detalle_coleccion.dart';
 import 'pantalla_admin_comunidad.dart';
+import '../perfiles/pantalla_detalle_perfil.dart';
+import '../perfiles/pantalla_perfiles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/dialogo_crear_post.dart';
 import '../perfiles/pantalla_tienda_mejoras.dart';
 import 'widgets_preview/preview_header.dart';
 import 'widgets_preview/preview_about_section.dart';
 import 'widgets_preview/community_join_button.dart';
+import 'pantalla_enviar_propuesta.dart';
 
 class PantallaDetalleComunidad extends StatefulWidget {
   final Comunidad comunidad;
   final bool esIntegrada;
   final VoidCallback? onBack;
   final VoidCallback? onMembershipChanged;
+  final int initialIndex;
 
   const PantallaDetalleComunidad({
     super.key, 
@@ -35,6 +39,7 @@ class PantallaDetalleComunidad extends StatefulWidget {
     this.esIntegrada = false,
     this.onBack,
     this.onMembershipChanged,
+    this.initialIndex = 0,
   });
 
   @override
@@ -49,8 +54,18 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   int? _miId;
   int _indiceSeccion = 0; 
   String _miRol = 'Miembro';
+  String _tipoMejoraSeleccionado = 'Avatar';
   
   Color get _bgColor => widget.comunidad.colorTema;
+
+  Future<void> _obtenerMiId() async {
+    final id = await _servicioUsuarios.obtenerIdUsuario();
+    if (mounted) setState(() => _miId = id);
+  }
+
+  void _cargarDatos() {
+    _cargarDatosSeccion(_indiceSeccion);
+  }
 
   Color _colorPagina(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
   bool _esAppClara(BuildContext context) => _colorPagina(context).computeLuminance() > 0.5;
@@ -66,8 +81,24 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   @override
   void initState() {
     super.initState();
+    _indiceSeccion = widget.initialIndex;
     _inicializarDatos();
     _cargarColecciones();
+  }
+
+  @override
+  void didUpdateWidget(PantallaDetalleComunidad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.comunidad.id != widget.comunidad.id) {
+      _indiceSeccion = 0; // Opcional: resetear al primer tab (Posts)
+      _indiceGaleria = 0;
+      _publicaciones = [];
+      _salasChat = [];
+      _colecciones = [];
+      _miRol = 'Miembro';
+      _inicializarDatos();
+      _cargarColecciones();
+    }
   }
 
   Future<void> _inicializarDatos() async {
@@ -78,7 +109,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         setState(() => _miRol = res.datos!);
       }
     }
-    _cargarDatosSeccion(0);
+    _cargarDatosSeccion(_indiceSeccion);
   }
 
   final _servicioGaleria = ServicioGaleria();
@@ -89,11 +120,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (res.exito && res.datos != null) {
       setState(() => _colecciones = res.datos!);
     }
-  }
-
-  Future<void> _obtenerMiId() async {
-    final id = await _servicioUsuarios.obtenerIdUsuario();
-    if (mounted) setState(() => _miId = id);
   }
 
   Future<void> _cargarDatosSeccion(int index) async {
@@ -175,6 +201,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (esPublica) {
       return Column(
         children: [
+          _BarraContextoComunidad(
+            comunidad: widget.comunidad,
+            miId: _miId,
+            onCerrar: widget.onBack ?? () => Navigator.pop(context),
+            onComunidadActualizada: (c) {
+              setState(() {});
+            },
+          ),
           Container(
             height: 60,
             decoration: BoxDecoration(
@@ -281,6 +315,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       children: [
         Column(
           children: [
+            _BarraContextoComunidad(
+              comunidad: widget.comunidad,
+              miId: _miId,
+              onCerrar: widget.onBack ?? () => Navigator.pop(context),
+              onComunidadActualizada: (c) {
+                setState(() {}); // Forzar recarga si cambia
+              },
+            ),
             Container(
               height: 60,
               decoration: BoxDecoration(
@@ -307,6 +349,17 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               backgroundColor: widget.comunidad.colorTema,
             ),
           ),
+        if (_indiceSeccion == 1)
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: FloatingActionButton.extended(
+              onPressed: () => _irAEnviarPropuesta(),
+              label: Text('Sugerir $_tipoMejoraSeleccionado', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+              icon: const Icon(Icons.palette_rounded, color: Colors.white),
+              backgroundColor: widget.comunidad.colorTema,
+            ),
+          ),
       ],
     );
   }
@@ -316,7 +369,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (_indiceSeccion == 1) return _buildStore();
     if (_indiceSeccion == 2) return _buildGallery();
     if (_indiceSeccion == 3) return _buildChat();
+    if (_indiceSeccion == 4) return _buildMembers();
     return const SizedBox();
+  }
+
+  Widget _buildMembers() {
+    return const PantallaPerfiles();
   }
 
   Widget _buildCompactHeader(BuildContext context) {
@@ -359,6 +417,22 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                if (widget.esIntegrada) ...[
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12, right: 12),
+                      child: IconButton(
+                        onPressed: widget.onBack,
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), shape: BoxShape.circle),
+                          child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 // Avatar pequeño
                 Container(
                   width: 70,
@@ -441,6 +515,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         _buildNavItem(1, 'TIENDA', Icons.shopping_bag_rounded),
         _buildNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
         _buildNavItem(3, 'CHATS', Icons.chat_bubble_rounded),
+        _buildNavItem(4, 'MIEMBROS', Icons.people_alt_rounded),
       ],
     );
   }
@@ -696,16 +771,26 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             ),
             ListTile(
               leading: Badge(
-                label: widget.comunidad.conteoPendienteAdmin > 0 ? Text(widget.comunidad.conteoPendienteAdmin.toString()) : null,
-                isLabelVisible: widget.comunidad.conteoPendienteAdmin > 0,
+                label: (widget.comunidad.conteoPendienteAdmin) > 0 ? Text(widget.comunidad.conteoPendienteAdmin.toString()) : null,
+                isLabelVisible: (widget.comunidad.conteoPendienteAdmin) > 0,
                 backgroundColor: Colors.redAccent,
                 child: const Icon(Icons.security_rounded, color: Color(0xFFF29C50)),
               ),
               title: Text('Panel de Administración', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
               subtitle: Text('Gestiona solicitudes y reportes', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
-              onTap: () { 
+              onTap: () async { 
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaAdminComunidad(comunidad: widget.comunidad)));
+                final resultado = await Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context) => PantallaAdminComunidad(comunidad: widget.comunidad))
+                );
+                if (resultado != null && resultado is Comunidad && mounted) {
+                  setState(() {
+                    // Actualizamos los campos necesarios de la instancia local
+                    // En Dart los objetos se pasan por referencia, pero si el resultado es una nueva instancia
+                    // (como suele ser tras el fromJson del servicio), actualizamos para disparar el re-build
+                  });
+                }
               },
             ),
           ],
@@ -739,10 +824,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         if (isDashboard && puedeAdministrar)
           IconButton(
             icon: Badge(
-              label: widget.comunidad.conteoPendienteAdmin > 0 
+              label: (widget.comunidad.conteoPendienteAdmin) > 0 
                 ? Text(widget.comunidad.conteoPendienteAdmin.toString()) 
                 : null,
-              isLabelVisible: widget.comunidad.conteoPendienteAdmin > 0,
+              isLabelVisible: (widget.comunidad.conteoPendienteAdmin) > 0,
               backgroundColor: Colors.redAccent,
               child: const Icon(Icons.settings, color: Colors.white),
             ),
@@ -1117,7 +1202,25 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildStore() {
-    return const PantallaTiendaMejoras(esVistaIntegrada: true);
+    return PantallaTiendaMejoras(
+      esVistaIntegrada: true, 
+      comunidad: widget.comunidad,
+      onCategoryChanged: (tipo) {
+        setState(() => _tipoMejoraSeleccionado = tipo);
+      },
+    );
+  }
+
+  void _irAEnviarPropuesta() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PantallaEnviarPropuesta(
+          comunidad: widget.comunidad,
+          tipoInicial: _tipoMejoraSeleccionado,
+        ),
+      ),
+    );
   }
 
   Widget _buildChat() {
@@ -1234,4 +1337,152 @@ class _SubNavDelegate extends SliverPersistentHeaderDelegate {
   double get minExtent => 70;
   @override
   bool shouldRebuild(covariant _SubNavDelegate oldDelegate) => oldDelegate.selectedIndex != selectedIndex;
+}
+
+// --- BARRA DE CONTEXTO DE COMUNIDAD ---
+class _BarraContextoComunidad extends StatefulWidget {
+  final Comunidad comunidad;
+  final int? miId;
+  final VoidCallback onCerrar;
+  final Function(Comunidad)? onComunidadActualizada;
+
+  const _BarraContextoComunidad({
+    required this.comunidad,
+    this.miId,
+    required this.onCerrar,
+    this.onComunidadActualizada,
+  });
+
+  @override
+  State<_BarraContextoComunidad> createState() => _BarraContextoComunidadState();
+}
+
+class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
+  String _miRol = 'Miembro';
+  bool _cargandoRol = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _obtenerRol();
+  }
+
+  @override
+  void didUpdateWidget(_BarraContextoComunidad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.comunidad.id != widget.comunidad.id) {
+      _obtenerRol();
+    }
+  }
+
+  Future<void> _obtenerRol() async {
+    setState(() => _cargandoRol = true);
+    if (widget.miId == null) {
+      if (mounted) setState(() => _cargandoRol = false);
+      return;
+    }
+    final res = await ServicioComunidades().obtenerRolUsuarioEnComunidad(widget.comunidad.id, widget.miId!);
+    if (mounted) {
+      setState(() {
+        _miRol = res.datos ?? 'Miembro';
+        _cargandoRol = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final esCreador = widget.miId != null && widget.miId == widget.comunidad.creadorId;
+    final rolLabel = esCreador ? 'Creador' : _miRol;
+    final iconRol = esCreador ? Icons.stars_rounded : (rolLabel == 'Moderador' ? Icons.gavel_rounded : Icons.pets_rounded);
+    final colorRol = esCreador ? Colors.amber : (rolLabel == 'Moderador' ? const Color(0xFF248EA6) : const Color(0xFFC35E34));
+
+    return Container(
+      height: 70,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          // Fondo con imagen y Blur
+          if (widget.comunidad.urlPortada != null && widget.comunidad.urlPortada!.isNotEmpty)
+            Positioned.fill(
+              child: CachedNetworkImage(
+                imageUrl: widget.comunidad.urlPortada!,
+                fit: BoxFit.cover,
+                errorWidget: (context, url, error) => Container(color: widget.comunidad.colorTema),
+              ),
+            )
+          else
+            Positioned.fill(child: Container(color: widget.comunidad.colorTema)),
+          
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.black.withOpacity(0.8),
+                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Contenido
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  onPressed: widget.onCerrar,
+                  tooltip: 'Cerrar vista de comunidad',
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.comunidad.nombre,
+                      style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                    ),
+                    Row(
+                      children: [
+                        Icon(iconRol, size: 12, color: colorRol),
+                        const SizedBox(width: 4),
+                        Text(
+                          rolLabel.toUpperCase(),
+                          style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                if (esCreador || _miRol == 'Moderador')
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
+                    onPressed: () async {
+                      final actualizada = await Navigator.push<Comunidad>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PantallaAdminComunidad(comunidad: widget.comunidad),
+                        ),
+                      );
+                      if (actualizada != null && widget.onComunidadActualizada != null) {
+                        widget.onComunidadActualizada!(actualizada);
+                      }
+                    },
+                    tooltip: 'Administrar Comunidad',
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
