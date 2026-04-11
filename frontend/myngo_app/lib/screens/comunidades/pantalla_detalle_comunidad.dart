@@ -874,7 +874,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
         return GestureDetector(
           onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleColeccion(coleccion: col)));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleColeccion(
+              coleccion: col,
+              puedeEditarComunidad: widget.comunidad.miRol == 'Administrador' || widget.comunidad.miRol == 'Moderador',
+            )));
           },
           child: Transform.rotate(
             angle: rotacion,

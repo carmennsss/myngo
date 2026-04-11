@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../widgets/galeria/masonry_grid_galeria.dart';
 import '../../services/servicio_galeria.dart';
+import '../../services/servicio_usuarios.dart';
 import '../../models/coleccion.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'pantalla_detalle_coleccion.dart';
 
 class PantallaGaleriaPrincipal extends StatefulWidget {
   final int? comunidadId;
@@ -26,12 +28,28 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
 
   List<Coleccion> _colecciones = [];
   bool _cargandoColecciones = false;
+  int? _miId; // ID del usuario logueado
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _cargarColecciones();
+    _cargarMiId();
+  }
+
+  Future<void> _cargarMiId() async {
+    final id = await ServicioUsuarios().obtenerIdUsuario();
+    if (mounted) setState(() => _miId = id);
+  }
+
+  /// Puede crear colecciones si:
+  /// - Es galería de comunidad (cualquier miembro puede crear)
+  /// - O es su propia galería de perfil (usuarioId no especificado o es el suyo)
+  bool get _puedeCrearColeccion {
+    if (widget.comunidadId != null) return true;
+    if (widget.usuarioId == null) return true; // galería propia sin userId explícito
+    return _miId != null && _miId == widget.usuarioId;
   }
 
   Future<void> _cargarColecciones() async {
@@ -71,12 +89,13 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF248EA6)),
-            onPressed: () {
-              // TODO: Subir foto directamente a la galería
-            },
-          ),
+          if (_puedeCrearColeccion)
+            IconButton(
+              icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF248EA6)),
+              onPressed: () {
+                // TODO: Subir foto directamente a la galería
+              },
+            ),
         ],
       ),
       body: TabBarView(
@@ -92,11 +111,13 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
           _buildColeccionesTab(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF248EA6),
-        child: const Icon(Icons.create_new_folder_outlined, color: Colors.white),
-        onPressed: () => _mostrarDialogoCrearColeccion(),
-      ),
+      floatingActionButton: _puedeCrearColeccion
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xFF248EA6),
+              child: const Icon(Icons.create_new_folder_outlined, color: Colors.white),
+              onPressed: () => _mostrarDialogoCrearColeccion(),
+            )
+          : null,
     );
   }
 
@@ -142,7 +163,12 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
   Widget _buildCarpetaColeccion(Coleccion coleccion) {
     return InkWell(
       onTap: () {
-        // TODO: Navegar a vista detalle de la colección
+          Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PantallaDetalleColeccion(coleccion: coleccion),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(

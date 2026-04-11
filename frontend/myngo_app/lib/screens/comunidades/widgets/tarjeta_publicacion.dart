@@ -8,6 +8,7 @@ import 'package:myngo_app/widgets/comunes/boton_tactil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../pantalla_detalle_publicacion.dart';
 import '../../perfiles/pantalla_detalle_perfil.dart';
+import '../../inicio/pantalla_inicio.dart';
 
 class TarjetaPublicacion extends StatefulWidget {
   final Publicacion publicacion;
@@ -191,15 +192,20 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                       if (mounted) {
                         setState(() => _navegandoAPerfil = false);
                         if (res.exito && res.datos != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PantallaDetallePerfil(
-                                usuario: res.datos!,
-                                comunidadIdContexto: widget.comunidadId,
+                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                          if (inicioState != null) {
+                            inicioState.seleccionarUsuario(res.datos!);
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PantallaDetallePerfil(
+                                  usuario: res.datos!,
+                                  comunidadIdContexto: widget.comunidadId,
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         }
                       }
                     },
@@ -285,7 +291,7 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                           width: double.infinity,
                           child: Image.network(
                             widget.publicacion.urlImagen!,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) => Container(
                               height: 120,
                               color: const Color(0xFFFEF5F1),

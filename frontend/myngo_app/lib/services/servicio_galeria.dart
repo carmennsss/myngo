@@ -7,6 +7,7 @@ import 'package:mime/mime.dart';
 import '../models/respuesta_api.dart';
 import '../models/imagen_galeria.dart';
 import '../models/coleccion.dart';
+import '../models/publicacion.dart';
 import 'servicio_usuarios.dart';
 
 class ServicioGaleria {
@@ -47,6 +48,37 @@ class ServicioGaleria {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar galería: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene publicaciones del feed de inicio desde inicio_galeria.
+  /// Muestra publicaciones de comunidades (propias/públicas), perfiles públicos y perfiles seguidos.
+  /// Soporta scroll infinito con paginación y búsqueda por etiquetas.
+  Future<RespuestaApi<List<Publicacion>>> obtenerGaleriaInicio({
+    int limit = 20,
+    int offset = 0,
+    String? etiquetas,
+  }) async {
+    try {
+      String url = '$_urlBase/inicio_galeria/?limit=$limit&offset=$offset';
+      if (etiquetas != null && etiquetas.isNotEmpty) {
+        url += '&etiquetas=${Uri.encodeComponent(etiquetas)}';
+      }
+
+      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders());
+
+      if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> body = jsonDecode(respuesta.body);
+        final List<dynamic> results = body['results'] ?? [];
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Feed de inicio cargado',
+          datos: results.map((j) => Publicacion.fromJson(j)).toList(),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar feed: ${respuesta.statusCode}');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -135,6 +167,22 @@ class ServicioGaleria {
         return RespuestaApi(exito: true, mensaje: 'Operación realizada con éxito');
       }
       return RespuestaApi(exito: false, mensaje: 'Error al gestionar imagen en colección');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Elimina una colección completa (solo el propietario puede hacerlo)
+  Future<RespuestaApi<void>> eliminarColeccion({required int coleccionId}) async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('$_urlBase/colecciones/$coleccionId/'),
+        headers: await _getHeaders(),
+      );
+      if (respuesta.statusCode == 204) {
+        return RespuestaApi(exito: true, mensaje: 'Colección eliminada');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al eliminar la colección (${respuesta.statusCode})');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

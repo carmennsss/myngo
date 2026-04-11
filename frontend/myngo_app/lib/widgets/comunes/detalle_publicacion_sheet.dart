@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/publicacion.dart';
 import 'menu_opciones_contenido.dart';
 import '../../services/servicio_usuarios.dart';
+import '../../models/usuario.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart';
 
 /// Bottom sheet estilo Instagram que muestra el detalle completo de un post.
@@ -11,12 +12,14 @@ class DetallePublicacionSheet extends StatefulWidget {
   final Publicacion publicacion;
   final String avatarUrl;
   final VoidCallback? onEliminado;
+  final Function(Usuario)? onProfileSelected;
 
   const DetallePublicacionSheet({
     super.key,
     required this.publicacion,
     required this.avatarUrl,
     this.onEliminado,
+    this.onProfileSelected,
   });
 
   static void mostrar(
@@ -24,6 +27,7 @@ class DetallePublicacionSheet extends StatefulWidget {
     required Publicacion publicacion,
     required String avatarUrl,
     VoidCallback? onEliminado,
+    Function(Usuario)? onProfileSelected,
   }) {
     showModalBottomSheet(
       context: context,
@@ -33,6 +37,7 @@ class DetallePublicacionSheet extends StatefulWidget {
         publicacion: publicacion,
         avatarUrl: avatarUrl,
         onEliminado: onEliminado,
+        onProfileSelected: onProfileSelected,
       ),
     );
   }
@@ -53,15 +58,20 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     if (mounted) {
       setState(() => _navegandoAPerfil = false);
       if (res.exito && res.datos != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PantallaDetallePerfil(
-              usuario: res.datos!,
-              comunidadIdContexto: widget.publicacion.comunidadId,
+        Navigator.pop(context); // Cerrar bottom sheet
+        if (widget.onProfileSelected != null) {
+          widget.onProfileSelected!(res.datos!);
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PantallaDetallePerfil(
+                usuario: res.datos!,
+                comunidadIdContexto: widget.publicacion.comunidadId,
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     }
   }

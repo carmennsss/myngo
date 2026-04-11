@@ -30,7 +30,7 @@ class MiAplicacion extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
-        scrollbars: false,
+        scrollbars: true,
       ),
       theme: ThemeData(
         useMaterial3: true,
@@ -76,6 +76,43 @@ class MiAplicacion extends StatelessWidget {
           prefixIconColor: const Color(0xFFC35E34).withOpacity(0.5),
           suffixIconColor: const Color(0xFFC35E34).withOpacity(0.5),
           labelStyle: GoogleFonts.outfit(color: const Color(0xFF4A4440).withOpacity(0.7), fontSize: 14),
+        ),
+        // ── Scrollbar global ─────────────────────────────────────────────
+        scrollbarTheme: ScrollbarThemeData(
+          // Thumb visible siempre que haya contenido desplazable
+          thumbVisibility: WidgetStateProperty.all(true),
+          // Track sutil: solo visible al hover/drag para no recargar la UI
+          trackVisibility: WidgetStateProperty.resolveWith(
+            (states) => states.any({
+              WidgetState.hovered,
+              WidgetState.dragged,
+            }.contains),
+          ),
+          thickness: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.hovered) ? 8.0 : 5.0,
+          ),
+          radius: const Radius.circular(10),
+          interactive: true,
+          crossAxisMargin: 3,
+          mainAxisMargin: 4,
+          // Thumb: terracotta semitransparente → opaco al interactuar
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.dragged)) {
+              return const Color(0xFFC35E34); // Terracotta sólido al arrastrar
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return const Color(0xFFF29C50); // Oro/mandarina al hover
+            }
+            return const Color(0xFFC35E34).withOpacity(0.45); // Terracotta suave en reposo
+          }),
+          // Track: muy sutil, combina con el fondo cálido
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.any({WidgetState.hovered, WidgetState.dragged}.contains)) {
+              return const Color(0xFFC35E34).withOpacity(0.08);
+            }
+            return Colors.transparent;
+          }),
+          trackBorderColor: WidgetStateProperty.all(Colors.transparent),
         ),
       ),
       initialRoute: '/inicio',
