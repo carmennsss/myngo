@@ -299,24 +299,37 @@ class GaleriaDetalleExtendido(generics.RetrieveAPIView):
         })
 
 class InicioGaleria(generics.ListAPIView):
-    serializer_class = ImagenGaleriaSerializer
+    serializer_class = PublicacionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = GaleriaPagination
     
     def get_queryset(self):
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas', None)
         
         if usuario:
-            comunidades_usuario=Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
-            usuarios_seguidos=Seguimiento.objects.filter(seguidor=usuario,estado='ACEPTADO',seguido_usuario__isnull=False).values_list('seguido_usuario_id',flat=True)
-            imagenes=Imagenes_galeria.objects.filter(Q(comunidad_id__in=comunidades_usuario)|Q(comunidad__es_publica=True)|Q(propietario_id__in=usuarios_seguidos)|Q(propietario__perfil__es_publico=True)).distinct()
+            comunidades_usuario = Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
+            usuarios_seguidos = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO', seguido_usuario__isnull=False).values_list('seguido_usuario_id', flat=True)
+            publicaciones = Publicacion.objects.filter(
+                Q(comunidad_id__in=comunidades_usuario) | 
+                Q(comunidad__es_publica=True) | 
+                Q(autor_id__in=usuarios_seguidos) | 
+                Q(autor__perfil__es_publico=True),
+                imagen__isnull=False,
+                imagen__url_s3__gt='',
+            ).distinct()
         else:
-            imagenes=Imagenes_galeria.objects.filter(Q(comunidad__es_publica=True)|Q(propietario__perfil__es_publico=True)).distinct()
+            publicaciones = Publicacion.objects.filter(
+                Q(comunidad__es_publica=True) | 
+                Q(autor__perfil__es_publico=True),
+                imagen__isnull=False,
+                imagen__url_s3__gt='',
+            ).distinct()
             
         if etiquetas:
-            imagenes = imagenes.filter(etiquetas__icontains=etiquetas)
+            publicaciones = publicaciones.filter(imagen__etiquetas__icontains=etiquetas)
             
-        return imagenes.order_by('?')[:50]
+        return publicaciones.order_by('?')[:50]
 
 class ColeccionViewSet(viewsets.ModelViewSet):
     serializer_class = ColeccionSerializer
@@ -340,6 +353,27 @@ class ColeccionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
 
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import PermissionDenied
+        from comunidades.models import Miembros_comunidades
+        user = self.request.user
+        if instance.comunidad:
+            # Colección de comunidad: solo creador o admin/moderador
+            es_gestor = (
+                instance.comunidad.creador == user or
+                Miembros_comunidades.objects.filter(
+                    usuario=user,
+                    comunidad=instance.comunidad,
+                    rol__in=['Administrador', 'Moderador']
+                ).exists()
+            )
+            if not es_gestor:
+                raise PermissionDenied('Solo el creador o moderadores pueden eliminar colecciones de comunidad.')
+        elif instance.usuario and instance.usuario != user:
+            # Colección de perfil: solo el dueño
+            raise PermissionDenied('Solo el propietario puede eliminar esta colección.')
+        instance.delete()
+
     @action(detail=True, methods=['post'], url_path='gestionar-imagenes')
     def gestionar_imagenes(self, request, pk=None):
         coleccion = self.get_object()
@@ -355,6 +389,21 @@ class ColeccionViewSet(viewsets.ModelViewSet):
             coleccion.imagenes.add(imagen)
             return Response({'status': 'Imagen añadida'})
         elif accion == 'remove':
+            from comunidades.models import Miembros_comunidades
+            # Verificar permisos antes de quitar
+            if coleccion.comunidad:
+                es_gestor = (
+                    coleccion.comunidad.creador == request.user or
+                    Miembros_comunidades.objects.filter(
+                        usuario=request.user,
+                        comunidad=coleccion.comunidad,
+                        rol__in=['Administrador', 'Moderador']
+                    ).exists()
+                )
+                if not es_gestor:
+                    return Response({'error': 'Sin permiso para modificar esta colección'}, status=403)
+            elif coleccion.usuario and coleccion.usuario != request.user:
+                return Response({'error': 'Solo el propietario puede modificar esta colección'}, status=403)
             coleccion.imagenes.remove(imagen)
             return Response({'status': 'Imagen removida'})
         

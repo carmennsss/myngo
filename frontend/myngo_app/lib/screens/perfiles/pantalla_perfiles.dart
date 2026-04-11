@@ -1,37 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/servicio_usuarios.dart';
 import '../../models/usuario.dart';
-import '../../models/perfil.dart';
-import '../../services/servicio_perfiles.dart';
-import '../../widgets/comunes/boton_tactil.dart';
 import 'pantalla_detalle_perfil.dart';
+import '../inicio/pantalla_inicio.dart';
+import '../../widgets/comunes/boton_tactil.dart';
 
 class PantallaPerfiles extends StatefulWidget {
-  final bool esModoIncrustado;
-  const PantallaPerfiles({super.key, this.esModoIncrustado = false});
+  const PantallaPerfiles({super.key});
 
   @override
   State<PantallaPerfiles> createState() => _PantallaPerfilesState();
 }
 
 class _PantallaPerfilesState extends State<PantallaPerfiles> {
-  final _servicio = ServicioPerfiles();
+  final _servicioUsuarios = ServicioUsuarios();
   final _controladorBusqueda = TextEditingController();
-  List<Perfil> _perfiles = [];
+  
+  List<Usuario> _usuariosOriginales = [];
+  List<Usuario> _usuariosFiltrados = [];
   bool _estaCargando = true;
 
   @override
   void initState() {
     super.initState();
-    _cargarPerfiles();
+    _cargarDatos();
   }
 
-  Future<void> _cargarPerfiles({String? filtro}) async {
+  Future<void> _cargarDatos({String? filtro}) async {
     setState(() => _estaCargando = true);
-    final respuesta = await _servicio.listarPerfiles(busqueda: filtro);
-    if (mounted) {
+    
+    final respuesta = await _servicioUsuarios.listarUsuarios();
+    if (respuesta.exito && mounted) {
+      _usuariosOriginales = respuesta.datos ?? [];
+      
       setState(() {
-        _perfiles = respuesta.exito ? (respuesta.datos ?? []) : [];
+        if (filtro != null && filtro.isNotEmpty) {
+          _usuariosFiltrados = _usuariosOriginales.where((u) => 
+             u.nombreUsuario.toLowerCase().contains(filtro.toLowerCase()) ||
+             u.email.toLowerCase().contains(filtro.toLowerCase())
+          ).toList();
+        } else {
+          _usuariosFiltrados = List.from(_usuariosOriginales);
+        }
         _estaCargando = false;
       });
     }
@@ -42,175 +53,114 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
     return Scaffold(
       backgroundColor: const Color(0xFFFEF5F1),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Barra de Búsqueda Harmonizada
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF4A4440).withOpacity(0.04),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+          // Header - Fijo
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Título
+                Text(
+                  'PERFILES',
+                  style: GoogleFonts.outfit(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF4A4440),
+                    letterSpacing: 0.5,
                   ),
-                ],
-              ),
-              child: TextField(
-                controller: _controladorBusqueda,
-                style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
-                onChanged: (valor) => _cargarPerfiles(filtro: valor),
-                decoration: InputDecoration(
-                  hintText: 'Busca exploradores Myngo... 🔍',
-                  hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 13),
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(left: 20, right: 12),
-                    child: Icon(Icons.person_search_rounded, color: Color(0xFFF28B50), size: 24),
-                  ),
-                  suffixIcon: _controladorBusqueda.text.isNotEmpty 
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, color: Colors.grey),
-                        onPressed: () {
-                          _controladorBusqueda.clear();
-                          _cargarPerfiles();
-                        },
-                      ) 
-                    : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 20),
                 ),
-              ),
+                const SizedBox(height: 12),
+
+                // Barra de Búsqueda
+                TextField(
+                  controller: _controladorBusqueda,
+                  onChanged: (valor) => _cargarDatos(filtro: valor),
+                  style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Busca a un michi...',
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34), size: 20),
+                    filled: true,
+                    fillColor: Colors.white,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+                  ),
+                ),
+              ],
             ),
           ),
-          
-          // Lista de resultados
+
+          // Contenido scrolleable
           Expanded(
             child: _estaCargando
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
-              : _perfiles.isEmpty
-                ? _buildVistaVacia()
-                : RefreshIndicator(
-                    color: const Color(0xFFC35E34),
-                    backgroundColor: Colors.white,
-                    onRefresh: () => _cargarPerfiles(),
-                    child: ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      itemCount: _perfiles.length,
-                      itemBuilder: (context, index) {
-                        final perfil = _perfiles[index];
-                        return _TarjetaPerfilBusqueda(perfil: perfil);
-                      },
-                    ),
-                  ),
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
+                : _buildGridPerfiles(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildVistaVacia() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.sentiment_dissatisfied_rounded, size: 64, color: Colors.grey.withAlpha(50)),
-          const SizedBox(height: 16),
-          Text(
-            'No hay nadie por aquí...',
-            style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TarjetaPerfilBusqueda extends StatelessWidget {
-  final Perfil perfil;
-  const _TarjetaPerfilBusqueda({required this.perfil});
-
-  @override
-  Widget build(BuildContext context) {
-    return BotonTactil(
-      onTap: () {
-        if (perfil.datosUsuario != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PantallaDetallePerfil(usuario: perfil.datosUsuario!),
-            ),
-          );
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF4A4440).withOpacity(0.04),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+  Widget _buildGridPerfiles() {
+    if (_usuariosFiltrados.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
+            const SizedBox(height: 16),
+            Text(
+              'No encontramos perfiles...',
+              style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          leading: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1), width: 2),
-            ),
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: const Color(0xFFFEF5F1),
-              backgroundImage: (perfil.urlAvatar != null && perfil.urlAvatar!.isNotEmpty)
-                  ? NetworkImage(perfil.urlAvatar!)
-                  : null,
-              child: (perfil.urlAvatar == null || perfil.urlAvatar!.isEmpty)
-                  ? Text(
-                      perfil.nombreUsuario.isNotEmpty ? perfil.nombreUsuario[0].toUpperCase() : '?',
-                      style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontWeight: FontWeight.w900, fontSize: 20),
-                    )
-                  : null
-            ),
-          ),
-          title: Row(
-            children: [
-              Text(
-                perfil.nombreUsuario, 
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16, color: const Color(0xFF4A4440))
+      );
+    }
+    
+    return RefreshIndicator(
+      color: const Color(0xFFF28B50),
+      backgroundColor: const Color(0xFF1E1E1E),
+      onRefresh: () => _cargarDatos(),
+      child: ListView.builder(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        itemCount: _usuariosFiltrados.length,
+        itemBuilder: (context, index) {
+          final usuario = _usuariosFiltrados[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundImage: usuario.urlAvatar != null ? NetworkImage(usuario.urlAvatar!) : null,
+                child: usuario.urlAvatar == null ? const Icon(Icons.person) : null,
               ),
-              if (perfil.esVerificado) ...[
-                const SizedBox(width: 6),
-                const Icon(Icons.verified_rounded, color: Color(0xFF248EA6), size: 16),
-              ],
-            ],
-          ),
-          subtitle: Row(
-            children: [
-              Icon(Icons.star_rounded, color: const Color(0xFFF29C50).withOpacity(0.7), size: 16),
-              const SizedBox(width: 4),
-              Text(
-                perfil.ratingActual.toString(),
-                style: GoogleFonts.outfit(color: Colors.grey.shade500, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-            ],
-          ),
-          trailing: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF28B50).withOpacity(0.1),
-              shape: BoxShape.circle,
+              title: Text(usuario.nombreUsuario, style: GoogleFonts.outfit(fontWeight: FontWeight.w900)),
+              subtitle: Text(usuario.email, style: GoogleFonts.outfit(fontSize: 12)),
+              onTap: () {
+                final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                if (inicioState != null) {
+                  inicioState.seleccionarUsuario(usuario);
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: usuario)),
+                  );
+                }
+              },
             ),
-            child: const Icon(Icons.chevron_right_rounded, color: Color(0xFFF28B50), size: 20),
-          ),
-        ),
+          );
+        },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controladorBusqueda.dispose();
+    super.dispose();
   }
 }

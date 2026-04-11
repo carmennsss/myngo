@@ -7,6 +7,8 @@ class PublicacionSerializer(serializers.ModelSerializer):
     creador_comunidad_id = serializers.ReadOnlyField(source='comunidad.creador.id')
     url_imagen = serializers.SerializerMethodField()
     etiquetas = serializers.ReadOnlyField(source='imagen.etiquetas')
+    # Campo explícito para devolver el ID de la imagen como integer garantizado
+    imagen_id = serializers.IntegerField(source='imagen.id', read_only=True, allow_null=True)
 
     likes_count = serializers.SerializerMethodField()
     comentarios_count = serializers.SerializerMethodField()
@@ -16,8 +18,8 @@ class PublicacionSerializer(serializers.ModelSerializer):
         model = Publicacion
         fields = [
             'id', 'autor', 'autor_nombre', 'comunidad', 'comunidad_nombre',
-            'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'url_imagen', 
-            'relacion_aspecto', 'etiquetas', 'fecha_creacion',
+            'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
+            'url_imagen', 'relacion_aspecto', 'etiquetas', 'fecha_creacion',
             'likes_count', 'comentarios_count', 'usuario_dio_like'
         ]
 

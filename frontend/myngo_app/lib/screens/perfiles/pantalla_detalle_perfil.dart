@@ -10,6 +10,7 @@ import '../../services/servicio_galeria.dart';
 import '../../widgets/selector_estrellas.dart';
 import '../../widgets/comunes/menu_opciones_contenido.dart';
 import '../../widgets/comunes/detalle_publicacion_sheet.dart';
+import '../inicio/pantalla_inicio.dart';
 import '../galeria/pantalla_galeria_principal.dart';
 import '../../models/publicacion.dart';
 import 'package:image_picker/image_picker.dart';
@@ -576,7 +577,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (!usuario.esPublico&&usuario.id!=_currentUserId) 
+                  if (!usuario.esPublico && usuario.id != _currentUserId && _estadoSeguimiento != 'ACEPTADO') 
                     Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
@@ -745,6 +746,12 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                         publicacion: publicacion,
                         avatarUrl: _avatarLocal ?? widget.usuario.urlAvatar ?? '',
                         onEliminado: () => setState(() => _publicaciones.removeAt(index)),
+                        onProfileSelected: (u) {
+                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                          if (inicioState != null) {
+                            inicioState.seleccionarUsuario(u);
+                          }
+                        },
                       ),
                       child: Stack(
                         fit: StackFit.expand,
@@ -851,15 +858,15 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
           height: 48,
           child: ElevatedButton.icon(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PantallaGaleriaPrincipal(
-                    usuarioId: usuario.id,
-                    titulo: 'Galería de @${usuario.nombreUsuario}',
+                      Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PantallaGaleriaPrincipal(
+                      usuarioId: usuario.id,
+                      titulo: 'Galería de @${usuario.nombreUsuario}',
+                    ),
                   ),
-                ),
-              );
+                );
             },
             icon: const Icon(Icons.photo_library_outlined, size: 18, color: Colors.white),
             label: Text(

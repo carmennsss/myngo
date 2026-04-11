@@ -7,11 +7,13 @@ import '../../services/servicio_usuarios.dart';
 import '../../models/notificacion.dart';
 import '../comunidades/pantalla_detalle_publicacion.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
+import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:intl/intl.dart';
 
 class PantallaNotificaciones extends StatefulWidget {
-  const PantallaNotificaciones({super.key});
+  final VoidCallback? onNotificacionesLeidas;
+  const PantallaNotificaciones({super.key, this.onNotificacionesLeidas});
 
   @override
   State<PantallaNotificaciones> createState() => _PantallaNotificacionesState();
@@ -31,6 +33,9 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     _cargarNotificaciones();
   }
 
+  // Tipos que requieren acción del usuario: no se marcan leídas automáticamente
+  static const _tiposPeticion = {'PETICION_CO_ADMIN', 'PETICION_UNION', 'PETICION_SEGUIMIENTO'};
+
   Future<void> _cargarNotificaciones() async {
     final respuesta = await _servicioNotificaciones.listarNotificaciones();
     if (mounted) {
@@ -38,15 +43,24 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         _notificaciones = respuesta.datos ?? [];
         _estaCargando = false;
       });
-      
-      final tieneNoLeidas = _notificaciones.any((n) => !n.leida);
-      
-      if (tieneNoLeidas) {
+
+      // Solo marcamos como leídas las que NO son peticiones pendientes
+      final tieneNoLeidasNormales = _notificaciones.any(
+        (n) => !n.leida && !_tiposPeticion.contains(n.tipo),
+      );
+
+      if (tieneNoLeidasNormales) {
         await _servicioNotificaciones.marcarTodasLeidas();
         if (mounted) {
           setState(() {
-            _notificaciones = _notificaciones.map((n) => n.copyWith(leida: true)).toList();
+            _notificaciones = _notificaciones.map((n) {
+              // Las peticiones pendientes conservan su estado leída=false
+              if (_tiposPeticion.contains(n.tipo)) return n;
+              return n.copyWith(leida: true);
+            }).toList();
           });
+          // Notificar al padre para que refresque el badge
+          widget.onNotificacionesLeidas?.call();
         }
       }
     }
@@ -89,12 +103,17 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
       if (notif.idGenerador != null) {
         final res = await _servicioUsuarios.obtenerDatosUsuario(notif.idGenerador!);
         if (mounted && res.exito && res.datos != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PantallaDetallePerfil(usuario: res.datos!),
-            ),
-          );
+          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+          if (inicioState != null) {
+            inicioState.seleccionarUsuario(res.datos!);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PantallaDetallePerfil(usuario: res.datos!),
+              ),
+            );
+          }
         }
       }
     }
