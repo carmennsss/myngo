@@ -26,3 +26,21 @@ def notificar_voto(sender, instance, created, **kwargs):
                 referencia_comunidad=instance.receptor_comunidad,
                 referencia_id=instance.id
             )
+@receiver(post_save, sender=Voto)
+def actualizar_rating(sender,instance,created, **kwargs):
+    """
+    Actualiza el rating del usuario o comunidad receptor después de recibir un voto.
+    """
+    if instance.receptor_usuario:
+        receptor = instance.receptor_usuario
+        votos = Voto.objects.filter(receptor_usuario=receptor)
+    elif instance.receptor_comunidad:
+        receptor = instance.receptor_comunidad
+        votos = Voto.objects.filter(receptor_comunidad=receptor)
+    else:
+        return
+        
+    if votos.count() >= 10:
+        total_estrellas = sum(voto.estrellas for voto in votos)
+        receptor.rating_actual = total_estrellas / votos.count()
+        receptor.save()

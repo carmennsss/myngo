@@ -17,6 +17,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../widgets/dialogo_crear_post.dart';
 import '../../services/servicio_comunidades.dart';
 import 'pantalla_tienda_mejoras.dart';
+import 'pantalla_personalizar_perfil.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario con diseño oscuro y sistema de votos.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -72,6 +73,26 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     _cargarEstadoVoto();
     _cargarPublicaciones();
     _cargarRolContextual();
+  }
+
+  @override
+  void didUpdateWidget(PantallaDetallePerfil oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.usuario.id != oldWidget.usuario.id) {
+      _estadoSeguimiento = widget.usuario.estadoSeguimiento;
+      _biografiaLocal = widget.usuario.biografia;
+      _avatarLocal = widget.usuario.urlAvatar;
+      _ratingLocal = widget.usuario.ratingActual;
+      _totalVotosRecibidos = 0;
+      _haVotadoHoy = false;
+      _mostrarPanelVoto = false;
+      _puntuacionTemporal = 0;
+      _timerReinicio?.cancel();
+      
+      _cargarEstadoVoto();
+      _cargarPublicaciones();
+      _cargarRolContextual();
+    }
   }
 
   Future<void> _cargarRolContextual() async {
@@ -446,7 +467,29 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                           ],
                         ),
                       ),
-                      _ChipPrivacidad(esPublica: usuario.esPublico),
+                      Row(
+                        children: [
+                          if (_currentUserId == usuario.id)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: IconButton(
+                                icon: const Icon(Icons.edit_rounded, color: Color(0xFFC35E34), size: 18),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const PantallaPersonalizarPerfil()),
+                                  );
+                                },
+                                style: IconButton.styleFrom(
+                                  backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                                  padding: const EdgeInsets.all(8),
+                                  minimumSize: Size.zero,
+                                ),
+                              ),
+                            ),
+                          _ChipPrivacidad(esPublica: usuario.esPublico),
+                        ],
+                      ),
                     ],
                   ),
                   if (_rolEnComunidad != null && _rolEnComunidad != 'Visitante' && _rolEnComunidad != 'Miembro')
@@ -821,10 +864,13 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
             height: 48,
             child: ElevatedButton.icon(
               onPressed: () {
+                final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PantallaTiendaMejoras(),
+                    builder: (context) => PantallaTiendaMejoras(
+                      onPuntosActualizados: (p) => inicioState?.actualizarPuntos(p),
+                    ),
                   ),
                 );
               },
@@ -1087,9 +1133,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                 if (respuesta.exito) {
                   setState(() {
                     _mostrarPanelVoto = false;
-                    // Task 7: Actualización manual del rating local si el backend no devuelve el objeto completo
-                    if (respuesta.datos is num) {
-                      // Si el backend devuelve la nueva media (como sugerido en la API propuesta)
+                    // Task 7: Actualización del rating local si se devuelve nueva_media
+                    if (respuesta.datos != null) {
                       _ratingLocal = (respuesta.datos as num).toDouble();
                     }
                   });

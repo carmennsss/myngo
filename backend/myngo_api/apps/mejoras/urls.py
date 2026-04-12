@@ -1,9 +1,9 @@
 from django.urls import path
 from .views import (
-    VotoAPIView, RankingUsuariosView, RankingComunidadesView, CatalogoMejoras,
+    VotoAPIView, RankingUsuariosView, RankingComunidadesView,
     CatalogoMejorasGlobales, CatalogoMejorasComunidad, PeticionMejoraCreate,
     PeticionMejoraModeracionList, PeticionMejoraModerar, ComprarMejoraView,
-    GestionCatalogoComunidad
+    GestionCatalogoComunidad, MisMejorasView
 )
 
 urlpatterns = [
@@ -17,5 +17,5 @@ urlpatterns = [
     path('tienda/peticiones/<int:pk>/moderar/', PeticionMejoraModerar.as_view(), name='moderar-peticion'),
     path('tienda/gestion/<int:comunidad_id>/', GestionCatalogoComunidad.as_view(), name='gestion-catalogo'),
     path('tienda/comprar/<int:pk>/', ComprarMejoraView.as_view(), name='comprar-mejora'),
-    path('tienda/<str:tipo>/', CatalogoMejoras.as_view(), name='catalogo-mejoras'),
+    path('tienda/mis-mejoras/', MisMejorasView.as_view(), name='mis-mejoras'),
 ]

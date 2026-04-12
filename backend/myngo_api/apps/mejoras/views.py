@@ -158,16 +158,13 @@ class ComprarMejoraView(APIView):
 
         return Response({"mensaje": "Compra realizada con éxito", "puntos_restantes": perfil.puntos})
 
-class CatalogoMejoras(generics.ListAPIView):
-    serializer_class = CatalogoMejorasSerializer
+class MisMejorasView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        tipo_raw = self.kwargs.get('tipo', '')
-        tipo = tipo_raw.capitalize() if tipo_raw else ''
-        mejoras = Catalogo_mejoras.objects.filter(tipo=tipo, esta_activo=True)
-        return mejoras
-
+    def get(self, request):
+        mejoras_usuario = Mejoras_usuario.objects.filter(usuario=request.user)
+        serializer = MejorasUsuarioSerializer(mejoras_usuario, many=True)
+        return Response(serializer.data)
 class GestionCatalogoComunidad(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -332,19 +329,13 @@ class VotoAPIView(APIView):
             voto = Voto.objects.create(**create_kwargs)
             mensaje = "Voto registrado correctamente."
 
-        # Calcular datos actualizados para devolver al frontend
-        total_votos = Voto.objects.filter(
-            receptor_usuario=receptor if receptor_usuario_id else None,
-            receptor_comunidad=receptor if receptor_comunidad_id else None
-        ).count()
-        
-        rating_nuevo = receptor.rating_medio # Usa la property recalculada
+        receptor.refresh_from_db()
 
         return Response({
             "mensaje": mensaje, 
-            "estrellas": voto.estrellas,
-            "rating_medio": rating_nuevo,
-            "total_votos": total_votos
+            "receptor":receptor.id,
+            "votante": votante.id,
+            "nueva_media": receptor.rating_actual,
         }, status=status.HTTP_200_OK)
 
 class RankingUsuariosView(generics.ListAPIView):
