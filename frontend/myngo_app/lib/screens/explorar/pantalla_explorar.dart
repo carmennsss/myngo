@@ -25,6 +25,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   final _servicioUsuarios = ServicioUsuarios();
   
   final _controladorBusqueda = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   
   int _indicePestana = 0; // 0: Comunidades, 1: Perfiles
   
@@ -38,6 +39,13 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   void initState() {
     super.initState();
     _cargarDatos();
+  }
+  
+  @override
+  void dispose() {
+    _controladorBusqueda.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _cargarDatos({String? filtro}) async {
@@ -79,83 +87,90 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFEF5F1),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header y Pestañas - Fijo
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Título y Botón
-                Row(
-                  children: [
-                    Text(
-                      'EXPLORAR MUNDOS',
-                      style: GoogleFonts.outfit(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF4A4440),
-                        letterSpacing: 0.5,
+      body: RefreshIndicator(
+        color: const Color(0xFFF28B50),
+        backgroundColor: const Color(0xFF1E1E1E),
+        onRefresh: () => _cargarDatos(filtro: _controladorBusqueda.text),
+        child: Scrollbar(
+          controller: _scrollController,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Título y Botón
+                      Row(
+                        children: [
+                          Text(
+                            'EXPLORAR MUNDOS',
+                            style: GoogleFonts.outfit(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF4A4440),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (_indicePestana == 0)
+                            BotonTactil(
+                              onTap: () => _mostrarModalCreacion(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
+                                child: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 24),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    if (_indicePestana == 0)
-                      BotonTactil(
-                        onTap: () => _mostrarModalCreacion(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
-                          child: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 24),
+                      const SizedBox(height: 12),
+                      
+                      // Pestañas
+                      Row(
+                        children: [
+                          _buildPestana('COMUNIDADES', 0),
+                          const SizedBox(width: 24),
+                          _buildPestana('PERFILES', 1),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Barra de Búsqueda
+                      TextField(
+                        controller: _controladorBusqueda,
+                        onChanged: (valor) => _cargarDatos(filtro: valor),
+                        style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: _indicePestana == 0 ? 'Busca una comunidad...' : 'Busca a un michi...',
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34), size: 20),
+                          filled: true,
+                          fillColor: Colors.white,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                
-                // Pestañas
-                Row(
-                  children: [
-                    _buildPestana('COMUNIDADES', 0),
-                    const SizedBox(width: 24),
-                    _buildPestana('PERFILES', 1),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Barra de Búsqueda
-                TextField(
-                  controller: _controladorBusqueda,
-                  onChanged: (valor) => _cargarDatos(filtro: valor),
-                  style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: _indicePestana == 0 ? 'Busca una comunidad...' : 'Busca a un michi...',
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34), size: 20),
-                    filled: true,
-                    fillColor: Colors.white,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              
+              if (_estaCargando)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                )
+              else if (_indicePestana == 0)
+                _buildSliverGridComunidades()
+              else
+                _buildSliverGridPerfiles(),
+            ],
           ),
-
-          // Contenido scrolleable
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _estaCargando
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
-                  : _indicePestana == 0
-                      ? _buildGridComunidades()
-                      : _buildGridPerfiles(),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -187,52 +202,52 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     );
   }
 
-  Widget _buildGridComunidades() {
+  Widget _buildSliverGridComunidades() {
     if (_comunidades.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
-            const SizedBox(height: 16),
-            Text(
-              'No encontramos nada...',
-              style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
+              const SizedBox(height: 16),
+              Text(
+                'No encontramos nada...',
+                style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
       );
     }
     
-    return RefreshIndicator(
-      color: const Color(0xFFF28B50),
-      backgroundColor: const Color(0xFF1E1E1E),
-      onRefresh: () => _cargarDatos(),
-      child: GridView.builder(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
+    return SliverPadding(
+      padding: const EdgeInsets.all(24),
+      sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 280,
           childAspectRatio: 0.82,
           crossAxisSpacing: 20,
           mainAxisSpacing: 20,
         ),
-        itemCount: _comunidades.length,
-        itemBuilder: (context, index) => TarjetaComunidad(
-          comunidad: _comunidades[index],
-          alPresionar: () {
-            if (widget.onComunidadSelected != null) {
-              widget.onComunidadSelected!(_comunidades[index]);
-            } else {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
-                comunidad: _comunidades[index],
-                onMembershipChanged: () {
-                  _cargarDatos();
-                  widget.onComunidadCreada?.call();
-                },
-              )));
-            }
-          },
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => TarjetaComunidad(
+            comunidad: _comunidades[index],
+            alPresionar: () {
+              if (widget.onComunidadSelected != null) {
+                widget.onComunidadSelected!(_comunidades[index]);
+              } else {
+                Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
+                  comunidad: _comunidades[index],
+                  onMembershipChanged: () {
+                    _cargarDatos();
+                    widget.onComunidadCreada?.call();
+                  },
+                )));
+              }
+            },
+          ),
+          childCount: _comunidades.length,
         ),
       ),
     );
@@ -252,56 +267,56 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     );
   }
 
-  Widget _buildGridPerfiles() {
+  Widget _buildSliverGridPerfiles() {
     if (_usuariosFiltrados.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
-            const SizedBox(height: 16),
-            Text(
-              'No encontramos perfiles...',
-              style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.person_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
+              const SizedBox(height: 16),
+              Text(
+                'No encontramos perfiles...',
+                style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
       );
     }
     
-    return RefreshIndicator(
-      color: const Color(0xFFF28B50),
-      backgroundColor: const Color(0xFF1E1E1E),
-      onRefresh: () => _cargarDatos(),
-      child: ListView.builder(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        itemCount: _usuariosFiltrados.length,
-        itemBuilder: (context, index) {
-          final usuario = _usuariosFiltrados[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundImage: usuario.urlAvatar != null ? NetworkImage(usuario.urlAvatar!) : null,
-                child: usuario.urlAvatar == null ? const Icon(Icons.person) : null,
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final usuario = _usuariosFiltrados[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundImage: usuario.urlAvatar != null ? NetworkImage(usuario.urlAvatar!) : null,
+                  child: usuario.urlAvatar == null ? const Icon(Icons.person) : null,
+                ),
+                title: Text(usuario.nombreUsuario, style: GoogleFonts.outfit(fontWeight: FontWeight.w900)),
+                subtitle: Text(usuario.email, style: GoogleFonts.outfit(fontSize: 12)),
+                onTap: () {
+                  final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                  if (inicioState != null) {
+                    inicioState.seleccionarUsuario(usuario);
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: usuario)),
+                    );
+                  }
+                },
               ),
-              title: Text(usuario.nombreUsuario, style: GoogleFonts.outfit(fontWeight: FontWeight.w900)),
-              subtitle: Text(usuario.email, style: GoogleFonts.outfit(fontSize: 12)),
-              onTap: () {
-                final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                if (inicioState != null) {
-                  inicioState.seleccionarUsuario(usuario);
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: usuario)),
-                  );
-                }
-              },
-            ),
-          );
-        },
+            );
+          },
+          childCount: _usuariosFiltrados.length,
+        ),
       ),
     );
   }

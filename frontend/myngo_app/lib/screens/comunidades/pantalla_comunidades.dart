@@ -21,6 +21,7 @@ class PantallaComunidades extends StatefulWidget {
 class _PantallaComunidadesState extends State<PantallaComunidades> {
   final _servicioComunidades = ServicioComunidades();
   final _controladorBusqueda = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   
   List<Comunidad> _comunidades = [];
   bool _estaCargando = true;
@@ -44,120 +45,136 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
   }
 
   @override
+  void dispose() {
+    _controladorBusqueda.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFEF5F1),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header - Fijo
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Título y Botón
-                Row(
-                  children: [
-                    Text(
-                      'COMUNIDADES',
-                      style: GoogleFonts.outfit(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF4A4440),
-                        letterSpacing: 0.5,
+      body: RefreshIndicator(
+        color: const Color(0xFFF28B50),
+        backgroundColor: const Color(0xFF1E1E1E),
+        onRefresh: () => _cargarDatos(filtro: _controladorBusqueda.text),
+        child: Scrollbar(
+          controller: _scrollController,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Título y Botón
+                      Row(
+                        children: [
+                          Text(
+                            'COMUNIDADES',
+                            style: GoogleFonts.outfit(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF4A4440),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          BotonTactil(
+                            onTap: () => _mostrarModalCreacion(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
+                              child: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 24),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    BotonTactil(
-                      onTap: () => _mostrarModalCreacion(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 24),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                // Barra de Búsqueda
-                TextField(
-                  controller: _controladorBusqueda,
-                  onChanged: (valor) => _cargarDatos(filtro: valor),
-                  style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'Busca una comunidad...',
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34), size: 20),
-                    filled: true,
-                    fillColor: Colors.white,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+                      // Barra de Búsqueda
+                      TextField(
+                        controller: _controladorBusqueda,
+                        onChanged: (valor) => _cargarDatos(filtro: valor),
+                        style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Busca una comunidad...',
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34), size: 20),
+                          filled: true,
+                          fillColor: Colors.white,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              if (_estaCargando)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                )
+              else
+                _buildSliverGridComunidades(),
+            ],
           ),
-
-          // Contenido scrolleable
-          Expanded(
-            child: _estaCargando
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
-                : _buildGridComunidades(),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildGridComunidades() {
+  Widget _buildSliverGridComunidades() {
     if (_comunidades.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
-            const SizedBox(height: 16),
-            Text(
-              'No encontramos nada...',
-              style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.2)),
+              const SizedBox(height: 16),
+              Text(
+                'No encontramos nada...',
+                style: GoogleFonts.outfit(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
       );
     }
     
-    return RefreshIndicator(
-      color: const Color(0xFFF28B50),
-      backgroundColor: const Color(0xFF1E1E1E),
-      onRefresh: () => _cargarDatos(),
-      child: GridView.builder(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
+    return SliverPadding(
+      padding: const EdgeInsets.all(24),
+      sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 280,
           childAspectRatio: 0.82,
           crossAxisSpacing: 20,
           mainAxisSpacing: 20,
         ),
-        itemCount: _comunidades.length,
-        itemBuilder: (context, index) => TarjetaComunidad(
-          comunidad: _comunidades[index],
-          alPresionar: () {
-            if (widget.onComunidadSelected != null) {
-              widget.onComunidadSelected!(_comunidades[index]);
-            } else {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
-                comunidad: _comunidades[index],
-                onMembershipChanged: () {
-                  _cargarDatos();
-                  widget.onComunidadCreada?.call();
-                },
-              )));
-            }
-          },
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => TarjetaComunidad(
+            comunidad: _comunidades[index],
+            alPresionar: () {
+              if (widget.onComunidadSelected != null) {
+                widget.onComunidadSelected!(_comunidades[index]);
+              } else {
+                Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
+                  comunidad: _comunidades[index],
+                  onMembershipChanged: () {
+                    _cargarDatos();
+                    widget.onComunidadCreada?.call();
+                  },
+                )));
+              }
+            },
+          ),
+          childCount: _comunidades.length,
         ),
       ),
     );
@@ -175,11 +192,5 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
         },
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _controladorBusqueda.dispose();
-    super.dispose();
   }
 }

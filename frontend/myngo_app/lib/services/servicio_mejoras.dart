@@ -34,7 +34,7 @@ class ServicioMejoras {
         return RespuestaApi(
           exito: true, 
           mensaje: datosJson['mensaje'] ?? 'Voto registrado',
-          datos: datosJson['estrellas']
+          datos: datosJson['nueva_media']
         );
       } else {
         return RespuestaApi(
@@ -228,28 +228,25 @@ class ServicioMejoras {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
-
-  /// Obtiene los elementos del catálogo según el tipo
-  Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasCatalogo(String tipo) async {
+  /// Obtiene los elementos comprados por el usuario
+  Future<RespuestaApi<List<dynamic>>> obtenerMisMejoras() async {
     try {
       final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/tienda/$tipo/'),
-        headers: {
-          'Authorization': 'Token $token',
-        },
+        Uri.parse('$_urlBase/tienda/mis-mejoras/'),
+        headers: {'Authorization': 'Token $token'},
       );
 
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        final beneficios = datos.map((e) => CatalogoMejoras.fromJson(e)).toList();
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: beneficios);
+        return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar mis mejoras');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
+
 
   /// Obtiene todo el catálogo de una comunidad (para gestión de admin)
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerCatalogoGestion(int comunidadId) async {

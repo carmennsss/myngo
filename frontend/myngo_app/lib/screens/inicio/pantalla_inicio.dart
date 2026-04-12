@@ -111,6 +111,10 @@ class PantallaInicioState extends State<PantallaInicio> {
   void cargarComunidades() => _cargarComunidades();
   void cargarNotificacionesSinLeer() => _cargarNotificacionesSinLeer();
 
+  void actualizarPuntos(int nuevosPuntos) {
+    if (mounted) setState(() => _puntos = nuevosPuntos);
+  }
+
 
   void _reordenarComunidades(int oldIndex, int newIndex) {
     setState(() {
