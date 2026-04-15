@@ -4,7 +4,6 @@ class PeticionMejora {
   final String nombreUsuario;
   final int comunidadId;
   final String nombreComunidad;
-  final String nombre;
   final String tipo;
   final String urlRecurso;
   final String estado;
@@ -17,7 +16,6 @@ class PeticionMejora {
     required this.nombreUsuario,
     required this.comunidadId,
     required this.nombreComunidad,
-    required this.nombre,
     required this.tipo,
     required this.urlRecurso,
     required this.estado,
@@ -32,7 +30,6 @@ class PeticionMejora {
       nombreUsuario: json['nombre_usuario'] ?? '',
       comunidadId: json['comunidad'] ?? 0,
       nombreComunidad: json['nombre_comunidad'] ?? '',
-      nombre: json['nombre'] ?? '',
       tipo: json['tipo'] ?? '',
       urlRecurso: json['url_recurso'] ?? '',
       estado: json['estado'] ?? 'PENDIENTE',

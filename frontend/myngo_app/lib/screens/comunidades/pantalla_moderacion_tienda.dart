@@ -126,10 +126,9 @@ class _TarjetaModeracion extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        peticion.nombre.toUpperCase(),
+                        peticion.tipo.toUpperCase(),
                         style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16, color: const Color(0xFF4A4440)),
                       ),
-                      Text('Tipo: ${peticion.tipo}', style: GoogleFonts.outfit(color: Colors.grey)),
                       const SizedBox(height: 8),
                       Text('Enviado por: ${peticion.nombreUsuario}', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
                       if (peticion.precioSugerido > 0)

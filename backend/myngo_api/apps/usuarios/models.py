@@ -45,8 +45,8 @@ class Usuario(AbstractBaseUser):
         """
         try:
             perfil = getattr(self, 'perfil', None)
-            if perfil and perfil.imagen and perfil.imagen.url_s3:
-                return perfil.imagen.url_s3.url
+            if perfil and perfil.avatar:
+                return perfil.avatar
         except Exception:
             pass
         return None
@@ -65,13 +65,14 @@ class Usuario(AbstractBaseUser):
         return round(float(media), 2)
 
 class Perfil(models.Model):
-    from contenido.models import Imagenes_galeria
 
     class Meta:
         db_table = 'perfiles'
     usuario=models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='perfil')
     biografia=models.TextField(blank=True, null=True)
-    imagen=models.ForeignKey(Imagenes_galeria,on_delete=models.CASCADE,null=True,blank=True)
+    avatar=models.CharField(max_length=255,null=True,blank=True)
+    fondo=models.CharField(max_length=255,null=True,blank=True)
+    marco=models.CharField(max_length=255,null=True,blank=True)
     puntos = models.IntegerField(
         default=0,
         validators=[

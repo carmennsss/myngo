@@ -12,6 +12,8 @@ class Usuario {
   final DateTime fechaRegistro;
   final String? biografia;
   final String? urlAvatar;
+  final String? fondo;
+  final String? marco;
   final int? puntos;
   final int numeroSeguidores;
   final int numeroSeguidos;
@@ -29,6 +31,8 @@ class Usuario {
     required this.fechaRegistro,
     this.biografia,
     this.urlAvatar,
+    this.fondo,
+    this.marco,
     this.puntos,
     this.numeroSeguidores = 0,
     this.numeroSeguidos = 0,
@@ -51,6 +55,8 @@ class Usuario {
             : DateTime.now(),
         biografia: json['biografia']?.toString(),
         urlAvatar: json['url_avatar']?.toString(),
+        fondo: json['fondo']?.toString(),
+        marco: json['marco']?.toString(),
         puntos: int.tryParse(json['puntos']?.toString() ?? '0'),
         numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
         numeroSeguidos: int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,

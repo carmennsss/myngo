@@ -1,5 +1,7 @@
 from datetime import datetime, time
 from django.utils import timezone
+from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db.models import Avg
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -18,7 +20,40 @@ class CatalogoMejorasGlobales(generics.ListAPIView):
 
     def get_queryset(self):
         return Catalogo_mejoras.objects.filter(comunidad__isnull=True, esta_activo=True)
-
+class EquipacionMejorasGlobales(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def post(self,request):
+        user=request.user
+        mejora_id=request.data.get('mejora_id')
+        if mejora_id is None:
+            return Response({"error": "mejora_id es requerido"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                mejora_u= Mejoras_usuario.objects.get(mejora_id=mejora_id,usuario=user)
+                if mejora_u:
+                    mejora_u.esta_equipada=not mejora_u.esta_equipada
+                    if mejora_u.esta_equipada:
+                        Mejoras_usuario.objects.filter(usuario=user, esta_equipada=True, mejora__tipo=mejora_u.mejora.tipo).exclude(pk=mejora_u.pk).update(esta_equipada=False)
+                    mejora_u.save()
+                    perfil=Perfil.objects.get(usuario=user)
+                    if perfil:
+                        if mejora_u.mejora.tipo.casefold()=="avatar":
+                            perfil.avatar=mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
+                        elif mejora_u.mejora.tipo.casefold()=="fondo":
+                            perfil.fondo=mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
+                        elif mejora_u.mejora.tipo.casefold()=="marco":
+                            perfil.marco=mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
+                        
+                        # Guardar cambios
+                        perfil.save()
+                        if mejora_u.esta_equipada:
+                            return Response({"resultado": "La mejora se ha equipado"}, status=status.HTTP_200_OK)
+                        else:
+                            return Response({"resultado": "La mejora se ha desequipado"}, status=status.HTTP_200_OK)
+            except Mejoras_usuario.DoesNotExist:
+                return Response({"error": "Mejora no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+            except Perfil.DoesNotExist:
+                return Response({"error": "Perfil no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 class CatalogoMejorasComunidad(generics.ListAPIView):
     serializer_class = CatalogoMejorasSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -52,7 +87,7 @@ class PeticionMejoraCreate(generics.CreateAPIView):
             Notificacion.objects.create(
                 usuario=mod.usuario,
                 tipo='NUEVA_PROPUESTA_TIENDA',
-                mensaje=f"Hay una nueva propuesta de {peticion.tipo}: '{peticion.nombre}' para revisar en {peticion.comunidad.nombre}.",
+                mensaje=f"Hay una nueva propuesta de {peticion.tipo} para revisar en {peticion.comunidad.nombre}.",
                 referencia_comunidad=peticion.comunidad,
                 referencia_id=peticion.id
             )
@@ -107,7 +142,6 @@ class PeticionMejoraModerar(APIView):
         if decision == 'APROBADO':
             # Crear el item en el catálogo, pero inactivo por defecto
             Catalogo_mejoras.objects.create(
-                nombre=peticion.nombre,
                 tipo=peticion.tipo,
                 precio_puntos=precio,
                 url_recurso=peticion.url_recurso,
@@ -126,7 +160,7 @@ class PeticionMejoraModerar(APIView):
         Notificacion.objects.create(
             usuario=peticion.usuario,
             tipo=tipo_notif,
-            mensaje=f"Tu propuesta '{peticion.nombre}' ha sido {estado_text} en {peticion.comunidad.nombre}.",
+            mensaje=f"Tu propuesta de {peticion.tipo} ha sido {estado_text} en {peticion.comunidad.nombre}.",
             referencia_comunidad=peticion.comunidad,
             referencia_id=peticion.id
         )
@@ -353,8 +387,11 @@ class RankingUsuariosView(generics.ListAPIView):
         data = []
         for u in queryset:
             url_foto = None
-            if hasattr(u, 'perfil') and u.perfil.imagen and u.perfil.imagen.url_s3:
-                url_foto = u.perfil.imagen.url_s3.url
+            if hasattr(u, 'perfil') and u.perfil.avatar:
+                if u.perfil.avatar.startswith('http'):
+                    url_foto = u.perfil.avatar
+                else:
+                    url_foto = default_storage.url(u.perfil.avatar.lstrip('/'))
 
             data.append({
                 "id": u.id,

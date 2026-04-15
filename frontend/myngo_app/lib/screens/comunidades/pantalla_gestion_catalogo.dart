@@ -108,7 +108,7 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Ajusta el precio para "${item.nombre}":', style: GoogleFonts.outfit(fontSize: 14)),
+            Text('Ajusta el precio para este ítem:', style: GoogleFonts.outfit(fontSize: 14)),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
@@ -184,7 +184,7 @@ class _TarjetaGestionItem extends StatelessWidget {
               ),
             ),
             title: Text(
-              item.nombre.toUpperCase(),
+              item.tipo.toUpperCase(),
               style: GoogleFonts.outfit(
                 fontWeight: FontWeight.w900, 
                 fontSize: 14, 
@@ -194,7 +194,6 @@ class _TarjetaGestionItem extends StatelessWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tipo: ${item.tipo}', style: GoogleFonts.outfit(fontSize: 12)),
                 const SizedBox(height: 4),
                 Row(
                   children: [

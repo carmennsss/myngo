@@ -3,7 +3,7 @@ from .views import (
     VotoAPIView, RankingUsuariosView, RankingComunidadesView,
     CatalogoMejorasGlobales, CatalogoMejorasComunidad, PeticionMejoraCreate,
     PeticionMejoraModeracionList, PeticionMejoraModerar, ComprarMejoraView,
-    GestionCatalogoComunidad, MisMejorasView
+    GestionCatalogoComunidad, MisMejorasView, EquipacionMejorasGlobales
 )
 
 urlpatterns = [
@@ -18,4 +18,5 @@ urlpatterns = [
     path('tienda/gestion/<int:comunidad_id>/', GestionCatalogoComunidad.as_view(), name='gestion-catalogo'),
     path('tienda/comprar/<int:pk>/', ComprarMejoraView.as_view(), name='comprar-mejora'),
     path('tienda/mis-mejoras/', MisMejorasView.as_view(), name='mis-mejoras'),
+    path('tienda/equipar/', EquipacionMejorasGlobales.as_view(), name='equipar-mejora'),
 ]

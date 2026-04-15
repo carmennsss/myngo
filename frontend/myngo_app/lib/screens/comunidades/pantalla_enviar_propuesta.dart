@@ -18,7 +18,6 @@ class PantallaEnviarPropuesta extends StatefulWidget {
 }
 
 class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
-  final _nombreController = TextEditingController();
   final _precioController = TextEditingController(text: '0');
   late String _tipoSeleccionado;
   File? _imagenSeleccionada;
@@ -53,9 +52,9 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
   }
 
   Future<void> _enviar() async {
-    if (_nombreController.text.isEmpty || _imagenSeleccionada == null) {
+    if (_imagenSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, completa todos los campos y selecciona una imagen')),
+        const SnackBar(content: Text('Por favor, selecciona una imagen')),
       );
       return;
     }
@@ -64,7 +63,6 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
     
     final res = await ServicioMejoras().enviarPeticionMejora(
       comunidadId: widget.comunidad.id,
-      nombre: _nombreController.text,
       tipo: _tipoSeleccionado,
       filePath: _imagenSeleccionada!.path,
       bytes: _webImageBytes,
@@ -132,8 +130,6 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
               ),
             ),
             const SizedBox(height: 24),
-            _buildTextField('Nombre del diseño', _nombreController, Icons.label_important_outline_rounded),
-            const SizedBox(height: 16),
             _buildDropdown(),
             const SizedBox(height: 16),
             _buildTextField('Precio sugerido (opcional)', _precioController, Icons.monetization_on_outlined, isNumber: true),

@@ -23,14 +23,14 @@ class CatalogoMejorasSerializer(serializers.ModelSerializer):
     nombre_creador = serializers.ReadOnlyField(source='creador.nombre_usuario')
     class Meta:
         model = Catalogo_mejoras
-        fields = ['id', 'nombre', 'tipo', 'precio_puntos', 'url_recurso', 'comunidad', 'creador', 'nombre_creador', 'esta_activo', 'fecha_creacion']
+        fields = ['id', 'tipo', 'precio_puntos', 'url_recurso', 'comunidad', 'creador', 'nombre_creador', 'esta_activo', 'fecha_creacion']
 
 class PeticionMejoraSerializer(serializers.ModelSerializer):
     nombre_usuario = serializers.ReadOnlyField(source='usuario.nombre_usuario')
     nombre_comunidad = serializers.ReadOnlyField(source='comunidad.nombre')
     class Meta:
         model = PeticionMejora
-        fields = ['id', 'usuario', 'nombre_usuario', 'comunidad', 'nombre_comunidad', 'nombre', 'tipo', 'url_recurso', 'estado', 'precio_sugerido', 'fecha_creacion']
+        fields = ['id', 'usuario', 'nombre_usuario', 'comunidad', 'nombre_comunidad', 'tipo', 'url_recurso', 'estado', 'precio_sugerido', 'fecha_creacion']
         read_only_fields = ['id', 'usuario', 'estado', 'fecha_creacion']
 
 class MejorasUsuarioSerializer(serializers.ModelSerializer):
