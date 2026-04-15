@@ -538,7 +538,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
                   child: Column(
                     children: [
                       Text(
-                        mejora.nombre,
+                        mejora.tipo,
                         style: GoogleFonts.outfit(
                           color: const Color(0xFF4A4440),
                           fontWeight: FontWeight.w800,
@@ -655,7 +655,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ajusta el coste de "${item.nombre}":', style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade600)),
+            Text('Ajusta el coste de la mejora:', style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade600)),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
@@ -752,7 +752,7 @@ class _DialogoDetalleMejoraState extends State<_DialogoDetalleMejora> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('¿Comprar ${widget.mejora.nombre}?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text('¿Comprar diseño?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: Text('Esto costará ${widget.mejora.precioPuntos} puntos. ¿Estás seguro?', style: GoogleFonts.outfit(fontSize: 16)),
         actions: [
           TextButton(
@@ -837,7 +837,7 @@ class _DialogoDetalleMejoraState extends State<_DialogoDetalleMejora> {
               child: Column(
                 children: [
                   Text(
-                    widget.mejora.nombre,
+                    widget.mejora.tipo,
                     style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440)),
                     textAlign: TextAlign.center,
                   ),

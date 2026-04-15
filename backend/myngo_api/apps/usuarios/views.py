@@ -14,6 +14,7 @@ import string
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 from django.core.cache import cache
+from django.core.files.storage import default_storage
 from contenido.models import Imagenes_galeria
 from django.utils import timezone
 signer = TimestampSigner()
@@ -491,15 +492,18 @@ class EditarPerfil(APIView):
                         imagen_nueva._es_avatar = True
                     imagen_nueva.url_s3=imagen
                     imagen_nueva.save()
-                    perfil.imagen=imagen_nueva
+                    perfil.avatar=imagen_nueva.url_s3.name # Save the relative path
             serializer = PerfilSerializer(perfil, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 
                 # Construimos la URL completa para devolverla a Flutter
                 url_avatar = None
-                if perfil.imagen and perfil.imagen.url_s3:
-                    url_avatar = request.build_absolute_uri(perfil.imagen.url_s3.url)
+                if perfil.avatar:
+                    if perfil.avatar.startswith('http'):
+                        url_avatar = perfil.avatar
+                    else:
+                        url_avatar = default_storage.url(perfil.avatar.lstrip('/'))
                     
                 return Response({
                     "exito": True,

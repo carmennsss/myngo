@@ -128,7 +128,6 @@ class ServicioMejoras {
   /// Envía una propuesta de diseño (Multipart para imagen)
   Future<RespuestaApi> enviarPeticionMejora({
     required int comunidadId,
-    required String nombre,
     required String tipo,
     required String filePath,
     Uint8List? bytes,
@@ -141,7 +140,6 @@ class ServicioMejoras {
       var request = http.MultipartRequest('POST', url);
       request.headers['Authorization'] = 'Token $token';
       request.fields['comunidad'] = comunidadId.toString();
-      request.fields['nombre'] = nombre;
       request.fields['tipo'] = tipo;
       request.fields['precio_sugerido'] = precioSugerido.toString();
       
@@ -247,6 +245,28 @@ class ServicioMejoras {
     }
   }
 
+  /// Equipa o desequipa una mejora
+  Future<RespuestaApi> equiparMejora(int mejoraId) async {
+    try {
+      final token = await ServicioUsuarios().obtenerToken();
+      final respuesta = await http.post(
+        Uri.parse('$_urlBase/tienda/equipar/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Token $token',
+        },
+        body: jsonEncode({'mejora_id': mejoraId}),
+      );
+
+      final datos = jsonDecode(respuesta.body);
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: datos['resultado']);
+      }
+      return RespuestaApi(exito: false, mensaje: datos['error'] ?? 'Error al equipar/desequipar');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
 
   /// Obtiene todo el catálogo de una comunidad (para gestión de admin)
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerCatalogoGestion(int comunidadId) async {

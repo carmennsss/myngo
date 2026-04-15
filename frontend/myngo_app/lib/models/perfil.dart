@@ -3,6 +3,8 @@ import 'usuario.dart'; // Importante para el campo datosUsuario
 class Perfil {
   final String? biografia;
   final String? urlAvatar;
+  final String? fondo;
+  final String? marco;
   final int numeroSeguidores;
   final int numeroSeguidos;
   final String? estadoSeguimiento;
@@ -13,6 +15,8 @@ String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
   Perfil({
     this.biografia,
     this.urlAvatar,
+    this.fondo,
+    this.marco,
     required this.numeroSeguidores,
     required this.numeroSeguidos,
     this.estadoSeguimiento,
@@ -26,6 +30,9 @@ String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
 
       // 2. URL Avatar (String opcional generado por el SerializerMethodField)
       urlAvatar: json['url_avatar']?.toString(),
+
+      fondo: json['fondo']?.toString(),
+      marco: json['marco']?.toString(),
 
       // 3. Número de seguidores (int, con fallback a 0)
       numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,

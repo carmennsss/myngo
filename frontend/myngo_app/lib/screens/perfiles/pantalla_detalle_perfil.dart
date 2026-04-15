@@ -46,9 +46,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
   String? _estadoSeguimiento;
   List<Publicacion> _publicaciones = [];
   bool _cargandoPublicaciones = true;
-  // Campos locales que se actualizan sin recargar el widget completo
   String? _biografiaLocal;
   String? _avatarLocal;
+  String? _fondoLocal;
+  String? _marcoLocal;
   // Estado del Voto
   bool _haVotadoHoy = false;
   // ignore: unused_field
@@ -67,6 +68,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     _estadoSeguimiento = widget.usuario.estadoSeguimiento;
     _biografiaLocal = widget.usuario.biografia;
     _avatarLocal = widget.usuario.urlAvatar;
+    _fondoLocal = widget.usuario.fondo;
+    _marcoLocal = widget.usuario.marco;
     _ratingLocal = widget.usuario.ratingActual; // Initialize local rating
     _totalVotosRecibidos = 0; 
     _cargarUsuario();
@@ -82,6 +85,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
       _estadoSeguimiento = widget.usuario.estadoSeguimiento;
       _biografiaLocal = widget.usuario.biografia;
       _avatarLocal = widget.usuario.urlAvatar;
+      _fondoLocal = widget.usuario.fondo;
+      _marcoLocal = widget.usuario.marco;
       _ratingLocal = widget.usuario.ratingActual;
       _totalVotosRecibidos = 0;
       _haVotadoHoy = false;
@@ -117,6 +122,21 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     final id = await ServicioUsuarios().obtenerIdUsuario();
     if (mounted) {
       setState(() => _currentUserId = id);
+    }
+  }
+
+  Future<void> _recargarUsuarioActualizado() async {
+    final respuesta = await ServicioUsuarios().obtenerDatosUsuario(widget.usuario.id);
+    if (mounted && respuesta.exito && respuesta.datos != null) {
+      final u = respuesta.datos!;
+      setState(() {
+        _biografiaLocal = u.biografia;
+        _avatarLocal = u.urlAvatar;
+        _fondoLocal = u.fondo;
+        _marcoLocal = u.marco;
+        _ratingLocal = u.ratingActual;
+      });
+      widget.onPerfilActualizado?.call();
     }
   }
   
@@ -216,7 +236,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
       ));
       if (respuesta.exito && respuesta.datos != null) {
         setState(() => _avatarLocal = respuesta.datos);
-        widget.onPerfilActualizado?.call();
+        _recargarUsuarioActualizado();
       }
     }
   }
@@ -352,7 +372,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 250,
+            expandedHeight: 500,
             pinned: true,
             stretch: true,
             backgroundColor: colorGradBot,
@@ -368,49 +388,74 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  image: (_fondoLocal != null && _fondoLocal!.isNotEmpty)
+                      ? DecorationImage(
+                          image: NetworkImage(_fondoLocal!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                  gradient: (_fondoLocal == null || _fondoLocal!.isEmpty) ? LinearGradient(
                     colors: [colorGradTop.withOpacity(0.5), Colors.transparent],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                  ),
+                  ) : null,
                 ),
                 child: Center(
                   child: Stack(
                     children: [
                       GestureDetector(
                         onTap: _currentUserId == usuario.id ? _editarAvatar : null,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFF248EA6), width: 3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.5),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                        child: SizedBox(
+                          width: 160,
+                          height: 160,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // 1. Marco detrás (capa inferior)
+                              if (_marcoLocal != null && _marcoLocal!.isNotEmpty)
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: Image.network(_marcoLocal!, fit: BoxFit.contain),
+                                  ),
+                                ),
+                              // 2. Avatar encima (capa superior)
+                              Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: (_marcoLocal == null || _marcoLocal!.isEmpty) 
+                                      ? Border.all(color: const Color(0xFF248EA6), width: 3)
+                                      : null,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                  image: (_avatarLocal != null && _avatarLocal!.isNotEmpty)
+                                      ? DecorationImage(
+                                          image: NetworkImage(_avatarLocal!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: (_avatarLocal == null || _avatarLocal!.isEmpty)
+                                    ? Center(
+                                        child: Text(
+                                          inicial,
+                                          style: const TextStyle(
+                                            fontSize: 48,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF248EA6),
+                                          ),
+                                        ),
+                                      )
+                                    : null,
                               ),
                             ],
-                            image: (_avatarLocal != null && _avatarLocal!.isNotEmpty)
-                                ? DecorationImage(
-                                    image: NetworkImage(_avatarLocal!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
                           ),
-                          child: (_avatarLocal == null || _avatarLocal!.isEmpty)
-                              ? Center(
-                                  child: Text(
-                                    inicial,
-                                    style: const TextStyle(
-                                      fontSize: 48,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF248EA6),
-                                    ),
-                                  ),
-                                )
-                              : null,
                         ),
                       ),
                       if (_currentUserId == usuario.id)
@@ -475,10 +520,12 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
                               child: IconButton(
                                 icon: const Icon(Icons.edit_rounded, color: Color(0xFFC35E34), size: 18),
                                 onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const PantallaPersonalizarPerfil()),
-                                  );
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const PantallaPersonalizarPerfil()),
+                                    ).then((_) {
+                                      _recargarUsuarioActualizado();
+                                    });
                                 },
                                 style: IconButton.styleFrom(
                                   backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),

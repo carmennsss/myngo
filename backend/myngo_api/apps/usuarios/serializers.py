@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from django.conf import settings
+from django.core.files.storage import default_storage
 from .models import Usuario, Perfil, Seguimiento
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -10,6 +12,8 @@ class UsuarioSerializer(serializers.ModelSerializer):
     url_avatar = serializers.SerializerMethodField()
     biografia = serializers.SerializerMethodField()
     es_publico = serializers.SerializerMethodField()
+    fondo = serializers.SerializerMethodField()
+    marco = serializers.SerializerMethodField()
     puntos = serializers.SerializerMethodField()
 
     class Meta:
@@ -17,7 +21,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         fields = [
            'id', 'perfil_id','nombre_usuario', 'email', 'es_verificado', 'rating_actual',
             'fecha_registro', 'password', 'numero_seguidores', 'numero_seguidos',
-            'estado_seguimiento', 'url_avatar', 'biografia', 'es_publico', 'puntos'
+            'estado_seguimiento', 'url_avatar', 'fondo', 'marco', 'biografia', 'es_publico', 'puntos'
         ]
         extra_kwargs = {
             'password': {'write_only': True}
@@ -50,11 +54,10 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     def get_url_avatar(self, obj):
         perfil = self._get_perfil(obj)
-        if perfil and perfil.imagen and perfil.imagen.url_s3:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(perfil.imagen.url_s3.url)
-            return perfil.imagen.url_s3.url
+        if perfil and perfil.avatar:
+            if perfil.avatar.startswith('http'):
+                return perfil.avatar
+            return default_storage.url(perfil.avatar.lstrip('/'))
         return None
 
     def get_biografia(self, obj):
@@ -64,6 +67,22 @@ class UsuarioSerializer(serializers.ModelSerializer):
     def get_es_publico(self, obj):
         perfil = self._get_perfil(obj)
         return perfil.es_publico if perfil else True
+
+    def get_fondo(self, obj):
+        perfil = self._get_perfil(obj)
+        if perfil and perfil.fondo:
+            if perfil.fondo.startswith('http'):
+                return perfil.fondo
+            return default_storage.url(perfil.fondo.lstrip('/'))
+        return None
+
+    def get_marco(self, obj):
+        perfil = self._get_perfil(obj)
+        if perfil and perfil.marco:
+            if perfil.marco.startswith('http'):
+                return perfil.marco
+            return default_storage.url(perfil.marco.lstrip('/'))
+        return None
 
     def get_puntos(self, obj):
         perfil = self._get_perfil(obj)
@@ -83,7 +102,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     datos_usuario = UsuarioSerializer(source='usuario', read_only=True)
     class Meta:
         model = Perfil
-        fields =['biografia', 'url_avatar','numero_seguidores','numero_seguidos','datos_usuario','estado_seguimiento']
+        fields =['biografia', 'url_avatar', 'fondo', 'marco', 'numero_seguidores','numero_seguidos','datos_usuario','estado_seguimiento']
 
     def get_numero_seguidores(self, obj):
         return obj.usuario.seguidores.filter(estado='ACEPTADO').count()
@@ -91,12 +110,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     def get_numero_seguidos(self, obj):
         return obj.usuario.siguiendo.filter(estado='ACEPTADO').count()
     def get_url_avatar(self,obj):
-        if obj.imagen and obj.imagen.url_s3:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.imagen.url_s3.url)
-            return obj.imagen.url_s3.url
-        return None
+        return obj.avatar
     def get_estado_seguimiento(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:

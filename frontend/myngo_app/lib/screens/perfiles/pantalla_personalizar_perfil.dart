@@ -43,6 +43,22 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     }
   }
 
+  Future<void> _equiparMejora(int mejoraId) async {
+    final respuesta = await _servicioMejoras.equiparMejora(mejoraId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(respuesta.mensaje),
+          backgroundColor: respuesta.exito ? Colors.green : Colors.red,
+        ),
+      );
+      if (respuesta.exito) {
+        // Recargar inventario para actualizar estado "esta_equipada"
+        _cargarMisMejoras();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -94,9 +110,9 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje),
-                _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje),
-                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje),
+                _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
+                _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
+                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
               ],
             ),
           ),
@@ -111,8 +127,9 @@ class _ListaMisMejorasTab extends StatelessWidget {
   final List<dynamic> mejoras;
   final bool isLoading;
   final String? errorMensaje;
+  final Function(int) onEquipar;
 
-  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje});
+  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar});
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +228,7 @@ class _ListaMisMejorasTab extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      detalles['nombre'] ?? 'Sin nombre',
+                      detalles['tipo'] ?? 'Mejora',
                       style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.w800, fontSize: 12),
                       textAlign: TextAlign.center,
                       maxLines: 1,
@@ -223,10 +240,9 @@ class _ListaMisMejorasTab extends StatelessWidget {
                       height: 28,
                       child: OutlinedButton(
                         onPressed: () {
-                          // TODO: Future implement logic to equip improvement
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Equipar mejoras estará disponible pronto 🐾'))
-                          );
+                          if (detalles['id'] != null) {
+                            onEquipar(detalles['id']);
+                          }
                         },
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.zero,
