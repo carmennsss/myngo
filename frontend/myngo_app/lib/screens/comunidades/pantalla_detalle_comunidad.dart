@@ -176,11 +176,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final esMiembro = widget.comunidad.esMiembro || esCreador;
 
     if (!esMiembro) {
-      final previewContent = _buildPreview(context);
+      final previewContent = Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1200), child: _buildPreview(context)));
       return widget.esIntegrada ? previewContent : Scaffold(backgroundColor: _colorPagina(context), body: previewContent);
     }
 
-    final dashboardContent = _buildDashboard(context);
+    final dashboardContent = Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1200), child: _buildDashboard(context)));
     if (widget.esIntegrada) {
       return Container(
         color: _colorPagina(context),
@@ -1399,11 +1399,11 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
     final colorRol = esCreador ? Colors.amber : (rolLabel == 'Moderador' ? const Color(0xFF248EA6) : const Color(0xFFC35E34));
 
     return Container(
-      height: 70,
+      height: 500,
       width: double.infinity,
       child: Stack(
         children: [
-          // Fondo con imagen y Blur
+          // Fondo con imagen
           if (widget.comunidad.urlPortada != null && widget.comunidad.urlPortada!.isNotEmpty)
             Positioned.fill(
               child: CachedNetworkImage(
@@ -1415,73 +1415,127 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
           else
             Positioned.fill(child: Container(color: widget.comunidad.colorTema)),
           
+          // Degradado oscuro para que resalte el texto y botones
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.8),
-                    Colors.black.withOpacity(0.4),
+                    Colors.black.withOpacity(0.5),
                     Colors.transparent,
+                    Colors.black.withOpacity(0.7),
                   ],
                 ),
               ),
             ),
           ),
 
-          // Contenido
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          // Botones superiores (Cerrar y Administrar)
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 16,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
-                  onPressed: widget.onCerrar,
-                  tooltip: 'Cerrar vista de comunidad',
+                Container(
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), shape: BoxShape.circle),
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: widget.onCerrar,
+                    tooltip: 'Cerrar vista de comunidad',
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.comunidad.nombre,
-                      style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
-                    ),
-                    Row(
-                      children: [
-                        Icon(iconRol, size: 12, color: colorRol),
-                        const SizedBox(width: 4),
-                        Text(
-                          rolLabel.toUpperCase(),
-                          style: GoogleFonts.outfit(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const Spacer(),
                 if (esCreador || _miRol == 'Moderador')
-                  IconButton(
-                    icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
-                    onPressed: () async {
-                      final actualizada = await Navigator.push<Comunidad>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PantallaAdminComunidad(comunidad: widget.comunidad),
-                        ),
-                      );
-                      if (actualizada != null && widget.onComunidadActualizada != null) {
-                        widget.onComunidadActualizada!(actualizada);
-                      }
-                    },
-                    tooltip: 'Administrar Comunidad',
+                  Container(
+                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), shape: BoxShape.circle),
+                    child: IconButton(
+                      icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
+                      onPressed: () async {
+                        final actualizada = await Navigator.push<Comunidad>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PantallaAdminComunidad(comunidad: widget.comunidad),
+                          ),
+                        );
+                        if (actualizada != null && widget.onComunidadActualizada != null) {
+                          widget.onComunidadActualizada!(actualizada);
+                        }
+                      },
+                      tooltip: 'Administrar Comunidad',
+                    ),
                   ),
               ],
             ),
           ),
+
+          // Contenido central (Avatar + Título)
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Avatar redondo
+                Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: widget.comunidad.colorTema, width: 4),
+                    boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2)],
+                    image: (widget.comunidad.urlPortada != null && widget.comunidad.urlPortada!.isNotEmpty)
+                        ? DecorationImage(
+                            image: CachedNetworkImageProvider(widget.comunidad.urlPortada!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: (widget.comunidad.urlPortada == null || widget.comunidad.urlPortada!.isEmpty)
+                      ? const Icon(Icons.groups_rounded, color: Colors.white, size: 60)
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                // Título
+                Text(
+                  widget.comunidad.nombre,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 28,
+                    shadows: const [Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 2))],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          
+          // Etiqueta de Rol abajo a la izquierda
+          Positioned(
+            bottom: 24,
+            left: 24,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: colorRol.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(iconRol, size: 14, color: Colors.white),
+                  const SizedBox(width: 6),
+                  Text(
+                    rolLabel.toUpperCase(),
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         ],
       ),
     );

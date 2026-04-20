@@ -84,21 +84,95 @@ class _TarjetaSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFFFFF),
+            Color(0xFFFFF7F2),
+            Color(0xFFFEECE3),
+          ],
+        ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
-          BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(
+            color: const Color(0xFFC35E34).withOpacity(0.06), 
+            blurRadius: 24, 
+            offset: const Offset(0, 10)
+          ),
         ],
+        border: Border.all(
+          color: Colors.white,
+          width: 2,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(titulo, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
-          const SizedBox(height: 10),
-          contenido,
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            // Decoración sutil de fondo (Patrón de patas)
+            Positioned(
+              right: -30,
+              bottom: -20,
+              child: Transform.rotate(
+                angle: -0.2,
+                child: Icon(
+                  Icons.pets_rounded,
+                  size: 150,
+                  color: const Color(0xFFF2D0BD).withOpacity(0.15),
+                ),
+              ),
+            ),
+            Positioned(
+              left: -20,
+              top: -10,
+              child: Transform.rotate(
+                angle: 0.3,
+                child: Icon(
+                  Icons.pets_rounded,
+                  size: 80,
+                  color: const Color(0xFFF2D0BD).withOpacity(0.15),
+                ),
+              ),
+            ),
+            // Contenido real
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC35E34).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.star_rounded, size: 16, color: Color(0xFFC35E34)),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          titulo, 
+                          style: GoogleFonts.outfit(
+                            fontSize: 16, 
+                            fontWeight: FontWeight.w900, 
+                            color: const Color(0xFF4A4440),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  contenido,
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

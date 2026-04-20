@@ -32,9 +32,13 @@ class CabeceraPro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
+    final isSmallMobile = screenWidth < 500;
+
     return Container(
       height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 40),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFFC35E34), Color(0xFFE89A6A)],
@@ -44,21 +48,33 @@ class CabeceraPro extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (isMobile && estaLogueado) ...[
+            IconButton(
+              icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 28),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: BotonTactil(
               onTap: () => onNavSelected(0),
               child: Row(
                 children: [
-                  const Icon(Icons.pets, color: Colors.white, size: 34),
-                  const SizedBox(width: 14),
-                  Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  Icon(Icons.pets, color: Colors.white, size: isMobile ? 28 : 34),
+                  if (!isSmallMobile) ...[
+                    SizedBox(width: isMobile ? 8 : 14),
+                    Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: isMobile ? 24 : 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  ],
                 ],
               ),
             ),
           ),
+          SizedBox(width: isMobile ? 8 : 16),
           const Spacer(),
-          if (estaLogueado) ...[
+          if (estaLogueado && !isMobile) ...[
             Flexible(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -82,7 +98,7 @@ class CabeceraPro extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 40),
+            SizedBox(width: isMobile ? 16 : 40),
           ],
           _UserProfileHeader(
             name: nombreUsuario,
@@ -91,6 +107,7 @@ class CabeceraPro extends StatelessWidget {
             miId: miId,
             onProfileSelected: onProfileSelected,
             puntos: puntos,
+            isMobile: isMobile,
           ),
         ],
       ),
@@ -152,8 +169,17 @@ class _UserProfileHeader extends StatelessWidget {
   final int? miId;
   final int? puntos;
   final Function(Usuario)? onProfileSelected;
+  final bool isMobile;
 
-  const _UserProfileHeader({this.name, this.avatarUrl, required this.estaLogueado, this.miId, this.onProfileSelected, this.puntos});
+  const _UserProfileHeader({
+    this.name, 
+    this.avatarUrl, 
+    required this.estaLogueado, 
+    this.miId, 
+    this.onProfileSelected, 
+    this.puntos,
+    this.isMobile = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -224,22 +250,25 @@ class _UserProfileHeader extends StatelessWidget {
               ),
               child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.white) : null,
             ),
-            const SizedBox(width: 14),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
-                  child: Text('${puntos ?? 0} Puntos', style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 20),
-            const SizedBox(width: 6),
+            if (!isMobile) ...[
+              const SizedBox(width: 14),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                    child: Text('${puntos ?? 0} Puntos', style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 20),
+            ],
+            if (isMobile)
+              const SizedBox(width: 4), // Solo un poco de espacio extra si es móvil para que no se pegue al borde del contenedor
           ],
         ),
       ),

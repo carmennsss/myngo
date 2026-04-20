@@ -316,19 +316,21 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                     tag: 'img_${widget.publicacion.id}',
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 350), // Ajustado de 220 a 350 para mejor visibilidad
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: CachedNetworkImage(
-                            imageUrl: urlImagen,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(color: const Color(0xFFFEF5F1)),
-                            errorWidget: (context, url, error) => Container(
-                              height: 120,
-                              color: const Color(0xFFFEF5F1),
-                              child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.grey)),
-                            ),
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 400),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF5F1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: urlImagen,
+                          fit: BoxFit.contain,
+                          placeholder: (_, __) => Container(color: const Color(0xFFFEF5F1)),
+                          errorWidget: (context, url, error) => Container(
+                            height: 120,
+                            color: const Color(0xFFFEF5F1),
+                            child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.grey)),
                           ),
                         ),
                       ),

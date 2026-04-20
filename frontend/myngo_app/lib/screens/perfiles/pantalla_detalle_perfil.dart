@@ -369,37 +369,42 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
               ),
             )
           : null,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 500,
-            pinned: true,
-            stretch: true,
-            backgroundColor: colorGradBot,
-            surfaceTintColor: Colors.transparent,
-            leading: widget.esIntegrada ? IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), shape: BoxShape.circle),
-                child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
-              ),
-              onPressed: widget.onBack,
-            ) : null,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  image: (_fondoLocal != null && _fondoLocal!.isNotEmpty)
-                      ? DecorationImage(
-                          image: NetworkImage(_fondoLocal!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                  gradient: (_fondoLocal == null || _fondoLocal!.isEmpty) ? LinearGradient(
-                    colors: [colorGradTop.withOpacity(0.5), Colors.transparent],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ) : null,
-                ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 500,
+                pinned: true,
+                stretch: true,
+                backgroundColor: colorGradBot,
+                surfaceTintColor: Colors.transparent,
+                leading: widget.esIntegrada ? IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), shape: BoxShape.circle),
+                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                  ),
+                  onPressed: widget.onBack,
+                ) : null,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: (_fondoLocal != null && _fondoLocal!.isNotEmpty)
+                        ? BoxDecoration(
+                            image: DecorationImage(
+                              image: NetworkImage(_fondoLocal!),
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                            ),
+                          )
+                        : BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [colorGradTop.withOpacity(0.5), Colors.transparent],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
                 child: Center(
                   child: Stack(
                     children: [
@@ -868,7 +873,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
               ),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
