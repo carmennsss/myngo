@@ -46,7 +46,10 @@ class Publicacion {
         creadorComunidadId: int.tryParse(json['creador_comunidad_id']?.toString() ?? ''),
         titulo: json['titulo']?.toString() ?? '',
         contenidoTexto: json['contenido_texto']?.toString() ?? '',
-        urlImagen: json['url_archivo_s3'] ?? json['url_imagen'],
+        urlImagen: (() {
+          final url = json['url_archivo_s3'] ?? json['url_imagen'];
+          return url != null ? url.toString().trim() : null;
+        })(),
         // Prioriza imagen_id (campo explícito del backend), luego imagen (FK id)
         imagenId: (json['imagen_id'] is int)
             ? json['imagen_id'] as int
@@ -54,6 +57,7 @@ class Publicacion {
                 ? json['imagen'] as int
                 : int.tryParse(json['imagen_id']?.toString() ?? json['imagen']?.toString() ?? ''),
         relacionAspecto: double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ?? 1.0,
+        esValidoIa: json['es_valido_ia'] == true,
         fechaCreacion: json['fecha_creacion'] != null 
             ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now() 
             : DateTime.now(),

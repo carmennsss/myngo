@@ -382,6 +382,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final rolLabel = esCreador ? 'Creador' : _miRol;
     final iconRol = esCreador ? Icons.stars_rounded : (rolLabel == 'Moderador' ? Icons.gavel_rounded : Icons.pets_rounded);
     final colorRol = esCreador ? Colors.amber : (rolLabel == 'Moderador' ? const Color(0xFF248EA6) : const Color(0xFFC35E34));
+    final portadaUrl = widget.comunidad.urlPortada?.trim();
 
     return Container(
       height: 140,
@@ -389,10 +390,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       child: Stack(
         children: [
           // Fondo con Blur
-          if (widget.comunidad.urlPortada != null)
+          if (portadaUrl != null && portadaUrl.isNotEmpty)
             Positioned.fill(
               child: CachedNetworkImage(
-                imageUrl: widget.comunidad.urlPortada!,
+                imageUrl: portadaUrl,
                 fit: BoxFit.cover,
                 errorWidget: (context, url, error) => Container(color: widget.comunidad.colorTema),
               ),
@@ -441,11 +442,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
-                    image: widget.comunidad.urlPortada != null 
-                        ? DecorationImage(image: CachedNetworkImageProvider(widget.comunidad.urlPortada!), fit: BoxFit.cover)
+                    image: portadaUrl != null && portadaUrl.isNotEmpty
+                        ? DecorationImage(image: CachedNetworkImageProvider(portadaUrl), fit: BoxFit.cover)
                         : null,
                   ),
-                  child: widget.comunidad.urlPortada == null ? const Icon(Icons.groups_rounded, color: Colors.white, size: 30) : null,
+                  child: portadaUrl == null || portadaUrl.isEmpty ? const Icon(Icons.groups_rounded, color: Colors.white, size: 30) : null,
                 ),
                 const SizedBox(width: 20),
                 Expanded(

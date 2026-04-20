@@ -209,3 +209,6 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='myngoadministrator@gmail.com')
 # IMPORTANTE: Usar "Contraseña de Aplicación" de Google, no la normal.
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD') 
 DEFAULT_FROM_EMAIL = f"Myngo <{EMAIL_HOST_USER}>"
+
+# Hugging Face - Moderación de contenido con IA
+HUGGING_FACE_TOKEN = env('HUGGING_FACE_TOKEN', default='')

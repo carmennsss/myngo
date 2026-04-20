@@ -1,6 +1,7 @@
 from rest_framework import generics, filters, permissions, viewsets, pagination, serializers
 from .models import Publicacion, Imagenes_galeria, Coleccion, Reporte, Comentario, Me_gustas
 from .serializers import PublicacionSerializer, ImagenGaleriaSerializer, ColeccionSerializer, ReporteSerializer, ComentarioSerializer
+from .ia_service import validar_contenido_toxico
 from rest_framework.decorators import action
 from .permissions import IsAuthorOrAdmin
 from comunidades.models import Comunidad
@@ -115,7 +116,13 @@ class PublicacionCreate(generics.CreateAPIView):
         # 2. Crear la publicación con la FK a la imagen
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(autor=request.user, imagen=imagen_galeria)
+
+        titulo = request.data.get('titulo', '') or ''
+        contenido_texto = request.data.get('contenido_texto', '') or ''
+        texto = f"{titulo} {contenido_texto}".strip()
+        es_valido = validar_contenido_toxico(texto)
+
+        serializer.save(autor=request.user, imagen=imagen_galeria, es_valido_ia=es_valido)
         return Response(serializer.data, status=201)
 class PublicacionDelete(generics.DestroyAPIView):
     serializer_class= PublicacionSerializer
@@ -147,6 +154,21 @@ class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Publicacion.objects.all()
     serializer_class = PublicacionSerializer
     permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        titulo = request.data.get('titulo') if request.data.get('titulo') is not None else (instance.titulo or '')
+        contenido_texto = request.data.get('contenido_texto') if request.data.get('contenido_texto') is not None else (instance.contenido_texto or '')
+        texto = f"{titulo} {contenido_texto}".strip()
+        es_valido = validar_contenido_toxico(texto)
+
+        serializer.save(es_valido_ia=es_valido)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

@@ -43,7 +43,7 @@ class MenuOpcionesContenido extends StatelessWidget {
 
         return PopupMenuButton<String>(
           key: ValueKey('menu_${tipoObjeto}_$objetoId'),
-          icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
+          icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFB0B0B0)),
           color: const Color(0xFF2A2A2A),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           onSelected: (val) => _manejarOpcion(context, val, userId),
