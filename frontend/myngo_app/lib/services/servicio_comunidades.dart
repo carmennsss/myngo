@@ -368,7 +368,12 @@ class ServicioComunidades {
           mensaje: 'Publicación creada'
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al crear la publicación');
+
+      final decoded = jsonDecode(response.body);
+      final mensajeError = decoded is Map<String, dynamic>
+          ? decoded['error']?.toString() ?? decoded['detail']?.toString() ?? 'Error al crear la publicación'
+          : 'Error al crear la publicación';
+      return RespuestaApi(exito: false, mensaje: mensajeError);
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

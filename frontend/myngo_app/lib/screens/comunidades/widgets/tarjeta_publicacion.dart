@@ -143,7 +143,17 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                   tag: 'img_${widget.publicacion.id}',
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.network(url, fit: BoxFit.contain),
+                    child: CachedNetworkImage(
+                      imageUrl: url,
+                      fit: BoxFit.contain,
+                      placeholder: (_, __) => Container(color: Colors.black12),
+                      errorWidget: (_, __, ___) => Container(
+                        width: 250,
+                        height: 250,
+                        color: Colors.black12,
+                        child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.white54, size: 48)),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -165,8 +175,14 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
     );
   }
 
+  String? _obtenerUrlImagenValida() {
+    final url = widget.publicacion.urlImagen?.trim();
+    return url != null && url.isNotEmpty ? url : null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final urlImagen = _obtenerUrlImagenValida();
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
@@ -190,31 +206,32 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
               padding: const EdgeInsets.all(20.0),
               child: Row(
                 children: [
-                  BotonTactil(
-                    onTap: () async {
-                      if (_navegandoAPerfil) return;
-                      setState(() => _navegandoAPerfil = true);
-                      final res = await _servicioUsuarios.obtenerDatosUsuario(widget.publicacion.autorId);
-                      if (mounted) {
-                        setState(() => _navegandoAPerfil = false);
-                        if (res.exito && res.datos != null) {
-                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                          if (inicioState != null) {
-                            inicioState.seleccionarUsuario(res.datos!);
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PantallaDetallePerfil(
-                                  usuario: res.datos!,
-                                  comunidadIdContexto: widget.comunidadId,
+                  Flexible(
+                    child: BotonTactil(
+                      onTap: () async {
+                        if (_navegandoAPerfil) return;
+                        setState(() => _navegandoAPerfil = true);
+                        final res = await _servicioUsuarios.obtenerDatosUsuario(widget.publicacion.autorId);
+                        if (mounted) {
+                          setState(() => _navegandoAPerfil = false);
+                          if (res.exito && res.datos != null) {
+                            final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                            if (inicioState != null) {
+                              inicioState.seleccionarUsuario(res.datos!);
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PantallaDetallePerfil(
+                                    usuario: res.datos!,
+                                    comunidadIdContexto: widget.comunidadId,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
                           }
                         }
-                      }
-                    },
+                      },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -257,6 +274,7 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                         ],
                       ),
                     ),
+                  ),
                   const SizedBox(width: 8),
                   if (widget.mostrarOpciones)
                     MenuOpcionesContenido(
@@ -289,11 +307,11 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
             const SizedBox(height: 16),
 
             // Imagen principal
-            if (widget.publicacion.urlImagen != null && widget.publicacion.urlImagen!.isNotEmpty)
+            if (urlImagen != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: GestureDetector(
-                  onTap: () => _mostrarImagenFullscreen(context, widget.publicacion.urlImagen!),
+                  onTap: () => _mostrarImagenFullscreen(context, urlImagen),
                   child: Hero(
                     tag: 'img_${widget.publicacion.id}',
                     child: ClipRRect(
@@ -302,10 +320,11 @@ class _TarjetaPublicacionState extends State<TarjetaPublicacion> {
                         constraints: const BoxConstraints(maxHeight: 350), // Ajustado de 220 a 350 para mejor visibilidad
                         child: SizedBox(
                           width: double.infinity,
-                          child: Image.network(
-                            widget.publicacion.urlImagen!,
-                            fit: BoxFit.cover, // Cambiado a cover para llenar el espacio
-                            errorBuilder: (context, error, stackTrace) => Container(
+                          child: CachedNetworkImage(
+                            imageUrl: urlImagen,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(color: const Color(0xFFFEF5F1)),
+                            errorWidget: (context, url, error) => Container(
                               height: 120,
                               color: const Color(0xFFFEF5F1),
                               child: const Center(child: Icon(Icons.broken_image_rounded, color: Colors.grey)),
