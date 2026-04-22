@@ -98,6 +98,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                     );
                   }).toList(),
                 ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _controladorEtiquetas,
                   style: GoogleFonts.inter(color: Colors.white),

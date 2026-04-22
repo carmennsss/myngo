@@ -9,6 +9,7 @@ import '../../services/servicio_interaccion.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/inicio/dialogo_detalle_post.dart';
 import '../../widgets/comunes/comentario_item.dart';
+import '../../widgets/comunes/grid_imagenes_post.dart';
 
 class PantallaDetallePost extends StatefulWidget {
   final Publicacion post;
@@ -187,33 +188,14 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                           height: 1.4,
                         ),
                       ),
-                      if (widget.post.urlImagen != null) ...[
+                      if (widget.post.urlsImagenes.isNotEmpty || widget.post.urlImagen != null) ...[
                         const SizedBox(height: 12),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxHeight: 500),
-                            child: CachedNetworkImage(
-                              imageUrl: widget.post.urlImagen!,
-                              width: double.infinity,
-                              fit: BoxFit.contain,
-                              placeholder: (context, url) => Container(
-                                height: 200,
-                                color: Colors.grey.shade100,
-                                child: const Center(child: CircularProgressIndicator()),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                height: 200,
-                                color: Colors.grey.shade100,
-                                child: const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.broken_image, color: Colors.grey),
-                                    SizedBox(height: 8),
-                                    Text('Imagen no disponible', style: TextStyle(color: Colors.grey)),
-                                  ],
-                                ),
-                              ),
+                            child: GridImagenesPost(
+                              urls: widget.post.urlsImagenes.isNotEmpty ? widget.post.urlsImagenes : [widget.post.urlImagen!],
                             ),
                           ),
                         ),

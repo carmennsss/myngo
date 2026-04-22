@@ -524,4 +524,13 @@ class EditarPerfil(APIView):
                 "mensaje":"No se ha enviado ningun perfil para editar"
             },status=status.HTTP_400_BAD_REQUEST)
 
-    
+class RankingUsuarios(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        # Obtener los top 10 usuarios ordenados por rating_actual (puntuación de estrellas) de mayor a menor
+        usuarios = Usuario.objects.select_related('perfil').order_by('-rating_actual')[:10]
+        serializer = UsuarioSerializer(usuarios, many=True, context={'request': request})
+        return Response({
+            "exito": True,
+            "datos": serializer.data
+        }, status=status.HTTP_200_OK)

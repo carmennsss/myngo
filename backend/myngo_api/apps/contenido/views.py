@@ -110,27 +110,6 @@ class PublicacionCreate(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         archivos = request.FILES.getlist('url_archivo_s3')
         
-        # 1. Crear la publicación primero
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        publicacion = serializer.save(autor=request.user)
-
-        # 2. Guardar imagenes y asociarlas (Max 4)
-        imagenes_creadas = []
-        for archivo in archivos[:4]:
-            try:
-                img_galeria = Imagenes_galeria.objects.create(
-                    propietario=request.user,
-                    url_s3=archivo,
-                    comunidad_id=request.data.get('comunidad') or None,
-                    relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
-                    etiquetas=request.data.get('etiquetas', ''),
-                )
-                imagenes_creadas.append(img_galeria)
-            except Exception as e:
-                return Response({'error': f'Error al guardar imagen: {e}'}, status=400)
-
-        # 2. Crear la publicación con la FK a la imagen
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -139,8 +118,35 @@ class PublicacionCreate(generics.CreateAPIView):
         texto = f"{titulo} {contenido_texto}".strip()
         es_valido = validar_contenido_toxico(texto)
 
-        serializer.save(autor=request.user, imagen=imagen_galeria, es_valido_ia=es_valido)
-        return Response(serializer.data, status=201)
+        # 1. Crear la publicación primero
+        publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
+
+        # 2. Guardar imagenes y asociarlas (Max 4)
+        if archivos:
+            imagenes_creadas = []
+            for archivo in archivos[:4]:
+                try:
+                    img_galeria = Imagenes_galeria.objects.create(
+                        propietario=request.user,
+                        url_s3=archivo,
+                        comunidad_id=request.data.get('comunidad') or None,
+                        relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
+                        etiquetas=request.data.get('etiquetas', ''),
+                    )
+                    imagenes_creadas.append(img_galeria)
+                except Exception as e:
+                    publicacion.delete() # Revertimos si falla
+                    return Response({'error': f'Error al guardar imagen: {e}'}, status=400)
+
+            # Asociamos las imagenes creadas
+            publicacion.imagenes.add(*imagenes_creadas)
+            # Para compatibilidad, guardamos la primera en el campo imagen
+            publicacion.imagen = imagenes_creadas[0]
+            publicacion.save(update_fields=['imagen'])
+
+        # Refrescar serializador para devolver datos completos
+        serializer_res = self.get_serializer(publicacion)
+        return Response(serializer_res.data, status=201)
 class PublicacionDelete(generics.DestroyAPIView):
     serializer_class= PublicacionSerializer
     permission_classes = [permissions.IsAuthenticated]

@@ -47,6 +47,8 @@ class PantallaInicioState extends State<PantallaInicio> {
   int _notificacionesSinLeer = 0;
   List<Comunidad>? _misComunidades;
   bool _cargandoComunidades = false;
+  List<Usuario>? _rankingUsuarios;
+  bool _cargandoRanking = false;
 
   @override
   void initState() {
@@ -70,6 +72,18 @@ class PantallaInicioState extends State<PantallaInicio> {
         _cargarComunidades();
         _cargarNotificacionesSinLeer();
       }
+    }
+    _cargarRanking();
+  }
+
+  Future<void> _cargarRanking() async {
+    setState(() => _cargandoRanking = true);
+    final res = await ServicioUsuarios().obtenerRanking();
+    if (mounted) {
+      setState(() {
+        _rankingUsuarios = res.datos ?? [];
+        _cargandoRanking = false;
+      });
     }
   }
 
@@ -198,7 +212,10 @@ class PantallaInicioState extends State<PantallaInicio> {
                                   child: SidebarIzquierdo(
                                     estaLogueado: _estaLogueado,
                                     cargando: _cargandoComunidades,
-                              comunidades: _misComunidades,
+                                    comunidades: _misComunidades,
+                                    rankingUsuarios: _rankingUsuarios,
+                                    cargandoRanking: _cargandoRanking,
+                                    misPuntos: _puntos,
                                     onComunidadSelected: _seleccionarComunidad,
                                     onReorder: _reordenarComunidades,
                                   ),
