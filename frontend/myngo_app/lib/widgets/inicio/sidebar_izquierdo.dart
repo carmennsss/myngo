@@ -7,14 +7,16 @@ import '../../widgets/comunes/boton_tactil.dart';
 
 class SidebarIzquierdo extends StatelessWidget {
   final bool estaLogueado;
-  final List<Comunidad> comunidades;
+  final bool cargando;
+  final List<Comunidad>? comunidades;
   final Function(Comunidad) onComunidadSelected;
   final Function(int, int) onReorder;
 
   const SidebarIzquierdo({
     super.key,
     required this.estaLogueado,
-    required this.comunidades,
+    this.cargando = false,
+    this.comunidades,
     required this.onComunidadSelected,
     required this.onReorder,
   });
@@ -25,24 +27,26 @@ class SidebarIzquierdo extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _TarjetaSidebar(
-          titulo: 'Mis Michi-Grupos (${comunidades.length})',
-          contenido: comunidades.isEmpty 
-           ? Text('Únete a una comunidad 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-           : Wrap(
-             spacing: 12,
-             runSpacing: 12,
-             children: [
-               ...comunidades.take(7).map((c) => _ComunidadAvatarCompacto(
-                 comunidad: c, 
-                 onTap: () => onComunidadSelected(c)
-               )),
-               if (comunidades.length > 7)
-                 _BotonVerMas(
-                   total: comunidades.length,
-                   onTap: () => _mostrarDialogoComunidades(context, comunidades, onComunidadSelected, onReorder),
-                 ),
-             ],
-           ),
+          titulo: 'Mis Michi-Grupos',
+          contenido: (cargando || comunidades == null) 
+           ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+           : comunidades!.isEmpty 
+             ? Text('Únete a una comunidad 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+             : Wrap(
+               spacing: 12,
+               runSpacing: 12,
+               children: [
+                 ...comunidades!.take(7).map((c) => _ComunidadAvatarCompacto(
+                   comunidad: c, 
+                   onTap: () => onComunidadSelected(c)
+                 )),
+                 if (comunidades!.length > 7)
+                   _BotonVerMas(
+                     total: comunidades!.length,
+                     onTap: () => _mostrarDialogoComunidades(context, comunidades!, onComunidadSelected, onReorder),
+                   ),
+               ],
+             ),
         ),
         const SizedBox(height: 12),
         _TarjetaSidebar(
@@ -378,6 +382,7 @@ void _mostrarDialogoComunidades(
                     // Lista Reordenable
                     Expanded(
                       child: ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                         itemCount: comunidades.length,
                         onReorder: (oldIndex, newIndex) {

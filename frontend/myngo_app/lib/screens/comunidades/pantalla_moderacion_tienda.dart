@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/comunidad.dart';
 import '../../models/peticion_mejora.dart';
 import '../../services/servicio_mejoras.dart';
+import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaModeracionTienda extends StatefulWidget {
   final Comunidad comunidad;
@@ -74,18 +75,9 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.check_circle_outline_rounded, size: 64, color: Colors.green.withOpacity(0.3)),
-          const SizedBox(height: 16),
-          Text(
-            '¡Todo al día! No hay peticiones pendientes 🐾',
-            style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
+    return const EstadoVacioCargando(
+      icon: Icons.check_circle_outline_rounded,
+      message: '¡Todo al día! No hay peticiones pendientes 🐾',
     );
   }
 }

@@ -11,8 +11,8 @@ import 'package:myngo_app/screens/comunidades/pantalla_detalle_publicacion.dart'
 import 'package:myngo_app/screens/galeria/pantalla_detalle_imagen.dart';
 import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
-
 import 'pantalla_moderacion_tienda.dart';
+import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaAdminComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -529,11 +529,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
   Widget _buildEmptyState(IconData icon, String msg) {
-    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(icon, color: Colors.grey.shade200, size: 80),
-      const SizedBox(height: 16),
-      Text(msg, style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 16)),
-    ]));
+    return EstadoVacioCargando(icon: icon, message: msg);
   }
 }
 

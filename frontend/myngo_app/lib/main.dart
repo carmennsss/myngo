@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'screens/login/pantalla_login.dart';
 import 'screens/registro/pantalla_registro.dart';
 import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
@@ -11,8 +12,10 @@ import 'package:provider/provider.dart';
 import 'providers/post_provider.dart';
 import 'router.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy(); 
+  await initializeDateFormatting('es_ES', null);
   runApp(
     MultiProvider(
       providers: [

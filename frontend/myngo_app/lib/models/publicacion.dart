@@ -7,14 +7,18 @@ class Publicacion {
   final int? creadorComunidadId;
   final String titulo;
   final String contenidoTexto;
-  final String? urlImagen;     // URL de la imagen en galería (puede ser null si es solo texto)
-  final int? imagenId;         // ID del registro en Imagenes_galeria (campo 'imagen' del backend)
+  final String? urlImagen;     // URL de la imagen (mantenido por backcompat)
+  final int? imagenId;         // ID de la imagen (mantenido por backcompat)
+  final List<String> urlsImagenes;
+  final List<int> imagenesIds;
   final double relacionAspecto;
   final bool esValidoIa;
   final DateTime fechaCreacion;
   final int likesCount;
   final int comentariosCount;
+  final String? autorFoto;
   final bool usuarioDioLike;
+  final bool usuarioGuardoPost;
 
   Publicacion({
     required this.id,
@@ -27,12 +31,16 @@ class Publicacion {
     required this.contenidoTexto,
     this.urlImagen,
     this.imagenId,
+    this.urlsImagenes = const [],
+    this.imagenesIds = const [],
     required this.relacionAspecto,
     this.esValidoIa = true,
+    this.autorFoto,
     required this.fechaCreacion,
     this.likesCount = 0,
     this.comentariosCount = 0,
     this.usuarioDioLike = false,
+    this.usuarioGuardoPost = false,
   });
 
   factory Publicacion.fromJson(Map<String, dynamic> json) {
@@ -41,6 +49,7 @@ class Publicacion {
         id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
         autorId: int.tryParse(json['autor']?.toString() ?? '0') ?? 0,
         autorNombre: json['autor_nombre']?.toString() ?? 'Anónimo',
+        autorFoto: json['autor_foto']?.toString(),
         comunidadId: int.tryParse(json['comunidad']?.toString() ?? '0') ?? 0,
         comunidadNombre: json['comunidad_nombre']?.toString() ?? 'General',
         creadorComunidadId: int.tryParse(json['creador_comunidad_id']?.toString() ?? ''),
@@ -56,6 +65,9 @@ class Publicacion {
             : (json['imagen'] is int)
                 ? json['imagen'] as int
                 : int.tryParse(json['imagen_id']?.toString() ?? json['imagen']?.toString() ?? ''),
+        urlsImagenes: (json['urls_imagenes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? 
+             ((json['url_archivo_s3'] ?? json['url_imagen']) != null ? [(json['url_archivo_s3'] ?? json['url_imagen']).toString()] : []),
+        imagenesIds: (json['imagenes_ids'] as List<dynamic>?)?.map((e) => int.tryParse(e.toString()) ?? 0).toList() ?? [],
         relacionAspecto: double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ?? 1.0,
         esValidoIa: json['es_valido_ia'] == true,
         fechaCreacion: json['fecha_creacion'] != null 
@@ -64,6 +76,7 @@ class Publicacion {
         likesCount: int.tryParse(json['likes_count']?.toString() ?? '0') ?? 0,
         comentariosCount: int.tryParse(json['comentarios_count']?.toString() ?? '0') ?? 0,
         usuarioDioLike: json['usuario_dio_like'] == true,
+        usuarioGuardoPost: json['usuario_guardo_post'] == true,
       );
     } catch (e) {
       print('Error parsing Publicacion: $e');
@@ -92,12 +105,16 @@ class Publicacion {
     String? contenidoTexto,
     String? urlImagen,
     int? imagenId,
+    List<String>? urlsImagenes,
+    List<int>? imagenesIds,
     double? relacionAspecto,
     bool? esValidoIa,
+    String? autorFoto,
     DateTime? fechaCreacion,
     int? likesCount,
     int? comentariosCount,
     bool? usuarioDioLike,
+    bool? usuarioGuardoPost,
   }) {
     return Publicacion(
       id: id ?? this.id,
@@ -110,12 +127,16 @@ class Publicacion {
       contenidoTexto: contenidoTexto ?? this.contenidoTexto,
       urlImagen: urlImagen ?? this.urlImagen,
       imagenId: imagenId ?? this.imagenId,
+      urlsImagenes: urlsImagenes ?? this.urlsImagenes,
+      imagenesIds: imagenesIds ?? this.imagenesIds,
       relacionAspecto: relacionAspecto ?? this.relacionAspecto,
       esValidoIa: esValidoIa ?? this.esValidoIa,
+      autorFoto: autorFoto ?? this.autorFoto,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       likesCount: likesCount ?? this.likesCount,
       comentariosCount: comentariosCount ?? this.comentariosCount,
       usuarioDioLike: usuarioDioLike ?? this.usuarioDioLike,
+      usuarioGuardoPost: usuarioGuardoPost ?? this.usuarioGuardoPost,
     );
   }
 }
