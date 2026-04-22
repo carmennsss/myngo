@@ -199,66 +199,82 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   Widget _buildPreview(BuildContext context) {
     final esPublica = widget.comunidad.esPublica;
     
-    // Para comunidades públicas, usar la misma estructura que el dashboard
     if (esPublica) {
-      return Column(
-        children: [
-          _BarraContextoComunidad(
-            comunidad: widget.comunidad,
-            miId: _miId,
-            onCerrar: widget.onBack ?? () => Navigator.pop(context),
-            onComunidadActualizada: (c) {
-              setState(() {});
-            },
-          ),
-          Container(
-            height: 60,
-            decoration: BoxDecoration(
-              color: _colorPagina(context),
-              border: Border(
-                bottom: BorderSide(
-                  color: widget.comunidad.colorTema.withOpacity(0.2),
-                  width: 2,
+      return NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 500,
+              pinned: false,
+              stretch: true,
+              backgroundColor: _colorPagina(context),
+              surfaceTintColor: Colors.transparent,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+                background: _BarraContextoComunidad(
+                  comunidad: widget.comunidad,
+                  miId: _miId,
+                  onCerrar: widget.onBack ?? () => Navigator.pop(context),
+                  onComunidadActualizada: (c) {
+                    setState(() {});
+                  },
                 ),
               ),
             ),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildPreviewNavItem(0, 'POSTS', Icons.grid_view_rounded),
-                _buildPreviewNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _indiceSeccion == 0 ? _buildPreviewPostFeed() : _buildPreviewGallery(),
-          ),
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: PreviewAboutSection(
-                    comunidad: widget.comunidad,
-                    esAppClara: _esAppClara(context),
-                    colorTextoPrincipal: _colorTextoPrincipal(context),
-                    colorTextoSecundario: _colorTextoSecundario(context),
-                    bgColor: _bgColor,
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverAppBarDelegate(
+                minHeight: 60,
+                maxHeight: 60,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _colorPagina(context),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: widget.comunidad.colorTema.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      _buildPreviewNavItem(0, 'POSTS', Icons.grid_view_rounded),
+                      _buildPreviewNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
+                    ],
                   ),
                 ),
-                CommunityJoinButton(
-                  comunidad: widget.comunidad,
-                  miId: _miId,
-                  estaCargandoPeticion: _estaCargandoPeticion,
-                  onLogin: () => Navigator.pushNamed(context, '/login'),
-                  onJoin: _gestionarMembresia,
-                  isPreview: true,
-                ),
-              ],
+              ),
             ),
+          ];
+        },
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              _indiceSeccion == 0 ? _buildPreviewPostFeed() : _buildPreviewGallery(),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: PreviewAboutSection(
+                  comunidad: widget.comunidad,
+                  esAppClara: _esAppClara(context),
+                  colorTextoPrincipal: _colorTextoPrincipal(context),
+                  colorTextoSecundario: _colorTextoSecundario(context),
+                  bgColor: _bgColor,
+                ),
+              ),
+              CommunityJoinButton(
+                comunidad: widget.comunidad,
+                miId: _miId,
+                estaCargandoPeticion: _estaCargandoPeticion,
+                onLogin: () => Navigator.pushNamed(context, '/login'),
+                onJoin: _gestionarMembresia,
+                isPreview: true,
+              ),
+            ],
           ),
-        ],
+        ),
       );
     }
     
@@ -315,30 +331,47 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   Widget _buildDashboard(BuildContext context) {
     return Stack(
       children: [
-        Column(
-          children: [
-            _BarraContextoComunidad(
-              comunidad: widget.comunidad,
-              miId: _miId,
-              onCerrar: widget.onBack ?? () => Navigator.pop(context),
-              onComunidadActualizada: (c) {
-                setState(() {}); // Forzar recarga si cambia
-              },
-            ),
-            Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: _colorPagina(context),
-                border: Border(
-                  bottom: BorderSide(color: widget.comunidad.colorTema.withOpacity(0.2), width: 2),
+        NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverAppBar(
+                expandedHeight: 500,
+                pinned: false,
+                stretch: true,
+                backgroundColor: _colorPagina(context),
+                surfaceTintColor: Colors.transparent,
+                automaticallyImplyLeading: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+                  background: _BarraContextoComunidad(
+                    comunidad: widget.comunidad,
+                    miId: _miId,
+                    onCerrar: widget.onBack ?? () => Navigator.pop(context),
+                    onComunidadActualizada: (c) {
+                      setState(() {}); // Forzar recarga si cambia
+                    },
+                  ),
                 ),
               ),
-              child: _buildSubNav(context),
-            ),
-            Expanded(
-              child: _buildBodyContent(),
-            ),
-          ],
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SliverAppBarDelegate(
+                  minHeight: 60,
+                  maxHeight: 60,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _colorPagina(context),
+                      border: Border(
+                        bottom: BorderSide(color: widget.comunidad.colorTema.withOpacity(0.2), width: 2),
+                      ),
+                    ),
+                    child: _buildSubNav(context),
+                  ),
+                ),
+              ),
+            ];
+          },
+          body: _buildBodyContent(),
         ),
         if (_indiceSeccion == 0)
           Positioned(
@@ -1048,6 +1081,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
     
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       itemCount: _publicaciones!.length,
       itemBuilder: (context, index) => Padding(
@@ -1084,6 +1119,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
 
     return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -1290,57 +1327,34 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 }
 
-class _SubNavDelegate extends SliverPersistentHeaderDelegate {
-  final int selectedIndex;
-  final Function(int) onTap;
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final double minHeight;
+  final double maxHeight;
+  final Widget child;
 
-  _SubNavDelegate({required this.selectedIndex, required this.onTap});
+  _SliverAppBarDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.child,
+  });
+
+  @override
+  double get minExtent => minHeight;
+
+  @override
+  double get maxExtent => math.max(maxHeight, minHeight);
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      height: 70,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildItem(0, Icons.grid_view_rounded, 'Muro'),
-          _buildItem(1, Icons.shopping_bag_rounded, 'Tienda'),
-          _buildItem(2, Icons.collections_rounded, 'Galería'),
-          _buildItem(3, Icons.chat_bubble_rounded, 'Chats'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItem(int index, IconData icon, String label) {
-    final active = selectedIndex == index;
-    final color = active ? const Color(0xFFF28B50) : Colors.grey;
-    return GestureDetector(
-      onTap: () => onTap(index),
-      child: Container(
-        color: Colors.transparent, // expand tap area
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(label, style: GoogleFonts.inter(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            if (active)
-              Container(height: 3, width: 24, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
-          ],
-        ),
-      ),
-    );
+    return SizedBox.expand(child: child);
   }
 
   @override
-  double get maxExtent => 70;
-  @override
-  double get minExtent => 70;
-  @override
-  bool shouldRebuild(covariant _SubNavDelegate oldDelegate) => oldDelegate.selectedIndex != selectedIndex;
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return maxHeight != oldDelegate.maxHeight ||
+        minHeight != oldDelegate.minHeight ||
+        child != oldDelegate.child;
+  }
 }
 
 // --- BARRA DE CONTEXTO DE COMUNIDAD ---
@@ -1401,9 +1415,9 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
     final iconRol = esCreador ? Icons.stars_rounded : (rolLabel == 'Moderador' ? Icons.gavel_rounded : Icons.pets_rounded);
     final colorRol = esCreador ? Colors.amber : (rolLabel == 'Moderador' ? const Color(0xFF248EA6) : const Color(0xFFC35E34));
 
-    return Container(
-      height: 500,
+    return SizedBox(
       width: double.infinity,
+      height: 500,
       child: Stack(
         children: [
           // Fondo con imagen
