@@ -15,6 +15,7 @@ class MenuOpcionesContenido extends StatelessWidget {
   final VoidCallback? onEliminado;
   final VoidCallback? onEditado;
   final String? tituloPreview;
+  final Color? iconColor;
 
   const MenuOpcionesContenido({
     super.key,
@@ -26,6 +27,7 @@ class MenuOpcionesContenido extends StatelessWidget {
     this.onEliminado,
     this.onEditado,
     this.tituloPreview,
+    this.iconColor,
   });
 
   @override

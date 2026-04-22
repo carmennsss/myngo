@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Publicacion, Imagenes_galeria, Coleccion, Me_gustas, Comentario, Reporte
+from .models import Publicacion, Imagenes_galeria, Coleccion, Me_gustas, Comentario, Reporte, PostGuardado
 
 class PublicacionSerializer(serializers.ModelSerializer):
     autor_nombre = serializers.ReadOnlyField(source='autor.nombre_usuario')
@@ -10,18 +10,21 @@ class PublicacionSerializer(serializers.ModelSerializer):
     # Campo explícito para devolver el ID de la imagen como integer garantizado
     imagen_id = serializers.IntegerField(source='imagen.id', read_only=True, allow_null=True)
     es_valido_ia = serializers.BooleanField(read_only=True)
+    urls_imagenes = serializers.SerializerMethodField()
+    imagenes_ids = serializers.SerializerMethodField()
 
     likes_count = serializers.SerializerMethodField()
     comentarios_count = serializers.SerializerMethodField()
     usuario_dio_like = serializers.SerializerMethodField()
+    usuario_guardo_post = serializers.SerializerMethodField()
 
     class Meta:
         model = Publicacion
         fields = [
             'id', 'autor', 'autor_nombre', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
-            'url_imagen', 'relacion_aspecto', 'es_valido_ia', 'etiquetas', 'fecha_creacion',
-            'likes_count', 'comentarios_count', 'usuario_dio_like'
+            'url_imagen', 'urls_imagenes', 'imagenes_ids', 'relacion_aspecto', 'es_valido_ia', 'etiquetas', 'fecha_creacion',
+            'likes_count', 'comentarios_count', 'usuario_dio_like', 'usuario_guardo_post'
         ]
 
     def get_url_imagen(self, obj):
@@ -31,6 +34,22 @@ class PublicacionSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.imagen.url_s3.url)
             return obj.imagen.url_s3.url
         return None
+
+    def get_urls_imagenes(self, obj):
+        urls = []
+        request = self.context.get('request')
+        for img in obj.imagenes.all()[:4]: # Max 4 imagenes
+            if img.url_s3:
+                urls.append(request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url)
+        if not urls and obj.imagen and obj.imagen.url_s3:
+            urls.append(request.build_absolute_uri(obj.imagen.url_s3.url) if request else obj.imagen.url_s3.url)
+        return urls
+
+    def get_imagenes_ids(self, obj):
+        ids = list(obj.imagenes.values_list('id', flat=True))[:4]
+        if not ids and obj.imagen:
+            ids.append(obj.imagen.id)
+        return ids
 
     def get_likes_count(self, obj):
         return Me_gustas.objects.filter(publicacion=obj).count()
@@ -42,6 +61,12 @@ class PublicacionSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return Me_gustas.objects.filter(publicacion=obj, usuario=request.user).exists()
+        return False
+
+    def get_usuario_guardo_post(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return PostGuardado.objects.filter(publicacion=obj, usuario=request.user).exists()
         return False
 
 class ImagenGaleriaSerializer(serializers.ModelSerializer):

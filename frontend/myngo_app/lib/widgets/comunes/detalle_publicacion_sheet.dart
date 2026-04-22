@@ -6,6 +6,7 @@ import 'menu_opciones_contenido.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../models/usuario.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart';
+import 'grid_imagenes_post.dart';
 
 /// Bottom sheet estilo Instagram que muestra el detalle completo de un post.
 class DetallePublicacionSheet extends StatefulWidget {
@@ -174,21 +175,12 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
               ),
             ),
 
-            // ── Imagen (si existe) ──
-            if (tieneImagen)
+            // ── Imagen / Rejilla (si existe) ──
+            if (publicacion.urlsImagenes.isNotEmpty || tieneImagen)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    publicacion.urlImagen!,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200,
-                      color: const Color(0xFF1E1E1E),
-                      child: const Center(child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 48)),
-                    ),
-                  ),
+                child: GridImagenesPost(
+                  urls: publicacion.urlsImagenes.isNotEmpty ? publicacion.urlsImagenes : [publicacion.urlImagen!],
                 ),
               ),
 

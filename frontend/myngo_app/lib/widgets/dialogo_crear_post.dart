@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
-  final Future<bool> Function(String texto, XFile? imagen, String etiquetas) onPublicar;
+  final Future<bool> Function(String texto, List<XFile>? imagenes, String etiquetas) onPublicar;
 
   const DialogoCrearPost({
     super.key,
@@ -21,7 +21,7 @@ class DialogoCrearPost extends StatefulWidget {
 class _DialogoCrearPostState extends State<DialogoCrearPost> {
   final _controladorTexto = TextEditingController();
   final _controladorEtiquetas = TextEditingController();
-  XFile? _imagenSeleccionada;
+  List<XFile> _imagenesSeleccionadas = [];
   bool _estaCargando = false;
 
   @override
@@ -53,22 +53,50 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
             ),
           ),
           const SizedBox(height: 16),
-          if (_imagenSeleccionada != null)
+          if (_imagenesSeleccionadas.isNotEmpty)
             Column(
               children: [
-                Container(
-                  height: 150,
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    image: DecorationImage(
-                      image: kIsWeb 
-                          ? NetworkImage(_imagenSeleccionada!.path) as ImageProvider
-                          : FileImage(File(_imagenSeleccionada!.path)),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _imagenesSeleccionadas.map((img) {
+                    return Stack(
+                      children: [
+                        Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: kIsWeb 
+                                  ? NetworkImage(img.path) as ImageProvider
+                                  : FileImage(File(img.path)),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _imagenesSeleccionadas.remove(img);
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
                 ),
                 TextField(
                   controller: _controladorEtiquetas,
@@ -89,9 +117,23 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
             children: [
               IconButton(
                 onPressed: () async {
-                  final img = await ImagePicker().pickImage(source: ImageSource.gallery);
-                  if (img != null) {
-                    setState(() => _imagenSeleccionada = img);
+                  if (_imagenesSeleccionadas.length >= 4) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Máximo 4 imágenes')),
+                    );
+                    return;
+                  }
+                  final imgs = await ImagePicker().pickMultiImage();
+                  if (imgs.isNotEmpty) {
+                    setState(() {
+                      _imagenesSeleccionadas.addAll(imgs);
+                      if (_imagenesSeleccionadas.length > 4) {
+                        _imagenesSeleccionadas = _imagenesSeleccionadas.sublist(0, 4);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Se ha limitado a 4 imágenes')),
+                        );
+                      }
+                    });
                   }
                 },
                 icon: const Icon(Icons.image_search_rounded, color: Color(0xFFF29C50)),
@@ -102,7 +144,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                   setState(() => _estaCargando = true);
                   final exitoso = await widget.onPublicar(
                     _controladorTexto.text,
-                    _imagenSeleccionada,
+                    _imagenesSeleccionadas,
                     _controladorEtiquetas.text,
                   );
                   if (mounted) {

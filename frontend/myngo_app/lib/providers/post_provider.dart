@@ -39,7 +39,7 @@ class PostProvider with ChangeNotifier {
   Future<bool> crearPost({
     required int comunidadId,
     required String texto,
-    dynamic imagen,
+    dynamic imagenes,
     String? etiquetas,
   }) async {
     _state = PostState.loading;
@@ -51,7 +51,7 @@ class PostProvider with ChangeNotifier {
       final res = await _servicio.crearPublicacion(
         comunidadId: comunidadId,
         texto: texto,
-        imagen: imagen,
+        imagenes: imagenes,
         etiquetas: etiquetas,
       );
 

@@ -8,6 +8,7 @@ import '../../services/servicio_usuarios.dart';
 import '../comunidades/pantalla_enviar_propuesta.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import '../inicio/pantalla_inicio.dart';
+import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;

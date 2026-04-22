@@ -28,7 +28,6 @@ import '../../widgets/inicio/feed_publicaciones.dart';
 import '../../widgets/inicio/barra_contexto_comunidad.dart';
 
 export '../../widgets/inicio/lateral_derecho.dart';
-import '../comunidades/widgets/tarjeta_publicacion.dart';
 
 class PantallaInicio extends StatefulWidget {
   final StatefulNavigationShell? navigationShell;
@@ -46,7 +45,8 @@ class PantallaInicioState extends State<PantallaInicio> {
   int? _miId;
   int? _puntos;
   int _notificacionesSinLeer = 0;
-  List<Comunidad> _misComunidades = [];
+  List<Comunidad>? _misComunidades;
+  bool _cargandoComunidades = false;
 
   @override
   void initState() {
@@ -80,8 +80,17 @@ class PantallaInicioState extends State<PantallaInicio> {
   }
 
   Future<void> _cargarComunidades() async {
+    setState(() {
+      _cargandoComunidades = true;
+      _misComunidades = null; // Reiniciar a null según la nueva lógica
+    });
     final res = await ServicioComunidades().listarComunidadesPropias();
-    if (res.exito && mounted) setState(() => _misComunidades = res.datos ?? []);
+    if (mounted) {
+      setState(() {
+        _misComunidades = res.datos ?? [];
+        _cargandoComunidades = false;
+      });
+    }
   }
 
   void _alPulsarNav(int index) {
@@ -117,12 +126,13 @@ class PantallaInicioState extends State<PantallaInicio> {
 
 
   void _reordenarComunidades(int oldIndex, int newIndex) {
+    if (_misComunidades == null) return;
     setState(() {
       if (newIndex > oldIndex) {
         newIndex -= 1;
       }
-      final Comunidad item = _misComunidades.removeAt(oldIndex);
-      _misComunidades.insert(newIndex, item);
+      final Comunidad item = _misComunidades!.removeAt(oldIndex);
+      _misComunidades!.insert(newIndex, item);
     });
   }
 
@@ -187,7 +197,8 @@ class PantallaInicioState extends State<PantallaInicio> {
                                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                                   child: SidebarIzquierdo(
                                     estaLogueado: _estaLogueado,
-                                    comunidades: _misComunidades,
+                                    cargando: _cargandoComunidades,
+                              comunidades: _misComunidades,
                                     onComunidadSelected: _seleccionarComunidad,
                                     onReorder: _reordenarComunidades,
                                   ),

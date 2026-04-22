@@ -4,7 +4,7 @@ import '../../models/publicacion.dart';
 import '../../models/comentario.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_interaccion.dart';
-import 'widgets/tarjeta_publicacion.dart';
+import '../../widgets/inicio/tarjeta_post.dart';
 
 class PantallaDetallePublicacion extends StatefulWidget {
   final int? publicacionId;
@@ -143,15 +143,10 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TarjetaPublicacion(
-              publicacion: _pub!,
-              mostrarOpciones: false, // User requested: no dots when viewing post
+            TarjetaPost(
+              post: _pub!,
+              onJoin: () {}, // Vista detalle
               onEliminado: () => Navigator.pop(context, true),
-              onLikeToggle: (liked, count) {
-                if (_pub != null) {
-                  _pub = _pub!.copyWith(usuarioDioLike: liked, likesCount: count);
-                }
-              },
             ),
             const SizedBox(height: 24),
             Text('Comentarios (${_comentarios.length})', 

@@ -326,7 +326,7 @@ class ServicioComunidades {
   Future<RespuestaApi<Publicacion>> crearPublicacion({
     required int comunidadId,
     required String texto,
-    dynamic imagen, // Puede ser XFile o File
+    List<XFile>? imagenes,
     String? etiquetas,
   }) async {
     try {
@@ -344,17 +344,19 @@ class ServicioComunidades {
         request.fields['etiquetas'] = etiquetas.trim();
       }
       
-      if (imagen != null) {
-        if (kIsWeb && imagen is XFile) {
-          final bytes = await imagen.readAsBytes();
-          request.files.add(http.MultipartFile.fromBytes(
-            'url_archivo_s3', 
-            bytes, 
-            filename: imagen.name,
-            contentType: MediaType('image', 'jpeg')
-          ));
-        } else if (imagen is XFile) {
-          request.files.add(await http.MultipartFile.fromPath('url_archivo_s3', imagen.path));
+      if (imagenes != null && imagenes.isNotEmpty) {
+        for (var img in imagenes) {
+          if (kIsWeb) {
+            final bytes = await img.readAsBytes();
+            request.files.add(http.MultipartFile.fromBytes(
+              'url_archivo_s3', 
+              bytes, 
+              filename: img.name,
+              contentType: MediaType('image', 'jpeg')
+            ));
+          } else {
+            request.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
+          }
         }
       }
 
@@ -459,6 +461,26 @@ class ServicioComunidades {
       );
       if (respuesta.statusCode == 204 || respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: 'Comentario eliminado');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  Future<RespuestaApi> toggleGuardarPost(int postId) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('${_urlContenido}publicaciones/$postId/guardar/'),
+        headers: await _getHeaders(),
+      );
+      if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
+        final data = jsonDecode(respuesta.body);
+        return RespuestaApi(
+          exito: true, 
+          mensaje: data['mensaje'] ?? 'Operación exitosa',
+          datos: data['resultado'] // 'added' or 'removed'
+        );
       }
       return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
     } catch (e) {

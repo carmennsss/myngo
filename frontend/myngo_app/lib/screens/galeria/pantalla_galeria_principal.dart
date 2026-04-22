@@ -5,6 +5,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../models/coleccion.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'pantalla_detalle_coleccion.dart';
+import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaGaleriaPrincipal extends StatefulWidget {
   final int? comunidadId;
@@ -127,18 +128,9 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     }
 
     if (_colecciones.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.folder_open_outlined, color: Colors.white24, size: 64),
-            const SizedBox(height: 16),
-            Text(
-              'No hay colecciones creadas',
-              style: GoogleFonts.outfit(color: Colors.white70),
-            ),
-          ],
-        ),
+      return const EstadoVacioCargando(
+        icon: Icons.folder_open_outlined,
+        message: 'No hay colecciones creadas',
       );
     }
 

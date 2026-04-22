@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/comunidad.dart';
 import '../../models/catalogo_mejoras.dart';
 import '../../services/servicio_mejoras.dart';
+import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaGestionCatalogo extends StatefulWidget {
   final Comunidad comunidad;
@@ -82,20 +83,9 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey.withOpacity(0.3)),
-          const SizedBox(height: 16),
-          Text(
-            'Aún no hay items aprobados en este catálogo 🐾',
-            style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text('Modera propuestas para que aparezcan aquí.', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
-        ],
-      ),
+    return const EstadoVacioCargando(
+      icon: Icons.inventory_2_outlined,
+      message: 'Aún no hay items aprobados en este catálogo 🐾\nModera propuestas para que aparezcan aquí.',
     );
   }
 

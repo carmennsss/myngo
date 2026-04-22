@@ -39,7 +39,8 @@ class Publicacion(models.Model):
     comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE,null=True, blank=True)
     titulo=models.CharField(max_length=200,null=True, blank=True)
     contenido_texto=models.TextField(null=True, blank=True)
-    imagen=models.ForeignKey(Imagenes_galeria,on_delete=models.CASCADE,null=True,blank=True)
+    imagen=models.ForeignKey(Imagenes_galeria,on_delete=models.CASCADE,null=True,blank=True) # Mantenido por compatibilidad
+    imagenes=models.ManyToManyField(Imagenes_galeria, related_name='publicaciones_asociadas', blank=True)
     relacion_aspecto=models.FloatField(default=1.0)
     es_valido_ia=models.BooleanField(default=True)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
@@ -102,3 +103,15 @@ class Reporte(models.Model):
 
     def __str__(self):
         return f"Reporte {self.tipo_objeto} ({self.estado})"
+
+class PostGuardado(models.Model):
+    class Meta:
+        db_table = 'posts_guardados'
+        unique_together = ('usuario', 'publicacion')
+    
+    usuario=models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='posts_guardados')
+    publicacion=models.ForeignKey(Publicacion, on_delete=models.CASCADE, related_name='guardado_por')
+    fecha_guardado=models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Post {self.publicacion_id} guardado por {self.usuario.nombre_usuario}"
