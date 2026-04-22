@@ -108,45 +108,46 @@ class PublicacionCreate(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+        from django.db import transaction
+        
         archivos = request.FILES.getlist('url_archivo_s3')
         
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
         titulo = request.data.get('titulo', '') or ''
         contenido_texto = request.data.get('contenido_texto', '') or ''
         texto = f"{titulo} {contenido_texto}".strip()
         es_valido = validar_contenido_toxico(texto)
 
-        # 1. Crear la publicación primero
-        publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
+        try:
+            with transaction.atomic():
+                # 1. Crear la publicación primero
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
 
-        # 2. Guardar imagenes y asociarlas (Max 4)
-        if archivos:
-            imagenes_creadas = []
-            for archivo in archivos[:4]:
-                try:
-                    img_galeria = Imagenes_galeria.objects.create(
+                # 2. Guardar imagenes y asociarlas (Max 4)
+                imagenes_creadas = []
+                for archivo in archivos[:4]:
+                    img_instancia = Imagenes_galeria.objects.create(
                         propietario=request.user,
                         url_s3=archivo,
                         comunidad_id=request.data.get('comunidad') or None,
                         relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
                         etiquetas=request.data.get('etiquetas', ''),
                     )
-                    imagenes_creadas.append(img_galeria)
-                except Exception as e:
-                    publicacion.delete() # Revertimos si falla
-                    return Response({'error': f'Error al guardar imagen: {e}'}, status=400)
+                    imagenes_creadas.append(img_instancia)
 
-            # Asociamos las imagenes creadas
-            publicacion.imagenes.add(*imagenes_creadas)
-            # Para compatibilidad, guardamos la primera en el campo imagen
-            publicacion.imagen = imagenes_creadas[0]
-            publicacion.save(update_fields=['imagen'])
+                if imagenes_creadas:
+                    publicacion.imagen = imagenes_creadas[0] # Para compatibilidad (1ra imagen)
+                    publicacion.imagenes.set(imagenes_creadas) # Para multi-imagen
+                    publicacion.save()
 
-        # Refrescar serializador para devolver datos completos
-        serializer_res = self.get_serializer(publicacion)
-        return Response(serializer_res.data, status=201)
+                # Usamos el serializer de nuevo para retornar los datos completos
+                from .serializers import PublicacionSerializer
+                return Response(PublicacionSerializer(publicacion, context={'request': request}).data, status=201)
+                
+        except Exception as e:
+            # Si ocurre cualquier error, transaction.atomic revertirá la base de datos automáticamente
+            return Response({'error': f'Se ha cancelado la creación de la publicación debido a un error: {str(e)}'}, status=400)
 class PublicacionDelete(generics.DestroyAPIView):
     serializer_class= PublicacionSerializer
     permission_classes = [permissions.IsAuthenticated]

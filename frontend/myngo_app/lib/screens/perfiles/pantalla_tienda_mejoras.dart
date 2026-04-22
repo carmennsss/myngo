@@ -168,9 +168,11 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
     );
 
     if (widget.esVistaIntegrada) {
-      return Container(
-        color: const Color(0xFFFEF5F1),
-        child: content,
+      return ClipRect(
+        child: Container(
+          color: const Color(0xFFFEF5F1),
+          child: content,
+        ),
       );
     }
 

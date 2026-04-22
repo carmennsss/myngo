@@ -363,18 +363,18 @@ class ServicioComunidades {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         return RespuestaApi(
           exito: true, 
-          datos: Publicacion.fromJson(jsonDecode(response.body)),
+          datos: Publicacion.fromJson(jsonDecode(utf8.decode(response.bodyBytes))),
           mensaje: 'Publicación creada'
         );
       }
 
-      final decoded = jsonDecode(response.body);
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       final mensajeError = decoded is Map<String, dynamic>
-          ? decoded['error']?.toString() ?? decoded['detail']?.toString() ?? 'Error al crear la publicación'
-          : 'Error al crear la publicación';
+          ? decoded['error']?.toString() ?? decoded['detail']?.toString() ?? 'Error al crear la publicación (${response.statusCode})'
+          : 'Error al crear la publicación (${response.statusCode})';
       return RespuestaApi(exito: false, mensaje: mensajeError);
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');

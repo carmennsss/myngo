@@ -56,19 +56,20 @@ class _ProtectedRouteState extends State<ProtectedRoute> {
 class _ComunidadLoader extends StatelessWidget {
   final int id;
   final Comunidad? extra;
-  const _ComunidadLoader(this.id, this.extra);
+  final VoidCallback onBack;
+  const _ComunidadLoader(this.id, this.extra, {required this.onBack});
 
   @override
   Widget build(BuildContext context) {
     if (extra != null) {
-      return PantallaDetalleComunidad(comunidad: extra!, esIntegrada: true, onBack: () => context.go('/inicio'));
+      return PantallaDetalleComunidad(comunidad: extra!, esIntegrada: true, onBack: onBack);
     }
     return FutureBuilder(
       future: ServicioComunidades().obtenerComunidad(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
         if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetalleComunidad(comunidad: snapshot.data!.datos!, esIntegrada: true, onBack: () => context.go('/inicio'));
+          return PantallaDetalleComunidad(comunidad: snapshot.data!.datos!, esIntegrada: true, onBack: onBack);
         }
         return const Center(child: Text('Comunidad no encontrada 😿'));
       },
@@ -79,19 +80,20 @@ class _ComunidadLoader extends StatelessWidget {
 class _PerfilLoader extends StatelessWidget {
   final int id;
   final Usuario? extra;
-  const _PerfilLoader(this.id, this.extra);
+  final VoidCallback onBack;
+  const _PerfilLoader(this.id, this.extra, {required this.onBack});
 
   @override
   Widget build(BuildContext context) {
     if (extra != null) {
-      return PantallaDetallePerfil(usuario: extra!, esIntegrada: true, onBack: () => context.go('/inicio'));
+      return PantallaDetallePerfil(usuario: extra!, esIntegrada: true, onBack: onBack);
     }
     return FutureBuilder(
       future: ServicioUsuarios().obtenerDatosUsuario(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
         if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetallePerfil(usuario: snapshot.data!.datos!, esIntegrada: true, onBack: () => context.go('/inicio'));
+          return PantallaDetallePerfil(usuario: snapshot.data!.datos!, esIntegrada: true, onBack: onBack);
         }
         return const Center(child: Text('Usuario no encontrado 😿'));
       },
@@ -177,7 +179,7 @@ final GoRouter appRouter = GoRouter(
                   path: 'comunidades/:id',
                   builder: (context, state) {
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                    return _ComunidadLoader(id, state.extra as Comunidad?);
+                    return _ComunidadLoader(id, state.extra as Comunidad?, onBack: () => context.go('/inicio'));
                   },
                 ),
                 GoRoute(
@@ -196,7 +198,7 @@ final GoRouter appRouter = GoRouter(
                   path: 'perfiles/:id',
                   builder: (context, state) {
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                    return _PerfilLoader(id, state.extra as Usuario?);
+                    return _PerfilLoader(id, state.extra as Usuario?, onBack: () => context.go('/inicio'));
                   },
                 ),
               ],
@@ -220,6 +222,34 @@ final GoRouter appRouter = GoRouter(
                   },
                 );
               },
+              routes: [
+                GoRoute(
+                  path: 'comunidades/:id',
+                  builder: (context, state) {
+                    final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    return _ComunidadLoader(id, state.extra as Comunidad?, onBack: () => context.go('/explorar'));
+                  },
+                ),
+                GoRoute(
+                  path: 'comunidades/:id/post/:postId',
+                  builder: (context, state) {
+                    final comunidadId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    final postId = int.tryParse(state.pathParameters['postId'] ?? '') ?? 0;
+                    return _PostLoader(
+                      postId: postId,
+                      comunidadId: comunidadId,
+                      extra: state.extra as Publicacion?,
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'perfiles/:id',
+                  builder: (context, state) {
+                    final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    return _PerfilLoader(id, state.extra as Usuario?, onBack: () => context.go('/explorar'));
+                  },
+                ),
+              ],
             ),
           ],
         ),

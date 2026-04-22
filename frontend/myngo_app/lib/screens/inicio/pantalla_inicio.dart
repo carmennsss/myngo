@@ -47,6 +47,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   int _notificacionesSinLeer = 0;
   List<Comunidad>? _misComunidades;
   bool _cargandoComunidades = false;
+  bool _isSidebarOpen = true;
   List<Usuario>? _rankingUsuarios;
   bool _cargandoRanking = false;
 
@@ -121,13 +122,21 @@ class PantallaInicioState extends State<PantallaInicio> {
   }
 
   void _seleccionarComunidad(Comunidad comunidad) {
-    context.go('/inicio/comunidades/${comunidad.id}', extra: comunidad);
+    if ((widget.navigationShell?.currentIndex ?? _indiceSeleccionado) == 1) {
+      context.go('/explorar/comunidades/${comunidad.id}', extra: comunidad);
+    } else {
+      context.go('/inicio/comunidades/${comunidad.id}', extra: comunidad);
+    }
   }
 
   void seleccionarComunidad(Comunidad comunidad) => _seleccionarComunidad(comunidad);
 
   void _seleccionarUsuario(Usuario usuario) {
-    context.go('/inicio/perfiles/${usuario.id}', extra: usuario);
+    if ((widget.navigationShell?.currentIndex ?? _indiceSeleccionado) == 1) {
+      context.go('/explorar/perfiles/${usuario.id}', extra: usuario);
+    } else {
+      context.go('/inicio/perfiles/${usuario.id}', extra: usuario);
+    }
   }
 
   void seleccionarUsuario(Usuario usuario) => _seleccionarUsuario(usuario);
@@ -172,57 +181,62 @@ class PantallaInicioState extends State<PantallaInicio> {
             onProfileSelected: _seleccionarUsuario,
           ),
           Expanded(
-            child: Row(
+            child: Stack(
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (!isMobile)
-                      Container(
-                        width: 320,
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOutCubic,
+                        width: _isSidebarOpen ? 320.0 : 0.0,
                         height: double.infinity,
                         clipBehavior: Clip.antiAlias,
                         decoration: const BoxDecoration(
                           color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro) para contrastar el navbar
                         ),
-                        child: Stack(
-                          children: [
-                            // Patrón para el fondo de TODA la barra
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: 0.15,
-                                child: GridView.builder(
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    mainAxisSpacing: 30,
-                                    crossAxisSpacing: 30,
-                                  ),
-                                  itemBuilder: (context, index) => Transform.rotate(
-                                    angle: index % 2 == 0 ? 0.3 : -0.2,
-                                    child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // El SidebarIzquierdo real y deslizable
-                            Positioned.fill(
-                              child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                                child: SingleChildScrollView(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                                  child: SidebarIzquierdo(
-                                    estaLogueado: _estaLogueado,
-                                    cargando: _cargandoComunidades,
-                                    comunidades: _misComunidades,
-                                    rankingUsuarios: _rankingUsuarios,
-                                    cargandoRanking: _cargandoRanking,
-                                    misPuntos: _puntos,
-                                    onComunidadSelected: _seleccionarComunidad,
-                                    onReorder: _reordenarComunidades,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: SizedBox(
+                            width: 320.0,
+                            child: Stack(
+                              children: [
+                                // Patrón para el fondo de TODA la barra
+                                Positioned.fill(
+                                  child: Opacity(
+                                    opacity: 0.15,
+                                    child: GridView.builder(
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        mainAxisSpacing: 30.0,
+                                        crossAxisSpacing: 30.0,
+                                      ),
+                                      itemBuilder: (context, index) => Transform.rotate(
+                                        angle: index % 2 == 0 ? 0.3 : -0.2,
+                                        child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                // El SidebarIzquierdo real y deslizable
+                                Positioned.fill(
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                                    child: SidebarIzquierdo(
+                                      estaLogueado: _estaLogueado == true,
+                                      cargando: _cargandoComunidades == true,
+                                      comunidades: _misComunidades,
+                                      onComunidadSelected: _seleccionarComunidad,
+                                      onReorder: _reordenarComunidades,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                       Expanded(
@@ -236,7 +250,38 @@ class PantallaInicioState extends State<PantallaInicio> {
                       ),
                   ],
                 ),
+                if (!isMobile)
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOutCubic,
+                    left: _isSidebarOpen ? 320.0 : 0.0,
+                    top: 24.0,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
+                      child: Tooltip(
+                        message: _isSidebarOpen ? 'Contraer menú' : 'Expandir menú',
+                        child: Container(
+                          height: 64.0,
+                          width: 24.0,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2B8A0),
+                            borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(2, 0))
+                            ],
+                          ),
+                          child: Icon(
+                            _isSidebarOpen ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                            color: const Color(0xFFC35E34),
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
