@@ -48,6 +48,8 @@ class PantallaInicioState extends State<PantallaInicio> {
   List<Comunidad>? _misComunidades;
   bool _cargandoComunidades = false;
   bool _isSidebarOpen = true;
+  List<Usuario>? _rankingUsuarios;
+  bool _cargandoRanking = false;
 
   @override
   void initState() {
@@ -71,6 +73,18 @@ class PantallaInicioState extends State<PantallaInicio> {
         _cargarComunidades();
         _cargarNotificacionesSinLeer();
       }
+    }
+    _cargarRanking();
+  }
+
+  Future<void> _cargarRanking() async {
+    setState(() => _cargandoRanking = true);
+    final res = await ServicioUsuarios().obtenerRanking();
+    if (mounted) {
+      setState(() {
+        _rankingUsuarios = res.datos ?? [];
+        _cargandoRanking = false;
+      });
     }
   }
 

@@ -91,7 +91,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
     _tabController!.addListener(() {
       if (_tabController!.index != _tabActual) {
         setState(() => _tabActual = _tabController!.index);
-        if (_tabActual == 1 && (_publicacionesGuardadas == null || _publicacionesGuardadas!.isEmpty)) {
+        if (_tabActual == 1) {
           _cargarGuardados();
         }
       }
@@ -817,21 +817,50 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
                 ),
                 child: TabBar(
                   controller: _tabController,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  padding: const EdgeInsets.all(4),
                   indicator: BoxDecoration(
                     color: const Color(0xFF248EA6),
                     borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(color: const Color(0xFF248EA6).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                    ],
                   ),
                   labelColor: Colors.white,
-                  unselectedLabelColor: Colors.grey,
+                  unselectedLabelColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
                   labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
-                  tabs: const [
-                    Tab(text: 'Publicaciones', icon: Icon(Icons.grid_view_rounded, size: 20)),
-                    Tab(text: 'Guardados', icon: Icon(Icons.bookmark_outline_rounded, size: 20)),
+                  tabs: [
+                    Tab(
+                      height: 40,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.grid_view_rounded, size: 18),
+                          SizedBox(width: 8),
+                          Text('Publicaciones'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      height: 40,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.bookmark_outline_rounded, size: 18),
+                          SizedBox(width: 8),
+                          Text('Guardados'),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -879,10 +908,11 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                               setState(() => _filtroComunidadId = null);
                               _cargarGuardados();
                             },
-                            backgroundColor: const Color(0xFF1E1E1E),
+                            backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
                             selectedColor: const Color(0xFF248EA6),
                             checkmarkColor: Colors.white,
-                            labelStyle: TextStyle(color: _filtroComunidadId == null ? Colors.white : Colors.grey),
+                            labelStyle: TextStyle(color: _filtroComunidadId == null ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.grey : Colors.grey.shade700)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
                           ),
                         );
                       }
@@ -897,10 +927,11 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                             setState(() => _filtroComunidadId = v ? com['id'] : null);
                             _cargarGuardados(comunidadId: _filtroComunidadId);
                           },
-                          backgroundColor: const Color(0xFF1E1E1E),
+                          backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
                           selectedColor: const Color(0xFF248EA6),
                           checkmarkColor: Colors.white,
-                          labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.grey),
+                          labelStyle: TextStyle(color: isSelected ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.grey : Colors.grey.shade700)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
                         ),
                       );
                     },
@@ -1278,7 +1309,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DialogoCrearPost(
+      builder: (modalCtx) => DialogoCrearPost(
         titulo: 'Publicar en Perfil 🐾',
         onPublicar: (texto, imagenes, etiquetas) async {
           if (texto.trim().isEmpty && (imagenes == null || imagenes.isEmpty)) {
@@ -1340,39 +1371,48 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                     )
                   : Container(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1A2744), Color(0xFF0F1A33)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.3), width: 0.8),
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.2), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF248EA6).withOpacity(0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      padding: const EdgeInsets.fromLTRB(10, 8, 4, 10),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 8, 12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               Container(
-                                width: 4, height: 4,
+                                width: 6, height: 6,
                                 decoration: const BoxDecoration(color: Color(0xFF248EA6), shape: BoxShape.circle),
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
                                   publicacion.titulo.isNotEmpty ? publicacion.titulo : 'Nota',
-                                  style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF248EA6), fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF248EA6), fontWeight: FontWeight.w800),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Expanded(
                             child: Text(
                               publicacion.contenidoTexto,
-                              style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withOpacity(0.85), height: 1.4),
+                              style: GoogleFonts.inter(
+                                fontSize: 12, 
+                                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.85) ?? Colors.white.withOpacity(0.85), 
+                                height: 1.4,
+                                fontWeight: FontWeight.w500,
+                              ),
                               overflow: TextOverflow.fade,
                             ),
                           ),

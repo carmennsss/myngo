@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegistroUsuarios, LoginUsuario,SeguimientoUsuarios,DatosUsuarios,RecuperarPassword,GestionPerfiles,SeguirPerfil,ResponderPeticionUnion,EditarPerfil
+from .views import RegistroUsuarios, LoginUsuario,SeguimientoUsuarios,DatosUsuarios,RecuperarPassword,GestionPerfiles,SeguirPerfil,ResponderPeticionUnion,EditarPerfil, RankingUsuarios
 
 urlpatterns = [
     path('registrar/', RegistroUsuarios.as_view(), name="registrar"),
@@ -11,6 +11,7 @@ urlpatterns = [
     path('datos/', DatosUsuarios.as_view(), name="listar_datos_usuarios"),
     path('datos/<int:usuario_id>/', DatosUsuarios.as_view(), name="detalle_datos_usuario"),
     path('confirmar/<str:token>/', RegistroUsuarios.as_view()),
+    path('ranking/', RankingUsuarios.as_view(), name='ranking_usuarios'),
     path('', GestionPerfiles.as_view(), name='listar-perfiles'),
      path('perfil/editar/',EditarPerfil.as_view(),name='editar_perfil'),
     path('<str:nombre_usuario>/', SeguirPerfil.as_view(), name='detalle-perfil'),
