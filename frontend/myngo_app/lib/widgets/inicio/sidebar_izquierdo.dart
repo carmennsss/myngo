@@ -4,11 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/comunidad.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import '../../models/usuario.dart';
 
 class SidebarIzquierdo extends StatelessWidget {
   final bool estaLogueado;
   final bool cargando;
   final List<Comunidad>? comunidades;
+  final List<Usuario>? rankingUsuarios;
+  final bool cargandoRanking;
+  final int? misPuntos;
   final Function(Comunidad) onComunidadSelected;
   final Function(int, int) onReorder;
 
@@ -17,9 +21,19 @@ class SidebarIzquierdo extends StatelessWidget {
     required this.estaLogueado,
     this.cargando = false,
     this.comunidades,
+    this.rankingUsuarios,
+    this.cargandoRanking = false,
+    this.misPuntos,
     required this.onComunidadSelected,
     required this.onReorder,
   });
+
+  String _obtenerRango(int puntos) {
+    if (puntos < 500) return 'Michi de Bronce';
+    if (puntos < 1500) return 'Michi de Plata';
+    if (puntos < 3000) return 'Michi de Oro';
+    return 'Michi de Diamante';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +65,17 @@ class SidebarIzquierdo extends StatelessWidget {
         const SizedBox(height: 12),
         _TarjetaSidebar(
           titulo: 'Ranking Semanal',
-          contenido: Column(
-            children: [
-              _RankingItem(puesto: 1, nombre: 'MichiFan', puntos: 1500),
-              _RankingItem(puesto: 2, nombre: 'GatoExplorador', puntos: 1200),
-              _RankingItem(puesto: 3, nombre: 'MiauMaster', puntos: 900),
-            ],
-          ),
+          contenido: (cargandoRanking || rankingUsuarios == null)
+            ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+            : rankingUsuarios!.isEmpty
+              ? Text('Aún no hay ranking 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+              : Column(
+                  children: rankingUsuarios!.take(5).toList().asMap().entries.map((entry) {
+                    int index = entry.key;
+                    Usuario u = entry.value;
+                    return _RankingItem(puesto: index + 1, nombre: u.nombreUsuario, estrellas: u.ratingActual);
+                  }).toList(),
+                ),
         ),
         const SizedBox(height: 12),
         if (estaLogueado)
@@ -66,11 +84,11 @@ class SidebarIzquierdo extends StatelessWidget {
           contenido: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Michi de Oro IV', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
+              Text(_obtenerRango(misPuntos ?? 0), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
               const SizedBox(height: 8),
-              const LinearProgressIndicator(value: 0.7, minHeight: 6, borderRadius: BorderRadius.all(Radius.circular(4)), backgroundColor: Color(0xFFF2D0BD), color: Color(0xFFC35E34)),
+              LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
               const SizedBox(height: 6),
-              Text('350 / 500 Puntos', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
+              Text('${misPuntos ?? 0} / 5000 Puntos', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
             ],
           ),
         ),
@@ -519,8 +537,8 @@ void _mostrarDialogoComunidades(
 class _RankingItem extends StatelessWidget {
   final int puesto;
   final String nombre;
-  final int puntos;
-  const _RankingItem({required this.puesto, required this.nombre, required this.puntos});
+  final double estrellas;
+  const _RankingItem({required this.puesto, required this.nombre, required this.estrellas});
 
   @override
   Widget build(BuildContext context) {
@@ -530,8 +548,14 @@ class _RankingItem extends StatelessWidget {
         children: [
           CircleAvatar(radius: 14, backgroundColor: const Color(0xFFC35E34).withOpacity(0.1), child: Text(puesto.toString(), style: const TextStyle(fontSize: 11, color: Color(0xFFC35E34), fontWeight: FontWeight.bold))),
           const SizedBox(width: 12),
-          Expanded(child: Text(nombre, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)))),
-          Text('$puntos pts', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
+          Expanded(child: Text(nombre, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+          Row(
+            children: [
+              const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE89A6A)),
+              const SizedBox(width: 4),
+              Text(estrellas.toStringAsFixed(1), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+            ],
+          ),
         ],
       ),
     );

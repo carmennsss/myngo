@@ -181,6 +181,21 @@ class ServicioUsuarios {
     }
   }
 
+  Future<RespuestaApi<List<Usuario>>> obtenerRanking() async {
+    try {
+      final respuesta = await http.get(Uri.parse('$_urlBase/ranking/'));
+      if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson['datos'] ?? [];
+        final usuarios = lista.map((js) => Usuario.fromJson(js)).toList();
+        return RespuestaApi(exito: true, mensaje: 'OK', datos: usuarios);
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener el ranking');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int id) async {
     try {
       final respuesta = await http.get(Uri.parse('$_urlBase/datos/$id/'));
