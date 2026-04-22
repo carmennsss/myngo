@@ -1,0 +1,92 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
+import '../../models/comentario.dart';
+
+class ComentarioItem extends StatelessWidget {
+  final Comentario comentario;
+  final Color? highlightColor;
+
+  const ComentarioItem({
+    super.key,
+    required this.comentario,
+    this.highlightColor,
+  });
+
+  String _formatFecha(DateTime fecha) {
+    final now = DateTime.now();
+    final diff = now.difference(fecha);
+
+    if (diff.inMinutes < 1) return 'ahora';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return DateFormat('d MMM').format(fecha);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: highlightColor?.withOpacity(0.1) ?? Colors.grey.shade200,
+            backgroundImage: comentario.autorFoto != null
+                ? CachedNetworkImageProvider(comentario.autorFoto!)
+                : null,
+            child: comentario.autorFoto == null
+                ? Icon(Icons.person, size: 20, color: highlightColor ?? Colors.grey)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          // Contenido
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabecera: Nombre · Tiempo
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        comentario.autorNombre,
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '· ${_formatFecha(comentario.fechaCreacion)}',
+                      style: GoogleFonts.outfit(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                // Texto
+                Text(
+                  comentario.contenido,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

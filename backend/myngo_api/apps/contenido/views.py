@@ -1,5 +1,5 @@
 from rest_framework import generics, filters, permissions, viewsets, pagination, serializers
-from .models import Publicacion, Imagenes_galeria, Coleccion, Reporte, Comentario, Me_gustas
+from .models import Publicacion, Imagenes_galeria, Coleccion, Reporte, Comentario, Me_gustas, PostGuardado
 from .serializers import PublicacionSerializer, ImagenGaleriaSerializer, ColeccionSerializer, ReporteSerializer, ComentarioSerializer
 from .ia_service import validar_contenido_toxico
 from rest_framework.decorators import action
@@ -44,11 +44,22 @@ class PublicacionList(generics.ListAPIView):
         user = self.request.user #obtengo usuario
         comunidad_id = self.request.query_params.get('comunidad_id') #obtengo comunidad
         perfil_id=self.request.query_params.get('perfil_id') #obtengo perfil
+        solo_guardados = self.request.query_params.get('solo_guardados')
 
         # Filtro base: Solo válidos por IA para usuarios normales
         # (Los admins podrían ver todo para moderar)
         qs = Publicacion.objects.filter(es_valido_ia=True)
         
+        if solo_guardados == 'true' and user.is_authenticated:
+            # Combinamos guardado formal con guardado histórico via colecciones
+            qs = qs.filter(
+                Q(guardado_por__usuario=user) | 
+                Q(imagenes__en_colecciones__usuario=user)
+            ).distinct()
+            if comunidad_id:
+                qs = qs.filter(comunidad_id=comunidad_id)
+            return qs.order_by('-fecha_creacion')
+
         if comunidad_id:#si he recibido una comunidad
             try:
                 comunidad = Comunidad.objects.get(id=comunidad_id)#extraigo comunidad
@@ -97,19 +108,25 @@ class PublicacionCreate(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        archivo = request.FILES.get('url_archivo_s3')
-        imagen_galeria = None
+        archivos = request.FILES.getlist('url_archivo_s3')
+        
+        # 1. Crear la publicación primero
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        publicacion = serializer.save(autor=request.user)
 
-        # 1. Si viene imagen, crearla primero en Imagenes_galeria
-        if archivo:
+        # 2. Guardar imagenes y asociarlas (Max 4)
+        imagenes_creadas = []
+        for archivo in archivos[:4]:
             try:
-                imagen_galeria = Imagenes_galeria.objects.create(
+                img_galeria = Imagenes_galeria.objects.create(
                     propietario=request.user,
                     url_s3=archivo,
                     comunidad_id=request.data.get('comunidad') or None,
                     relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
                     etiquetas=request.data.get('etiquetas', ''),
                 )
+                imagenes_creadas.append(img_galeria)
             except Exception as e:
                 return Response({'error': f'Error al guardar imagen: {e}'}, status=400)
 
@@ -146,8 +163,13 @@ class PublicacionDelete(generics.DestroyAPIView):
         # Auto-resolver reportes pendientes
         Reporte.objects.filter(tipo_objeto='POST', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
             
-        if instance.imagen:
+        # Borrar imagenes multiples
+        imgs = list(instance.imagenes.all())
+        if instance.imagen and instance.imagen not in imgs:
             instance.imagen.delete()
+        for img in imgs:
+            img.delete()
+            
         instance.delete()
         return Response({"mensaje": "Publicación eliminada correctamente"}, status=status.HTTP_200_OK)
 class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -187,8 +209,13 @@ class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
         # Auto-resolver reportes pendientes
         Reporte.objects.filter(tipo_objeto='POST', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
             
-        if instance.imagen:
+        # Borrar imagenes multiples
+        imgs = list(instance.imagenes.all())
+        if instance.imagen and instance.imagen not in imgs:
             instance.imagen.delete()
+        for img in imgs:
+            img.delete()
+            
         instance.delete()
         return Response({"mensaje": "Publicación eliminada correctamente"}, status=status.HTTP_200_OK)
 
@@ -545,3 +572,20 @@ class ResolverReporteView(APIView):
         reporte.save()
         
         return Response({'mensaje': f'Reporte marcado como {nuevo_estado}'}, status=200)
+
+class TogglePostGuardadoView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            publicacion = Publicacion.objects.get(pk=pk)
+        except Publicacion.DoesNotExist:
+            return Response({'error': 'Publicación no encontrada'}, status=404)
+
+        guardado, created = PostGuardado.objects.get_or_create(usuario=request.user, publicacion=publicacion)
+        
+        if not created:
+            guardado.delete()
+            return Response({'mensaje': 'Post eliminado de guardados', 'resultado': 'removed'}, status=200)
+        
+        return Response({'mensaje': 'Post guardado en tu perfil', 'resultado': 'added'}, status=201)

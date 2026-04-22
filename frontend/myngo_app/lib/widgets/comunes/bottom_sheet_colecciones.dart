@@ -1,0 +1,247 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../models/coleccion.dart';
+import '../../services/servicio_galeria.dart';
+import '../../services/servicio_comunidades.dart';
+
+class BottomSheetColecciones extends StatefulWidget {
+  final int? imagenId;
+  final String? imagenUrl;
+  final int? postId;
+  final bool? estaGuardadoPost;
+
+  const BottomSheetColecciones({
+    super.key, 
+    this.imagenId, 
+    this.imagenUrl,
+    this.postId,
+    this.estaGuardadoPost,
+  });
+
+  @override
+  State<BottomSheetColecciones> createState() => _BottomSheetColeccionesState();
+}
+
+class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
+  final _servicioGaleria = ServicioGaleria();
+  final _servicioComunidades = ServicioComunidades();
+  List<Coleccion> _colecciones = [];
+  bool _cargando = true;
+  bool _guardando = false;
+  bool _estaGuardadoPostLocal = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _estaGuardadoPostLocal = widget.estaGuardadoPost ?? false;
+    _cargarColecciones();
+  }
+
+  Future<void> _cargarColecciones() async {
+    final res = await _servicioGaleria.obtenerColecciones();
+    if (mounted) setState(() { _colecciones = res.datos ?? []; _cargando = false; });
+  }
+
+  Future<void> _agregarAColeccion(Coleccion coleccion) async {
+    if (widget.imagenId == null) return;
+    setState(() => _guardando = true);
+    final res = await _servicioGaleria.gestionarImagenEnColeccion(coleccionId: coleccion.id, imagenId: widget.imagenId!, agregar: true);
+    if (mounted) {
+      setState(() => _guardando = false);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(res.exito ? '¡Guardado en "${coleccion.nombreColeccion}"! 🐾' : res.mensaje, style: GoogleFonts.outfit()),
+        backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  Future<void> _toggleGuardarPost() async {
+    if (widget.postId == null) return;
+    setState(() => _guardando = true);
+    final res = await _servicioComunidades.toggleGuardarPost(widget.postId!);
+    if (mounted) {
+      if (res.exito) {
+        setState(() {
+          _estaGuardadoPostLocal = res.datos == 'added';
+          _guardando = false;
+        });
+        Navigator.pop(context); // Cerramos tras la acción principal
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(res.mensaje, style: GoogleFonts.outfit()),
+          backgroundColor: const Color(0xFF248EA6),
+          behavior: SnackBarBehavior.floating,
+        ));
+      } else {
+        setState(() => _guardando = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(res.mensaje),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  void _mostrarCrearColeccion(BuildContext context) {
+    final ctrl = TextEditingController();
+    bool esPrivada = false;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('Nueva Colección', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ctrl,
+                style: GoogleFonts.outfit(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Nombre de la colección',
+                  hintStyle: GoogleFonts.outfit(color: Colors.white38),
+                  filled: true,
+                  fillColor: const Color(0xFF121212),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                title: Text(esPrivada ? 'Privada' : 'Pública', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                value: esPrivada,
+                activeColor: const Color(0xFF248EA6),
+                onChanged: (v) => setDlg(() => esPrivada = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.white38))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              onPressed: () async {
+                if (ctrl.text.trim().isEmpty) return;
+                final res = await _servicioGaleria.crearColeccion(nombre: ctrl.text.trim(), esPrivada: esPrivada);
+                if (res.exito && res.datos != null && mounted) {
+                  Navigator.pop(ctx);
+                  await _agregarAColeccion(res.datos!);
+                } else if (mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje, style: GoogleFonts.outfit()), backgroundColor: Colors.red));
+                }
+              },
+              child: Text('CREAR Y GUARDAR', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+      decoration: const BoxDecoration(color: Color(0xFF1E1E1E), borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                const Icon(Icons.bookmark_rounded, color: Color(0xFFF28B50), size: 22),
+                const SizedBox(width: 12),
+                Text('Guardar publicación', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                const Spacer(),
+                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded, color: Colors.white54)),
+              ],
+            ),
+          ),
+          const Divider(color: Colors.white12, height: 1),
+          const SizedBox(height: 8),
+          if (_guardando)
+            const Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: Color(0xFF248EA6)))
+          else
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                children: [
+                  // --- OPCIÓN DE GUARDAR EN PERFIL ---
+                  if (widget.postId != null)
+                    _ColeccionTile(
+                      icono: _estaGuardadoPostLocal ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, 
+                      nombre: _estaGuardadoPostLocal ? 'Eliminar de mi perfil' : 'Guardar en mi perfil', 
+                      subtitulo: _estaGuardadoPostLocal ? 'Ya guardado en tu biblioteca' : 'Añádelo a tus posts guardados', 
+                      iconColor: const Color(0xFFF28B50), 
+                      onTap: _toggleGuardarPost
+                    ),
+                  
+                  const SizedBox(height: 8),
+                  const Divider(color: Colors.white12, indent: 16, endIndent: 16),
+                  const SizedBox(height: 8),
+
+                  // --- OPCIONES DE COLECCIONES DE IMAGEN ---
+                  if (widget.imagenId != null) ...[
+                    _ColeccionTile(icono: Icons.create_new_folder_rounded, nombre: 'Nueva colección', subtitulo: 'Crea una carpeta para esta imagen', iconColor: const Color(0xFF248EA6), onTap: () => _mostrarCrearColeccion(context)),
+                    if (_cargando)
+                      const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: Color(0xFF248EA6), strokeWidth: 2)))
+                    else if (_colecciones.isEmpty)
+                      Padding(padding: const EdgeInsets.all(24), child: Center(child: Text('Aún no tienes colecciones de imágenes', style: GoogleFonts.outfit(color: Colors.white38, fontSize: 14))))
+                    else
+                      ..._colecciones.map((col) => _ColeccionTile(
+                        icono: col.esPrivada ? Icons.lock_outline_rounded : Icons.folder_rounded,
+                        nombre: col.nombreColeccion,
+                        subtitulo: '${col.numeroImagenes} imagen${col.numeroImagenes == 1 ? '' : 'es'}',
+                        iconColor: const Color(0xFF248EA6),
+                        onTap: () => _agregarAColeccion(col),
+                      )),
+                  ],
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ColeccionTile extends StatelessWidget {
+  final IconData icono;
+  final String nombre;
+  final String subtitulo;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _ColeccionTile({required this.icono, required this.nombre, required this.subtitulo, required this.iconColor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white10)),
+        child: Row(
+          children: [
+            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: iconColor.withOpacity(0.15), shape: BoxShape.circle), child: Icon(icono, color: iconColor, size: 20)),
+            const SizedBox(width: 16),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(nombre, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+              Text(subtitulo, style: GoogleFonts.outfit(color: Colors.white38, fontSize: 12)),
+            ])),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white24),
+          ],
+        ),
+      ),
+    );
+  }
+}

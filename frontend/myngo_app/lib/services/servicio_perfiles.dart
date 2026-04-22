@@ -115,7 +115,7 @@ class ServicioPerfiles {
 
   Future<RespuestaApi<void>> crearPostPerfil({
     required String texto,
-    dynamic imagen,
+    List<XFile>? imagenes,
     String? etiquetas,
   }) async {
     try {
@@ -132,17 +132,19 @@ class ServicioPerfiles {
         request.fields['etiquetas'] = etiquetas.trim();
       }
       
-      if (imagen != null) {
-        if (kIsWeb && imagen is XFile) {
-          final bytes = await imagen.readAsBytes();
-          request.files.add(http.MultipartFile.fromBytes(
-            'url_archivo_s3', 
-            bytes, 
-            filename: imagen.name,
-            contentType: MediaType('image', 'jpeg')
-          ));
-        } else if (imagen is XFile) {
-          request.files.add(await http.MultipartFile.fromPath('url_archivo_s3', imagen.path));
+      if (imagenes != null && imagenes.isNotEmpty) {
+        for (var img in imagenes) {
+          if (kIsWeb) {
+            final bytes = await img.readAsBytes();
+            request.files.add(http.MultipartFile.fromBytes(
+              'url_archivo_s3', 
+              bytes, 
+              filename: img.name,
+              contentType: MediaType('image', 'jpeg')
+            ));
+          } else {
+            request.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
+          }
         }
       }
 
@@ -155,6 +157,30 @@ class ServicioPerfiles {
       return RespuestaApi(exito: false, mensaje: 'Error al enviar publicación: ${response.statusCode}');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión con Myngo API: $e');
+    }
+  }
+
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGuardadas({int? comunidadId}) async {
+    try {
+      final tokenInfo = await _servicioUsuarios.obtenerToken();
+      final uri = Uri.parse('http://127.0.0.1:8000/contenido/publicaciones/?solo_guardados=true' + (comunidadId != null ? '&comunidad_id=$comunidadId' : ''));
+      final respuesta = await http.get(uri, headers: {
+        'Content-Type': 'application/json',
+        if (tokenInfo != null) 'Authorization': 'Token $tokenInfo',
+      });
+      
+      if (respuesta.statusCode == 200) {
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
+        return RespuestaApi(
+          exito: true, 
+          datos: lista.map((p) => Publicacion.fromJson(p)).toList(), 
+          mensaje: 'Publicaciones guardadas cargadas'
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 

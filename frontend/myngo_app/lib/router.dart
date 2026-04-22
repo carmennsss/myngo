@@ -9,6 +9,7 @@ import 'screens/registro/pantalla_registro.dart';
 import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
 import 'screens/inicio/pantalla_inicio.dart';
 import 'screens/comunidades/pantalla_detalle_comunidad.dart';
+import 'screens/comunidades/pantalla_detalle_post.dart';
 import 'screens/perfiles/pantalla_detalle_perfil.dart';
 
 // Components inside the Shell
@@ -19,7 +20,7 @@ import 'screens/perfiles/pantalla_tienda_mejoras.dart';
 import 'widgets/comunes/vista_requerir_login.dart';
 import 'models/comunidad.dart';
 import 'models/usuario.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'models/publicacion.dart';
 
 class ProtectedRoute extends StatefulWidget {
   final Widget child;
@@ -98,6 +99,40 @@ class _PerfilLoader extends StatelessWidget {
   }
 }
 
+class _PostLoader extends StatelessWidget {
+  final int postId;
+  final int comunidadId;
+  final Publicacion? extra;
+
+  const _PostLoader({required this.postId, required this.comunidadId, this.extra});
+
+  @override
+  Widget build(BuildContext context) {
+    if (extra != null) {
+      return PantallaDetallePost(post: extra!);
+    }
+    return FutureBuilder(
+      future: ServicioComunidades().obtenerPublicacion(postId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFFEF5F1),
+            body: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+          );
+        }
+        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
+          return PantallaDetallePost(post: snapshot.data!.datos!);
+        }
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+          appBar: AppBar(title: const Text('Error')),
+          body: const Center(child: Text('Publicación no encontrada 😿')),
+        );
+      },
+    );
+  }
+}
+
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _shellNavigatorKeyFeed = GlobalKey<NavigatorState>(debugLabel: 'shellFeed');
 final GlobalKey<NavigatorState> _shellNavigatorKeyExplorar = GlobalKey<NavigatorState>(debugLabel: 'shellExplorar');
@@ -143,6 +178,18 @@ final GoRouter appRouter = GoRouter(
                   builder: (context, state) {
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
                     return _ComunidadLoader(id, state.extra as Comunidad?);
+                  },
+                ),
+                GoRoute(
+                  path: 'comunidades/:id/post/:postId',
+                  builder: (context, state) {
+                    final comunidadId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    final postId = int.tryParse(state.pathParameters['postId'] ?? '') ?? 0;
+                    return _PostLoader(
+                      postId: postId,
+                      comunidadId: comunidadId,
+                      extra: state.extra as Publicacion?,
+                    );
                   },
                 ),
                 GoRoute(

@@ -6,7 +6,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../models/comunidad.dart';
 import '../../models/publicacion.dart';
 import '../../models/sala_chat.dart';
-import 'widgets/tarjeta_publicacion.dart';
+import '../../widgets/inicio/tarjeta_post.dart';
 import 'package:provider/provider.dart';
 import '../../providers/post_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -25,6 +25,8 @@ import 'widgets_preview/preview_header.dart';
 import 'widgets_preview/preview_about_section.dart';
 import 'widgets_preview/community_join_button.dart';
 import 'pantalla_enviar_propuesta.dart';
+import '../../widgets/inicio/tarjeta_post.dart';
+import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaDetalleComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -73,8 +75,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   Color _colorTextoPrincipal(BuildContext context) => _esAppClara(context) ? const Color(0xFF1E1E1E) : Colors.white;
   Color _colorTextoSecundario(BuildContext context) => _esAppClara(context) ? Colors.grey.shade700 : Colors.grey.shade400;
 
-  List<Publicacion> _publicaciones = [];
-  List<SalaChat> _salasChat = [];
+  List<Publicacion>? _publicaciones;
+  List<SalaChat>? _salasChat;
   bool _estaCargandoDatos = false;
   Key _galeriaKey = UniqueKey(); // Clave para forzar refresco
 
@@ -92,9 +94,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (oldWidget.comunidad.id != widget.comunidad.id) {
       _indiceSeccion = 0; // Opcional: resetear al primer tab (Posts)
       _indiceGaleria = 0;
-      _publicaciones = [];
-      _salasChat = [];
-      _colecciones = [];
+      _publicaciones = null;
+      _salasChat = null;
+      _colecciones = null;
       _miRol = 'Miembro';
       _inicializarDatos();
       _cargarColecciones();
@@ -113,7 +115,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   final _servicioGaleria = ServicioGaleria();
-  List<Coleccion> _colecciones = [];
+  List<Coleccion>? _colecciones;
 
   Future<void> _cargarColecciones() async {
     final res = await _servicioGaleria.obtenerColecciones(comunidadId: widget.comunidad.id);
@@ -123,19 +125,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Future<void> _cargarDatosSeccion(int index) async {
-    setState(() => _estaCargandoDatos = true);
+    setState(() { _estaCargandoDatos = true; if (index == 0) _publicaciones = null; if (index == 3) _salasChat = null; });
     try {
       if (index == 0) {
-        setState(() { _publicaciones = []; }); // Limpiamos para feedback visual
+        setState(() { _publicaciones = null; }); // Limpiamos para feedback visual
         final res = await _servicio.obtenerPublicaciones(widget.comunidad.id);
-        if (res.exito && mounted) setState(() => _publicaciones = res.datos ?? <Publicacion>[]);
+        if (res.exito && mounted) setState(() => _publicaciones = res.datos ?? []);
       } else if (index == 2) {
         setState(() { _galeriaKey = UniqueKey(); }); // Forzamos reconstrucción de la grilla
         await _cargarColecciones();
       } else if (index == 3) {
         final res = await _servicio.obtenerSalasChat(widget.comunidad.id);
         if (res.exito && mounted) {
-          setState(() => _salasChat = res.datos ?? <SalaChat>[]);
+          setState(() => _salasChat = res.datos ?? []);
         }
       }
     } finally {
@@ -723,12 +725,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
         titulo: 'Nueva Publicación 🐾',
-        onPublicar: (texto, imagen, etiquetas) async {
+        onPublicar: (texto, imagenes, etiquetas) async {
           final provider = Provider.of<PostProvider>(context, listen: false);
           final exito = await provider.crearPost(
             comunidadId: widget.comunidad.id,
             texto: texto,
-            imagen: imagen,
+            imagenes: imagenes,
             etiquetas: etiquetas,
           );
           
@@ -884,22 +886,24 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   int _indiceGaleria = 0; 
 
   Widget _buildPostFeed() {
-    if (_estaCargandoDatos && _publicaciones.isEmpty) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    if (_estaCargandoDatos || _publicaciones == null) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     
     return RefreshIndicator(
       color: const Color(0xFFF28B50),
       backgroundColor: _esAppClara(context) ? Colors.white : const Color(0xFF1E1E1E),
       onRefresh: () => _cargarDatosSeccion(0),
-      child: _publicaciones.isEmpty 
+      child: _publicaciones!.isEmpty 
         ? _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones')
         : ListView.builder(
             padding: const EdgeInsets.all(24),
-            itemCount: _publicaciones.length,
+            itemCount: _publicaciones!.length,
             itemBuilder: (context, index) => Padding(
               padding: const EdgeInsets.only(bottom: 24.0),
-              child: TarjetaPublicacion(
-                publicacion: _publicaciones[index],
-                comunidadId: widget.comunidad.id,
+              child: TarjetaPost(
+                post: _publicaciones![index],
+                onJoin: () {}, // Ya está en la comunidad
+                onEliminado: () => _cargarDatosSeccion(0),
+                estaEnComunidad: true,
               ),
             ),
           ),
@@ -937,7 +941,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
 
   Widget _buildGalleryCollections() {
-    if (_colecciones.isEmpty) {
+    if (_estaCargandoDatos || _colecciones == null) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    }
+    if (_colecciones == null || _colecciones!.isEmpty) {
       return _buildEmptyState(Icons.folder_open_rounded, 'No hay carpetas creadas');
     }
 
@@ -951,9 +958,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         mainAxisSpacing: 12,
         childAspectRatio: 0.82,
       ),
-      itemCount: _colecciones.length,
+      itemCount: _colecciones!.length,
       itemBuilder: (context, index) {
-        final col = _colecciones[index];
+        final col = _colecciones![index];
         final rotacion = (random.nextDouble() - 0.5) * 0.1;
         final coloresHex = [0xFF248EA6, 0xFFF28B50, 0xFFD95F43, 0xFF8338EC];
         final color = Color(coloresHex[index % coloresHex.length]);
@@ -1030,19 +1037,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildPreviewPostFeed() {
-    if (_estaCargandoDatos && _publicaciones.isEmpty) {
+    if (_estaCargandoDatos || _publicaciones == null) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFF28B50)),
       );
     }
     
-    if (_publicaciones.isEmpty) {
+    if (_publicaciones!.isEmpty) {
       return _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones');
     }
     
     return ListView.builder(
       padding: const EdgeInsets.all(24),
-      itemCount: _publicaciones.length,
+      itemCount: _publicaciones!.length,
       itemBuilder: (context, index) => Padding(
         padding: const EdgeInsets.only(bottom: 24.0),
         child: GestureDetector(
@@ -1055,9 +1062,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           ),
           child: Opacity(
             opacity: 0.7,
-            child: TarjetaPublicacion(
-              publicacion: _publicaciones[index],
-              comunidadId: widget.comunidad.id,
+            child: TarjetaPost(
+              post: _publicaciones![index],
+              onJoin: () {}, // Ya está en la comunidad
             ),
           ),
         ),
@@ -1066,13 +1073,13 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildPreviewGallery() {
-    if (_estaCargandoDatos) {
+    if (_estaCargandoDatos || _colecciones == null) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFF28B50)),
       );
     }
     
-    if (_colecciones.isEmpty) {
+    if (_colecciones == null || _colecciones!.isEmpty) {
       return _buildEmptyState(Icons.photo_library_rounded, 'Aún no hay contenido en la galería');
     }
 
@@ -1083,9 +1090,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: _colecciones.length,
+      itemCount: _colecciones!.length,
       itemBuilder: (context, index) {
-        final col = _colecciones[index];
+        final col = _colecciones![index];
         final color = widget.comunidad.colorTema;
         return InkWell(
           onTap: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -1195,11 +1202,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildEmptyState(IconData icon, String message) {
-    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(icon, size: 64, color: Colors.grey.withOpacity(0.3)),
-      const SizedBox(height: 16),
-      Text(message, style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold)),
-    ]));
+    return EstadoVacioCargando(icon: icon, message: message);
   }
 
   Widget _buildStore() {
@@ -1225,15 +1228,15 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildChat() {
-    if (_estaCargandoDatos && _salasChat.isEmpty) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    if (_estaCargandoDatos || _salasChat == null) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
 
     return ListView.builder(
       padding: const EdgeInsets.all(24),
-      itemCount: _salasChat.length + 2, 
+      itemCount: (_salasChat?.length ?? 0) + 2, 
       itemBuilder: (context, index) {
         if (index == 0) return _buildChatHeader();
         if (index == 1) return _buildGeneralChatTile();
-        final sala = _salasChat[index - 2];
+        final sala = _salasChat![index - 2];
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

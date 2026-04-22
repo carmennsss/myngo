@@ -4,7 +4,7 @@ from .views import (
     PublicacionList, PublicacionCreate, PublicacionDetail, 
     GaleriaList, GaleriaDetalleExtendido, DocumentosUtilidad, InicioGaleria, ColeccionViewSet,
     ReporteListCreate, ImagenGaleriaDetail, ComentarioDetail,
-    ToggleLikeView, ComentarioListCreate, ResolverReporteView
+    ToggleLikeView, ComentarioListCreate, ResolverReporteView, TogglePostGuardadoView
 )
 
 router = DefaultRouter()
@@ -20,6 +20,7 @@ urlpatterns = [
     path('reportes/', ReporteListCreate.as_view(), name='reporte-list'),
     path('reportes/<int:pk>/resolver/', ResolverReporteView.as_view(), name='reporte-resolver'),
     path('publicaciones/<int:pk>/like/', ToggleLikeView.as_view(), name='publicacion-like'),
+    path('publicaciones/<int:pk>/guardar/', TogglePostGuardadoView.as_view(), name='publicacion-guardar'),
     path('publicaciones/<int:pk>/comentarios/', ComentarioListCreate.as_view(), name='publicacion-comentarios'),
     path('comentarios/<int:pk>/', ComentarioDetail.as_view(), name='comentario-detail'),
     path('reglas_comunidad/',DocumentosUtilidad.as_view(),name="reglas_comunidad"),

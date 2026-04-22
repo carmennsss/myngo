@@ -18,6 +18,7 @@ import '../../widgets/dialogo_crear_post.dart';
 import '../../services/servicio_comunidades.dart';
 import 'pantalla_tienda_mejoras.dart';
 import 'pantalla_personalizar_perfil.dart';
+import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario con diseño oscuro y sistema de votos.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -40,12 +41,22 @@ class PantallaDetallePerfil extends StatefulWidget {
   State<PantallaDetallePerfil> createState() => _PantallaDetallePerfilState();
 }
 
-class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
+class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with SingleTickerProviderStateMixin {
+  TabController? _tabController;
+  int _tabActual = 0;
+
   int? _currentUserId;
   bool _isLoading = false;
   String? _estadoSeguimiento;
-  List<Publicacion> _publicaciones = [];
+  List<Publicacion>? _publicaciones;
   bool _cargandoPublicaciones = true;
+
+  // Estado para Guardados
+  List<Publicacion>? _publicacionesGuardadas;
+  bool _cargandoGuardados = false;
+  int? _filtroComunidadId;
+  List<Map<String, dynamic>> _comunidadesFiltro = [];
+  // Campos locales que se actualizan sin recargar el widget completo
   String? _biografiaLocal;
   String? _avatarLocal;
   String? _fondoLocal;
@@ -71,11 +82,20 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     _fondoLocal = widget.usuario.fondo;
     _marcoLocal = widget.usuario.marco;
     _ratingLocal = widget.usuario.ratingActual; // Initialize local rating
-    _totalVotosRecibidos = 0; 
     _cargarUsuario();
     _cargarEstadoVoto();
     _cargarPublicaciones();
     _cargarRolContextual();
+    
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController!.addListener(() {
+      if (_tabController!.index != _tabActual) {
+        setState(() => _tabActual = _tabController!.index);
+        if (_tabActual == 1 && (_publicacionesGuardadas == null || _publicacionesGuardadas!.isEmpty)) {
+          _cargarGuardados();
+        }
+      }
+    });
   }
 
   @override
@@ -115,6 +135,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
   @override
   void dispose() {
     _timerReinicio?.cancel();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -164,16 +185,59 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
     }
   }
   Future<void> _cargarPublicaciones() async {
-    setState(() => _cargandoPublicaciones = true);
+    setState(() {
+      _cargandoPublicaciones = true;
+      _publicaciones = null; // Reiniciar a null para forzar estado de carga puro
+    });
     final dynamic respuesta = await ServicioPerfiles().obtenerPublicacionesPerfil(widget.usuario.perfilId);
     if (mounted) {
       setState(() {
         if (respuesta.exito && respuesta.datos != null) {
           _publicaciones = respuesta.datos as List<Publicacion>;
+        } else {
+          _publicaciones = []; // Si falla o no hay datos, lista vacía
         }
         _cargandoPublicaciones = false;
       });
     }
+  }
+
+  Future<void> _cargarGuardados({int? comunidadId}) async {
+    setState(() {
+      _cargandoGuardados = true;
+      _publicacionesGuardadas = null; // Reiniciar a null
+      if (comunidadId == null && _filtroComunidadId == null) {
+        _comunidadesFiltro = [];
+      }
+    });
+
+    final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(comunidadId: comunidadId);
+    
+    if (mounted) {
+      setState(() {
+        if (res.exito && res.datos != null) {
+          _publicacionesGuardadas = res.datos as List<Publicacion>;
+          if (comunidadId == null && _filtroComunidadId == null) {
+             _extraerComunidadesFiltro(_publicacionesGuardadas!);
+          }
+        } else {
+          _publicacionesGuardadas = [];
+        }
+        _cargandoGuardados = false;
+      });
+    }
+  }
+
+  void _extraerComunidadesFiltro(List<Publicacion> posts) {
+    final Map<int, String> uniqueComs = {};
+    for (var p in posts) {
+      if (p.comunidadId != 0) {
+        uniqueComs[p.comunidadId] = p.comunidadNombre;
+      }
+    }
+    _comunidadesFiltro = uniqueComs.entries
+        .map((e) => {'id': e.key, 'nombre': e.value})
+        .toList();
   }
 
   Future<void> _mostrarDialogoEditarBiografia() async {
@@ -746,132 +810,121 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
               ),
             ),
           ),
-          if (_cargandoPublicaciones)
-            const SliverToBoxAdapter(
-              child: Center(child: Padding(
-                padding: EdgeInsets.all(40.0),
-                child: CircularProgressIndicator(color: Color(0xFFF28B50)),
-              )),
-            )
-          else if (_publicaciones.isEmpty)
+          
+          // ── TABS (Solo para dueño) ──
+          if (_currentUserId == usuario.id)
             SliverToBoxAdapter(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40.0),
-                  child: Text(
-                    'Aún no hay publicaciones',
-                    style: GoogleFonts.inter(color: Colors.grey, fontSize: 16),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
+                    color: const Color(0xFF248EA6),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 160, // máximo 160px por celda
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
-                  childAspectRatio: 1,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final publicacion = _publicaciones[index];
-                    final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
-
-                    Widget celda = ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: tieneImagen
-                          ? Image.network(
-                              publicacion.urlImagen!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: const Color(0xFF1E1E1E),
-                                child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
-                              ),
-                            )
-                          : Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF1A2744), Color(0xFF0F1A33)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.3), width: 0.8),
-                              ),
-                              padding: const EdgeInsets.fromLTRB(10, 8, 4, 10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 4, height: 4,
-                                        decoration: const BoxDecoration(color: Color(0xFF248EA6), shape: BoxShape.circle),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          publicacion.titulo?.isNotEmpty == true ? publicacion.titulo! : 'Nota',
-                                          style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF248EA6), fontWeight: FontWeight.bold),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Expanded(
-                                    child: Text(
-                                      publicacion.contenidoTexto,
-                                      style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withOpacity(0.85), height: 1.4),
-                                      overflow: TextOverflow.fade,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                    );
-
-                    // Celda con tap para ver detalle + menú de opciones superpuesto
-                    return GestureDetector(
-                      onTap: () => DetallePublicacionSheet.mostrar(
-                        context,
-                        publicacion: publicacion,
-                        avatarUrl: _avatarLocal ?? widget.usuario.urlAvatar ?? '',
-                        onEliminado: () => setState(() => _publicaciones.removeAt(index)),
-                        onProfileSelected: (u) {
-                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                          if (inicioState != null) {
-                            inicioState.seleccionarUsuario(u);
-                          }
-                        },
-                      ),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          celda,
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: MenuOpcionesContenido(
-                              tipoObjeto: 'POST',
-                              objetoId: publicacion.id,
-                              autorId: widget.usuario.id,
-                              onEliminado: () => setState(() => _publicaciones.removeAt(index)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  childCount: _publicaciones.length,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey,
+                  labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
+                  tabs: const [
+                    Tab(text: 'Publicaciones', icon: Icon(Icons.grid_view_rounded, size: 20)),
+                    Tab(text: 'Guardados', icon: Icon(Icons.bookmark_outline_rounded, size: 20)),
+                  ],
                 ),
               ),
             ),
+
+          if (_tabActual == 0) ...[
+            // ── VISTA PUBLICACIONES ──
+            if (_cargandoPublicaciones || _publicaciones == null)
+              const SliverToBoxAdapter(
+                child: Center(child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+                )),
+              )
+            else if (_publicaciones!.isEmpty)
+              const SliverToBoxAdapter(
+                child: EstadoVacioCargando(
+                  icon: Icons.feed_outlined,
+                  message: 'Aún no hay publicaciones',
+                ),
+              )
+            else
+              _buildPublicacionesGrid(_publicaciones!),
+          ] else if (_tabActual == 1) ...[
+            // ── VISTA GUARDADOS ──
+            
+            // Filtros de comunidad
+            if (_comunidadesFiltro.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 50,
+                  margin: const EdgeInsets.only(top: 8),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _comunidadesFiltro.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text('Todos', style: GoogleFonts.outfit(fontSize: 12)),
+                            selected: _filtroComunidadId == null,
+                            onSelected: (v) {
+                              setState(() => _filtroComunidadId = null);
+                              _cargarGuardados();
+                            },
+                            backgroundColor: const Color(0xFF1E1E1E),
+                            selectedColor: const Color(0xFF248EA6),
+                            checkmarkColor: Colors.white,
+                            labelStyle: TextStyle(color: _filtroComunidadId == null ? Colors.white : Colors.grey),
+                          ),
+                        );
+                      }
+                      final com = _comunidadesFiltro[index - 1];
+                      final isSelected = _filtroComunidadId == com['id'];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(com['nombre'], style: GoogleFonts.outfit(fontSize: 12)),
+                          selected: isSelected,
+                          onSelected: (v) {
+                            setState(() => _filtroComunidadId = v ? com['id'] : null);
+                            _cargarGuardados(comunidadId: _filtroComunidadId);
+                          },
+                          backgroundColor: const Color(0xFF1E1E1E),
+                          selectedColor: const Color(0xFF248EA6),
+                          checkmarkColor: Colors.white,
+                          labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.grey),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+            if (_cargandoGuardados || _publicacionesGuardadas == null)
+              const SliverToBoxAdapter(
+                child: Center(child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+                )),
+              )
+            else if (_publicacionesGuardadas!.isEmpty)
+              const SliverToBoxAdapter(
+                child: EstadoVacioCargando(
+                  icon: Icons.bookmark_border_rounded,
+                  message: 'No tienes contenido guardado aún',
+                ),
+              )
+            else
+              _buildPublicacionesGrid(_publicacionesGuardadas!),
+          ],
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
@@ -1227,16 +1280,16 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
         titulo: 'Publicar en Perfil 🐾',
-        onPublicar: (texto, imagen, etiquetas) async {
-          if (texto.trim().isEmpty && imagen == null) {
+        onPublicar: (texto, imagenes, etiquetas) async {
+          if (texto.trim().isEmpty && (imagenes == null || imagenes.isEmpty)) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Añade texto o una imagen para publicar'))
+              const SnackBar(content: Text('Añade texto o imágenes para publicar'))
             );
             return false;
           }
           final respuesta = await ServicioPerfiles().crearPostPerfil(
             texto: texto.trim().isEmpty ? ' ' : texto.trim(),
-            imagen: imagen,
+            imagenes: imagenes,
             etiquetas: etiquetas,
           );
           if (mounted) {
@@ -1253,6 +1306,98 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> {
           }
           return false;
         },
+      ),
+    );
+  }
+
+  Widget _buildPublicacionesGrid(List<Publicacion> posts) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 160,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          childAspectRatio: 1,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final publicacion = posts[index];
+            final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
+
+            Widget celda = ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: tieneImagen
+                  ? Image.network(
+                      publicacion.urlImagen!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: const Color(0xFF1E1E1E),
+                        child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                      ),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1A2744), Color(0xFF0F1A33)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.3), width: 0.8),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(10, 8, 4, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 4, height: 4,
+                                decoration: const BoxDecoration(color: Color(0xFF248EA6), shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  publicacion.titulo.isNotEmpty ? publicacion.titulo : 'Nota',
+                                  style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF248EA6), fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Expanded(
+                            child: Text(
+                              publicacion.contenidoTexto,
+                              style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withOpacity(0.85), height: 1.4),
+                              overflow: TextOverflow.fade,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            );
+
+            return GestureDetector(
+              onTap: () => DetallePublicacionSheet.mostrar(
+                context,
+                publicacion: publicacion,
+                avatarUrl: _avatarLocal ?? widget.usuario.urlAvatar ?? '',
+                onProfileSelected: (u) {
+                  final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                  if (inicioState != null) {
+                    inicioState.seleccionarUsuario(u);
+                  }
+                },
+              ),
+              child: celda,
+            );
+          },
+          childCount: posts.length,
+        ),
       ),
     );
   }

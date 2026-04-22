@@ -8,6 +8,7 @@ import '../../screens/galeria/pantalla_detalle_imagen.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../screens/galeria/dialogo_selector_imagen.dart';
 import '../comunes/menu_opciones_contenido.dart';
+import '../comunes/estado_vacio_cargando.dart';
 
 
 class MasonryGridGaleria extends StatefulWidget {
@@ -25,7 +26,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   final _servicioGaleria = ServicioGaleria();
   final _scrollController = ScrollController();
   
-  List<ImagenGaleria> _items = [];
+  List<ImagenGaleria>? _items;
   bool _cargando = false;
   bool _subiendo = false;
   bool _hayMas = true;
@@ -56,7 +57,10 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   Future<void> _cargarMas() async {
     if (_cargando) return;
     if (!mounted) return;
-    setState(() => _cargando = true);
+    setState(() {
+      _cargando = true;
+      if (_offset == 0) _items = null; // Reiniciar a null solo en la carga inicial
+    });
 
     final respuesta = await _servicioGaleria.obtenerGaleria(
       comunidadId: widget.comunidadId,
@@ -68,12 +72,19 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
 
     if (respuesta.exito && respuesta.datos != null && mounted) {
       setState(() {
-        _items.addAll(respuesta.datos!);
+        if (_items == null) {
+          _items = respuesta.datos!;
+        } else {
+          _items!.addAll(respuesta.datos!);
+        }
         _offset += _limit;
         if (respuesta.datos!.length < _limit) {
           _hayMas = false;
         }
       });
+    } else if (mounted && _items == null) {
+      // Si la carga inicial falla, inicializar como lista vacía para mostrar el estado correspondiente
+      setState(() => _items = []);
     }
     if (!mounted) return;
     setState(() => _cargando = false);
@@ -105,7 +116,8 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         
         // Refrescar galería instantáneamente
         setState(() {
-          _items.insert(0, nuevaImagen);
+          _items ??= [];
+          _items!.insert(0, nuevaImagen);
           _subiendo = false;
         });
         
@@ -130,12 +142,14 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   Widget build(BuildContext context) {
     Widget contenido;
     
-    if (_items.isEmpty && !_cargando) {
-      contenido = Center(
-        child: Text(
-          'Aún no hay fotos aquí 🐾',
-          style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16),
-        ),
+    if (_items == null && _cargando) {
+      contenido = const Center(
+        child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+      );
+    } else if (_items == null || _items!.isEmpty) {
+      contenido = const EstadoVacioCargando(
+        icon: Icons.photo_library_rounded,
+        message: 'Aún no hay fotos aquí 🐾',
       );
     } else {
       contenido = Padding(
@@ -147,9 +161,9 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           ),
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
-          itemCount: _items.length + (_hayMas ? 1 : 0),
+          itemCount: _items!.length + (_hayMas ? 1 : 0),
           itemBuilder: (context, index) {
-            if (index == _items.length) {
+            if (index == _items!.length) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(8.0),
@@ -158,7 +172,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
               );
             }
 
-            final item = _items[index];
+            final item = _items![index];
             final double aspect = item.relacionAspecto > 0 ? item.relacionAspecto : (index % 3 == 0 ? 0.7 : 1.2);
 
             return _buildTile(item, aspect);
@@ -275,7 +289,8 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
 
       if (res.exito && mounted) {
         setState(() {
-          _items.insert(0, seleccionada);
+          _items ??= <ImagenGaleria>[];
+          _items!.insert(0, seleccionada);
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('¡Añadida a la colección!', style: GoogleFonts.outfit()), backgroundColor: const Color(0xFF248EA6)),
@@ -391,7 +406,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                 creadorComunidadId: item.creadorComunidadId,
                 onEliminado: () {
                   setState(() {
-                    _items.remove(item);
+                    _items?.remove(item);
                   });
                 },
               ),
