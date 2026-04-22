@@ -18,6 +18,9 @@ import '../galeria/pantalla_detalle_coleccion.dart';
 import 'pantalla_admin_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import '../perfiles/pantalla_perfiles.dart';
+import 'pantalla_enviar_propuesta.dart';
+import '../perfiles/pantalla_tienda_mejoras.dart';
+import '../inicio/pantalla_inicio.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/dialogo_crear_post.dart';
 import '../perfiles/pantalla_tienda_mejoras.dart';
@@ -178,11 +181,32 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final esMiembro = widget.comunidad.esMiembro || esCreador;
 
     if (!esMiembro) {
-      final previewContent = Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1200), child: _buildPreview(context)));
+      final previewContent = Stack(
+        children: [
+          Positioned.fill(child: _buildBackgroundFeed()),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: _buildPreview(context),
+            ),
+          ),
+        ],
+      );
       return widget.esIntegrada ? previewContent : Scaffold(backgroundColor: _colorPagina(context), body: previewContent);
     }
 
-    final dashboardContent = Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1200), child: _buildDashboard(context)));
+    final dashboardContent = Stack(
+      children: [
+        Positioned.fill(child: _buildBackgroundFeed()),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: _buildDashboard(context),
+          ),
+        ),
+      ],
+    );
+
     if (widget.esIntegrada) {
       return Container(
         color: _colorPagina(context),
@@ -200,81 +224,86 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final esPublica = widget.comunidad.esPublica;
     
     if (esPublica) {
-      return NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              expandedHeight: 500,
-              pinned: false,
-              stretch: true,
-              backgroundColor: _colorPagina(context),
-              surfaceTintColor: Colors.transparent,
-              automaticallyImplyLeading: false,
-              flexibleSpace: FlexibleSpaceBar(
-                stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
-                background: _BarraContextoComunidad(
-                  comunidad: widget.comunidad,
-                  miId: _miId,
-                  onCerrar: widget.onBack ?? () => Navigator.pop(context),
-                  onComunidadActualizada: (c) {
-                    setState(() {});
-                  },
+      return Stack(
+        children: [
+          Positioned.fill(child: _buildBackgroundFeed()),
+          NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverAppBar(
+                  expandedHeight: 500,
+                  pinned: false,
+                  stretch: true,
+                  backgroundColor: _colorPagina(context),
+                  surfaceTintColor: Colors.transparent,
+                  automaticallyImplyLeading: false,
+                  flexibleSpace: FlexibleSpaceBar(
+                    stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+                    background: _BarraContextoComunidad(
+                      comunidad: widget.comunidad,
+                      miId: _miId,
+                      onCerrar: widget.onBack ?? () => Navigator.pop(context),
+                      onComunidadActualizada: (c) {
+                        setState(() {});
+                      },
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverAppBarDelegate(
-                minHeight: 60,
-                maxHeight: 60,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _colorPagina(context),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: widget.comunidad.colorTema.withOpacity(0.2),
-                        width: 2,
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverAppBarDelegate(
+                    minHeight: 60,
+                    maxHeight: 60,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _colorPagina(context),
+                        border: Border(
+                          bottom: BorderSide(
+                            color: widget.comunidad.colorTema.withOpacity(0.2),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          _buildPreviewNavItem(0, 'POSTS', Icons.grid_view_rounded),
+                          _buildPreviewNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
+                        ],
                       ),
                     ),
                   ),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      _buildPreviewNavItem(0, 'POSTS', Icons.grid_view_rounded),
-                      _buildPreviewNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
-                    ],
-                  ),
                 ),
+              ];
+            },
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _indiceSeccion == 0 ? _buildPreviewPostFeed() : _buildPreviewGallery(),
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: PreviewAboutSection(
+                      comunidad: widget.comunidad,
+                      esAppClara: _esAppClara(context),
+                      colorTextoPrincipal: _colorTextoPrincipal(context),
+                      colorTextoSecundario: _colorTextoSecundario(context),
+                      bgColor: _bgColor,
+                    ),
+                  ),
+                  CommunityJoinButton(
+                    comunidad: widget.comunidad,
+                    miId: _miId,
+                    estaCargandoPeticion: _estaCargandoPeticion,
+                    onLogin: () => Navigator.pushNamed(context, '/login'),
+                    onJoin: _gestionarMembresia,
+                    isPreview: true,
+                  ),
+                ],
               ),
             ),
-          ];
-        },
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              _indiceSeccion == 0 ? _buildPreviewPostFeed() : _buildPreviewGallery(),
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: PreviewAboutSection(
-                  comunidad: widget.comunidad,
-                  esAppClara: _esAppClara(context),
-                  colorTextoPrincipal: _colorTextoPrincipal(context),
-                  colorTextoSecundario: _colorTextoSecundario(context),
-                  bgColor: _bgColor,
-                ),
-              ),
-              CommunityJoinButton(
-                comunidad: widget.comunidad,
-                miId: _miId,
-                estaCargandoPeticion: _estaCargandoPeticion,
-                onLogin: () => Navigator.pushNamed(context, '/login'),
-                onJoin: _gestionarMembresia,
-                isPreview: true,
-              ),
-            ],
           ),
-        ),
+        ],
       );
     }
     
@@ -767,18 +796,20 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             etiquetas: etiquetas,
           );
           
-          if (exito && mounted) {
+          if (!mounted) return false;
+
+          if (exito) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('¡Publicación creada exitosamente! 🐾'), backgroundColor: Color(0xFF248EA6)),
+            );
             _cargarDatosSeccion(0);
             return true;
-          } else if (provider.state == PostState.moderationRejected) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(provider.errorMessage), backgroundColor: const Color(0xFFD95F43)),
-              );
-            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(provider.errorMessage.isNotEmpty ? provider.errorMessage : 'Error al subir la publicación'), backgroundColor: const Color(0xFFD95F43)),
+            );
             return false;
           }
-          return false;
         },
       ),
     );
@@ -916,6 +947,102 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
+  Widget _buildSideBarDecorativa({required bool izquierda}) {
+    final colorPrimario = widget.comunidad.colorTema;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: _esAppClara(context) ? const Color(0xFFFAFAFA) : const Color(0xFF0D0D0D),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.03,
+              child: GridView.builder(
+                itemCount: 40,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 6,
+                  mainAxisSpacing: 30,
+                  crossAxisSpacing: 30,
+                ),
+                itemBuilder: (context, index) => Transform.rotate(
+                  angle: index % 2 == 0 ? 0.3 : -0.2,
+                  child: const Icon(Icons.pets, size: 24),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: izquierda ? 100 : -150,
+            left: izquierda ? -150 : null,
+            right: !izquierda ? -150 : null,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colorPrimario.withOpacity(0.06),
+                boxShadow: [
+                  BoxShadow(color: colorPrimario.withOpacity(0.08), blurRadius: 100, spreadRadius: 50)
+                ],
+              ),
+            ),
+          ),
+          Center(
+            child: RotatedBox(
+              quarterTurns: izquierda ? 3 : 1,
+              child: Text(
+                widget.comunidad.nombre.toUpperCase(),
+                style: GoogleFonts.outfit(
+                  fontSize: 100,
+                  fontWeight: FontWeight.w900,
+                  color: colorPrimario.withOpacity(0.03),
+                  letterSpacing: 20,
+                  height: 1.0,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackgroundFeed() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 800) return const SizedBox.shrink();
+        
+        final colorBorde = _esAppClara(context) ? Colors.black.withOpacity(0.06) : Colors.white.withOpacity(0.06);
+        final colorFeed = _esAppClara(context) ? Colors.white : const Color(0xFF141414);
+        
+        return Row(
+          children: [
+            Expanded(child: _buildSideBarDecorativa(izquierda: true)),
+            Container(
+              width: 728,
+              decoration: BoxDecoration(
+                color: colorFeed,
+                border: Border(
+                  left: BorderSide(color: colorBorde, width: 1.5),
+                  right: BorderSide(color: colorBorde, width: 1.5),
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, spreadRadius: 5)
+                ]
+              ),
+            ),
+            Expanded(child: _buildSideBarDecorativa(izquierda: false)),
+          ],
+        );
+      },
+    );
+  }
+
   int _indiceGaleria = 0; 
 
   Widget _buildPostFeed() {
@@ -928,15 +1055,20 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       child: _publicaciones!.isEmpty 
         ? _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones')
         : ListView.builder(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             itemCount: _publicaciones!.length,
-            itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.only(bottom: 24.0),
-              child: TarjetaPost(
-                post: _publicaciones![index],
-                onJoin: () {}, // Ya está en la comunidad
-                onEliminado: () => _cargarDatosSeccion(0),
-                estaEnComunidad: true,
+            itemBuilder: (context, index) => Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: TarjetaPost(
+                    post: _publicaciones![index],
+                    onJoin: () {}, // Ya está en la comunidad
+                    onEliminado: () => _cargarDatosSeccion(0),
+                    estaEnComunidad: true,
+                  ),
+                ),
               ),
             ),
           ),
@@ -1077,36 +1209,40 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
     
     if (_publicaciones!.isEmpty) {
-      return _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones');
+      return SizedBox(height: 300, child: _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones'));
     }
     
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       itemCount: _publicaciones!.length,
-      itemBuilder: (context, index) => Padding(
-        padding: const EdgeInsets.only(bottom: 24.0),
-        child: GestureDetector(
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Inicia sesión para ver los detalles 👉', style: GoogleFonts.inter()),
-              backgroundColor: const Color(0xFF248EA6),
-              duration: const Duration(seconds: 3),
+      itemBuilder: (context, index) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 24.0),
+            child: GestureDetector(
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Inicia sesión para ver los detalles 👉', style: GoogleFonts.inter()),
+                  backgroundColor: const Color(0xFF248EA6),
+                  duration: const Duration(seconds: 3),
+                ),
+              ),
+              child: Opacity(
+                opacity: 0.7,
+                child: TarjetaPost(
+                  post: _publicaciones![index],
+                  onJoin: () {}, // Ya está en la comunidad
+                ),
+              ),
             ),
           ),
-          child: Opacity(
-            opacity: 0.7,
-            child: TarjetaPost(
-              post: _publicaciones![index],
-              onJoin: () {}, // Ya está en la comunidad
-            ),
-          ),
-        ),
-      ),
-    );
+        ), // ConstrainedBox
+      ), // Center
+    ); // ListView.builder
   }
-
   Widget _buildPreviewGallery() {
     if (_estaCargandoDatos || _colecciones == null) {
       return const Center(
@@ -1243,12 +1379,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildStore() {
+    final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
     return PantallaTiendaMejoras(
       esVistaIntegrada: true, 
       comunidad: widget.comunidad,
       onCategoryChanged: (tipo) {
         setState(() => _tipoMejoraSeleccionado = tipo);
       },
+      onPuntosActualizados: (p) => inicioState?.actualizarPuntos(p),
     );
   }
 
