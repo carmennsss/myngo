@@ -109,15 +109,36 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
 
   @override
   Widget build(BuildContext context) {
+    Color bgColor = Colors.white;
+    Color? borderColor;
+
+    if (widget.post.autorEstiloPost != null) {
+      try {
+        final bgHex = widget.post.autorEstiloPost!['fondo'];
+        final borderHex = widget.post.autorEstiloPost!['borde'];
+        if (bgHex != null) bgColor = Color(int.parse(bgHex, radix: 16));
+        if (borderHex != null) borderColor = Color(int.parse(borderHex, radix: 16));
+      } catch (e) {
+        // Ignorar
+      }
+    }
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent, // Background will be handled by the container
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: borderColor != null ? Border.all(color: borderColor, width: 2) : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 8, top: 4),
               child: Row(
@@ -271,7 +292,8 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

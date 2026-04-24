@@ -23,7 +23,7 @@ class CatalogoMejorasSerializer(serializers.ModelSerializer):
     nombre_creador = serializers.ReadOnlyField(source='creador.nombre_usuario')
     class Meta:
         model = Catalogo_mejoras
-        fields = ['id', 'tipo', 'precio_puntos', 'url_recurso', 'comunidad', 'creador', 'nombre_creador', 'esta_activo', 'fecha_creacion']
+        fields = ['id', 'tipo', 'precio_puntos', 'url_recurso', 'comunidad', 'creador', 'nombre_creador', 'esta_activo', 'fecha_creacion', 'datos_extra']
 
 class PeticionMejoraSerializer(serializers.ModelSerializer):
     nombre_usuario = serializers.ReadOnlyField(source='usuario.nombre_usuario')

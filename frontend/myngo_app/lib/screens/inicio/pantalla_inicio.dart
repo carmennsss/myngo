@@ -60,7 +60,11 @@ class PantallaInicioState extends State<PantallaInicio> {
   Future<void> _inicializarDatos() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
+    
     if (token != null) {
+      // Marcamos como logueado preventivamente para evitar flicker en la cabecera
+      if (mounted) setState(() => _estaLogueado = true);
+      
       final resDatos = await ServicioUsuarios().obtenerDatosPropios();
       if (resDatos.exito && resDatos.datos != null && mounted) {
         setState(() {
@@ -72,6 +76,10 @@ class PantallaInicioState extends State<PantallaInicio> {
         });
         _cargarComunidades();
         _cargarNotificacionesSinLeer();
+      } else if (!resDatos.exito && mounted) {
+        // Si el token era inválido o expiró
+        setState(() => _estaLogueado = false);
+        await prefs.remove('auth_token');
       }
     }
     _cargarRanking();

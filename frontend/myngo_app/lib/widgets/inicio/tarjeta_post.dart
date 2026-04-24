@@ -103,6 +103,20 @@ class _TarjetaPostState extends State<TarjetaPost> {
 
   @override
   Widget build(BuildContext context) {
+    Color bgColor = Colors.white;
+    Color? borderColor;
+
+    if (widget.post.autorEstiloPost != null) {
+      try {
+        final bgHex = widget.post.autorEstiloPost!['fondo'];
+        final borderHex = widget.post.autorEstiloPost!['borde'];
+        if (bgHex != null) bgColor = Color(int.parse(bgHex, radix: 16));
+        if (borderHex != null) borderColor = Color(int.parse(borderHex, radix: 16));
+      } catch (e) {
+        // Ignorar si hay error de parseo de color
+      }
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -110,7 +124,8 @@ class _TarjetaPostState extends State<TarjetaPost> {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: bgColor,
+            border: borderColor != null ? Border.all(color: borderColor, width: 2) : null,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(color: const Color(0xFF4A4440).withOpacity(0.04), blurRadius: 24, offset: const Offset(0, 12)),

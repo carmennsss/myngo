@@ -3,6 +3,8 @@ from .models import Publicacion, Imagenes_galeria, Coleccion, Me_gustas, Comenta
 
 class PublicacionSerializer(serializers.ModelSerializer):
     autor_nombre = serializers.ReadOnlyField(source='autor.nombre_usuario')
+    autor_foto = serializers.SerializerMethodField()
+    autor_estilo_post = serializers.SerializerMethodField()
     comunidad_nombre = serializers.ReadOnlyField(source='comunidad.nombre')
     creador_comunidad_id = serializers.ReadOnlyField(source='comunidad.creador.id')
     url_imagen = serializers.SerializerMethodField()
@@ -21,7 +23,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Publicacion
         fields = [
-            'id', 'autor', 'autor_nombre', 'comunidad', 'comunidad_nombre',
+            'id', 'autor', 'autor_nombre', 'autor_foto', 'autor_estilo_post', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
             'url_imagen', 'urls_imagenes', 'imagenes_ids', 'relacion_aspecto', 'es_valido_ia', 'etiquetas', 'fecha_creacion',
             'likes_count', 'comentarios_count', 'usuario_dio_like', 'usuario_guardo_post'
@@ -34,6 +36,15 @@ class PublicacionSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.imagen.url_s3.url)
             return obj.imagen.url_s3.url
         return None
+
+    def get_autor_foto(self, obj):
+        return obj.autor.url_avatar
+
+    def get_autor_estilo_post(self, obj):
+        try:
+            return obj.autor.perfil.estilo_post
+        except:
+            return None
 
     def get_urls_imagenes(self, obj):
         urls = []
@@ -156,9 +167,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
         read_only_fields = ['autor', 'publicacion']
 
     def get_autor_foto(self, obj):
-        if hasattr(obj.autor, 'perfil') and obj.autor.perfil.url_avatar:
-            return obj.autor.perfil.url_avatar
-        return None
+        return obj.autor.url_avatar
 
 class ReporteSerializer(serializers.ModelSerializer):
     informador_nombre = serializers.ReadOnlyField(source='informador.nombre_usuario')

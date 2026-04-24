@@ -152,28 +152,45 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
             Expanded(
               child: (_cargando || _posts == null)
                   ? const Center(child: CircularProgressIndicator(color: Color(0xFFF29C50)))
-                  : _error != null
+                  : (_error != null || _posts!.isEmpty)
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error_outline_rounded, size: 64, color: Colors.grey),
-                              const SizedBox(height: 16),
-                              Text(_error ?? 'Ocurrió un error', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16)),
-                              const SizedBox(height: 20),
-                              ElevatedButton.icon(
-                                onPressed: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
-                                icon: const Icon(Icons.refresh_rounded),
-                                label: const Text('REINTENTAR'),
+                              Icon(
+                                _error != null ? Icons.wifi_off_rounded : Icons.search_off_rounded,
+                                size: 80,
+                                color: Colors.grey.withOpacity(0.5),
                               ),
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 40),
+                                child: Text(
+                                  _error != null 
+                                      ? (_error!.contains('Tiempo de espera') 
+                                          ? '¡Miau! No hemos podido conectar a tiempo 😿\nRevisa tu conexión e inténtalo de nuevo.'
+                                          : _error!)
+                                      : 'Aún no hay publicaciones aquí 😿',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16),
+                                ),
+                              ),
+                              if (_error != null) ...[
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  label: const Text('REINTENTAR'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF29C50),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         )
-                      : _posts!.isEmpty
-                          ? const EstadoVacioCargando(
-                              icon: Icons.psychology_outlined,
-                              message: 'Aún no hay publicaciones aquí 😿',
-                            )
                           : CustomScrollView(
                               controller: _scrollController,
                               physics: const BouncingScrollPhysics(),

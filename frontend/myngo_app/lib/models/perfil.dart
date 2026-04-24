@@ -8,6 +8,7 @@ class Perfil {
   final int numeroSeguidores;
   final int numeroSeguidos;
   final String? estadoSeguimiento;
+  final Map<String, dynamic>? estiloPost;
   final Usuario? datosUsuario; // El "perro" que va dentro del "gato"
 String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
   double get ratingActual => datosUsuario?.ratingActual ?? 0.0;
@@ -20,6 +21,7 @@ String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
     required this.numeroSeguidores,
     required this.numeroSeguidos,
     this.estadoSeguimiento,
+    this.estiloPost,
     this.datosUsuario,
   });
 
@@ -33,6 +35,7 @@ String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
 
       fondo: json['fondo']?.toString(),
       marco: json['marco']?.toString(),
+      estiloPost: json['estilo_post'] is Map ? Map<String, dynamic>.from(json['estilo_post']) : null,
 
       // 3. Número de seguidores (int, con fallback a 0)
       numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,

@@ -11,22 +11,22 @@ class ServicioMejoras {
   static const String _urlBase = 'http://127.0.0.1:8000/mejoras';
 
   /// Envía un voto a un usuario o comunidad.
+  /// Envía un voto a un usuario o comunidad.
   Future<RespuestaApi> votar({int? receptorUsuarioId, int? receptorComunidadId, required int estrellas}) async {
     try {
       final token = await ServicioUsuarios().obtenerToken();
-
       final respuesta = await http.post(
         Uri.parse('$_urlBase/votar/'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Token $token',
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({
           if (receptorUsuarioId != null) 'receptor_usuario': receptorUsuarioId,
           if (receptorComunidadId != null) 'receptor_comunidad': receptorComunidadId,
           'estrellas': estrellas,
         }),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
       
@@ -42,6 +42,13 @@ class ServicioMejoras {
           mensaje: datosJson['error'] ?? 'Error al votar'
         );
       }
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -59,13 +66,20 @@ class ServicioMejoras {
         headers: {
           'Authorization': 'Token $token',
         },
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, mensaje: 'OK', datos: datosJson);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener estado');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -74,12 +88,19 @@ class ServicioMejoras {
   /// Consulta el ranking de usuarios.
   Future<RespuestaApi<List<dynamic>>> obtenerRankingUsuarios() async {
     try {
-      final respuesta = await http.get(Uri.parse('$_urlBase/ranking/usuarios/'));
+      final respuesta = await http.get(Uri.parse('$_urlBase/ranking/usuarios/')).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener ranking');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -92,7 +113,7 @@ class ServicioMejoras {
       final respuesta = await http.get(
         Uri.parse('$_urlBase/tienda/global/'),
         headers: {'Authorization': 'Token $token'},
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
@@ -100,6 +121,13 @@ class ServicioMejoras {
         return RespuestaApi(exito: true, mensaje: 'OK', datos: mejoras);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo global');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -112,7 +140,7 @@ class ServicioMejoras {
       final respuesta = await http.get(
         Uri.parse('$_urlBase/tienda/comunidad/$comunidadId/'),
         headers: {'Authorization': 'Token $token'},
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
@@ -120,6 +148,13 @@ class ServicioMejoras {
         return RespuestaApi(exito: true, mensaje: 'OK', datos: mejoras);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo de comunidad');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -162,6 +197,13 @@ class ServicioMejoras {
         final error = jsonDecode(response.body);
         return RespuestaApi(exito: false, mensaje: error['error'] ?? 'Error al enviar propuesta');
       }
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -174,13 +216,20 @@ class ServicioMejoras {
       final respuesta = await http.get(
         Uri.parse('$_urlBase/tienda/peticiones/moderacion/$comunidadId/'),
         headers: {'Authorization': 'Token $token'},
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
         return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener peticiones');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -197,12 +246,19 @@ class ServicioMejoras {
           'Authorization': 'Token $token',
         },
         body: jsonEncode({'estado': estado, 'precio': precio}),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: 'Acción realizada correctamente');
       }
       return RespuestaApi(exito: false, mensaje: 'Error al moderar');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -215,13 +271,20 @@ class ServicioMejoras {
       final respuesta = await http.post(
         Uri.parse('$_urlBase/tienda/comprar/$mejoraId/'),
         headers: {'Authorization': 'Token $token'},
-      );
+      ).timeout(const Duration(seconds: 25));
 
       final datos = jsonDecode(respuesta.body);
       if (respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: datos['mensaje'], datos: datos['puntos_restantes']);
       }
       return RespuestaApi(exito: false, mensaje: datos['error'] ?? 'Error en la compra');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -233,13 +296,20 @@ class ServicioMejoras {
       final respuesta = await http.get(
         Uri.parse('$_urlBase/tienda/mis-mejoras/'),
         headers: {'Authorization': 'Token $token'},
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
         return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar mis mejoras');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -256,13 +326,20 @@ class ServicioMejoras {
           'Authorization': 'Token $token',
         },
         body: jsonEncode({'mejora_id': mejoraId}),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       final datos = jsonDecode(respuesta.body);
       if (respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: datos['resultado']);
       }
       return RespuestaApi(exito: false, mensaje: datos['error'] ?? 'Error al equipar/desequipar');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -275,7 +352,7 @@ class ServicioMejoras {
       final respuesta = await http.get(
         Uri.parse('$_urlBase/tienda/gestion/$comunidadId/'),
         headers: {'Authorization': 'Token $token'},
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
@@ -283,6 +360,13 @@ class ServicioMejoras {
         return RespuestaApi(exito: true, mensaje: 'OK', datos: mejoras);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo de gestión');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -303,13 +387,20 @@ class ServicioMejoras {
           if (estaActivo != null) 'esta_activo': estaActivo,
           if (precio != null) 'precio': precio,
         }),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       final datos = jsonDecode(respuesta.body);
       if (respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: datos['mensaje']);
       }
       return RespuestaApi(exito: false, mensaje: datos['error'] ?? 'Error al actualizar item');
+    } on http.ClientException catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

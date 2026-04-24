@@ -27,6 +27,7 @@ class Catalogo_mejoras(models.Model):
     creador=models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='mejoras_creadas')
     esta_activo=models.BooleanField(default=True)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
+    datos_extra=models.JSONField(null=True, blank=True)
 
 class PeticionMejora(models.Model):
     class Meta:

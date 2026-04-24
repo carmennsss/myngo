@@ -73,6 +73,7 @@ class Perfil(models.Model):
     avatar=models.CharField(max_length=255,null=True,blank=True)
     fondo=models.CharField(max_length=255,null=True,blank=True)
     marco=models.CharField(max_length=255,null=True,blank=True)
+    estilo_post=models.JSONField(null=True,blank=True)
     puntos = models.IntegerField(
         default=0,
         validators=[
