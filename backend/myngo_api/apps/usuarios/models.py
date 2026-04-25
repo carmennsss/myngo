@@ -83,6 +83,7 @@ class Perfil(models.Model):
         help_text="Los puntos no pueden exceder los 5,000."
     )
     es_publico=models.BooleanField(default=True)
+    last_seen=models.DateTimeField(null=True, blank=True)
     fecha_actualizacion=models.DateTimeField(auto_now_add=True)
     #Metodo que recalcula los puntos generados por ese perfil en los días inactivos
     #sin pasarse del limite de 5.000 puntos

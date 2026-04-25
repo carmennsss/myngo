@@ -5,12 +5,15 @@ class Salas_chat(models.Model):
     class Meta:
         db_table = 'salas_chat'
     nombre=models.CharField(max_length=100)
-    comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE)
+    comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE, null=True, blank=True) # Opcional si es global
     es_grupal=models.BooleanField(default=False)
+    es_publica=models.BooleanField(default=False)
+    invite_token=models.CharField(max_length=100, unique=True, null=True, blank=True)
+    miembros=models.ManyToManyField(Usuario, related_name='salas_pertenecientes', blank=True)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return self
+        return self.nombre
     
 class Participantes_chat(models.Model):
     class Meta:
@@ -19,7 +22,7 @@ class Participantes_chat(models.Model):
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     fecha_union=models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return self # TODO
+        return f"{self.usuario.nombre_usuario} en {self.sala.nombre}"
 class Mensajes_chat(models.Model):
     class Meta:
         db_table = 'mensajes_chat'

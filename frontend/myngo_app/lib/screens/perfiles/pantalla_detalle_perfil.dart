@@ -24,6 +24,8 @@ import 'pantalla_personalizar_perfil.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import '../../utils/mejoras_notifier.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../mensajeria/pantalla_chat.dart';
+import '../../services/servicio_chat.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario con diseño oscuro y sistema de votos.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -1135,10 +1137,27 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
     return SizedBox(
       height: 48,
       child: OutlinedButton.icon(
-        onPressed: () {
+        onPressed: () async {
+          // Crear o buscar sala privada con este usuario
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Función de chat próximamente 🐾')),
+            const SnackBar(content: Text('Iniciando chat... 🐾'), duration: Duration(seconds: 1)),
           );
+          final sala = await ServicioChat.crearSalaPrivada(usuario.id);
+          if (sala != null && mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (ctx) => PantallaChat(
+                  salaId: sala['id'],
+                  nombreSala: sala['nombre'] ?? 'Chat con @${usuario.nombreUsuario}',
+                ),
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No se pudo iniciar el chat. ¿Hay conexión al servidor?'), backgroundColor: Colors.red),
+            );
+          }
         },
         icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: Colors.white),
         label: Text(
