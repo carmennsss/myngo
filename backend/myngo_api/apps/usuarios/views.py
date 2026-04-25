@@ -229,19 +229,19 @@ class DatosUsuarios(APIView):
     
     def get(self,request,usuario_id=None):
         if usuario_id:
-            usuario=Usuario.objects.get(id=usuario_id)
+            usuario = Usuario.objects.filter(id=usuario_id).first()
             if usuario:
-                serializer=UsuarioSerializer(usuario, context={'request': request})
+                serializer = UsuarioSerializer(usuario, context={'request': request})
                 return Response({
-                    "exito":True,
+                    "exito": True,
                     "mensaje": f"Los datos del usuario {usuario_id}",
-                    "datos":serializer.data
+                    "datos": serializer.data
                 })
             else:
                 return Response({
-                    "exito":False,
+                    "exito": False,
                     "mensaje": f"No existe el usuario con id {usuario_id}",
-                },status=status.HTTP_404_NOT_FOUND)
+                }, status=status.HTTP_404_NOT_FOUND)
         else:
             from django.db.models import Count, Subquery, OuterRef
             usuarios = Usuario.objects.select_related('perfil').annotate(

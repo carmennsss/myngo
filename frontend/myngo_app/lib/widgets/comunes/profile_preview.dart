@@ -87,17 +87,7 @@ class ProfilePreview extends StatelessWidget {
               nombreUsuario,
               style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440)),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.pets_rounded, color: Color(0xFFF29C50), size: 12),
-                const SizedBox(width: 4),
-                Text(
-                  '$puntos puntos Myngo',
-                  style: GoogleFonts.outfit(color: const Color(0xFFF29C50), fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ],
-            ),
+            const SizedBox(height: 8),
             const SizedBox(height: 16),
           ],
         ),

@@ -7,6 +7,7 @@ import '../../models/publicacion.dart';
 import '../../widgets/comunes/grid_imagenes_post.dart';
 import '../../widgets/comunes/acciones_y_comentarios_post.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../../widgets/comunes/hover_profile_card.dart';
 
 class PantallaDetallePost extends StatefulWidget {
   final Publicacion post;
@@ -81,22 +82,48 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 25,
-                              backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                              backgroundImage: widget.post.autorFoto != null
-                                  ? CachedNetworkImageProvider(widget.post.autorFoto!)
-                                  : null,
-                              child: widget.post.autorFoto == null 
-                                  ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
-                                      style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 20))
-                                  : null,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
+                        HoverProfileCard(
+                          nombre: widget.post.autorNombre,
+                          avatarUrl: widget.post.autorFoto,
+                          marcoUrl: widget.post.autorMarco,
+                          fondoUrl: widget.post.autorFondo ?? widget.post.autorEstiloPost?['url_fondo'],
+                          puntos: 0,
+                          onTap: () => context.push('/inicio/perfiles/${widget.post.autorId}'),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
+                                      Positioned.fill(
+                                        child: CachedNetworkImage(
+                                          imageUrl: widget.post.autorMarco!,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
+                                      child: CircleAvatar(
+                                        radius: 22,
+                                        backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                                        backgroundImage: widget.post.autorFoto != null
+                                            ? CachedNetworkImageProvider(widget.post.autorFoto!)
+                                            : null,
+                                        child: widget.post.autorFoto == null 
+                                            ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
+                                                style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 18))
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
@@ -116,12 +143,8 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                                   ),
                                 ],
                               ),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.more_horiz, color: colorTexto),
-                              onPressed: () {}, 
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 16),
                         if (widget.post.titulo.isNotEmpty) ...[

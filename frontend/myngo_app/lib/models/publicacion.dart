@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Publicacion {
   final int id;
   final int autorId;
@@ -7,8 +9,8 @@ class Publicacion {
   final int? creadorComunidadId;
   final String titulo;
   final String contenidoTexto;
-  final String? urlImagen;     // URL de la imagen (mantenido por backcompat)
-  final int? imagenId;         // ID de la imagen (mantenido por backcompat)
+  final String? urlImagen;
+  final int? imagenId;
   final List<String> urlsImagenes;
   final List<int> imagenesIds;
   final double relacionAspecto;
@@ -18,6 +20,7 @@ class Publicacion {
   int comentariosCount;
   final String? autorFoto;
   final String? autorMarco;
+  final String? autorFondo;
   final Map<String, dynamic>? autorEstiloPost;
   bool usuarioDioLike;
   bool usuarioGuardoPost;
@@ -39,6 +42,7 @@ class Publicacion {
     this.esValidoIa = true,
     this.autorFoto,
     this.autorMarco,
+    this.autorFondo,
     required this.fechaCreacion,
     this.likesCount = 0,
     this.comentariosCount = 0,
@@ -49,43 +53,42 @@ class Publicacion {
 
   factory Publicacion.fromJson(Map<String, dynamic> json) {
     try {
+      // Función auxiliar para parsear enteros de forma segura
+      int toInt(dynamic val, [int def = 0]) {
+        if (val == null) return def;
+        if (val is int) return val;
+        return int.tryParse(val.toString()) ?? def;
+      }
+
       return Publicacion(
-        id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
-        autorId: int.tryParse(json['autor']?.toString() ?? '0') ?? 0,
+        id: toInt(json['id']),
+        autorId: toInt(json['autor']),
         autorNombre: json['autor_nombre']?.toString() ?? 'Anónimo',
         autorFoto: json['autor_foto']?.toString(),
         autorMarco: json['autor_marco']?.toString(),
-        comunidadId: int.tryParse(json['comunidad']?.toString() ?? '0') ?? 0,
+        autorFondo: json['autor_fondo']?.toString(),
+        comunidadId: toInt(json['comunidad']),
         comunidadNombre: json['comunidad_nombre']?.toString() ?? 'General',
-        creadorComunidadId: int.tryParse(json['creador_comunidad_id']?.toString() ?? ''),
+        creadorComunidadId: json['creador_comunidad_id'] != null ? toInt(json['creador_comunidad_id']) : null,
         titulo: json['titulo']?.toString() ?? '',
         contenidoTexto: json['contenido_texto']?.toString() ?? '',
-        urlImagen: (() {
-          final url = json['url_archivo_s3'] ?? json['url_imagen'];
-          return url != null ? url.toString().trim() : null;
-        })(),
-        // Prioriza imagen_id (campo explícito del backend), luego imagen (FK id)
-        imagenId: (json['imagen_id'] is int)
-            ? json['imagen_id'] as int
-            : (json['imagen'] is int)
-                ? json['imagen'] as int
-                : int.tryParse(json['imagen_id']?.toString() ?? json['imagen']?.toString() ?? ''),
-        urlsImagenes: (json['urls_imagenes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? 
-             ((json['url_archivo_s3'] ?? json['url_imagen']) != null ? [(json['url_archivo_s3'] ?? json['url_imagen']).toString()] : []),
-        imagenesIds: (json['imagenes_ids'] as List<dynamic>?)?.map((e) => int.tryParse(e.toString()) ?? 0).toList() ?? [],
+        urlImagen: (json['url_archivo_s3'] ?? json['url_imagen'])?.toString(),
+        imagenId: json['imagen_id'] != null ? toInt(json['imagen_id']) : (json['imagen'] != null ? toInt(json['imagen']) : null),
+        urlsImagenes: (json['urls_imagenes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+        imagenesIds: (json['imagenes_ids'] as List<dynamic>?)?.map((e) => toInt(e)).toList() ?? [],
         relacionAspecto: double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ?? 1.0,
         esValidoIa: json['es_valido_ia'] == true,
         fechaCreacion: json['fecha_creacion'] != null 
             ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now() 
             : DateTime.now(),
-        likesCount: int.tryParse(json['likes_count']?.toString() ?? '0') ?? 0,
-        comentariosCount: int.tryParse(json['comentarios_count']?.toString() ?? '0') ?? 0,
+        likesCount: toInt(json['likes_count']),
+        comentariosCount: toInt(json['comentarios_count']),
         autorEstiloPost: json['autor_estilo_post'] is Map ? Map<String, dynamic>.from(json['autor_estilo_post']) : null,
         usuarioDioLike: json['usuario_dio_like'] == true,
         usuarioGuardoPost: json['usuario_guardo_post'] == true,
       );
     } catch (e) {
-      print('Error parsing Publicacion: $e');
+      debugPrint('Error parsing Publicacion: $e');
       return Publicacion(
         id: 0,
         autorId: 0,
@@ -116,6 +119,8 @@ class Publicacion {
     double? relacionAspecto,
     bool? esValidoIa,
     String? autorFoto,
+    String? autorMarco,
+    String? autorFondo,
     DateTime? fechaCreacion,
     int? likesCount,
     int? comentariosCount,
@@ -138,6 +143,8 @@ class Publicacion {
       relacionAspecto: relacionAspecto ?? this.relacionAspecto,
       esValidoIa: esValidoIa ?? this.esValidoIa,
       autorFoto: autorFoto ?? this.autorFoto,
+      autorMarco: autorMarco ?? this.autorMarco,
+      autorFondo: autorFondo ?? this.autorFondo,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       likesCount: likesCount ?? this.likesCount,
       comentariosCount: comentariosCount ?? this.comentariosCount,

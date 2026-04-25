@@ -9,6 +9,7 @@ import '../../models/usuario.dart';
 import '../comunes/grid_imagenes_post.dart';
 import '../comunes/acciones_y_comentarios_post.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../comunes/hover_profile_card.dart';
 
 class DialogoDetallePublicacion extends StatefulWidget {
   final Publicacion post;
@@ -112,31 +113,47 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                         children: [
                           Row(
                             children: [
-                              SizedBox(
-                                width: 44,
-                                height: 44,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
-                                      Positioned.fill(
-                                        child: CachedNetworkImage(
-                                          imageUrl: widget.post.autorMarco!,
-                                          fit: BoxFit.contain,
+                              // Avatar con Hover Card (Solo aquí)
+                              HoverProfileCard(
+                                nombre: widget.post.autorNombre,
+                                avatarUrl: widget.post.autorFoto,
+                                marcoUrl: widget.post.autorMarco,
+                                fondoUrl: widget.post.autorFondo ?? widget.post.autorEstiloPost?['url_fondo'],
+                                puntos: 0,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  context.go('/inicio/perfiles/${widget.post.autorId}');
+                                },
+                                child: SizedBox(
+                                  width: 44,
+                                  height: 44,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
+                                        Positioned.fill(
+                                          child: CachedNetworkImage(
+                                            imageUrl: widget.post.autorMarco!,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
+                                        child: CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                                          backgroundImage: widget.post.autorFoto != null
+                                              ? CachedNetworkImageProvider(widget.post.autorFoto!)
+                                              : null,
+                                          child: widget.post.autorFoto == null 
+                                              ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
+                                                  style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14))
+                                              : null,
                                         ),
                                       ),
-                                    CircleAvatar(
-                                      radius: 18,
-                                      backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                                      backgroundImage: widget.post.autorFoto != null
-                                          ? CachedNetworkImageProvider(widget.post.autorFoto!)
-                                          : null,
-                                      child: widget.post.autorFoto == null 
-                                          ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
-                                              style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14))
-                                          : null,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -146,7 +163,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                   children: [
                                     Text(
                                       widget.post.autorNombre,
-                                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: colorTexto),
+                                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: colorTexto, fontSize: 15),
                                     ),
                                     Text(
                                       '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')} · ${_formatRelativeDate(widget.post.fechaCreacion)}',

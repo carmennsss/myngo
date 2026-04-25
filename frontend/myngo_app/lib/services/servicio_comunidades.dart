@@ -38,7 +38,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
@@ -65,7 +65,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlBase}propias/'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
 
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
@@ -85,7 +85,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('$_urlBase$id/'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
@@ -104,7 +104,7 @@ class ServicioComunidades {
   /// Permite unirse a una comunidad o enviar solicitud.
   Future<RespuestaApi<Map<String, dynamic>>> unirseAComunidad(int id) async {
     try {
-      final respuesta = await http.post(Uri.parse('${_urlBase}$id/unirse/'), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
+      final respuesta = await http.post(Uri.parse('${_urlBase}$id/unirse/'), headers: await _getHeaders()).timeout(const Duration(seconds: 10));
       if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, mensaje: datosJson['mensaje'] ?? 'Operación exitosa', datos: datosJson);
@@ -263,7 +263,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlContenido}publicaciones/global/?ordering=$ordering'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
@@ -280,7 +280,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlContenido}publicaciones/?comunidad_id=$comunidadId&ordering=$ordering'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
@@ -297,7 +297,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlContenido}galeria/?comunidad_id=$comunidadId'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, datos: datos.map((i) => ImagenGaleria.fromJson(i)).toList(), mensaje: 'Galería cargada');
@@ -313,7 +313,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlMensajeria}salas/?comunidad_id=$comunidadId'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 10));
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, datos: datos.map((s) => SalaChat.fromJson(s)).toList(), mensaje: 'Salas cargadas');

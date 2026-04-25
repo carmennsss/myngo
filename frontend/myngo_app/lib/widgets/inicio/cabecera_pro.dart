@@ -246,8 +246,8 @@ class _UserProfileHeader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 46,
-              height: 46,
+              width: 44,
+              height: 44,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -259,13 +259,13 @@ class _UserProfileHeader extends StatelessWidget {
                       ),
                     ),
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 34,
+                    height: 34,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withOpacity(0.3),
                       image: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                          ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
+                          ? DecorationImage(image: CachedNetworkImageProvider(avatarUrl!), fit: BoxFit.cover)
                           : null,
                     ),
                     child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
