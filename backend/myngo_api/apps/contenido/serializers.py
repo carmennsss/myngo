@@ -1,5 +1,8 @@
 from rest_framework import serializers
+from django.conf import settings
+from django.core.files.storage import default_storage
 from .models import Publicacion, Imagenes_galeria, Coleccion, Me_gustas, Comentario, Reporte, PostGuardado
+import urllib.parse
 
 class PublicacionSerializer(serializers.ModelSerializer):
     autor_nombre = serializers.ReadOnlyField(source='autor.nombre_usuario')
@@ -38,11 +41,40 @@ class PublicacionSerializer(serializers.ModelSerializer):
         return None
 
     def get_autor_foto(self, obj):
-        return obj.autor.url_avatar
+        avatar_path = obj.autor.url_avatar
+        if not avatar_path:
+            return None
+        
+        try:
+            # Si ya es una URL absoluta, retornarla
+            if avatar_path.startswith('http'):
+                return avatar_path
+                
+            # Usar default_storage.url para obtener la URL firmada y codificada
+            return default_storage.url(avatar_path.lstrip('/'))
+        except:
+            return None
 
     def get_autor_estilo_post(self, obj):
         try:
-            return obj.autor.perfil.estilo_post
+            estilo = obj.autor.perfil.estilo_post
+            if not estilo:
+                return None
+            
+            url_fondo = estilo.get('url_fondo') or estilo.get('backgroundImage')
+            if url_fondo:
+                try:
+                    if not url_fondo.startswith('http'):
+                        url_fondo = default_storage.url(url_fondo.lstrip('/'))
+                except:
+                    pass
+
+            # Normalizar para el frontend (fondo, borde, url_fondo)
+            return {
+                'fondo': estilo.get('fondo') or estilo.get('background'),
+                'borde': estilo.get('borde') or estilo.get('border'),
+                'url_fondo': url_fondo,
+            }
         except:
             return None
 
@@ -63,18 +95,26 @@ class PublicacionSerializer(serializers.ModelSerializer):
         return ids
 
     def get_likes_count(self, obj):
+        if hasattr(obj, 'anotado_likes_count'):
+            return obj.anotado_likes_count
         return Me_gustas.objects.filter(publicacion=obj).count()
 
     def get_comentarios_count(self, obj):
+        if hasattr(obj, 'anotado_comentarios_count'):
+            return obj.anotado_comentarios_count
         return Comentario.objects.filter(publicacion=obj).count()
 
     def get_usuario_dio_like(self, obj):
+        if hasattr(obj, 'anotado_usuario_dio_like'):
+            return obj.anotado_usuario_dio_like
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return Me_gustas.objects.filter(publicacion=obj, usuario=request.user).exists()
         return False
 
     def get_usuario_guardo_post(self, obj):
+        if hasattr(obj, 'anotado_usuario_guardo_post'):
+            return obj.anotado_usuario_guardo_post
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return PostGuardado.objects.filter(publicacion=obj, usuario=request.user).exists()
@@ -167,7 +207,16 @@ class ComentarioSerializer(serializers.ModelSerializer):
         read_only_fields = ['autor', 'publicacion']
 
     def get_autor_foto(self, obj):
-        return obj.autor.url_avatar
+        avatar_path = obj.autor.url_avatar
+        if not avatar_path:
+            return None
+        
+        try:
+            if avatar_path.startswith('http'):
+                return avatar_path
+            return default_storage.url(avatar_path.lstrip('/'))
+        except:
+            return None
 
 class ReporteSerializer(serializers.ModelSerializer):
     informador_nombre = serializers.ReadOnlyField(source='informador.nombre_usuario')

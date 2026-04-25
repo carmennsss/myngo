@@ -107,14 +107,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Future<void> _inicializarDatos() async {
-    await _obtenerMiId();
+    // Ejecutar llamadas en paralelo para mayor eficiencia
+    await Future.wait([
+      _obtenerMiId(),
+      _cargarDatosSeccion(_indiceSeccion),
+      _cargarColecciones(),
+    ]);
+
     if (_miId != null) {
       final res = await _servicio.obtenerRolUsuarioEnComunidad(widget.comunidad.id, _miId!);
       if (res.exito && res.datos != null) {
-        setState(() => _miRol = res.datos!);
+        if (mounted) setState(() => _miRol = res.datos!);
       }
     }
-    _cargarDatosSeccion(_indiceSeccion);
   }
 
   final _servicioGaleria = ServicioGaleria();
@@ -960,7 +965,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             child: Opacity(
               opacity: 0.03,
               child: GridView.builder(
-                itemCount: 40,
+                itemCount: 12,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 6,

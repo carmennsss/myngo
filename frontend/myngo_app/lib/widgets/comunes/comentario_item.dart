@@ -35,12 +35,13 @@ class ComentarioItem extends StatelessWidget {
           // Avatar
           CircleAvatar(
             radius: 20,
-            backgroundColor: highlightColor?.withOpacity(0.1) ?? Colors.grey.shade200,
+            backgroundColor: highlightColor?.withOpacity(0.1) ?? const Color(0xFFC35E34).withOpacity(0.1),
             backgroundImage: comentario.autorFoto != null
                 ? CachedNetworkImageProvider(comentario.autorFoto!)
                 : null,
             child: comentario.autorFoto == null
-                ? Icon(Icons.person, size: 20, color: highlightColor ?? Colors.grey)
+                ? Text(comentario.autorNombre.isNotEmpty ? comentario.autorNombre[0].toUpperCase() : '?',
+                    style: TextStyle(color: highlightColor ?? const Color(0xFFC35E34), fontWeight: FontWeight.bold))
                 : null,
           ),
           const SizedBox(width: 12),

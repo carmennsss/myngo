@@ -39,12 +39,20 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return perfil.id if perfil else 0
     
     def get_numero_seguidores(self, obj):
+        if hasattr(obj, 'anotado_seguidores'):
+            return obj.anotado_seguidores
         return obj.seguidores.filter(estado='ACEPTADO').count()
 
     def get_numero_seguidos(self, obj):
+        if hasattr(obj, 'anotado_seguidos'):
+            return obj.anotado_seguidos
         return obj.siguiendo.filter(estado='ACEPTADO').count()
 
     def get_estado_seguimiento(self, obj):
+        # Si ya viene anotado, lo usamos directamente
+        if hasattr(obj, 'anotado_estado_seguimiento'):
+            return obj.anotado_estado_seguimiento
+            
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             # Si el objeto es un Usuario, accedemos directamente a sus seguidores

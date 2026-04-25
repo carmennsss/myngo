@@ -105,13 +105,26 @@ class _TarjetaPostState extends State<TarjetaPost> {
   Widget build(BuildContext context) {
     Color bgColor = Colors.white;
     Color? borderColor;
+    String? bgImg;
 
     if (widget.post.autorEstiloPost != null) {
       try {
-        final bgHex = widget.post.autorEstiloPost!['fondo'];
-        final borderHex = widget.post.autorEstiloPost!['borde'];
-        if (bgHex != null) bgColor = Color(int.parse(bgHex, radix: 16));
-        if (borderHex != null) borderColor = Color(int.parse(borderHex, radix: 16));
+        final estilo = widget.post.autorEstiloPost!;
+        final bgHex = estilo['fondo']?.toString().replaceAll('#', '');
+        final borderHex = estilo['borde']?.toString().replaceAll('#', '');
+        bgImg = estilo['url_fondo'];
+        
+        if (bgHex != null && bgHex.isNotEmpty) {
+          String hex = bgHex;
+          if (hex.length == 6) hex = 'FF$hex';
+          bgColor = Color(int.parse(hex, radix: 16));
+        }
+        
+        if (borderHex != null && borderHex.isNotEmpty) {
+          String hex = borderHex;
+          if (hex.length == 6) hex = 'FF$hex';
+          borderColor = Color(int.parse(hex, radix: 16));
+        }
       } catch (e) {
         // Ignorar si hay error de parseo de color
       }
@@ -125,10 +138,13 @@ class _TarjetaPostState extends State<TarjetaPost> {
         child: Container(
           decoration: BoxDecoration(
             color: bgColor,
-            border: borderColor != null ? Border.all(color: borderColor, width: 2) : null,
+            image: bgImg != null && bgImg!.isNotEmpty 
+                ? DecorationImage(image: CachedNetworkImageProvider(bgImg!), fit: BoxFit.cover, opacity: 0.8) 
+                : null,
+            border: borderColor != null ? Border.all(color: borderColor!, width: 2.5) : null,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: const Color(0xFF4A4440).withOpacity(0.04), blurRadius: 24, offset: const Offset(0, 12)),
+              BoxShadow(color: (borderColor ?? const Color(0xFF4A4440)).withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 12)),
             ],
           ),
           child: Padding(
@@ -156,7 +172,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                         ? CachedNetworkImageProvider(widget.post.autorFoto!)
                         : null,
                     child: widget.post.autorFoto == null
-                        ? Text(widget.post.comunidadNombre.isNotEmpty ? widget.post.comunidadNombre[0].toUpperCase() : 'C',
+                        ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
                             style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16))
                         : null,
                   ),

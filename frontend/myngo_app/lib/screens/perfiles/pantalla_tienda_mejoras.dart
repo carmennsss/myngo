@@ -41,12 +41,17 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
   String? _previewMarco;
   String? _previewFondo;
   Map<String, dynamic>? _previewEstiloPost;
+  
+  List<CatalogoMejoras> _mejorasCatalogo = [];
+  List<dynamic> _misMejoras = [];
+  bool _cargandoTienda = true;
+  String? _errorTienda;
 
   @override
   void initState() {
     super.initState();
     _cargarDatosUsuario();
-    // Si entramos desde una comunidad, empezamos directamente en la pestaña "Exclusivo"
+    _cargarDatosTienda();
     if (widget.comunidad != null) {
       _tabIndex = 1;
       _checkRol();
@@ -75,7 +80,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
       if (mounted && res.exito) {
         setState(() {
           _esModerador = res.datos == 'Administrador' || res.datos == 'Moderador';
-          // Activamos modo gestión por defecto si es moderador
           if (_esModerador) _modoGestion = true;
         });
       }
@@ -88,6 +92,38 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
       if (_subTabController.index < tipos.length) {
         widget.onCategoryChanged?.call(tipos[_subTabController.index]);
       }
+    }
+  }
+
+  Future<void> _cargarDatosTienda() async {
+    if (!mounted) return;
+    setState(() => _cargandoTienda = true);
+    
+    try {
+      final resCatalogo = widget.comunidad != null 
+          ? await ServicioMejoras().obtenerMejorasComunidad(widget.comunidad!.id)
+          : await ServicioMejoras().obtenerMejorasGlobales();
+      
+      final resMisMejoras = await ServicioMejoras().obtenerMisMejoras();
+
+      if (mounted) {
+        setState(() {
+          _cargandoTienda = false;
+          if (resCatalogo.exito) {
+            _mejorasCatalogo = resCatalogo.datos ?? [];
+          } else {
+            _errorTienda = resCatalogo.mensaje;
+          }
+          
+          if (resMisMejoras.exito && resMisMejoras.datos != null) {
+            _misMejoras = resMisMejoras.datos is Iterable 
+                ? List<dynamic>.from(resMisMejoras.datos!) 
+                : [];
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _cargandoTienda = false; _errorTienda = 'Error de conexión 😿'; });
     }
   }
 
@@ -133,60 +169,76 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
           ),
         ),
         Expanded(
-          child: TabBarView(
-            controller: _subTabController,
-            children: [
-              _ListaMejorasTab(
-                tipo: 'Avatar', 
-                comunidadId: widget.comunidad?.id,
-                esModerador: _esModerador,
-                modoGestion: _modoGestion,
-                usuarioActual: _usuarioActual,
-                onPuntosActualizados: (p) {
-                  widget.onPuntosActualizados?.call(p);
-                  _cargarDatosUsuario();
-                },
-                onPreviewRequested: (item) => setState(() => _previewAvatar = item.urlRecurso),
-              ),
-              _ListaMejorasTab(
-                tipo: 'Marco', 
-                comunidadId: widget.comunidad?.id,
-                esModerador: _esModerador,
-                modoGestion: _modoGestion,
-                usuarioActual: _usuarioActual,
-                onPuntosActualizados: (p) {
-                  widget.onPuntosActualizados?.call(p);
-                  _cargarDatosUsuario();
-                },
-                onPreviewRequested: (item) => setState(() => _previewMarco = item.urlRecurso),
-              ),
-              _ListaMejorasTab(
-                tipo: 'Fondo', 
-                comunidadId: widget.comunidad?.id,
-                esModerador: _esModerador,
-                modoGestion: _modoGestion,
-                usuarioActual: _usuarioActual,
-                onPuntosActualizados: (p) {
-                  widget.onPuntosActualizados?.call(p);
-                  _cargarDatosUsuario();
-                },
-                onPreviewRequested: (item) => setState(() => _previewFondo = item.urlRecurso),
-              ),
-              if (widget.comunidad == null)
-                _ListaMejorasTab(
-                  tipo: 'Estilo Post', 
-                  comunidadId: widget.comunidad?.id,
-                  esModerador: _esModerador,
-                  modoGestion: _modoGestion,
-                  usuarioActual: _usuarioActual,
-                  onPuntosActualizados: (p) {
-                    widget.onPuntosActualizados?.call(p);
-                    _cargarDatosUsuario();
-                  },
-                  onPreviewRequested: (item) => setState(() => _previewEstiloPost = item.datosExtra),
+          child: _cargandoTienda 
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+            : _errorTienda != null
+              ? Center(child: Text(_errorTienda!, style: GoogleFonts.outfit(color: Colors.grey)))
+              : TabBarView(
+                  controller: _subTabController,
+                  children: [
+                    _ListaMejorasTab(
+                      tipo: 'Avatar', 
+                      comunidadId: widget.comunidad?.id,
+                      esModerador: _esModerador,
+                      modoGestion: _modoGestion,
+                      usuarioActual: _usuarioActual,
+                      mejoras: _mejorasCatalogo,
+                      misMejoras: _misMejoras,
+                      onRefresh: _cargarDatosTienda,
+                      onPuntosActualizados: (p) {
+                        widget.onPuntosActualizados?.call(p);
+                        _cargarDatosUsuario();
+                      },
+                      onPreviewRequested: (item) => setState(() => _previewAvatar = item.urlRecurso),
+                    ),
+                    _ListaMejorasTab(
+                      tipo: 'Marco', 
+                      comunidadId: widget.comunidad?.id,
+                      esModerador: _esModerador,
+                      modoGestion: _modoGestion,
+                      usuarioActual: _usuarioActual,
+                      mejoras: _mejorasCatalogo,
+                      misMejoras: _misMejoras,
+                      onRefresh: _cargarDatosTienda,
+                      onPuntosActualizados: (p) {
+                        widget.onPuntosActualizados?.call(p);
+                        _cargarDatosUsuario();
+                      },
+                      onPreviewRequested: (item) => setState(() => _previewMarco = item.urlRecurso),
+                    ),
+                    _ListaMejorasTab(
+                      tipo: 'Fondo', 
+                      comunidadId: widget.comunidad?.id,
+                      esModerador: _esModerador,
+                      modoGestion: _modoGestion,
+                      usuarioActual: _usuarioActual,
+                      mejoras: _mejorasCatalogo,
+                      misMejoras: _misMejoras,
+                      onRefresh: _cargarDatosTienda,
+                      onPuntosActualizados: (p) {
+                        widget.onPuntosActualizados?.call(p);
+                        _cargarDatosUsuario();
+                      },
+                      onPreviewRequested: (item) => setState(() => _previewFondo = item.urlRecurso),
+                    ),
+                    if (widget.comunidad == null)
+                      _ListaMejorasTab(
+                        tipo: 'Estilo Post', 
+                        comunidadId: widget.comunidad?.id,
+                        esModerador: _esModerador,
+                        modoGestion: _modoGestion,
+                        usuarioActual: _usuarioActual,
+                        mejoras: _mejorasCatalogo,
+                        misMejoras: _misMejoras,
+                        onRefresh: _cargarDatosTienda,
+                        onPuntosActualizados: (p) {
+                          widget.onPuntosActualizados?.call(p);
+                          _cargarDatosUsuario();
+                        },
+                        onPreviewRequested: (item) => setState(() => _previewEstiloPost = item.datosExtra),
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ],
     );
@@ -560,6 +612,9 @@ class _ListaMejorasTab extends StatefulWidget {
   final bool esModerador;
   final bool modoGestion;
   final Usuario? usuarioActual;
+  final List<CatalogoMejoras> mejoras;
+  final List<dynamic> misMejoras;
+  final VoidCallback onRefresh;
   final Function(int)? onPuntosActualizados;
   final Function(CatalogoMejoras) onPreviewRequested;
 
@@ -569,6 +624,9 @@ class _ListaMejorasTab extends StatefulWidget {
     this.esModerador = false,
     this.modoGestion = false,
     this.usuarioActual,
+    required this.mejoras,
+    required this.misMejoras,
+    required this.onRefresh,
     this.onPuntosActualizados,
     required this.onPreviewRequested,
   });
@@ -579,75 +637,26 @@ class _ListaMejorasTab extends StatefulWidget {
 
 class _ListaMejorasTabState extends State<_ListaMejorasTab> {
   final ServicioMejoras _servicioMejoras = ServicioMejoras();
-  final ServicioComunidades _servicioComunidades = ServicioComunidades();
-  bool _isLoading = true;
-  List<CatalogoMejoras> _mejoras = [];
-  List<dynamic> _misMejoras = []; // Lista de mejoras que el usuario posee
-  String? _errorMensaje;
 
-  @override
-  void initState() {
-    super.initState();
-    _cargarMejoras();
-  }
-
-  @override
-  void didUpdateWidget(_ListaMejorasTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.comunidadId != widget.comunidadId || oldWidget.modoGestion != widget.modoGestion) {
-      _cargarMejoras();
+  List<CatalogoMejoras> get _mejorasFiltradas {
+    var filtradas = widget.mejoras.where((m) => m.tipo.toLowerCase() == widget.tipo.toLowerCase()).toList();
+    if (!widget.modoGestion) {
+      filtradas = filtradas.where((m) => m.estaActivo).toList();
     }
-  }
-
-  Future<void> _cargarMejoras() async {
-    setState(() {
-      _isLoading = true;
-      _errorMensaje = null;
-    });
-
-    final respuesta = widget.comunidadId != null 
-        ? await _servicioMejoras.obtenerMejorasComunidad(widget.comunidadId!)
-        : await _servicioMejoras.obtenerMejorasGlobales();
-
-    final misMejorasRespuesta = await _servicioMejoras.obtenerMisMejoras();
-        
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        if (respuesta.exito) {
-          final todas = (respuesta.datos as List<CatalogoMejoras>?) ?? [];
-          // 1. Filtrar por tipo
-          var filtradas = todas.where((m) => m.tipo.toLowerCase() == widget.tipo.toLowerCase()).toList();
-          // 2. Si no estamos en modo gestión, ocultar las inactivas
-          if (!widget.modoGestion) {
-            filtradas = filtradas.where((m) => m.estaActivo).toList();
-          }
-          _mejoras = filtradas;
-          if (misMejorasRespuesta.exito && misMejorasRespuesta.datos != null) {
-            _misMejoras = misMejorasRespuesta.datos is Iterable 
-                ? List<dynamic>.from(misMejorasRespuesta.datos!) 
-                : [];
-          }
-        } else {
-          _errorMensaje = respuesta.mensaje;
-        }
-      });
-    }
+    return filtradas;
   }
 
   bool _tieneMejora(int mejoraId) {
-    if (_misMejoras is! Iterable) return false;
     try {
-      return (_misMejoras as Iterable).any((m) => m != null && m is Map && m['mejora'] == mejoraId);
+      return widget.misMejoras.any((m) => m != null && m is Map && m['mejora'] == mejoraId);
     } catch (e) {
       return false;
     }
   }
 
   bool _tieneEquipada(int mejoraId) {
-    if (_misMejoras is! Iterable) return false;
     try {
-      return (_misMejoras as Iterable).any((m) => m != null && m is Map && m['mejora'] == mejoraId && m['esta_equipada'] == true);
+      return widget.misMejoras.any((m) => m != null && m is Map && m['mejora'] == mejoraId && m['esta_equipada'] == true);
     } catch (e) {
       return false;
     }
@@ -657,7 +666,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
     final res = await _servicioMejoras.equiparMejora(mejora.id);
     if (mounted) {
       if (res.exito) {
-        _cargarMejoras();
+        widget.onRefresh();
         widget.onPuntosActualizados?.call(widget.usuarioActual?.puntos ?? 0);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -755,7 +764,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
       final res = await _servicioMejoras.comprarMejora(mejora.id);
       if (mounted) {
         if (res.exito) {
-          _cargarMejoras();
+          widget.onRefresh();
           if (res.datos != null && res.datos is int) {
             widget.onPuntosActualizados?.call(res.datos as int);
           }
@@ -773,22 +782,8 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
-    }
-    if (_errorMensaje != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            Text(_errorMensaje!, style: GoogleFonts.outfit(color: Colors.grey.shade500)),
-          ],
-        ),
-      );
-    }
-    if (_mejoras.isEmpty) {
+    final filtradas = _mejorasFiltradas;
+    if (filtradas.isEmpty) {
       final String tipoPlural = widget.tipo.toLowerCase() == 'avatar' ? 'avatares' : '${widget.tipo.toLowerCase()}s';
       return Center(
         child: Column(
@@ -813,9 +808,9 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.62,
       ),
-      itemCount: _mejoras.length,
+      itemCount: filtradas.length,
       itemBuilder: (context, index) {
-        final mejora = _mejoras[index];
+        final mejora = filtradas[index];
         final bool estaActivo = mejora.estaActivo;
         final bool laTiene = _tieneMejora(mejora.id);
         final bool estaEquipada = _tieneEquipada(mejora.id);
@@ -1064,7 +1059,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
     
     if (mounted) {
       if (res.exito) {
-        _cargarMejoras();
+        widget.onRefresh();
       }
     }
   }
@@ -1136,7 +1131,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
     
     if (mounted) {
       if (res.exito) {
-        _cargarMejoras();
+        widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Precio actualizado correctamente 🐾'), backgroundColor: Colors.green),
         );

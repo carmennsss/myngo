@@ -90,11 +90,38 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
   @override
   Widget build(BuildContext context) {
     final Color colorComunidad = Theme.of(context).primaryColor;
+    
+    Color bgColor = Colors.white;
+    Color? borderColor;
+    String? bgImg;
+
+    if (widget.post.autorEstiloPost != null) {
+      try {
+        final estilo = widget.post.autorEstiloPost!;
+        final bgHex = estilo['fondo']?.toString().replaceAll('#', '');
+        final borderHex = estilo['borde']?.toString().replaceAll('#', '');
+        bgImg = estilo['url_fondo'];
+        
+        if (bgHex != null && bgHex.isNotEmpty) {
+          String hex = bgHex;
+          if (hex.length == 6) hex = 'FF$hex';
+          bgColor = Color(int.parse(hex, radix: 16));
+        }
+        
+        if (borderHex != null && borderHex.isNotEmpty) {
+          String hex = borderHex;
+          if (hex.length == 6) hex = 'FF$hex';
+          borderColor = Color(int.parse(hex, radix: 16));
+        }
+      } catch (e) {
+        // Ignorar
+      }
+    }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.black),
@@ -121,144 +148,157 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              controller: _scrollController,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 25,
-                            backgroundImage: widget.post.autorFoto != null
-                                ? CachedNetworkImageProvider(widget.post.autorFoto!)
-                                : null,
-                            child: widget.post.autorFoto == null ? const Icon(Icons.person) : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.post.autorNombre,
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Text(
-                                  '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')}',
-                                  style: GoogleFonts.outfit(
-                                    color: colorComunidad,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.more_horiz),
-                            onPressed: () {}, 
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (widget.post.titulo.isNotEmpty) ...[
-                        Text(
-                          widget.post.titulo,
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      Text(
-                        widget.post.contenidoTexto,
-                        style: GoogleFonts.outfit(
-                          fontSize: 18,
-                          height: 1.4,
-                        ),
-                      ),
-                      if (widget.post.urlsImagenes.isNotEmpty || widget.post.urlImagen != null) ...[
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 500),
-                            child: GridImagenesPost(
-                              urls: widget.post.urlsImagenes.isNotEmpty ? widget.post.urlsImagenes : [widget.post.urlImagen!],
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      Text(
-                        _formatFecha(widget.post.fechaCreacion),
-                        style: GoogleFonts.outfit(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const Divider(height: 32),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _ActionIcon(
-                            icon: widget.post.usuarioDioLike ? Icons.favorite : Icons.favorite_border,
-                            color: widget.post.usuarioDioLike ? Colors.red : Colors.grey.shade600,
-                            label: widget.post.likesCount.toString(),
-                            onTap: () {},
-                          ),
-                          _ActionIcon(
-                            icon: Icons.chat_bubble_outline,
-                            color: Colors.grey.shade600,
-                            label: widget.post.comentariosCount.toString(),
-                            onTap: () {},
-                          ),
-                          _ActionIcon(
-                            icon: widget.post.usuarioGuardoPost ? Icons.bookmark : Icons.bookmark_border,
-                            color: widget.post.usuarioGuardoPost ? Colors.orange : Colors.grey.shade600,
-                            onTap: () {},
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                if (_cargandoComentarios)
-                  const Center(child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
-                  ))
-                else if (_comentarios.isEmpty)
+      body: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          image: bgImg != null && bgImg!.isNotEmpty 
+              ? DecorationImage(image: CachedNetworkImageProvider(bgImg!), fit: BoxFit.cover, opacity: 0.8) 
+              : null,
+          border: borderColor != null ? Border(top: BorderSide(color: borderColor!, width: 2.5)) : null,
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                controller: _scrollController,
+                children: [
                   Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: Text('Sin comentarios todavía', style: GoogleFonts.outfit(color: Colors.grey)),
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 25,
+                              backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                              backgroundImage: widget.post.autorFoto != null
+                                  ? CachedNetworkImageProvider(widget.post.autorFoto!)
+                                  : null,
+                              child: widget.post.autorFoto == null 
+                                  ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
+                                      style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 20))
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.post.autorNombre,
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')}',
+                                    style: GoogleFonts.outfit(
+                                      color: colorComunidad,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.more_horiz),
+                              onPressed: () {}, 
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (widget.post.titulo.isNotEmpty) ...[
+                          Text(
+                            widget.post.titulo,
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Text(
+                          widget.post.contenidoTexto,
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            height: 1.4,
+                          ),
+                        ),
+                        if (widget.post.urlsImagenes.isNotEmpty || widget.post.urlImagen != null) ...[
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 500),
+                              child: GridImagenesPost(
+                                urls: widget.post.urlsImagenes.isNotEmpty ? widget.post.urlsImagenes : [widget.post.urlImagen!],
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        Text(
+                          _formatFecha(widget.post.fechaCreacion),
+                          style: GoogleFonts.outfit(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Divider(height: 32),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _ActionIcon(
+                              icon: widget.post.usuarioDioLike ? Icons.favorite : Icons.favorite_border,
+                              color: widget.post.usuarioDioLike ? Colors.red : Colors.grey.shade600,
+                              label: widget.post.likesCount.toString(),
+                              onTap: () {},
+                            ),
+                            _ActionIcon(
+                              icon: Icons.chat_bubble_outline,
+                              color: Colors.grey.shade600,
+                              label: widget.post.comentariosCount.toString(),
+                              onTap: () {},
+                            ),
+                            _ActionIcon(
+                              icon: widget.post.usuarioGuardoPost ? Icons.bookmark : Icons.bookmark_border,
+                              color: widget.post.usuarioGuardoPost ? Colors.orange : Colors.grey.shade600,
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  )
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _comentarios.length,
-                    itemBuilder: (context, index) => ComentarioItem(comentario: _comentarios[index]),
                   ),
-              ],
+                  const Divider(height: 1),
+                  if (_cargandoComentarios)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(),
+                    ))
+                  else if (_comentarios.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Center(
+                        child: Text('Sin comentarios todavía', style: GoogleFonts.outfit(color: Colors.grey)),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _comentarios.length,
+                      itemBuilder: (context, index) => ComentarioItem(comentario: _comentarios[index]),
+                    ),
+                ],
+              ),
             ),
-          ),
-          _buildInputResponder(),
-        ],
+            _buildInputResponder(),
+          ],
+        ),
       ),
     );
   }

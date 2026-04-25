@@ -231,16 +231,31 @@ class PantallaInicioState extends State<PantallaInicio> {
                                 ),
                                 // El SidebarIzquierdo real y deslizable
                                 Positioned.fill(
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                                    child: SidebarIzquierdo(
-                                      estaLogueado: _estaLogueado == true,
-                                      cargando: _cargandoComunidades == true,
-                                      comunidades: _misComunidades,
-                                      onComunidadSelected: _seleccionarComunidad,
-                                      onReorder: _reordenarComunidades,
+                                  child: Theme(
+                                  data: Theme.of(context).copyWith(
+                                    scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
+                                      thumbVisibility: WidgetStateProperty.all(false),
+                                      trackVisibility: WidgetStateProperty.all(false),
                                     ),
                                   ),
+                                  child: ScrollConfiguration(
+                                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                                    child: SingleChildScrollView(
+                                      primary: false,
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                                      child: SidebarIzquierdo(
+                                        estaLogueado: _estaLogueado == true,
+                                        cargando: _cargandoComunidades == true,
+                                        comunidades: _misComunidades,
+                                        rankingUsuarios: _rankingUsuarios,
+                                        cargandoRanking: _cargandoRanking == true,
+                                        onComunidadSelected: _seleccionarComunidad,
+                                        onReorder: _reordenarComunidades,
+                                        misPuntos: _puntos,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 ),
                               ],
                             ),

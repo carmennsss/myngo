@@ -24,6 +24,9 @@ class ComunidadSerializer(serializers.ModelSerializer):
         }
 
     def get_es_miembro(self, obj):
+        if hasattr(obj, 'anotado_es_miembro'):
+            return obj.anotado_es_miembro
+            
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
             # El creador siempre es miembro
@@ -37,6 +40,9 @@ class ComunidadSerializer(serializers.ModelSerializer):
         return False
 
     def get_es_pendiente(self, obj):
+        if hasattr(obj, 'anotado_es_pendiente'):
+            return obj.anotado_es_pendiente
+            
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
             from usuarios.models import Seguimiento
@@ -50,6 +56,9 @@ class ComunidadSerializer(serializers.ModelSerializer):
         return False
 
     def get_mi_rol(self, obj):
+        if hasattr(obj, 'anotado_mi_rol'):
+            return obj.anotado_mi_rol
+            
         request = self.context.get('request')
         if request and request.user and request.user.is_authenticated:
             # Primero ver si es el creador
@@ -81,6 +90,9 @@ class ComunidadSerializer(serializers.ModelSerializer):
         return 0
 
     def get_miembros_count(self, obj):
+        if hasattr(obj, 'anotado_miembros_count'):
+            return obj.anotado_miembros_count
+            
         # Contar miembros en la tabla + el creador si no está ya incluido
         count = Miembros_comunidades.objects.filter(comunidad=obj).count()
         # El creador puede no estar en la tabla de miembros, comprobamos

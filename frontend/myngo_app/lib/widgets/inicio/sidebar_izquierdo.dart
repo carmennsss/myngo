@@ -70,7 +70,7 @@ class SidebarIzquierdo extends StatelessWidget {
             : rankingUsuarios!.isEmpty
               ? Text('Aún no hay ranking 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
               : Column(
-                  children: rankingUsuarios!.take(5).toList().asMap().entries.map((entry) {
+                  children: rankingUsuarios!.take(3).toList().asMap().entries.map((entry) {
                     int index = entry.key;
                     Usuario u = entry.value;
                     return _RankingItem(puesto: index + 1, nombre: u.nombreUsuario, estrellas: u.ratingActual);

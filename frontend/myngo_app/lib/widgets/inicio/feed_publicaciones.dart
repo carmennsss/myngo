@@ -29,6 +29,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
   bool _cargando = true;
   bool _cargandoMas = false;
   bool _estaLogueado = false;
+  bool _hayMasPosts = true;
   String? _error;
 
   @override
@@ -56,8 +57,8 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
   }
 
   void _alHacerScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      if (!_cargandoMas && !_cargando) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
+      if (!_cargandoMas && !_cargando && _hayMasPosts) {
         _cargarMasPosts();
       }
     }
@@ -69,12 +70,15 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
       _posts = null; // Reiniciamos a null según la nueva lógica
       _error = null;
     });
-    final res = await _servicio.obtenerPostsInicio(etiquetas: busqueda);
+    final res = await _servicio.obtenerPostsInicio(etiquetas: busqueda, limit: 20, offset: 0);
     if (mounted) {
       setState(() {
         _cargando = false;
         if (res.exito) {
           _posts = res.datos ?? [];
+          // Si recibimos menos del límite, es que no hay más
+          _hayMasPosts = (res.datos?.length ?? 0) >= 20;
+          // Ordenamos por relevancia (likes + comentarios)
           _posts!.sort((a, b) => (b.likesCount + b.comentariosCount).compareTo(a.likesCount + a.comentariosCount));
         } else {
           _error = res.mensaje;
@@ -84,10 +88,37 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
   }
 
   Future<void> _cargarMasPosts() async {
-    if (_posts == null || _posts!.length >= 50) return;
+    if (_posts == null || !_hayMasPosts || _cargandoMas) return;
+    
     setState(() => _cargandoMas = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) setState(() => _cargandoMas = false);
+    
+    final res = await _servicio.obtenerPostsInicio(
+      etiquetas: _searchController.text.isNotEmpty ? _searchController.text : null,
+      limit: 20,
+      offset: _posts!.length,
+    );
+    
+    if (mounted) {
+      setState(() {
+        _cargandoMas = false;
+        if (res.exito && res.datos != null) {
+          final nuevos = res.datos!;
+          if (nuevos.isEmpty) {
+            _hayMasPosts = false;
+          } else {
+            // Evitar duplicados por si acaso
+            for (var p in nuevos) {
+              if (!_posts!.any((existente) => existente.id == p.id)) {
+                _posts!.add(p);
+              }
+            }
+            _hayMasPosts = nuevos.length >= 20;
+            // No reordenamos todo para no saltar el scroll, solo las nuevas si acaso, 
+            // pero el backend ya debería dar un orden consistente si no es random.
+          }
+        }
+      });
+    }
   }
 
   Future<void> _unirseAComunidad(int comunidadId, int index) async {
