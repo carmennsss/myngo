@@ -152,6 +152,11 @@ class ServicioPerfiles {
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 201) {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        final nuevaPub = Publicacion.fromJson(decoded);
+        if (!nuevaPub.esValidoIa) {
+          return RespuestaApi(exito: false, mensaje: 'Tu publicación infringe las normas de Myngo (Moderación IA) 🐾');
+        }
         return RespuestaApi(exito: true, mensaje: '¡Post subido a tu perfil!');
       }
       return RespuestaApi(exito: false, mensaje: 'Error al enviar publicación: ${response.statusCode}');
