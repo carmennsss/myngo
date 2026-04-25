@@ -31,5 +31,6 @@ class Mensajes_chat(models.Model):
     contenido=models.TextField(null=True, blank=True)
     url_archivo_s3=models.CharField(max_length=500,null=True,blank=True)
     fecha_envio=models.DateTimeField(auto_now_add=True)
+    leido=models.BooleanField(default=False)
     def __str__(self):
         return self # TODO

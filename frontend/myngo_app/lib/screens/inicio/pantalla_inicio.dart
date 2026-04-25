@@ -42,6 +42,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   bool _estaLogueado = false;
   String? _miNombre;
   String? _miAvatar;
+  String? _miMarco;
   int? _miId;
   int? _puntos;
   int _notificacionesSinLeer = 0;
@@ -71,6 +72,7 @@ class PantallaInicioState extends State<PantallaInicio> {
           _estaLogueado = true;
           _miNombre = resDatos.datos!.nombreUsuario;
           _miAvatar = resDatos.datos!.urlAvatar;
+          _miMarco = resDatos.datos!.marco;
           _miId = resDatos.datos!.id;
           _puntos = resDatos.datos!.puntos;
         });
@@ -181,6 +183,7 @@ class PantallaInicioState extends State<PantallaInicio> {
             estaLogueado: _estaLogueado,
             nombreUsuario: _miNombre,
             avatarUrl: _miAvatar,
+            marcoUrl: _miMarco,
             miId: _miId,
             indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
             puntos: _puntos,

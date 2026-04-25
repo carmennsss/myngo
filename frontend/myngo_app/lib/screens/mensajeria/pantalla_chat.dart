@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../../services/servicio_chat.dart';
+import '../../utils/configuracion.dart';
 
 class PantallaChat extends StatefulWidget {
   final int salaId;
@@ -53,7 +54,7 @@ class _PantallaChatState extends State<PantallaChat> {
     }
     try {
       final res = await http.get(
-        Uri.parse('http://localhost:8000/mensajeria/salas/${widget.salaId}/mensajes/'),
+        Uri.parse('${Configuracion.baseUrl}/mensajeria/salas/${widget.salaId}/mensajes/'),
         headers: {'Authorization': 'Token $token'},
       );
       if (res.statusCode == 200) {
