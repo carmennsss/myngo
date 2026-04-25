@@ -1438,7 +1438,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
             onTap: () => DetallePublicacionSheet.mostrar(
               context,
               publicacion: publicacion,
-              avatarUrl: _avatarLocal ?? widget.usuario.urlAvatar ?? '',
+              avatarUrl: publicacion.autorFoto ?? '',
               onEliminado: _cargarPublicaciones, // Actualiza la página si se borra
               onProfileSelected: (u) {
                 final inicioState = context.findAncestorStateOfType<PantallaInicioState>();

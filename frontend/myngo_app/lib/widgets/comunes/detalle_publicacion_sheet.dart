@@ -88,6 +88,9 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
     final fecha = DateFormat('dd MMM yyyy · HH:mm').format(publicacion.fechaCreacion.toLocal());
 
+    // Usamos el avatar pasado o caemos al autorFoto de la publicación
+    final String avatarEfectivo = (avatarUrl.isNotEmpty) ? avatarUrl : (publicacion.autorFoto ?? '');
+
     final estilo = publicacion.autorEstiloPost;
     final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
     final colorTexto = esFondoClaro ? Colors.black87 : Colors.white;
@@ -134,8 +137,8 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                     CircleAvatar(
                       radius: 20,
                       backgroundColor: const Color(0xFF248EA6).withOpacity(0.3),
-                      backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl.isEmpty
+                      backgroundImage: avatarEfectivo.isNotEmpty ? NetworkImage(avatarEfectivo) : null,
+                      child: avatarEfectivo.isEmpty
                           ? Text(
                               publicacion.autorNombre.isNotEmpty ? publicacion.autorNombre[0].toUpperCase() : '?',
                               style: const TextStyle(color: Color(0xFF248EA6), fontWeight: FontWeight.bold),
