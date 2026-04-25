@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/configuracion.dart';
 import '../models/notificacion.dart';
 import '../models/respuesta_api.dart';
 import 'servicio_usuarios.dart';
 
 class ServicioNotificaciones {
-  final String _baseUrl = 'http://127.0.0.1:8000/notificaciones/';
+  final String _baseUrl = '${Configuracion.baseUrl}/notificaciones/';
   final _servicioUsuarios = ServicioUsuarios();
 
   Future<RespuestaApi<List<Notificacion>>> listarNotificaciones() async {

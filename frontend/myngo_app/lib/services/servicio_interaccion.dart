@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:myngo_app/services/servicio_usuarios.dart';
 import '../models/respuesta_api.dart';
+import '../utils/configuracion.dart';
 import '../models/comentario.dart';
 
 class ServicioInteraccion {
-  final String _urlBase = 'http://127.0.0.1:8000';
+  final String _urlBase = Configuracion.baseUrl;
   final _servicioUsuarios = ServicioUsuarios();
 
   Future<RespuestaApi<Map<String, dynamic>>> toggleLike(int publicacionId) async {

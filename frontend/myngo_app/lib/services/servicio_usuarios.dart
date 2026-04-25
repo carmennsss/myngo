@@ -3,11 +3,12 @@ import 'package:http/http.dart' as http;
 import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/configuracion.dart';
 
 /// Clase de servicio que encapsula la lógica de comunicación con la API de usuarios.
 class ServicioUsuarios {
   /// URL base para los endpoints relacionados con usuarios.
-  static const String _urlBase = 'http://127.0.0.1:8000/usuarios';
+  static const String _urlBase = '${Configuracion.baseUrl}/usuarios';
 
   /// Realiza una solicitud de autenticación al servidor.
   Future<RespuestaApi<Usuario>> iniciarSesion(String email, String contrasena) async {
