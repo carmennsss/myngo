@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/comunidad.dart';
 import '../../../widgets/comunes/boton_tactil.dart';
+import '../../../utils/configuracion.dart';
 
 class TarjetaComunidad extends StatelessWidget {
   final Comunidad comunidad;
@@ -53,7 +54,7 @@ class TarjetaComunidad extends StatelessWidget {
                       ? Image.network(
                           comunidad.urlPortada.startsWith('http') 
                               ? comunidad.urlPortada 
-                              : 'http://127.0.0.1:8000${comunidad.urlPortada}',
+                              : '${Configuracion.baseUrl}${comunidad.urlPortada}',
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => _GradientePlaceholder(paleta: paleta),
                         )

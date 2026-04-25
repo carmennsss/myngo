@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/respuesta_api.dart';
 import '../models/comunidad.dart';
+import '../utils/configuracion.dart';
 import '../models/publicacion.dart';
 import '../models/imagen_galeria.dart';
 import '../models/sala_chat.dart';
@@ -12,9 +13,9 @@ import 'servicio_usuarios.dart';
 
 /// Servicio para gestionar las operaciones relacionadas con las comunidades.
 class ServicioComunidades {
-  static const String _urlBase = 'http://127.0.0.1:8000/comunidades/';
-  static const String _urlContenido = 'http://127.0.0.1:8000/contenido/';
-  static const String _urlMensajeria = 'http://127.0.0.1:8000/mensajeria/';
+  static const String _urlBase = '${Configuracion.baseUrl}/comunidades/';
+  static const String _urlContenido = '${Configuracion.baseUrl}/contenido/';
+  static const String _urlMensajeria = '${Configuracion.baseUrl}/mensajeria/';
   
   final _servicioUsuarios = ServicioUsuarios();
 
