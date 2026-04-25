@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../utils/mejoras_notifier.dart';
+import '../../utils/estilo_post_helper.dart';
+import '../../widgets/comunes/post_preview.dart';
+import '../../widgets/comunes/profile_preview.dart';
+import '../../services/servicio_usuarios.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -17,6 +21,14 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   bool _isLoading = true;
   List<dynamic> _misMejoras = [];
   String? _errorMensaje;
+  
+  // Variables para la previsualización
+  String? _previewAvatar;
+  String? _previewMarco;
+  String? _previewFondo;
+  Map<String, dynamic>? _previewEstilo;
+  String _nombreUsuario = 'Usuario';
+  int _puntos = 0;
 
   @override
   void initState() {
@@ -32,16 +44,44 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     });
 
     final respuesta = await _servicioMejoras.obtenerMisMejoras();
+    final datosUser = await ServicioUsuarios().obtenerDatosPropios();
+    
     if (mounted) {
       setState(() {
         _isLoading = false;
         if (respuesta.exito && respuesta.datos != null) {
           _misMejoras = respuesta.datos is Iterable ? List<dynamic>.from(respuesta.datos!) : [];
+          
+          // Inicializar previsualización con lo que ya está equipado
+          if (datosUser.exito && datosUser.datos != null) {
+            final u = datosUser.datos!;
+            _nombreUsuario = u.nombreUsuario;
+            _puntos = u.puntos ?? 0;
+            _previewAvatar = u.urlAvatar;
+            _previewMarco = u.marco;
+            _previewFondo = u.fondo;
+            _previewEstilo = u.estiloPost;
+          }
         } else {
           _errorMensaje = respuesta.mensaje;
         }
       });
     }
+  }
+
+  void _actualizarPreview(String tipo, dynamic detalles) {
+    setState(() {
+      final t = tipo.toLowerCase();
+      if (t == 'avatar') {
+        _previewAvatar = detalles['url_recurso'];
+      } else if (t == 'marco') {
+        _previewMarco = detalles['url_recurso'];
+      } else if (t == 'fondo') {
+        _previewFondo = detalles['url_recurso'];
+      } else if (t.contains('estilo')) {
+        _previewEstilo = detalles['datos_extra'];
+      }
+    });
   }
 
   Future<void> _equiparMejora(int mejoraId) async {
@@ -81,6 +121,49 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // --- SECCIÓN DE PREVISUALIZACIÓN ---
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'VISTA PREVIA',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ProfilePreview(
+                  fondoUrl: _previewFondo,
+                  avatarUrl: _previewAvatar,
+                  marcoUrl: _previewMarco,
+                  nombreUsuario: _nombreUsuario,
+                  puntos: _puntos,
+                ),
+                const SizedBox(height: 12),
+                PostPreview(
+                  estilo: _previewEstilo,
+                  avatarUrl: _previewAvatar,
+                  marcoUrl: _previewMarco,
+                  nombreUsuario: _nombreUsuario,
+                ),
+              ],
+            ),
+          ),
+
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             padding: const EdgeInsets.all(4),
@@ -113,10 +196,10 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
-                _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
-                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
-                _ListaMisMejorasTab(tipo: 'Estilo Post', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
+                _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+                _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+                _ListaMisMejorasTab(tipo: 'Estilo Post', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
               ],
             ),
           ),
@@ -132,8 +215,9 @@ class _ListaMisMejorasTab extends StatelessWidget {
   final bool isLoading;
   final String? errorMensaje;
   final Function(int) onEquipar;
+  final Function(String, dynamic) onPreview;
 
-  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar});
+  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar, required this.onPreview});
 
   @override
   Widget build(BuildContext context) {
@@ -184,12 +268,14 @@ class _ListaMisMejorasTab extends StatelessWidget {
         final esEstiloPost = detalles['tipo'].toString().toLowerCase() == 'estilo post';
         final datosExtra = detalles['datos_extra'] as Map<String, dynamic>?;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: estaEquipada ? const Color(0xFF248EA6) : const Color(0xFFE8D5C4), width: estaEquipada ? 2 : 1),
-            boxShadow: [
+        return GestureDetector(
+          onTap: () => onPreview(tipo, detalles),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: estaEquipada ? const Color(0xFF248EA6) : const Color(0xFFE8D5C4), width: estaEquipada ? 2 : 1),
+              boxShadow: [
               BoxShadow(
                 color: (estaEquipada ? const Color(0xFF248EA6) : const Color(0xFFC35E34)).withOpacity(0.06),
                 blurRadius: 12,
@@ -273,30 +359,25 @@ class _ListaMisMejorasTab extends StatelessWidget {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildMiniEstiloPreview(Map<String, dynamic> datos) {
-    Color bg = const Color(0xFFFBE9E0);
-    Color? border;
-    String? bgImg = datos['url_fondo'];
-    
-    try {
-      if (datos['fondo'] != null) bg = Color(int.parse(datos['fondo'], radix: 16));
-      if (datos['borde'] != null) border = Color(int.parse(datos['borde'], radix: 16));
-    } catch (_) {}
-
     return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        image: bgImg != null ? DecorationImage(image: NetworkImage(bgImg), fit: BoxFit.cover) : null,
-        border: border != null ? Border.all(color: border, width: 2) : null,
+      decoration: EstiloPostHelper.buildDecoracion(
+        datos,
         borderRadius: BorderRadius.circular(12),
+        borderWidth: 1.5,
       ),
       child: Center(
-        child: Icon(Icons.palette_rounded, color: (border ?? bg).computeLuminance() > 0.5 ? Colors.black26 : Colors.white24, size: 32),
+        child: Icon(
+          Icons.palette_rounded, 
+          color: EstiloPostHelper.esFondoClaro(datos) ? Colors.black26 : Colors.white24, 
+          size: 32
+        ),
       ),
     );
   }
