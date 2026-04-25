@@ -11,7 +11,7 @@ from core import settings
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
 from usuarios.models import Seguimiento, Usuario, Perfil
-from django.db.models import Q
+from django.db.models import Q, Count, OuterRef, Exists
 from comunidades.models import Miembros_comunidades
 from notificaciones.models import Notificacion
 
@@ -47,8 +47,27 @@ class PublicacionList(generics.ListAPIView):
         solo_guardados = self.request.query_params.get('solo_guardados')
 
         # Filtro base: Solo válidos por IA para usuarios normales
-        # (Los admins podrían ver todo para moderar)
-        qs = Publicacion.objects.filter(es_valido_ia=True)
+        qs = Publicacion.objects.filter(es_valido_ia=True)\
+            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
+            .prefetch_related('imagenes')
+
+        if user.is_authenticated:
+            # Anotar si el usuario actual ha dado like o guardado
+            qs = qs.annotate(
+                anotado_likes_count=Count('me_gustas', distinct=True),
+                anotado_comentarios_count=Count('comentario', distinct=True),
+                anotado_usuario_dio_like=Exists(
+                    Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=user)
+                ),
+                anotado_usuario_guardo_post=Exists(
+                    PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=user)
+                )
+            )
+        else:
+            qs = qs.annotate(
+                anotado_likes_count=Count('me_gustas', distinct=True),
+                anotado_comentarios_count=Count('comentario', distinct=True)
+            )
         
         if solo_guardados == 'true' and user.is_authenticated:
             # Combinamos guardado formal con guardado histórico via colecciones
@@ -390,19 +409,37 @@ class InicioGaleria(generics.ListAPIView):
                 Q(autor__perfil__es_publico=True),
                 imagen__isnull=False,
                 imagen__url_s3__gt='',
-            ).distinct()
+            ).distinct()\
+            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
+            .prefetch_related('imagenes')\
+            .annotate(
+                anotado_likes_count=Count('me_gustas', distinct=True),
+                anotado_comentarios_count=Count('comentario', distinct=True),
+                anotado_usuario_dio_like=Exists(
+                    Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
+                ),
+                anotado_usuario_guardo_post=Exists(
+                    PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
+                )
+            )
         else:
             publicaciones = Publicacion.objects.filter(
                 Q(comunidad__es_publica=True) | 
                 Q(autor__perfil__es_publico=True),
                 imagen__isnull=False,
                 imagen__url_s3__gt='',
-            ).distinct()
+            ).distinct()\
+            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
+            .prefetch_related('imagenes')\
+            .annotate(
+                anotado_likes_count=Count('me_gustas', distinct=True),
+                anotado_comentarios_count=Count('comentario', distinct=True)
+            )
             
         if etiquetas:
             publicaciones = publicaciones.filter(imagen__etiquetas__icontains=etiquetas)
             
-        return publicaciones.order_by('?')[:50]
+        return publicaciones.order_by('-fecha_creacion')
 
 class ColeccionViewSet(viewsets.ModelViewSet):
     serializer_class = ColeccionSerializer

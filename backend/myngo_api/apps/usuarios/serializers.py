@@ -14,6 +14,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
     es_publico = serializers.SerializerMethodField()
     fondo = serializers.SerializerMethodField()
     marco = serializers.SerializerMethodField()
+    estilo_post = serializers.SerializerMethodField()
     puntos = serializers.SerializerMethodField()
 
     class Meta:
@@ -21,7 +22,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         fields = [
            'id', 'perfil_id','nombre_usuario', 'email', 'es_verificado', 'rating_actual',
             'fecha_registro', 'password', 'numero_seguidores', 'numero_seguidos',
-            'estado_seguimiento', 'url_avatar', 'fondo', 'marco', 'biografia', 'es_publico', 'puntos'
+            'estado_seguimiento', 'url_avatar', 'fondo', 'marco', 'estilo_post', 'biografia', 'es_publico', 'puntos'
         ]
         extra_kwargs = {
             'password': {'write_only': True}
@@ -38,12 +39,20 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return perfil.id if perfil else 0
     
     def get_numero_seguidores(self, obj):
+        if hasattr(obj, 'anotado_seguidores'):
+            return obj.anotado_seguidores
         return obj.seguidores.filter(estado='ACEPTADO').count()
 
     def get_numero_seguidos(self, obj):
+        if hasattr(obj, 'anotado_seguidos'):
+            return obj.anotado_seguidos
         return obj.siguiendo.filter(estado='ACEPTADO').count()
 
     def get_estado_seguimiento(self, obj):
+        # Si ya viene anotado, lo usamos directamente
+        if hasattr(obj, 'anotado_estado_seguimiento'):
+            return obj.anotado_estado_seguimiento
+            
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             # Si el objeto es un Usuario, accedemos directamente a sus seguidores
@@ -84,6 +93,10 @@ class UsuarioSerializer(serializers.ModelSerializer):
             return default_storage.url(perfil.marco.lstrip('/'))
         return None
 
+    def get_estilo_post(self, obj):
+        perfil = self._get_perfil(obj)
+        return perfil.estilo_post if perfil else None
+
     def get_puntos(self, obj):
         perfil = self._get_perfil(obj)
         return perfil.puntos if perfil else 0
@@ -102,7 +115,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     datos_usuario = UsuarioSerializer(source='usuario', read_only=True)
     class Meta:
         model = Perfil
-        fields =['biografia', 'url_avatar', 'fondo', 'marco', 'numero_seguidores','numero_seguidos','datos_usuario','estado_seguimiento']
+        fields =['biografia', 'url_avatar', 'fondo', 'marco', 'estilo_post', 'numero_seguidores','numero_seguidos','datos_usuario','estado_seguimiento']
 
     def get_numero_seguidores(self, obj):
         return obj.usuario.seguidores.filter(estado='ACEPTADO').count()

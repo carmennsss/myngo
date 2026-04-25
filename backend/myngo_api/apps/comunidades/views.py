@@ -12,11 +12,24 @@ class ComunidadListCreate(generics.ListCreateAPIView):
     Vista para listar todas las comunidades o crear una nueva.
     Soporta búsqueda por nombre.
     """
-    queryset = Comunidad.objects.all().order_by('-fecha_creacion')
     serializer_class = ComunidadSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['nombre', 'descripcion']
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        from django.db.models import Count, Exists, OuterRef, Subquery
+        usuario = self.request.user
+        queryset = Comunidad.objects.annotate(
+            anotado_miembros_count=Count('miembros_comunidades', distinct=True)
+        )
+        if usuario and usuario.is_authenticated:
+            queryset = queryset.annotate(
+                anotado_es_miembro=Exists(Miembros_comunidades.objects.filter(usuario=usuario, comunidad=OuterRef('pk'))),
+                anotado_es_pendiente=Exists(Seguimiento.objects.filter(seguidor=usuario, seguida_comunidad=OuterRef('pk'), estado='SOLICITUD')),
+                anotado_mi_rol=Subquery(Miembros_comunidades.objects.filter(usuario=usuario, comunidad=OuterRef('pk')).values('rol')[:1])
+            )
+        return queryset.order_by('-fecha_creacion')
 
     def perform_create(self, serializer):
         # El creador es siempre el usuario logueado
@@ -36,11 +49,17 @@ class MisComunidadesList(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        from django.db.models import Count, Exists, OuterRef, Subquery
         usuario = self.request.user
         return Comunidad.objects.filter(
             models.Q(creador=usuario) | 
             models.Q(miembros_comunidades__usuario=usuario)
-        ).distinct().order_by('-fecha_creacion')
+        ).distinct().annotate(
+            anotado_miembros_count=Count('miembros_comunidades', distinct=True),
+            anotado_es_miembro=Exists(Miembros_comunidades.objects.filter(usuario=usuario, comunidad=OuterRef('pk'))),
+            anotado_es_pendiente=Exists(Seguimiento.objects.filter(seguidor=usuario, seguida_comunidad=OuterRef('pk'), estado='SOLICITUD')),
+            anotado_mi_rol=Subquery(Miembros_comunidades.objects.filter(usuario=usuario, comunidad=OuterRef('pk')).values('rol')[:1])
+        ).order_by('-fecha_creacion')
 
 class UnirseComunidad(APIView):
     """

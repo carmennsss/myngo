@@ -17,6 +17,7 @@ class Publicacion {
   final int likesCount;
   final int comentariosCount;
   final String? autorFoto;
+  final Map<String, dynamic>? autorEstiloPost;
   final bool usuarioDioLike;
   final bool usuarioGuardoPost;
 
@@ -39,6 +40,7 @@ class Publicacion {
     required this.fechaCreacion,
     this.likesCount = 0,
     this.comentariosCount = 0,
+    this.autorEstiloPost,
     this.usuarioDioLike = false,
     this.usuarioGuardoPost = false,
   });
@@ -75,6 +77,7 @@ class Publicacion {
             : DateTime.now(),
         likesCount: int.tryParse(json['likes_count']?.toString() ?? '0') ?? 0,
         comentariosCount: int.tryParse(json['comentarios_count']?.toString() ?? '0') ?? 0,
+        autorEstiloPost: json['autor_estilo_post'] is Map ? Map<String, dynamic>.from(json['autor_estilo_post']) : null,
         usuarioDioLike: json['usuario_dio_like'] == true,
         usuarioGuardoPost: json['usuario_guardo_post'] == true,
       );
