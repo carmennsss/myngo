@@ -4,12 +4,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../models/publicacion.dart';
-import '../../models/comentario.dart';
-import '../../services/servicio_interaccion.dart';
-import '../../services/servicio_usuarios.dart';
-import '../../widgets/inicio/dialogo_detalle_post.dart';
-import '../../widgets/comunes/comentario_item.dart';
 import '../../widgets/comunes/grid_imagenes_post.dart';
+import '../../widgets/comunes/acciones_y_comentarios_post.dart';
+import '../../utils/estilo_post_helper.dart';
 
 class PantallaDetallePost extends StatefulWidget {
   final Publicacion post;
@@ -21,66 +18,9 @@ class PantallaDetallePost extends StatefulWidget {
 }
 
 class _PantallaDetallePostState extends State<PantallaDetallePost> {
-  final TextEditingController _comentarioController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final ServicioInteraccion _servicioInteraccion = ServicioInteraccion();
-  final ServicioUsuarios _servicioUsuarios = ServicioUsuarios();
-  
-  List<Comentario> _comentarios = [];
-  bool _cargandoComentarios = true;
-  bool _enviandoComentario = false;
-  int? _userId;
-
   @override
   void initState() {
     super.initState();
-    _cargarDatos();
-  }
-
-  Future<void> _cargarDatos() async {
-    _userId = await _servicioUsuarios.obtenerIdUsuario();
-    await _cargarComentarios();
-  }
-
-  Future<void> _cargarComentarios() async {
-    if (!mounted) return;
-    setState(() => _cargandoComentarios = true);
-    final respuesta = await _servicioInteraccion.obtenerComentarios(widget.post.id);
-    if (respuesta.exito) {
-      if (mounted) {
-        setState(() {
-          _comentarios = respuesta.datos ?? [];
-          _cargandoComentarios = false;
-        });
-      }
-    } else {
-      if (mounted) setState(() => _cargandoComentarios = false);
-    }
-  }
-
-  Future<void> _enviarComentario() async {
-    if (_comentarioController.text.trim().isEmpty) return;
-
-    setState(() => _enviandoComentario = true);
-    final respuesta = await _servicioInteraccion.crearComentario(
-      widget.post.id,
-      _comentarioController.text.trim(),
-    );
-
-    if (respuesta.exito && respuesta.datos != null) {
-      setState(() {
-        _comentarios.insert(0, respuesta.datos!);
-        _comentarioController.clear();
-        _enviandoComentario = false;
-      });
-    } else {
-      setState(() => _enviandoComentario = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(respuesta.mensaje)),
-        );
-      }
-    }
   }
 
   String _formatFecha(DateTime fecha) {
@@ -89,34 +29,12 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
 
   @override
   Widget build(BuildContext context) {
+    final estilo = widget.post.autorEstiloPost;
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+    final colorTexto = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
+    final colorSubtexto = esFondoClaro ? Colors.grey.shade600 : Colors.white70;
+    final bgColor = estilo != null ? EstiloPostHelper.effectiveBgColor(estilo) : Colors.white;
     final Color colorComunidad = Theme.of(context).primaryColor;
-    
-    Color bgColor = Colors.white;
-    Color? borderColor;
-    String? bgImg;
-
-    if (widget.post.autorEstiloPost != null) {
-      try {
-        final estilo = widget.post.autorEstiloPost!;
-        final bgHex = estilo['fondo']?.toString().replaceAll('#', '');
-        final borderHex = estilo['borde']?.toString().replaceAll('#', '');
-        bgImg = estilo['url_fondo'];
-        
-        if (bgHex != null && bgHex.isNotEmpty) {
-          String hex = bgHex;
-          if (hex.length == 6) hex = 'FF$hex';
-          bgColor = Color(int.parse(hex, radix: 16));
-        }
-        
-        if (borderHex != null && borderHex.isNotEmpty) {
-          String hex = borderHex;
-          if (hex.length == 6) hex = 'FF$hex';
-          borderColor = Color(int.parse(hex, radix: 16));
-        }
-      } catch (e) {
-        // Ignorar
-      }
-    }
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -124,7 +42,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
         backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close, color: colorTexto),
           onPressed: () => context.pop(),
         ),
         title: Column(
@@ -133,7 +51,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
             Text(
               'Publicación',
               style: GoogleFonts.outfit(
-                color: Colors.black,
+                color: colorTexto,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
@@ -141,7 +59,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
             Text(
               'en ${widget.post.comunidadNombre}',
               style: GoogleFonts.outfit(
-                color: Colors.grey.shade600,
+                color: colorSubtexto,
                 fontSize: 12,
               ),
             ),
@@ -149,18 +67,14 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
         ),
       ),
       body: Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          image: bgImg != null && bgImg!.isNotEmpty 
-              ? DecorationImage(image: CachedNetworkImageProvider(bgImg!), fit: BoxFit.cover, opacity: 0.8) 
-              : null,
-          border: borderColor != null ? Border(top: BorderSide(color: borderColor!, width: 2.5)) : null,
+        decoration: EstiloPostHelper.buildDecoracion(
+          estilo,
+          borderRadius: BorderRadius.zero,
         ),
         child: Column(
           children: [
             Expanded(
               child: ListView(
-                controller: _scrollController,
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -190,12 +104,13 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                                     style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
+                                      color: colorTexto,
                                     ),
                                   ),
                                   Text(
                                     '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')}',
                                     style: GoogleFonts.outfit(
-                                      color: colorComunidad,
+                                      color: esFondoClaro ? colorComunidad : colorSubtexto,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -203,7 +118,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.more_horiz),
+                              icon: Icon(Icons.more_horiz, color: colorTexto),
                               onPressed: () {}, 
                             ),
                           ],
@@ -216,6 +131,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               height: 1.3,
+                              color: colorTexto,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -225,6 +141,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                           style: GoogleFonts.outfit(
                             fontSize: 18,
                             height: 1.4,
+                            color: colorTexto,
                           ),
                         ),
                         if (widget.post.urlsImagenes.isNotEmpty || widget.post.urlImagen != null) ...[
@@ -243,108 +160,24 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                         Text(
                           _formatFecha(widget.post.fechaCreacion),
                           style: GoogleFonts.outfit(
-                            color: Colors.grey.shade600,
+                            color: colorSubtexto,
                             fontSize: 14,
                           ),
                         ),
                         const Divider(height: 32),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _ActionIcon(
-                              icon: widget.post.usuarioDioLike ? Icons.favorite : Icons.favorite_border,
-                              color: widget.post.usuarioDioLike ? Colors.red : Colors.grey.shade600,
-                              label: widget.post.likesCount.toString(),
-                              onTap: () {},
-                            ),
-                            _ActionIcon(
-                              icon: Icons.chat_bubble_outline,
-                              color: Colors.grey.shade600,
-                              label: widget.post.comentariosCount.toString(),
-                              onTap: () {},
-                            ),
-                            _ActionIcon(
-                              icon: widget.post.usuarioGuardoPost ? Icons.bookmark : Icons.bookmark_border,
-                              color: widget.post.usuarioGuardoPost ? Colors.orange : Colors.grey.shade600,
-                              onTap: () {},
-                            ),
-                          ],
+                        const SizedBox(height: 16),
+                        AccionesYComentariosPost(
+                          post: widget.post,
+                          colorTexto: colorTexto,
                         ),
                       ],
                     ),
                   ),
-                  const Divider(height: 1),
-                  if (_cargandoComentarios)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(),
-                    ))
-                  else if (_comentarios.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(
-                        child: Text('Sin comentarios todavía', style: GoogleFonts.outfit(color: Colors.grey)),
-                      ),
-                    )
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _comentarios.length,
-                      itemBuilder: (context, index) => ComentarioItem(comentario: _comentarios[index]),
-                    ),
                 ],
               ),
             ),
-            _buildInputResponder(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInputResponder() {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 16, 
-        right: 16, 
-        top: 8, 
-        bottom: 8 + MediaQuery.of(context).viewInsets.bottom
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.grey.shade200,
-            child: const Icon(Icons.person, size: 18, color: Colors.grey),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _comentarioController,
-              decoration: InputDecoration(
-                hintText: 'Postea tu respuesta',
-                hintStyle: GoogleFonts.outfit(fontSize: 14),
-                border: InputBorder.none,
-              ),
-              maxLines: null,
-            ),
-          ),
-          if (_enviandoComentario)
-            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-          else
-            TextButton(
-              onPressed: _enviandoComentario ? null : _enviarComentario,
-              child: Text(
-                'Responder',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34)),
-              ),
-            ),
-        ],
       ),
     );
   }

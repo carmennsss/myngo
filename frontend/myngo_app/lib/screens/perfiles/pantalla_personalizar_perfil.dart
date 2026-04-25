@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/servicio_mejoras.dart';
+import '../../utils/mejoras_notifier.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -20,7 +21,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _cargarMisMejoras();
   }
 
@@ -53,8 +54,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         ),
       );
       if (respuesta.exito) {
-        // Recargar inventario para actualizar estado "esta_equipada"
-        _cargarMisMejoras();
+        notificarMejoraEquipada(); // Avisa al perfil para que recargue posts y datos
+        _cargarMisMejoras();       // Actualiza el estado "esta_equipada" en esta pantalla
       }
     }
   }
@@ -89,6 +90,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             ),
             child: TabBar(
               controller: _tabController,
+              isScrollable: true,
               indicator: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -103,6 +105,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                 Tab(text: 'Avatares'),
                 Tab(text: 'Marcos'),
                 Tab(text: 'Fondos'),
+                Tab(text: 'Estilos Post'),
               ],
             ),
           ),
@@ -113,6 +116,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                 _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
                 _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
                 _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
+                _ListaMisMejorasTab(tipo: 'Estilo Post', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora),
               ],
             ),
           ),
@@ -177,6 +181,8 @@ class _ListaMisMejorasTab extends StatelessWidget {
         final item = filtradas[index];
         final detalles = item['mejora_detalles'];
         final estaEquipada = item['esta_equipada'] == true;
+        final esEstiloPost = detalles['tipo'].toString().toLowerCase() == 'estilo post';
+        final datosExtra = detalles['datos_extra'] as Map<String, dynamic>?;
 
         return Container(
           decoration: BoxDecoration(
@@ -202,9 +208,11 @@ class _ListaMisMejorasTab extends StatelessWidget {
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                       child: Container(
                         color: const Color(0xFFFBE9E0),
-                        child: detalles['url_recurso'] != null && (detalles['url_recurso'] as String).isNotEmpty
-                            ? Image.network(detalles['url_recurso'], fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: Colors.grey.shade300))
-                            : Icon(Icons.image_not_supported_rounded, color: Colors.grey.shade300),
+                        child: esEstiloPost && datosExtra != null
+                            ? _buildMiniEstiloPreview(datosExtra)
+                            : (detalles['url_recurso'] != null && (detalles['url_recurso'] as String).isNotEmpty
+                                ? Image.network(detalles['url_recurso'], fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: Colors.grey.shade300))
+                                : Icon(Icons.image_not_supported_rounded, color: Colors.grey.shade300)),
                       ),
                     ),
                     if (estaEquipada)
@@ -269,4 +277,28 @@ class _ListaMisMejorasTab extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildMiniEstiloPreview(Map<String, dynamic> datos) {
+    Color bg = const Color(0xFFFBE9E0);
+    Color? border;
+    String? bgImg = datos['url_fondo'];
+    
+    try {
+      if (datos['fondo'] != null) bg = Color(int.parse(datos['fondo'], radix: 16));
+      if (datos['borde'] != null) border = Color(int.parse(datos['borde'], radix: 16));
+    } catch (_) {}
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        image: bgImg != null ? DecorationImage(image: NetworkImage(bgImg), fit: BoxFit.cover) : null,
+        border: border != null ? Border.all(color: border, width: 2) : null,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Icon(Icons.palette_rounded, color: (border ?? bg).computeLuminance() > 0.5 ? Colors.black26 : Colors.white24, size: 32),
+      ),
+    );
+  }
 }
+

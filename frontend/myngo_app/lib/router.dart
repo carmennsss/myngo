@@ -292,9 +292,15 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/tienda',
               builder: (context, state) {
-                return const ProtectedRoute(
+                return ProtectedRoute(
                   title: 'Tu Rincón Michi',
-                  child: PantallaTiendaMejoras(esVistaIntegrada: true),
+                  child: PantallaTiendaMejoras(
+                    esVistaIntegrada: true,
+                    onPuntosActualizados: (puntos) {
+                      final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                      inicioState?.actualizarPuntos(puntos);
+                    },
+                  ),
                 );
               },
             ),

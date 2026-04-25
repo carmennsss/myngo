@@ -529,7 +529,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                   style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pushNamed(context, '/registro'),
+                  onPressed: () => context.push('/registro'),
                   style: TextButton.styleFrom(foregroundColor: const Color(0xFFF28B50)),
                   child: const Text(
                     'Únete ahora',

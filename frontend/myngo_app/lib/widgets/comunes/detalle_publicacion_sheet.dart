@@ -7,6 +7,9 @@ import '../../services/servicio_usuarios.dart';
 import '../../models/usuario.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart';
 import 'grid_imagenes_post.dart';
+import 'acciones_y_comentarios_post.dart';
+import '../../utils/estilo_post_helper.dart';
+
 
 /// Bottom sheet estilo Instagram que muestra el detalle completo de un post.
 class DetallePublicacionSheet extends StatefulWidget {
@@ -85,14 +88,23 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
     final fecha = DateFormat('dd MMM yyyy · HH:mm').format(publicacion.fechaCreacion.toLocal());
 
+    final estilo = publicacion.autorEstiloPost;
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+    final colorTexto = esFondoClaro ? Colors.black87 : Colors.white;
+    final colorSubtexto = esFondoClaro ? Colors.black54 : Colors.grey;
+
+    // Color efectivo de fondo para el Scaffold (no puede ser gradiente, usamos el color promedio)
+    final bgColor = estilo != null ? EstiloPostHelper.effectiveBgColor(estilo) : const Color(0xFF121212);
+
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (_, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF121212),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: EstiloPostHelper.buildDecoracion(
+          estilo,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderWidth: 2,
         ),
         child: ListView(
           controller: scrollController,
@@ -105,7 +117,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade700,
+                  color: colorSubtexto.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -140,21 +152,21 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                               Text(
                                 '@${publicacion.autorNombre}',
                                 style: GoogleFonts.inter(
-                                  color: Colors.white,
+                                  color: colorTexto,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
                               ),
                               if (_navegandoAPerfil)
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 8),
-                                  child: SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70)),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: colorSubtexto)),
                                 ),
                             ],
                           ),
                           Text(
                             fecha,
-                            style: GoogleFonts.inter(color: Colors.grey, fontSize: 12),
+                            style: GoogleFonts.inter(color: colorSubtexto, fontSize: 12),
                           ),
                         ],
                       ),
@@ -165,6 +177,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                       autorId: publicacion.autorId,
                       comunidadId: publicacion.comunidadId,
                       creadorComunidadId: publicacion.creadorComunidadId,
+                      iconColor: colorTexto,
                       onEliminado: () {
                         Navigator.pop(context);
                         if (onEliminado != null) onEliminado!();
@@ -191,7 +204,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 child: Text(
                   publicacion.titulo,
                   style: GoogleFonts.inter(
-                    color: Colors.white,
+                    color: colorTexto,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -205,33 +218,33 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 child: Text(
                   publicacion.contenidoTexto,
                   style: GoogleFonts.inter(
-                    color: Colors.white.withOpacity(0.85),
+                    color: colorTexto.withOpacity(0.9),
                     fontSize: 15,
                     height: 1.6,
                   ),
                 ),
               ),
 
-            // ── Stats: likes, comentarios ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.favorite_border_rounded, color: Colors.grey, size: 18),
-                  const SizedBox(width: 4),
-                  Text('${publicacion.likesCount}', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.chat_bubble_outline_rounded, color: Colors.grey, size: 18),
-                  const SizedBox(width: 4),
-                  Text('${publicacion.comentariosCount}', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)),
-                  const SizedBox(width: 16),
-                  if (publicacion.comunidadNombre.isNotEmpty && publicacion.comunidadNombre != 'General') ...[
-                    const Icon(Icons.group_outlined, color: Colors.grey, size: 18),
-                    const SizedBox(width: 4),
-                    Text(publicacion.comunidadNombre, style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)),
+            // ── Comunidad Badge ──
+            if (publicacion.comunidadNombre.isNotEmpty && publicacion.comunidadNombre != 'General')
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
+                  children: [
+                    Icon(Icons.group_outlined, color: colorSubtexto, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      publicacion.comunidadNombre,
+                      style: GoogleFonts.inter(color: colorSubtexto, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   ],
-                ],
+                ),
               ),
+
+            // ── Stats: likes, comentarios interactivos ──
+            AccionesYComentariosPost(
+              post: publicacion,
+              colorTexto: colorTexto,
             ),
 
             const SizedBox(height: 24),
