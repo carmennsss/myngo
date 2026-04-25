@@ -26,7 +26,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Publicacion
         fields = [
-            'id', 'autor', 'autor_nombre', 'autor_foto', 'autor_estilo_post', 'comunidad', 'comunidad_nombre',
+            'id', 'autor', 'autor_nombre', 'autor_foto', 'autor_marco', 'autor_estilo_post', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
             'url_imagen', 'urls_imagenes', 'imagenes_ids', 'relacion_aspecto', 'es_valido_ia', 'etiquetas', 'fecha_creacion',
             'likes_count', 'comentarios_count', 'usuario_dio_like', 'usuario_guardo_post'
@@ -44,14 +44,21 @@ class PublicacionSerializer(serializers.ModelSerializer):
         avatar_path = obj.autor.url_avatar
         if not avatar_path:
             return None
-        
         try:
-            # Si ya es una URL absoluta, retornarla
             if avatar_path.startswith('http'):
                 return avatar_path
-                
-            # Usar default_storage.url para obtener la URL firmada y codificada
             return default_storage.url(avatar_path.lstrip('/'))
+        except:
+            return None
+
+    def get_autor_marco(self, obj):
+        marco_path = obj.autor.url_marco
+        if not marco_path:
+            return None
+        try:
+            if marco_path.startswith('http'):
+                return marco_path
+            return default_storage.url(marco_path.lstrip('/'))
         except:
             return None
 
@@ -125,6 +132,8 @@ class PublicacionSerializer(serializers.ModelSerializer):
 class ImagenGaleriaSerializer(serializers.ModelSerializer):
     url_archivo = serializers.SerializerMethodField()
     propietario_nombre = serializers.ReadOnlyField(source='propietario.nombre_usuario')
+    propietario_foto = serializers.SerializerMethodField()
+    propietario_marco = serializers.SerializerMethodField()
     creador_comunidad_id = serializers.ReadOnlyField(source='comunidad.creador.id')
     comunidad_nombre = serializers.ReadOnlyField(source='comunidad.nombre')
     usuario_es_miembro = serializers.SerializerMethodField()
@@ -132,7 +141,7 @@ class ImagenGaleriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Imagenes_galeria
         fields = [
-            'id', 'propietario', 'propietario_nombre', 'comunidad', 'comunidad_nombre',
+            'id', 'propietario', 'propietario_nombre', 'propietario_foto', 'propietario_marco', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'usuario_es_miembro',
             'url_s3', 'url_archivo', 'tipo_archivo', 
             'relacion_aspecto', 'es_publica', 'fecha_subida', 'etiquetas'
@@ -141,11 +150,33 @@ class ImagenGaleriaSerializer(serializers.ModelSerializer):
 
     def get_url_archivo(self, obj):
         if obj.url_s3:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.url_s3.url)
-            return obj.url_s3.url
+            try:
+                return default_storage.url(obj.url_s3.name)
+            except:
+                return obj.url_s3.url
         return None
+
+    def get_propietario_foto(self, obj):
+        avatar_path = obj.propietario.url_avatar
+        if not avatar_path:
+            return None
+        try:
+            if avatar_path.startswith('http'):
+                return avatar_path
+            return default_storage.url(avatar_path.lstrip('/'))
+        except:
+            return None
+
+    def get_propietario_marco(self, obj):
+        marco_path = obj.propietario.url_marco
+        if not marco_path:
+            return None
+        try:
+            if marco_path.startswith('http'):
+                return marco_path
+            return default_storage.url(marco_path.lstrip('/'))
+        except:
+            return None
 
     def get_usuario_es_miembro(self, obj):
         if not obj.comunidad:

@@ -29,6 +29,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   Map<String, dynamic>? _previewEstilo;
   String _nombreUsuario = 'Usuario';
   int _puntos = 0;
+  bool _mostrarPreview = true;
 
   @override
   void initState() {
@@ -105,24 +106,12 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     _tabController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFEF5F1),
-        title: Text('Personalizar Perfil', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
-        centerTitle: true,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // --- SECCIÓN DE PREVISUALIZACIÓN ---
-          Container(
+    final bool esAncho = MediaQuery.of(context).size.width > 1000;
+
+    final previewSection = _mostrarPreview 
+        ? Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -134,77 +123,120 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                 ),
               ],
             ),
-            child: Column(
-              children: [
-                Text(
-                  'VISTA PREVIA',
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: Colors.grey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Text(
+                    'VISTA PREVIA',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: Colors.grey,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                ProfilePreview(
-                  fondoUrl: _previewFondo,
-                  avatarUrl: _previewAvatar,
-                  marcoUrl: _previewMarco,
-                  nombreUsuario: _nombreUsuario,
-                  puntos: _puntos,
-                ),
-                const SizedBox(height: 12),
-                PostPreview(
-                  estilo: _previewEstilo,
-                  avatarUrl: _previewAvatar,
-                  marcoUrl: _previewMarco,
-                  nombreUsuario: _nombreUsuario,
-                ),
-              ],
-            ),
-          ),
-
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF2D0BD).withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              indicator: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.1), blurRadius: 8)],
+                  const SizedBox(height: 16),
+                  ProfilePreview(
+                    fondoUrl: _previewFondo,
+                    avatarUrl: _previewAvatar,
+                    marcoUrl: _previewMarco,
+                    nombreUsuario: _nombreUsuario,
+                    puntos: _puntos,
+                  ),
+                  const SizedBox(height: 12),
+                  PostPreview(
+                    estilo: _previewEstilo,
+                    avatarUrl: _previewAvatar,
+                    marcoUrl: _previewMarco,
+                    nombreUsuario: _nombreUsuario,
+                  ),
+                ],
               ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: const Color(0xFFC35E34),
-              unselectedLabelColor: Colors.grey.shade500,
-              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13),
-              unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
-              tabs: const [
-                Tab(text: 'Avatares'),
-                Tab(text: 'Marcos'),
-                Tab(text: 'Fondos'),
-                Tab(text: 'Estilos Post'),
-              ],
             ),
+          )
+        : const SizedBox.shrink();
+
+    final optionsSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2D0BD).withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
-                _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
-                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
-                _ListaMisMejorasTab(tipo: 'Estilo Post', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
-              ],
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            indicator: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.1), blurRadius: 8)],
             ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: const Color(0xFFC35E34),
+            unselectedLabelColor: Colors.grey.shade500,
+            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13),
+            unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
+            tabs: const [
+              Tab(text: 'Avatares'),
+              Tab(text: 'Marcos'),
+              Tab(text: 'Fondos'),
+              Tab(text: 'Estilos Post'),
+            ],
           ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+              _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+              _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+              _ListaMisMejorasTab(tipo: 'Estilo Post', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFEF5F1),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFEF5F1),
+        title: Text('Personalizar Perfil', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
+        actions: [
+          IconButton(
+            icon: Icon(_mostrarPreview ? Icons.visibility_rounded : Icons.visibility_off_rounded),
+            onPressed: () => setState(() => _mostrarPreview = !_mostrarPreview),
+            tooltip: _mostrarPreview ? 'Ocultar Preview' : 'Mostrar Preview',
+          ),
+          const SizedBox(width: 8),
         ],
       ),
+      body: esAncho 
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 3, child: optionsSection),
+              if (_mostrarPreview)
+                const VerticalDivider(width: 1, color: Color(0xFFE8D5C4)),
+              if (_mostrarPreview)
+                Expanded(flex: 2, child: previewSection),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_mostrarPreview) previewSection,
+              Expanded(child: optionsSection),
+            ],
+          ),
     );
   }
 }

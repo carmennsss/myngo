@@ -112,16 +112,32 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                         children: [
                           Row(
                             children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                                backgroundImage: widget.post.autorFoto != null
-                                    ? CachedNetworkImageProvider(widget.post.autorFoto!)
-                                    : null,
-                                child: widget.post.autorFoto == null 
-                                    ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
-                                        style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold))
-                                    : null,
+                              SizedBox(
+                                width: 44,
+                                height: 44,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
+                                      Positioned.fill(
+                                        child: CachedNetworkImage(
+                                          imageUrl: widget.post.autorMarco!,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                                      backgroundImage: widget.post.autorFoto != null
+                                          ? CachedNetworkImageProvider(widget.post.autorFoto!)
+                                          : null,
+                                      child: widget.post.autorFoto == null 
+                                          ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
+                                              style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14))
+                                          : null,
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(

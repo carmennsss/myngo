@@ -148,13 +148,31 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
           // Autor y Fecha
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF248EA6).withOpacity(0.2),
-                  shape: BoxShape.circle,
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (widget.imagen.propietarioMarco != null && widget.imagen.propietarioMarco!.isNotEmpty)
+                      Positioned.fill(
+                        child: CachedNetworkImage(
+                          imageUrl: widget.imagen.propietarioMarco!,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: const Color(0xFF248EA6).withOpacity(0.2),
+                      backgroundImage: (widget.imagen.propietarioFoto != null && widget.imagen.propietarioFoto!.isNotEmpty)
+                          ? CachedNetworkImageProvider(widget.imagen.propietarioFoto!)
+                          : null,
+                      child: (widget.imagen.propietarioFoto == null || widget.imagen.propietarioFoto!.isEmpty)
+                          ? const Icon(Icons.person_rounded, color: Color(0xFF248EA6), size: 18)
+                          : null,
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.person_rounded, color: Color(0xFF248EA6), size: 20),
               ),
               const SizedBox(width: 12),
               Column(

@@ -19,3 +19,4 @@ frontend/.flutter-plugins-dependencies
 # --- GENERAL ---
 .vscode/
 .DS_Store
+frontend/myngo_app/lib/utils/configuracion.dart

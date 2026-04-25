@@ -2,6 +2,8 @@ class ImagenGaleria {
   final int id;
   final int propietarioId;
   final String? propietarioNombre;
+  final String? propietarioFoto;
+  final String? propietarioMarco;
   final int? comunidadId;
   final String? comunidadNombre;
   final int? creadorComunidadId;
@@ -17,6 +19,8 @@ class ImagenGaleria {
     required this.id,
     required this.propietarioId,
     this.propietarioNombre,
+    this.propietarioFoto,
+    this.propietarioMarco,
     this.comunidadId,
     this.comunidadNombre,
     this.creadorComunidadId,
@@ -34,6 +38,8 @@ class ImagenGaleria {
       id: json['id'] ?? 0,
       propietarioId: json['propietario'] ?? 0,
       propietarioNombre: json['propietario_nombre']?.toString() ?? 'Anónimo',
+      propietarioFoto: json['propietario_foto']?.toString(),
+      propietarioMarco: json['propietario_marco']?.toString(),
       comunidadId: json['comunidad'] as int?,
       comunidadNombre: json['comunidad_nombre']?.toString(),
       creadorComunidadId: json['creador_comunidad_id'] as int?,

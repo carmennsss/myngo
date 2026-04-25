@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/comunes/boton_tactil.dart';
@@ -11,6 +12,7 @@ class CabeceraPro extends StatelessWidget {
   final bool estaLogueado;
   final String? nombreUsuario;
   final String? avatarUrl;
+  final String? marcoUrl;
   final int? miId;
   final int indiceSeleccionado;
   final int? puntos;
@@ -23,6 +25,7 @@ class CabeceraPro extends StatelessWidget {
     required this.estaLogueado,
     required this.nombreUsuario,
     required this.avatarUrl,
+    this.marcoUrl,
     this.miId,
     required this.indiceSeleccionado,
     required this.puntos,
@@ -104,6 +107,7 @@ class CabeceraPro extends StatelessWidget {
           _UserProfileHeader(
             name: nombreUsuario,
             avatarUrl: avatarUrl,
+            marcoUrl: marcoUrl,
             estaLogueado: estaLogueado,
             miId: miId,
             onProfileSelected: onProfileSelected,
@@ -166,6 +170,7 @@ class _CircularNavItem extends StatelessWidget {
 class _UserProfileHeader extends StatelessWidget {
   final String? name;
   final String? avatarUrl;
+  final String? marcoUrl;
   final bool estaLogueado;
   final int? miId;
   final int? puntos;
@@ -175,6 +180,7 @@ class _UserProfileHeader extends StatelessWidget {
   const _UserProfileHeader({
     this.name, 
     this.avatarUrl, 
+    this.marcoUrl,
     required this.estaLogueado, 
     this.miId, 
     this.onProfileSelected, 
@@ -239,17 +245,33 @@ class _UserProfileHeader extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.3),
-                image: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                    ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
-                    : null,
+            SizedBox(
+              width: 46,
+              height: 46,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (marcoUrl != null && marcoUrl!.isNotEmpty)
+                    Positioned.fill(
+                      child: CachedNetworkImage(
+                        imageUrl: marcoUrl!,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.3),
+                      image: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                          ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
+                          : null,
+                    ),
+                    child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
+                  ),
+                ],
               ),
-              child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.white) : null,
             ),
             if (!isMobile) ...[
               const SizedBox(width: 14),
