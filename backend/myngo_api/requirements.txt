@@ -3,6 +3,7 @@ Django==6.0.3
 django-cors-headers==4.9.0
 django-environ==0.13.0
 djangorestframework==3.16.1
+djangorestframework-simplejwt==5.5.0
 gunicorn==25.1.0
 mysqlclient==2.2.8
 packaging==26.0
@@ -12,3 +13,8 @@ tzdata==2025.3
 django-storages==1.14.5
 boto3==1.36.0
 requests==2.32.3
+channels==4.3.2
+channels-redis==4.3.0
+daphne==4.2.1
+django-channels-presence==1.0.0
+redis==7.4.0
