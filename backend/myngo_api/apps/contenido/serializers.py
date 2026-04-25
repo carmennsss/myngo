@@ -69,9 +69,11 @@ class PublicacionSerializer(serializers.ModelSerializer):
                 except:
                     pass
 
-            # Normalizar para el frontend (fondo, borde, url_fondo)
+            # Normalizar para el frontend (fondo, borde, url_fondo, degradados)
             return {
                 'fondo': estilo.get('fondo') or estilo.get('background'),
+                'fondo_inicio': estilo.get('fondo_inicio'),
+                'fondo_fin': estilo.get('fondo_fin'),
                 'borde': estilo.get('borde') or estilo.get('border'),
                 'url_fondo': url_fondo,
             }

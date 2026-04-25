@@ -12,6 +12,8 @@ import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import '../../utils/mejoras_notifier.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../../widgets/comunes/post_preview.dart';
+import '../../widgets/comunes/profile_preview.dart';
 
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;
@@ -453,144 +455,38 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: esAncho ? 40 : 24, vertical: 16),
-      padding: const EdgeInsets.all(0), // Quitamos el padding interior para el fondo de perfil
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFC35E34).withOpacity(0.08),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
+      child: Column(
+        children: [
+          ProfilePreview(
+            fondoUrl: _previewFondo,
+            avatarUrl: _previewAvatar,
+            marcoUrl: _previewMarco,
+            nombreUsuario: _usuarioActual?.nombreUsuario ?? 'Usuario',
+            puntos: _usuarioActual?.puntos ?? 0,
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: Column(
-          children: [
-            // Cabecera de Perfil (Fondo)
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  height: 120,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFBE9E0),
-                    image: _previewFondo != null 
-                        ? DecorationImage(image: NetworkImage(_previewFondo!), fit: BoxFit.cover)
-                        : null,
-                  ),
-                ),
-                Positioned(
-                  bottom: -40,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: CircleAvatar(
-                          radius: 45,
-                          backgroundImage: _previewAvatar != null ? NetworkImage(_previewAvatar!) : null,
-                          backgroundColor: const Color(0xFFFBE9E0),
-                          child: _previewAvatar == null ? const Icon(Icons.person, color: Color(0xFFC35E34), size: 40) : null,
-                        ),
-                      ),
-                      if (_previewMarco != null)
-                        SizedBox(
-                          width: 105,
-                          height: 105,
-                          child: Image.network(_previewMarco!, fit: BoxFit.contain),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 50),
-            // Nombre y Puntos
-            Text(
-              _usuarioActual?.nombreUsuario ?? 'Usuario',
-              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440)),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.pets_rounded, color: Color(0xFFF29C50), size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  '${_usuarioActual?.puntos ?? 0} puntos Myngo',
-                  style: GoogleFonts.outfit(color: const Color(0xFFF29C50), fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-              ],
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-              child: Divider(height: 1),
-            ),
-            // Mock Post
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 20),
+          // Mock Post
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.article_rounded, color: Colors.grey, size: 14),
-                      const SizedBox(width: 6),
-                      Text(
-                        'ASÍ SE VERÁ TU POST',
-                        style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 1),
-                      ),
-                    ],
+                  const Icon(Icons.article_rounded, color: Colors.grey, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    'ASÍ SE VERÁ TU POST',
+                    style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 1),
                   ),
-                  const SizedBox(height: 12),
-                  _buildSimulatedPost(),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSimulatedPost() {
-    final estilo = _previewEstiloPost;
-    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
-    final textColor = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
-    final subTextColor = esFondoClaro ? Colors.black54 : Colors.white70;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: EstiloPostHelper.buildDecoracion(
-        estilo,
-        borderRadius: BorderRadius.circular(20),
-        borderWidth: 3,
-        shadows: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundImage: _previewAvatar != null ? NetworkImage(_previewAvatar!) : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_usuarioActual?.nombreUsuario ?? 'Usuario', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: textColor)),
-                Text('Ejemplo de post con este estilo 🐾', style: GoogleFonts.outfit(color: subTextColor, fontSize: 13)),
-              ],
-            ),
+              const SizedBox(height: 12),
+              PostPreview(
+                estilo: _previewEstiloPost,
+                avatarUrl: _previewAvatar,
+                marcoUrl: _previewMarco,
+                nombreUsuario: _usuarioActual?.nombreUsuario ?? 'Usuario',
+              ),
+            ],
           ),
         ],
       ),
