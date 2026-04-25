@@ -14,12 +14,12 @@ class Publicacion {
   final double relacionAspecto;
   final bool esValidoIa;
   final DateTime fechaCreacion;
-  final int likesCount;
-  final int comentariosCount;
+  int likesCount;
+  int comentariosCount;
   final String? autorFoto;
   final Map<String, dynamic>? autorEstiloPost;
-  final bool usuarioDioLike;
-  final bool usuarioGuardoPost;
+  bool usuarioDioLike;
+  bool usuarioGuardoPost;
 
   Publicacion({
     required this.id,

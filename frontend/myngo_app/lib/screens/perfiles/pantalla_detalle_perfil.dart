@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../models/usuario.dart';
+import '../../models/perfil.dart';
 import '../../services/servicio_perfiles.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_mejoras.dart';
@@ -19,6 +22,8 @@ import '../../services/servicio_comunidades.dart';
 import 'pantalla_tienda_mejoras.dart';
 import 'pantalla_personalizar_perfil.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import '../../utils/mejoras_notifier.dart';
+import '../../utils/estilo_post_helper.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario con diseño oscuro y sistema de votos.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -81,11 +86,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
     _avatarLocal = widget.usuario.urlAvatar;
     _fondoLocal = widget.usuario.fondo;
     _marcoLocal = widget.usuario.marco;
-    _ratingLocal = widget.usuario.ratingActual; // Initialize local rating
+    _ratingLocal = widget.usuario.ratingActual;
     _cargarUsuario();
     _cargarEstadoVoto();
     _cargarPublicaciones();
     _cargarRolContextual();
+    
+    // Escuchar cambios de mejoras equipadas desde la tienda
+    mejoraEquipadaNotifier.addListener(_onMejoraEquipada);
     
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(() {
@@ -96,6 +104,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
         }
       }
     });
+  }
+
+  void _onMejoraEquipada() {
+    // Solo recargamos si es el perfil propio
+    if (_currentUserId == widget.usuario.id) {
+      _recargarUsuarioActualizado(); // Recarga avatar, marco, fondo, etc.
+      _cargarPublicaciones();         // Recarga posts para mostrar el nuevo estilo
+    }
   }
 
   @override
@@ -134,6 +150,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
 
   @override
   void dispose() {
+    mejoraEquipadaNotifier.removeListener(_onMejoraEquipada);
     _timerReinicio?.cancel();
     _tabController?.dispose();
     super.dispose();
@@ -1343,101 +1360,96 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
 
   Widget _buildPublicacionesGrid(List<Publicacion> posts) {
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 160,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-          childAspectRatio: 1,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final publicacion = posts[index];
-            final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      sliver: SliverMasonryGrid.extent(
+        maxCrossAxisExtent: 250,
+        mainAxisSpacing: 2,
+        crossAxisSpacing: 2,
+        childCount: posts.length,
+        itemBuilder: (context, index) {
+          final publicacion = posts[index];
+          final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
+          final estilo = publicacion.autorEstiloPost;
+          final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+          final colorTexto = esFondoClaro ? Colors.black87 : Colors.white;
 
-            Widget celda = ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: tieneImagen
-                  ? Image.network(
+          Widget celda = tieneImagen
+              ? AspectRatio(
+                  aspectRatio: publicacion.relacionAspecto > 0 ? publicacion.relacionAspecto : 1.0,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
                       publicacion.urlImagen!,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      height: double.infinity,
                       errorBuilder: (_, __, ___) => Container(
                         color: const Color(0xFF1E1E1E),
                         child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
                       ),
-                    )
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.2), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF248EA6).withOpacity(0.06),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.fromLTRB(12, 10, 8, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                  ),
+                )
+              : Container(
+                  constraints: const BoxConstraints(minHeight: 120),
+                  decoration: EstiloPostHelper.buildDecoracion(
+                    estilo,
+                    borderRadius: BorderRadius.circular(12),
+                    borderWidth: 1.0,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 6, height: 6,
-                                decoration: const BoxDecoration(color: Color(0xFF248EA6), shape: BoxShape.circle),
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  publicacion.titulo.isNotEmpty ? publicacion.titulo : 'Nota',
-                                  style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF248EA6), fontWeight: FontWeight.w800),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                          Container(
+                            width: 6, height: 6,
+                            decoration: const BoxDecoration(color: Color(0xFF248EA6), shape: BoxShape.circle),
                           ),
-                          const SizedBox(height: 8),
-                          Expanded(
+                          const SizedBox(width: 6),
+                          Flexible(
                             child: Text(
-                              publicacion.contenidoTexto,
-                              style: GoogleFonts.inter(
-                                fontSize: 12, 
-                                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.85) ?? Colors.white.withOpacity(0.85), 
-                                height: 1.4,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.fade,
+                              publicacion.titulo.isNotEmpty ? publicacion.titulo : 'Nota',
+                              style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF248EA6), fontWeight: FontWeight.w800),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                    ),
-            );
+                      const SizedBox(height: 8),
+                      Text(
+                        publicacion.contenidoTexto,
+                        style: GoogleFonts.inter(
+                          fontSize: 13, 
+                          color: colorTexto.withOpacity(0.9), 
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 10,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
 
-            return GestureDetector(
-              onTap: () => DetallePublicacionSheet.mostrar(
-                context,
-                publicacion: publicacion,
-                avatarUrl: _avatarLocal ?? widget.usuario.urlAvatar ?? '',
-                onProfileSelected: (u) {
-                  final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                  if (inicioState != null) {
-                    inicioState.seleccionarUsuario(u);
-                  }
-                },
-              ),
-              child: celda,
-            );
-          },
-          childCount: posts.length,
-        ),
+          return GestureDetector(
+            onTap: () => DetallePublicacionSheet.mostrar(
+              context,
+              publicacion: publicacion,
+              avatarUrl: _avatarLocal ?? widget.usuario.urlAvatar ?? '',
+              onEliminado: _cargarPublicaciones, // Actualiza la página si se borra
+              onProfileSelected: (u) {
+                final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                if (inicioState != null) {
+                  inicioState.seleccionarUsuario(u);
+                }
+              },
+            ),
+            child: celda,
+          );
+        },
       ),
     );
   }

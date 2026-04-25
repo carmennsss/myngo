@@ -6,11 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../models/publicacion.dart';
 import '../../models/comunidad.dart';
 import '../../models/usuario.dart';
-import '../../models/comentario.dart';
-import '../../services/servicio_interaccion.dart';
-import '../../services/servicio_usuarios.dart';
-import '../comunes/comentario_item.dart';
 import '../comunes/grid_imagenes_post.dart';
+import '../comunes/acciones_y_comentarios_post.dart';
+import '../../utils/estilo_post_helper.dart';
 
 class DialogoDetallePublicacion extends StatefulWidget {
   final Publicacion post;
@@ -29,67 +27,9 @@ class DialogoDetallePublicacion extends StatefulWidget {
 }
 
 class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
-  final TextEditingController _comentarioController = TextEditingController();
-  final ServicioInteraccion _servicioInteraccion = ServicioInteraccion();
-  final ServicioUsuarios _servicioUsuarios = ServicioUsuarios();
-  
-  List<Comentario> _comentarios = [];
-  bool _cargandoComentarios = true;
-  bool _mostrandoInputComentario = false;
-  bool _enviandoComentario = false;
-  int? _userId;
-
   @override
   void initState() {
     super.initState();
-    _cargarDatos();
-  }
-
-  Future<void> _cargarDatos() async {
-    _userId = await _servicioUsuarios.obtenerIdUsuario();
-    await _cargarComentarios();
-  }
-
-  Future<void> _cargarComentarios() async {
-    if (!mounted) return;
-    setState(() => _cargandoComentarios = true);
-    final respuesta = await _servicioInteraccion.obtenerComentarios(widget.post.id);
-    if (respuesta.exito) {
-      if (mounted) {
-        setState(() {
-          _comentarios = respuesta.datos ?? [];
-          _cargandoComentarios = false;
-        });
-      }
-    } else {
-      if (mounted) setState(() => _cargandoComentarios = false);
-    }
-  }
-
-  Future<void> _enviarComentario() async {
-    if (_comentarioController.text.trim().isEmpty) return;
-
-    setState(() => _enviandoComentario = true);
-    final respuesta = await _servicioInteraccion.crearComentario(
-      widget.post.id,
-      _comentarioController.text.trim(),
-    );
-
-    if (respuesta.exito && respuesta.datos != null) {
-      setState(() {
-        _comentarios.insert(0, respuesta.datos!);
-        _comentarioController.clear();
-        _mostrandoInputComentario = false;
-        _enviandoComentario = false;
-      });
-    } else {
-      setState(() => _enviandoComentario = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(respuesta.mensaje)),
-        );
-      }
-    }
   }
 
   String _formatRelativeDate(DateTime fecha) {
@@ -109,47 +49,21 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor = Colors.white;
-    Color? borderColor;
-    String? bgImg;
-
-    if (widget.post.autorEstiloPost != null) {
-      try {
-        final estilo = widget.post.autorEstiloPost!;
-        final bgHex = estilo['fondo']?.toString().replaceAll('#', '');
-        final borderHex = estilo['borde']?.toString().replaceAll('#', '');
-        bgImg = estilo['url_fondo'];
-        
-        if (bgHex != null && bgHex.isNotEmpty) {
-          String hex = bgHex;
-          if (hex.length == 6) hex = 'FF$hex';
-          bgColor = Color(int.parse(hex, radix: 16));
-        }
-        
-        if (borderHex != null && borderHex.isNotEmpty) {
-          String hex = borderHex;
-          if (hex.length == 6) hex = 'FF$hex';
-          borderColor = Color(int.parse(hex, radix: 16));
-        }
-      } catch (e) {
-        // Ignorar
-      }
-    }
+    final estilo = widget.post.autorEstiloPost;
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+    final colorTexto = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
+    final colorSubtexto = esFondoClaro ? Colors.grey.shade600 : Colors.white70;
 
     return Dialog(
-      backgroundColor: Colors.transparent, // Background will be handled by the container
+      backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            image: bgImg != null && bgImg!.isNotEmpty 
-                ? DecorationImage(image: CachedNetworkImageProvider(bgImg!), fit: BoxFit.cover, opacity: 0.8) 
-                : null,
+          decoration: EstiloPostHelper.buildDecoracion(
+            estilo,
             borderRadius: BorderRadius.circular(16),
-            border: borderColor != null ? Border.all(color: borderColor!, width: 2.5) : null,
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -164,7 +78,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                     children: [
                       Text(
                         'Publicación',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: colorTexto),
                       ),
                       const SizedBox(width: 8),
                       TextButton.icon(
@@ -216,11 +130,11 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                   children: [
                                     Text(
                                       widget.post.autorNombre,
-                                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: colorTexto),
                                     ),
                                     Text(
                                       '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')} · ${_formatRelativeDate(widget.post.fechaCreacion)}',
-                                      style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 13),
+                                      style: GoogleFonts.outfit(color: colorSubtexto, fontSize: 13),
                                     ),
                                   ],
                                 ),
@@ -231,13 +145,13 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                           if (widget.post.titulo.isNotEmpty) ...[
                             Text(
                               widget.post.titulo,
-                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, height: 1.3),
+                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, height: 1.3, color: colorTexto),
                             ),
                             const SizedBox(height: 6),
                           ],
                           Text(
                             widget.post.contenidoTexto,
-                            style: GoogleFonts.outfit(fontSize: 16, height: 1.4),
+                            style: GoogleFonts.outfit(fontSize: 16, height: 1.4, color: colorTexto),
                           ),
                           if (widget.post.urlsImagenes.isNotEmpty || widget.post.urlImagen != null) ...[
                             const SizedBox(height: 12),
@@ -252,62 +166,13 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             ),
                           ],
                           const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _ActionIcon(
-                                icon: widget.post.usuarioDioLike ? Icons.favorite : Icons.favorite_border,
-                                color: widget.post.usuarioDioLike ? Colors.red : Colors.grey.shade600,
-                                label: widget.post.likesCount.toString(),
-                                onTap: () {}, 
-                              ),
-                              _ActionIcon(
-                                icon: Icons.chat_bubble_outline,
-                                color: Colors.grey.shade600,
-                                label: widget.post.comentariosCount.toString(),
-                                onTap: () {
-                                  if (_userId != null) {
-                                    setState(() => _mostrandoInputComentario = !_mostrandoInputComentario);
-                                  }
-                                },
-                              ),
-                              _ActionIcon(
-                                icon: widget.post.usuarioGuardoPost ? Icons.bookmark : Icons.bookmark_border,
-                                color: widget.post.usuarioGuardoPost ? Colors.orange : Colors.grey.shade600,
-                                onTap: () {},
-                              ),
-                            ],
+                          AccionesYComentariosPost(
+                            post: widget.post,
+                            colorTexto: colorTexto,
                           ),
                         ],
                       ),
                     ),
-                    if (_mostrandoInputComentario)
-                      _buildInputComentario(),
-                    const Divider(height: 1),
-                    if (_cargandoComentarios)
-                      const Center(child: Padding(
-                        padding: EdgeInsets.all(24.0),
-                        child: CircularProgressIndicator(),
-                      ))
-                    else if (_comentarios.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Text(
-                            'Sin comentarios todavía',
-                            style: GoogleFonts.outfit(color: Colors.grey),
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _comentarios.length,
-                        itemBuilder: (context, index) => ComentarioItem(
-                          comentario: _comentarios[index],
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -315,45 +180,6 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInputComentario() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey.shade50,
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: Colors.grey.shade300,
-            child: const Icon(Icons.person, size: 16, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _comentarioController,
-              decoration: InputDecoration(
-                hintText: 'Escribe tu respuesta...',
-                hintStyle: GoogleFonts.outfit(fontSize: 14),
-                isDense: true,
-                border: InputBorder.none,
-                filled: false,
-              ),
-              maxLines: null,
-            ),
-          ),
-          _enviandoComentario
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : TextButton(
-                  onPressed: _enviarComentario,
-                  child: Text(
-                    'Responder',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34)),
-                  ),
-                ),
-        ],
       ),
     );
   }

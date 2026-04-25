@@ -10,6 +10,8 @@ import '../comunidades/pantalla_enviar_propuesta.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import '../../utils/mejoras_notifier.dart';
+import '../../utils/estilo_post_helper.dart';
 
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;
@@ -558,28 +560,18 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
   }
 
   Widget _buildSimulatedPost() {
-    Color bgColor = Colors.white;
-    Color? borderColor;
-    String? bgImg;
-
-    if (_previewEstiloPost != null) {
-      try {
-        final bgHex = _previewEstiloPost!['fondo'];
-        final borderHex = _previewEstiloPost!['borde'];
-        bgImg = _previewEstiloPost!['url_fondo'];
-        if (bgHex != null) bgColor = Color(int.parse(bgHex, radix: 16));
-        if (borderHex != null) borderColor = Color(int.parse(borderHex, radix: 16));
-      } catch (_) {}
-    }
+    final estilo = _previewEstiloPost;
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+    final textColor = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
+    final subTextColor = esFondoClaro ? Colors.black54 : Colors.white70;
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        image: bgImg != null ? DecorationImage(image: NetworkImage(bgImg), fit: BoxFit.cover) : null,
-        border: borderColor != null ? Border.all(color: borderColor, width: 3) : null,
+      decoration: EstiloPostHelper.buildDecoracion(
+        estilo,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        borderWidth: 3,
+        shadows: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
         ],
       ),
@@ -595,8 +587,8 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_usuarioActual?.nombreUsuario ?? 'Usuario', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                const Text('Ejemplo de post con este estilo 🐾'),
+                Text(_usuarioActual?.nombreUsuario ?? 'Usuario', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: textColor)),
+                Text('Ejemplo de post con este estilo 🐾', style: GoogleFonts.outfit(color: subTextColor, fontSize: 13)),
               ],
             ),
           ),
@@ -666,6 +658,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
     final res = await _servicioMejoras.equiparMejora(mejora.id);
     if (mounted) {
       if (res.exito) {
+        notificarMejoraEquipada(); // Notifica al perfil que debe recargarse
         widget.onRefresh();
         widget.onPuntosActualizados?.call(widget.usuarioActual?.puntos ?? 0);
       } else {
@@ -1144,26 +1137,29 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
   }
 
   Widget _buildMiniEstiloPreview(Map<String, dynamic> datos) {
-    Color bg = const Color(0xFFFBE9E0);
-    Color? border;
-    String? bgImg = datos['url_fondo'];
-    
-    try {
-      if (datos['fondo'] != null) bg = Color(int.parse(datos['fondo'], radix: 16));
-      if (datos['borde'] != null) border = Color(int.parse(datos['borde'], radix: 16));
-    } catch (_) {}
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(datos);
+    final iconColor = esFondoClaro ? Colors.black26 : Colors.white24;
+    final textColor = esFondoClaro ? Colors.black54 : Colors.white60;
+    final tieneGradiente = datos['fondo_fin'] != null && (datos['fondo_fin'] as String).isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: bg,
-        image: bgImg != null ? DecorationImage(image: NetworkImage(bgImg), fit: BoxFit.cover) : null,
-        border: border != null ? Border.all(color: border, width: 4) : null,
+      margin: const EdgeInsets.all(12),
+      decoration: EstiloPostHelper.buildDecoracion(
+        datos,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+        borderWidth: 4,
+        shadows: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
       ),
-      child: Center(
-        child: Icon(Icons.palette_rounded, color: (border ?? bg).computeLuminance() > 0.5 ? Colors.black26 : Colors.white24, size: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (tieneGradiente)
+            Icon(Icons.gradient_rounded, color: iconColor, size: 28)
+          else
+            Icon(Icons.palette_rounded, color: iconColor, size: 28),
+          const SizedBox(height: 4),
+          Text('Aa', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
       ),
     );
   }

@@ -7,11 +7,15 @@ import '../../models/comentario.dart';
 class ComentarioItem extends StatelessWidget {
   final Comentario comentario;
   final Color? highlightColor;
+  final Color? textColor;
+  final Color? subTextColor;
 
   const ComentarioItem({
     super.key,
     required this.comentario,
     this.highlightColor,
+    this.textColor,
+    this.subTextColor,
   });
 
   String _formatFecha(DateTime fecha) {
@@ -59,19 +63,20 @@ class ComentarioItem extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
+                          color: textColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '· ${_formatFecha(comentario.fechaCreacion)}',
-                      style: GoogleFonts.outfit(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
+                      Text(
+                        '· ${_formatFecha(comentario.fechaCreacion)}',
+                        style: GoogleFonts.outfit(
+                          color: subTextColor ?? Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
@@ -81,6 +86,7 @@ class ComentarioItem extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 14,
                     height: 1.3,
+                    color: textColor,
                   ),
                 ),
               ],

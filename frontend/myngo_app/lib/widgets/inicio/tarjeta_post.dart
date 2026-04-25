@@ -9,10 +9,13 @@ import '../../models/coleccion.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
+import '../../services/servicio_interaccion.dart';
+import '../../services/servicio_usuarios.dart';
 import '../comunes/menu_opciones_contenido.dart';
 import 'dialogo_detalle_post.dart';
 import '../comunes/grid_imagenes_post.dart';
 import '../comunes/bottom_sheet_colecciones.dart';
+import '../../utils/estilo_post_helper.dart';
 
 /// Tarjeta de publicación del feed de inicio.
 class TarjetaPost extends StatefulWidget {
@@ -40,11 +43,17 @@ class TarjetaPost extends StatefulWidget {
 class _TarjetaPostState extends State<TarjetaPost> {
   bool _estaLogueado = false;
   bool _estaGuardadoLocal = false;
+  late bool _dioLike;
+  late int _likesCount;
+  final ServicioInteraccion _servicioInteraccion = ServicioInteraccion();
+  final ServicioUsuarios _servicioUsuarios = ServicioUsuarios();
 
   @override
   void initState() {
     super.initState();
     _estaGuardadoLocal = widget.post.usuarioGuardoPost;
+    _dioLike = widget.post.usuarioDioLike;
+    _likesCount = widget.post.likesCount;
     _checkLogin();
   }
 
@@ -59,6 +68,36 @@ class _TarjetaPostState extends State<TarjetaPost> {
   Future<void> _checkLogin() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) setState(() => _estaLogueado = prefs.getString('auth_token') != null);
+  }
+
+  Future<void> _toggleLike() async {
+    final token = await _servicioUsuarios.obtenerToken();
+    if (token == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Inicia sesión para dar like 🐾', style: GoogleFonts.outfit()),
+            backgroundColor: const Color(0xFFC35E34),
+          ),
+        );
+      }
+      return;
+    }
+    setState(() {
+      _dioLike = !_dioLike;
+      _likesCount += _dioLike ? 1 : -1;
+      widget.post.usuarioDioLike = _dioLike;
+      widget.post.likesCount = _likesCount;
+    });
+    final res = await _servicioInteraccion.toggleLike(widget.post.id);
+    if (!res.exito && mounted) {
+      setState(() {
+        _dioLike = !_dioLike;
+        _likesCount += _dioLike ? 1 : -1;
+        widget.post.usuarioDioLike = _dioLike;
+        widget.post.likesCount = _likesCount;
+      });
+    }
   }
 
   void _mostrarDetalles(BuildContext context) {
@@ -103,32 +142,11 @@ class _TarjetaPostState extends State<TarjetaPost> {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor = Colors.white;
-    Color? borderColor;
-    String? bgImg;
-
-    if (widget.post.autorEstiloPost != null) {
-      try {
-        final estilo = widget.post.autorEstiloPost!;
-        final bgHex = estilo['fondo']?.toString().replaceAll('#', '');
-        final borderHex = estilo['borde']?.toString().replaceAll('#', '');
-        bgImg = estilo['url_fondo'];
-        
-        if (bgHex != null && bgHex.isNotEmpty) {
-          String hex = bgHex;
-          if (hex.length == 6) hex = 'FF$hex';
-          bgColor = Color(int.parse(hex, radix: 16));
-        }
-        
-        if (borderHex != null && borderHex.isNotEmpty) {
-          String hex = borderHex;
-          if (hex.length == 6) hex = 'FF$hex';
-          borderColor = Color(int.parse(hex, radix: 16));
-        }
-      } catch (e) {
-        // Ignorar si hay error de parseo de color
-      }
-    }
+    final estilo = widget.post.autorEstiloPost;
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+    final textColor = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
+    final subTextColor = esFondoClaro ? Colors.grey.shade600 : Colors.white70;
+    final actionColor = esFondoClaro ? Colors.grey.shade600 : Colors.white60;
 
     return Material(
       color: Colors.transparent,
@@ -136,15 +154,15 @@ class _TarjetaPostState extends State<TarjetaPost> {
         onTap: () => _mostrarDetalles(context),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            image: bgImg != null && bgImg!.isNotEmpty 
-                ? DecorationImage(image: CachedNetworkImageProvider(bgImg!), fit: BoxFit.cover, opacity: 0.8) 
-                : null,
-            border: borderColor != null ? Border.all(color: borderColor!, width: 2.5) : null,
+          decoration: EstiloPostHelper.buildDecoracion(
+            estilo,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: (borderColor ?? const Color(0xFF4A4440)).withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 12)),
+            shadows: [
+              BoxShadow(
+                color: (EstiloPostHelper.parseHex(estilo?['borde']?.toString()) ?? const Color(0xFF4A4440)).withOpacity(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
             ],
           ),
           child: Padding(
@@ -189,17 +207,17 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(widget.post.comunidadNombre, style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.w900, fontSize: 15)),
+                                Text(widget.post.comunidadNombre, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
                                 Text.rich(
                                   TextSpan(
                                     children: [
                                       TextSpan(
                                         text: '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')}',
-                                        style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600),
+                                        style: TextStyle(color: esFondoClaro ? Theme.of(context).primaryColor : Colors.white70, fontWeight: FontWeight.w600),
                                       ),
                                       TextSpan(
                                         text: ' • ${widget.post.fechaCreacion.day}/${widget.post.fechaCreacion.month}',
-                                        style: TextStyle(color: Colors.grey.shade500),
+                                        style: TextStyle(color: subTextColor),
                                       ),
                                     ],
                                   ),
@@ -215,16 +233,16 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             comunidadId: widget.post.comunidadId,
                             onEliminado: widget.onEliminado,
                             tituloPreview: widget.post.titulo,
-                            iconColor: Colors.black54,
+                            iconColor: textColor.withOpacity(0.7),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       if (widget.post.titulo.isNotEmpty)
-                        Text(widget.post.titulo, style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
+                        Text(widget.post.titulo, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
                       if (widget.post.contenidoTexto.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(widget.post.contenidoTexto, style: GoogleFonts.outfit(color: Colors.grey.shade800, fontSize: 15), maxLines: 4, overflow: TextOverflow.ellipsis),
+                        Text(widget.post.contenidoTexto, style: GoogleFonts.outfit(color: subTextColor, fontSize: 15), maxLines: 4, overflow: TextOverflow.ellipsis),
                       ],
                       if (widget.post.urlsImagenes.isNotEmpty || (widget.post.urlImagen != null && widget.post.urlImagen!.isNotEmpty))
                         Padding(
@@ -238,12 +256,17 @@ class _TarjetaPostState extends State<TarjetaPost> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildActionButton(Icons.chat_bubble_outline_rounded, widget.post.comentariosCount.toString(), Colors.grey.shade600, () => _mostrarDetalles(context)),
-                          _buildActionButton(widget.post.usuarioDioLike ? Icons.favorite_rounded : Icons.favorite_border_rounded, widget.post.likesCount.toString(), widget.post.usuarioDioLike ? const Color(0xFFE0245E) : Colors.grey.shade600, () {}),
+                          _buildActionButton(Icons.chat_bubble_outline_rounded, widget.post.comentariosCount.toString(), actionColor, () => _mostrarDetalles(context)),
+                          _buildActionButton(
+                            _dioLike ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            _likesCount.toString(),
+                            _dioLike ? const Color(0xFFE0245E) : actionColor,
+                            _toggleLike,
+                          ),
                           _buildActionButton(
                             _estaGuardadoLocal ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, 
                             '', 
-                            _estaGuardadoLocal ? const Color(0xFFF28B50) : Colors.grey.shade600, 
+                            _estaGuardadoLocal ? const Color(0xFFF28B50) : actionColor, 
                             _mostrarMenuGuardado
                           ),
                         ],
