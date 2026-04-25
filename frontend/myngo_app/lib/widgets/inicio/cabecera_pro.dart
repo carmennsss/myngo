@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/comunes/boton_tactil.dart';
@@ -187,7 +188,7 @@ class _UserProfileHeader extends StatelessWidget {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: BotonTactil(
-          onTap: () => Navigator.pushNamed(context, '/login'),
+          onTap: () => context.go('/login'),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(0.3))),
@@ -216,14 +217,14 @@ class _UserProfileHeader extends StatelessWidget {
             if (onProfileSelected != null) {
               onProfileSelected!(res.datos!);
             } else {
-              await Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: res.datos!)));
+              context.push('/inicio/perfiles/${res.datos!.id}', extra: res.datos);
             }
           }
         } else if (value == 'config') {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ajustes próximamente 🐾')));
         } else if (value == 'logout') {
           await ServicioUsuarios().cerrarSesion();
-          if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          if (context.mounted) context.go('/login');
         }
       },
       itemBuilder: (context) => [

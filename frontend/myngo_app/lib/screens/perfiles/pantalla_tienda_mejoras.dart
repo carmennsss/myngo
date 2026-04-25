@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/comunidad.dart';
 import '../../models/catalogo_mejoras.dart';
+import '../../models/usuario.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_usuarios.dart';
@@ -34,16 +35,42 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
   bool _esModerador = false;
   bool _modoGestion = false;
 
+  bool _mostrarPreview = true;
+  Usuario? _usuarioActual;
+  String? _previewAvatar;
+  String? _previewMarco;
+  String? _previewFondo;
+  Map<String, dynamic>? _previewEstiloPost;
+  
+  List<CatalogoMejoras> _mejorasCatalogo = [];
+  List<dynamic> _misMejoras = [];
+  bool _cargandoTienda = true;
+  String? _errorTienda;
+
   @override
   void initState() {
     super.initState();
-    // Si entramos desde una comunidad, empezamos directamente en la pestaña "Exclusivo"
+    _cargarDatosUsuario();
+    _cargarDatosTienda();
     if (widget.comunidad != null) {
       _tabIndex = 1;
       _checkRol();
     }
-    _subTabController = TabController(length: 3, vsync: this);
+    _subTabController = TabController(length: widget.comunidad == null ? 4 : 3, vsync: this);
     _subTabController.addListener(_handleTabChange);
+  }
+
+  Future<void> _cargarDatosUsuario() async {
+    final res = await ServicioUsuarios().obtenerDatosPropios();
+    if (mounted && res.exito) {
+      setState(() {
+        _usuarioActual = res.datos;
+        _previewAvatar = _usuarioActual?.urlAvatar;
+        _previewMarco = _usuarioActual?.marco;
+        _previewFondo = _usuarioActual?.fondo;
+        _previewEstiloPost = _usuarioActual?.estiloPost;
+      });
+    }
   }
 
   Future<void> _checkRol() async {
@@ -53,7 +80,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
       if (mounted && res.exito) {
         setState(() {
           _esModerador = res.datos == 'Administrador' || res.datos == 'Moderador';
-          // Activamos modo gestión por defecto si es moderador
           if (_esModerador) _modoGestion = true;
         });
       }
@@ -62,8 +88,42 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
 
   void _handleTabChange() {
     if (!_subTabController.indexIsChanging) {
-      final tipos = ['Avatar', 'Marco', 'Fondo'];
-      widget.onCategoryChanged?.call(tipos[_subTabController.index]);
+      final tipos = ['Avatar', 'Marco', 'Fondo', 'Estilo Post'];
+      if (_subTabController.index < tipos.length) {
+        widget.onCategoryChanged?.call(tipos[_subTabController.index]);
+      }
+    }
+  }
+
+  Future<void> _cargarDatosTienda() async {
+    if (!mounted) return;
+    setState(() => _cargandoTienda = true);
+    
+    try {
+      final resCatalogo = widget.comunidad != null 
+          ? await ServicioMejoras().obtenerMejorasComunidad(widget.comunidad!.id)
+          : await ServicioMejoras().obtenerMejorasGlobales();
+      
+      final resMisMejoras = await ServicioMejoras().obtenerMisMejoras();
+
+      if (mounted) {
+        setState(() {
+          _cargandoTienda = false;
+          if (resCatalogo.exito) {
+            _mejorasCatalogo = resCatalogo.datos ?? [];
+          } else {
+            _errorTienda = resCatalogo.mensaje;
+          }
+          
+          if (resMisMejoras.exito && resMisMejoras.datos != null) {
+            _misMejoras = resMisMejoras.datos is Iterable 
+                ? List<dynamic>.from(resMisMejoras.datos!) 
+                : [];
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _cargandoTienda = false; _errorTienda = 'Error de conexión 😿'; });
     }
   }
 
@@ -76,102 +136,168 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
 
   @override
   Widget build(BuildContext context) {
-    // Si estamos en una comunidad y la tienda no está habilitada, mostramos aviso
-    if (widget.comunidad != null && !widget.comunidad!.tiendaHabilitada) {
-      return _buildTiendaDeshabilitada();
-    }
+    final bool esAncho = MediaQuery.of(context).size.width > 1000;
 
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final shopSection = Column(
       children: [
-        if (_esModerador)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ActionChip(
-                  avatar: Icon(_modoGestion ? Icons.admin_panel_settings_rounded : Icons.visibility_rounded, 
-                    color: _modoGestion ? Colors.white : const Color(0xFFC35E34), size: 16),
-                  label: Text(_modoGestion ? 'GESTIÓN ON' : 'PREVIEW', 
-                    style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: _modoGestion ? Colors.white : const Color(0xFFC35E34))),
-                  backgroundColor: _modoGestion ? const Color(0xFFC35E34) : Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFC35E34))),
-                  onPressed: () => setState(() => _modoGestion = !_modoGestion),
-                ),
-              ],
-            ),
+        Container(
+          margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2D0BD).withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
           ),
-        // Se elimina el toggle GLOBAL/EXCLUSIVO para que en la comunidad solo se vea lo EXCLUSIVO
-        // si se quiere ir a la tienda global, ya hay un acceso en el navbar.
-        Expanded(
-          child: Column(
-            children: [
-                Container(
-                  margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2D0BD).withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: TabBar(
-                    indicator: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.1), blurRadius: 8)],
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    controller: _subTabController,
-                    labelColor: const Color(0xFFC35E34),
-                    unselectedLabelColor: Colors.grey.shade500,
-                    labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13),
-                    unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
-                    tabs: const [
-                      Tab(text: 'Avatares'),
-                      Tab(text: 'Marcos'),
-                      Tab(text: 'Fondos'),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _subTabController,
-                    children: [
-                      _ListaMejorasTab(
-                        tipo: 'Avatar', 
-                        comunidadId: widget.comunidad?.id,
-                        esModerador: _esModerador,
-                        modoGestion: _modoGestion,
-                        onPuntosActualizados: widget.onPuntosActualizados,
-                      ),
-                      _ListaMejorasTab(
-                        tipo: 'Marco', 
-                        comunidadId: widget.comunidad?.id,
-                        esModerador: _esModerador,
-                        modoGestion: _modoGestion,
-                        onPuntosActualizados: widget.onPuntosActualizados,
-                      ),
-                      _ListaMejorasTab(
-                        tipo: 'Fondo', 
-                        comunidadId: widget.comunidad?.id,
-                        esModerador: _esModerador,
-                        modoGestion: _modoGestion,
-                        onPuntosActualizados: widget.onPuntosActualizados,
-                      ),
-                    ],
-                  ),
-                ),
+          child: TabBar(
+            isScrollable: widget.comunidad == null,
+            indicator: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.1), blurRadius: 8)],
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            controller: _subTabController,
+            labelColor: const Color(0xFFC35E34),
+            unselectedLabelColor: Colors.grey.shade500,
+            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13),
+            unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
+            tabs: [
+              const Tab(text: 'Avatares'),
+              const Tab(text: 'Marcos'),
+              const Tab(text: 'Fondos'),
+              if (widget.comunidad == null) const Tab(text: 'Estilos Post'),
             ],
           ),
         ),
+        Expanded(
+          child: _cargandoTienda 
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+            : _errorTienda != null
+              ? Center(child: Text(_errorTienda!, style: GoogleFonts.outfit(color: Colors.grey)))
+              : TabBarView(
+                  controller: _subTabController,
+                  children: [
+                    _ListaMejorasTab(
+                      tipo: 'Avatar', 
+                      comunidadId: widget.comunidad?.id,
+                      esModerador: _esModerador,
+                      modoGestion: _modoGestion,
+                      usuarioActual: _usuarioActual,
+                      mejoras: _mejorasCatalogo,
+                      misMejoras: _misMejoras,
+                      onRefresh: _cargarDatosTienda,
+                      onPuntosActualizados: (p) {
+                        widget.onPuntosActualizados?.call(p);
+                        _cargarDatosUsuario();
+                      },
+                      onPreviewRequested: (item) => setState(() => _previewAvatar = item.urlRecurso),
+                    ),
+                    _ListaMejorasTab(
+                      tipo: 'Marco', 
+                      comunidadId: widget.comunidad?.id,
+                      esModerador: _esModerador,
+                      modoGestion: _modoGestion,
+                      usuarioActual: _usuarioActual,
+                      mejoras: _mejorasCatalogo,
+                      misMejoras: _misMejoras,
+                      onRefresh: _cargarDatosTienda,
+                      onPuntosActualizados: (p) {
+                        widget.onPuntosActualizados?.call(p);
+                        _cargarDatosUsuario();
+                      },
+                      onPreviewRequested: (item) => setState(() => _previewMarco = item.urlRecurso),
+                    ),
+                    _ListaMejorasTab(
+                      tipo: 'Fondo', 
+                      comunidadId: widget.comunidad?.id,
+                      esModerador: _esModerador,
+                      modoGestion: _modoGestion,
+                      usuarioActual: _usuarioActual,
+                      mejoras: _mejorasCatalogo,
+                      misMejoras: _misMejoras,
+                      onRefresh: _cargarDatosTienda,
+                      onPuntosActualizados: (p) {
+                        widget.onPuntosActualizados?.call(p);
+                        _cargarDatosUsuario();
+                      },
+                      onPreviewRequested: (item) => setState(() => _previewFondo = item.urlRecurso),
+                    ),
+                    if (widget.comunidad == null)
+                      _ListaMejorasTab(
+                        tipo: 'Estilo Post', 
+                        comunidadId: widget.comunidad?.id,
+                        esModerador: _esModerador,
+                        modoGestion: _modoGestion,
+                        usuarioActual: _usuarioActual,
+                        mejoras: _mejorasCatalogo,
+                        misMejoras: _misMejoras,
+                        onRefresh: _cargarDatosTienda,
+                        onPuntosActualizados: (p) {
+                          widget.onPuntosActualizados?.call(p);
+                          _cargarDatosUsuario();
+                        },
+                        onPreviewRequested: (item) => setState(() => _previewEstiloPost = item.datosExtra),
+                      ),
+                  ],
+                ),
+        ),
       ],
     );
+
+    final content = esAncho
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 3, child: shopSection),
+              if (_mostrarPreview)
+                const VerticalDivider(width: 1, color: Color(0xFFE8D5C4)),
+              if (_mostrarPreview)
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    color: Colors.white.withOpacity(0.5),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: _buildPreviewSection(),
+                    ),
+                  ),
+                ),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_mostrarPreview) _buildPreviewSection(),
+              Expanded(child: shopSection),
+            ],
+          );
 
     if (widget.esVistaIntegrada) {
       return ClipRect(
         child: Container(
           color: const Color(0xFFFEF5F1),
-          child: content,
+          child: Column(
+            children: [
+              if (_esModerador)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ActionChip(
+                        avatar: Icon(_modoGestion ? Icons.admin_panel_settings_rounded : Icons.visibility_rounded, 
+                          color: _modoGestion ? Colors.white : const Color(0xFFC35E34), size: 16),
+                        label: Text(_modoGestion ? 'GESTIN ON' : 'PREVIEW', 
+                          style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: _modoGestion ? Colors.white : const Color(0xFFC35E34))),
+                        backgroundColor: _modoGestion ? const Color(0xFFC35E34) : Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFC35E34))),
+                        onPressed: () => setState(() => _modoGestion = !_modoGestion),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(child: content),
+            ],
+          ),
         ),
       );
     }
@@ -195,8 +321,38 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
         ),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
+        actions: [
+          IconButton(
+            icon: Icon(_mostrarPreview ? Icons.visibility_rounded : Icons.visibility_off_rounded, color: const Color(0xFFC35E34)),
+            onPressed: () => setState(() => _mostrarPreview = !_mostrarPreview),
+            tooltip: _mostrarPreview ? 'Ocultar Preview' : 'Mostrar Preview',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      body: content,
+      body: Column(
+        children: [
+          if (_esModerador)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ActionChip(
+                    avatar: Icon(_modoGestion ? Icons.admin_panel_settings_rounded : Icons.visibility_rounded, 
+                      color: _modoGestion ? Colors.white : const Color(0xFFC35E34), size: 16),
+                    label: Text(_modoGestion ? 'GESTIN ON' : 'PREVIEW', 
+                      style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: _modoGestion ? Colors.white : const Color(0xFFC35E34))),
+                    backgroundColor: _modoGestion ? const Color(0xFFC35E34) : Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFC35E34))),
+                    onPressed: () => setState(() => _modoGestion = !_modoGestion),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(child: content),
+        ],
+      ),
       floatingActionButton: (_tabIndex == 1 && widget.comunidad != null) 
         ? FloatingActionButton.extended(
             onPressed: () => _irAEnviarPropuesta(),
@@ -288,6 +444,166 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras> with Sing
       ),
     );
   }
+
+  Widget _buildPreviewSection() {
+    if (_usuarioActual == null) return const SizedBox.shrink();
+    final bool esAncho = MediaQuery.of(context).size.width > 1000;
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: esAncho ? 40 : 24, vertical: 16),
+      padding: const EdgeInsets.all(0), // Quitamos el padding interior para el fondo de perfil
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFC35E34).withOpacity(0.08),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Column(
+          children: [
+            // Cabecera de Perfil (Fondo)
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  height: 120,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFBE9E0),
+                    image: _previewFondo != null 
+                        ? DecorationImage(image: NetworkImage(_previewFondo!), fit: BoxFit.cover)
+                        : null,
+                  ),
+                ),
+                Positioned(
+                  bottom: -40,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: CircleAvatar(
+                          radius: 45,
+                          backgroundImage: _previewAvatar != null ? NetworkImage(_previewAvatar!) : null,
+                          backgroundColor: const Color(0xFFFBE9E0),
+                          child: _previewAvatar == null ? const Icon(Icons.person, color: Color(0xFFC35E34), size: 40) : null,
+                        ),
+                      ),
+                      if (_previewMarco != null)
+                        SizedBox(
+                          width: 105,
+                          height: 105,
+                          child: Image.network(_previewMarco!, fit: BoxFit.contain),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 50),
+            // Nombre y Puntos
+            Text(
+              _usuarioActual?.nombreUsuario ?? 'Usuario',
+              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440)),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.pets_rounded, color: Color(0xFFF29C50), size: 14),
+                const SizedBox(width: 4),
+                Text(
+                  '${_usuarioActual?.puntos ?? 0} puntos Myngo',
+                  style: GoogleFonts.outfit(color: const Color(0xFFF29C50), fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+              child: Divider(height: 1),
+            ),
+            // Mock Post
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.article_rounded, color: Colors.grey, size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        'ASÍ SE VERÁ TU POST',
+                        style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSimulatedPost(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimulatedPost() {
+    Color bgColor = Colors.white;
+    Color? borderColor;
+    String? bgImg;
+
+    if (_previewEstiloPost != null) {
+      try {
+        final bgHex = _previewEstiloPost!['fondo'];
+        final borderHex = _previewEstiloPost!['borde'];
+        bgImg = _previewEstiloPost!['url_fondo'];
+        if (bgHex != null) bgColor = Color(int.parse(bgHex, radix: 16));
+        if (borderHex != null) borderColor = Color(int.parse(borderHex, radix: 16));
+      } catch (_) {}
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        image: bgImg != null ? DecorationImage(image: NetworkImage(bgImg), fit: BoxFit.cover) : null,
+        border: borderColor != null ? Border.all(color: borderColor, width: 3) : null,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundImage: _previewAvatar != null ? NetworkImage(_previewAvatar!) : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_usuarioActual?.nombreUsuario ?? 'Usuario', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                const Text('Ejemplo de post con este estilo 🐾'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ListaMejorasTab extends StatefulWidget {
@@ -295,14 +611,24 @@ class _ListaMejorasTab extends StatefulWidget {
   final int? comunidadId;
   final bool esModerador;
   final bool modoGestion;
+  final Usuario? usuarioActual;
+  final List<CatalogoMejoras> mejoras;
+  final List<dynamic> misMejoras;
+  final VoidCallback onRefresh;
   final Function(int)? onPuntosActualizados;
-  
+  final Function(CatalogoMejoras) onPreviewRequested;
+
   const _ListaMejorasTab({
-    required this.tipo, 
-    this.comunidadId, 
-    this.esModerador = false, 
+    required this.tipo,
+    this.comunidadId,
+    this.esModerador = false,
     this.modoGestion = false,
+    this.usuarioActual,
+    required this.mejoras,
+    required this.misMejoras,
+    required this.onRefresh,
     this.onPuntosActualizados,
+    required this.onPreviewRequested,
   });
 
   @override
@@ -311,113 +637,153 @@ class _ListaMejorasTab extends StatefulWidget {
 
 class _ListaMejorasTabState extends State<_ListaMejorasTab> {
   final ServicioMejoras _servicioMejoras = ServicioMejoras();
-  final ServicioComunidades _servicioComunidades = ServicioComunidades();
-  bool _isLoading = true;
-  List<CatalogoMejoras> _mejoras = [];
-  List<dynamic> _misMejoras = []; // Lista de mejoras que el usuario posee
-  String? _errorMensaje;
 
-  @override
-  void initState() {
-    super.initState();
-    _cargarMejoras();
-  }
-
-  @override
-  void didUpdateWidget(_ListaMejorasTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.comunidadId != widget.comunidadId || oldWidget.modoGestion != widget.modoGestion) {
-      _cargarMejoras();
+  List<CatalogoMejoras> get _mejorasFiltradas {
+    var filtradas = widget.mejoras.where((m) => m.tipo.toLowerCase() == widget.tipo.toLowerCase()).toList();
+    if (!widget.modoGestion) {
+      filtradas = filtradas.where((m) => m.estaActivo).toList();
     }
-  }
-
-  Future<void> _cargarMejoras() async {
-    setState(() {
-      _isLoading = true;
-      _errorMensaje = null;
-    });
-
-    final respuesta = widget.comunidadId != null 
-        ? await _servicioMejoras.obtenerMejorasComunidad(widget.comunidadId!)
-        : await _servicioMejoras.obtenerMejorasGlobales();
-
-    final misMejorasRespuesta = await _servicioMejoras.obtenerMisMejoras();
-        
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        if (respuesta.exito) {
-          final todas = (respuesta.datos as List<CatalogoMejoras>?) ?? [];
-          // 1. Filtrar por tipo
-          var filtradas = todas.where((m) => m.tipo.toLowerCase() == widget.tipo.toLowerCase()).toList();
-          // 2. Si no estamos en modo gestión, ocultar las inactivas
-          if (!widget.modoGestion) {
-            filtradas = filtradas.where((m) => m.estaActivo).toList();
-          }
-          _mejoras = filtradas;
-          if (misMejorasRespuesta.exito && misMejorasRespuesta.datos != null) {
-            _misMejoras = misMejorasRespuesta.datos is Iterable 
-                ? List<dynamic>.from(misMejorasRespuesta.datos!) 
-                : [];
-          }
-        } else {
-          _errorMensaje = respuesta.mensaje;
-        }
-      });
-    }
+    return filtradas;
   }
 
   bool _tieneMejora(int mejoraId) {
-    if (_misMejoras is! Iterable) return false;
     try {
-      return (_misMejoras as Iterable).any((m) => m != null && m is Map && m['mejora'] == mejoraId);
+      return widget.misMejoras.any((m) => m != null && m is Map && m['mejora'] == mejoraId);
     } catch (e) {
       return false;
     }
   }
 
   bool _tieneEquipada(int mejoraId) {
-    if (_misMejoras is! Iterable) return false;
     try {
-      return (_misMejoras as Iterable).any((m) => m != null && m is Map && m['mejora'] == mejoraId && m['esta_equipada'] == true);
+      return widget.misMejoras.any((m) => m != null && m is Map && m['mejora'] == mejoraId && m['esta_equipada'] == true);
     } catch (e) {
       return false;
     }
   }
 
-  void _abrirDetalleMejora(CatalogoMejoras mejora, bool laTiene, bool estaEquipada) {
-    showDialog(
+  Future<void> _equipar(CatalogoMejoras mejora) async {
+    final res = await _servicioMejoras.equiparMejora(mejora.id);
+    if (mounted) {
+      if (res.exito) {
+        widget.onRefresh();
+        widget.onPuntosActualizados?.call(widget.usuarioActual?.puntos ?? 0);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmarCompra(CatalogoMejoras mejora) async {
+    final int puntosActuales = widget.usuarioActual?.puntos ?? 0;
+    final int puntosRestantes = puntosActuales - mejora.precioPuntos;
+
+    if (puntosRestantes < 0) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('Puntos insuficientes 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          content: Text('Necesitas ${mejora.precioPuntos} puntos, pero solo tienes $puntosActuales.', style: GoogleFonts.outfit()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('ENTENDIDO', style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => _DialogoDetalleMejora(
-        mejora: mejora,
-        laTiene: laTiene,
-        estaEquipada: estaEquipada,
-        onPuntosActualizados: widget.onPuntosActualizados, // Pass down to Dialog
-        onComprado: () {
-          _cargarMejoras();
-        },
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('¿Confirmar compra?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Estás a punto de adquirir este diseño:', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFFEF5F1), borderRadius: BorderRadius.circular(16)),
+              child: Row(
+                children: [
+                  const Icon(Icons.pets_rounded, color: Color(0xFFC35E34), size: 20),
+                  const SizedBox(width: 12),
+                  Text('${mejora.precioPuntos} puntos', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: const Color(0xFFC35E34))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Tus puntos:', style: GoogleFonts.outfit(fontSize: 14)),
+                Text('$puntosActuales', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Quedarás con:', style: GoogleFonts.outfit(fontSize: 14)),
+                Text('$puntosRestantes', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.green)),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC35E34),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: Text('COMPRAR AHORA', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
+
+    if (confirm == true) {
+      final res = await _servicioMejoras.comprarMejora(mejora.id);
+      if (mounted) {
+        if (res.exito) {
+          widget.onRefresh();
+          if (res.datos != null && res.datos is int) {
+            widget.onPuntosActualizados?.call(res.datos as int);
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('¡Compra realizada! 🐾'), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
-    }
-    if (_errorMensaje != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            Text(_errorMensaje!, style: GoogleFonts.outfit(color: Colors.grey.shade500)),
-          ],
-        ),
-      );
-    }
-    if (_mejoras.isEmpty) {
+    final filtradas = _mejorasFiltradas;
+    if (filtradas.isEmpty) {
       final String tipoPlural = widget.tipo.toLowerCase() == 'avatar' ? 'avatares' : '${widget.tipo.toLowerCase()}s';
       return Center(
         child: Column(
@@ -442,15 +808,15 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.62,
       ),
-      itemCount: _mejoras.length,
+      itemCount: filtradas.length,
       itemBuilder: (context, index) {
-        final mejora = _mejoras[index];
+        final mejora = filtradas[index];
         final bool estaActivo = mejora.estaActivo;
         final bool laTiene = _tieneMejora(mejora.id);
         final bool estaEquipada = _tieneEquipada(mejora.id);
         
         Widget card = GestureDetector(
-          onTap: () => _abrirDetalleMejora(mejora, laTiene, estaEquipada),
+          onTap: () => widget.onPreviewRequested(mejora),
           child: Container(
             decoration: BoxDecoration(
               color: estaActivo ? Colors.white : Colors.grey.shade50,
@@ -483,17 +849,19 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                             child: Container(
                               color: const Color(0xFFFBE9E0),
-                              child: mejora.urlRecurso.isNotEmpty
-                                  ? Image.network(
-                                      mejora.urlRecurso,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Center(
-                                        child: Icon(Icons.broken_image_rounded, color: Colors.grey.shade300, size: 36),
-                                      ),
-                                    )
-                                  : Center(
-                                      child: Icon(Icons.image_not_supported_rounded, color: Colors.grey.shade300, size: 36),
-                                    ),
+                              child: (mejora.tipo == 'Estilo Post' && mejora.datosExtra != null)
+                                  ? _buildMiniEstiloPreview(mejora.datosExtra!)
+                                  : (mejora.urlRecurso.isNotEmpty
+                                      ? Image.network(
+                                          mejora.urlRecurso,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Center(
+                                            child: Icon(Icons.broken_image_rounded, color: Colors.grey.shade300, size: 36),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Icon(Icons.image_not_supported_rounded, color: Colors.grey.shade300, size: 36),
+                                        )),
                             ),
                           ),
                         ),
@@ -558,24 +926,9 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       if (estaActivo)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(laTiene ? Icons.check_circle_rounded : Icons.workspace_premium_rounded, 
-                                 color: laTiene ? Colors.green : const Color(0xFFC35E34), size: 14),
-                            const SizedBox(width: 4),
-                            Text(
-                              laTiene ? 'Adquirido' : '${mejora.precioPuntos} pts',
-                              style: GoogleFonts.outfit(
-                                color: laTiene ? Colors.green : const Color(0xFFC35E34),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        )
+                        _buildActionButton(mejora, laTiene, estaEquipada)
                       else
                         const Text('Ítem desactivado', style: TextStyle(color: Colors.grey, fontSize: 11, fontStyle: FontStyle.italic)),
                     ],
@@ -603,7 +956,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
                 ),
               ),
               Positioned(
-                bottom: 60,
+                bottom: 80, // Subido un poco para no tapar el botn
                 right: 8,
                 child: BotonTactil(
                   onTap: () => _mostrarDialogoPrecio(mejora),
@@ -629,6 +982,72 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
     );
   }
 
+  Widget _buildActionButton(CatalogoMejoras mejora, bool laTiene, bool estaEquipada) {
+    if (estaEquipada) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.green.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 14),
+            const SizedBox(width: 4),
+            Text('EQUIPADO', style: GoogleFonts.outfit(color: Colors.green, fontWeight: FontWeight.w900, fontSize: 10)),
+          ],
+        ),
+      );
+    }
+
+    if (laTiene) {
+      return SizedBox(
+        width: double.infinity,
+        height: 32,
+        child: ElevatedButton(
+          onPressed: () => _equipar(mejora),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFFC35E34),
+            elevation: 0,
+            padding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Color(0xFFC35E34)),
+            ),
+          ),
+          child: Text('EQUIPAR', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 10)),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 32,
+      child: ElevatedButton(
+        onPressed: () => _confirmarCompra(mejora),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFC35E34),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.shopping_cart_rounded, size: 12),
+            const SizedBox(width: 4),
+            Text('${mejora.precioPuntos} PTS', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 10)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _toggleActivo(CatalogoMejoras item, bool val) async {
     if (widget.comunidadId == null) return;
     
@@ -640,7 +1059,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
     
     if (mounted) {
       if (res.exito) {
-        _cargarMejoras();
+        widget.onRefresh();
       }
     }
   }
@@ -712,7 +1131,7 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
     
     if (mounted) {
       if (res.exito) {
-        _cargarMejoras();
+        widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Precio actualizado correctamente 🐾'), backgroundColor: Colors.green),
         );
@@ -722,6 +1141,31 @@ class _ListaMejorasTabState extends State<_ListaMejorasTab> {
         );
       }
     }
+  }
+
+  Widget _buildMiniEstiloPreview(Map<String, dynamic> datos) {
+    Color bg = const Color(0xFFFBE9E0);
+    Color? border;
+    String? bgImg = datos['url_fondo'];
+    
+    try {
+      if (datos['fondo'] != null) bg = Color(int.parse(datos['fondo'], radix: 16));
+      if (datos['borde'] != null) border = Color(int.parse(datos['borde'], radix: 16));
+    } catch (_) {}
+
+    return Container(
+      margin: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: bg,
+        image: bgImg != null ? DecorationImage(image: NetworkImage(bgImg), fit: BoxFit.cover) : null,
+        border: border != null ? Border.all(color: border, width: 4) : null,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+      ),
+      child: Center(
+        child: Icon(Icons.palette_rounded, color: (border ?? bg).computeLuminance() > 0.5 ? Colors.black26 : Colors.white24, size: 40),
+      ),
+    );
   }
 }
 
@@ -794,6 +1238,22 @@ class _DialogoDetalleMejoraState extends State<_DialogoDetalleMejora> {
     }
   }
 
+  Future<void> _equipar() async {
+    setState(() => _comprando = true);
+    final res = await ServicioMejoras().equiparMejora(widget.mejora.id);
+    if (mounted) {
+      setState(() => _comprando = false);
+      if (res.exito) {
+        widget.onComprado();
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -814,15 +1274,49 @@ class _DialogoDetalleMejoraState extends State<_DialogoDetalleMejora> {
                 Container(
                   constraints: const BoxConstraints(maxHeight: 200),
                   width: double.infinity,
-                  color: const Color(0xFFFBE9E0),
-                  padding: const EdgeInsets.all(24), // Give it some breathing room
-                  child: widget.mejora.urlRecurso.isNotEmpty
-                      ? Image.network(
-                          widget.mejora.urlRecurso,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: Colors.grey.shade300, size: 64),
-                        )
-                      : Icon(Icons.image_not_supported_rounded, color: Colors.grey.shade300, size: 64),
+                  color: widget.mejora.tipo == 'Estilo Post' 
+                    ? (() {
+                        try {
+                          final de = widget.mejora.datosExtra;
+                          if (de != null && de.containsKey('fondo')) {
+                            return Color(int.parse(de['fondo']!, radix: 16));
+                          }
+                          return const Color(0xFFFBE9E0);
+                        } catch(_) { return const Color(0xFFFBE9E0); }
+                      })()
+                    : const Color(0xFFFBE9E0),
+                  padding: const EdgeInsets.all(24),
+                  child: widget.mejora.tipo == 'Estilo Post'
+                    ? Center(
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: (() {
+                                try {
+                                  final de = widget.mejora.datosExtra;
+                                  if (de != null && de.containsKey('borde')) {
+                                    return Color(int.parse(de['borde']!, radix: 16));
+                                  }
+                                  return const Color(0xFFC35E34);
+                                } catch(_) { return const Color(0xFFC35E34); }
+                              })(),
+                              width: 3
+                            ),
+                          ),
+                          child: const Icon(Icons.palette_rounded, size: 64, color: Color(0xFFC35E34)),
+                        ),
+                      )
+                    : (widget.mejora.urlRecurso.isNotEmpty
+                        ? Image.network(
+                            widget.mejora.urlRecurso,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: Colors.grey.shade300, size: 64),
+                          )
+                        : Icon(Icons.image_not_supported_rounded, color: Colors.grey.shade300, size: 64)),
                 ),
                 Positioned(
                   top: 10,
@@ -869,21 +1363,38 @@ class _DialogoDetalleMejoraState extends State<_DialogoDetalleMejora> {
                       ),
                     )
                   else if (widget.laTiene)
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.green.withOpacity(0.5)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_circle_rounded, color: Colors.green),
-                          const SizedBox(width: 8),
-                          Text('Ya adquirido', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.green)),
-                        ],
-                      ),
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: Colors.green, size: 16),
+                              const SizedBox(width: 8),
+                              Text('Ya adquirido', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton.icon(
+                            onPressed: _comprando ? null : _equipar,
+                            icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+                            label: Text('Equipar ahora', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                          ),
+                        ),
+                      ],
                     )
                   else
                     SizedBox(

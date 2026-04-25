@@ -13,6 +13,7 @@ import random
 import string
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
+from django.db import models
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from contenido.models import Imagenes_galeria
@@ -242,10 +243,21 @@ class DatosUsuarios(APIView):
                     "mensaje": f"No existe el usuario con id {usuario_id}",
                 },status=status.HTTP_404_NOT_FOUND)
         else:
-            usuarios=Usuario.objects.all()
-            # EXCLUIR AL USUARIO LOGUEADO
+            from django.db.models import Count, Subquery, OuterRef
+            usuarios = Usuario.objects.select_related('perfil').annotate(
+                anotado_seguidores=Count('seguidores', filter=models.Q(seguidores__estado='ACEPTADO')),
+                anotado_seguidos=Count('siguiendo', filter=models.Q(siguiendo__estado='ACEPTADO')),
+            )
+            
             if request.user and request.user.is_authenticated:
-                usuarios = usuarios.exclude(id=request.user.id)
+                usuarios = usuarios.exclude(id=request.user.id).annotate(
+                    anotado_estado_seguimiento=Subquery(
+                        Seguimiento.objects.filter(
+                            seguidor=request.user,
+                            seguido_usuario=OuterRef('pk')
+                        ).values('estado')[:1]
+                    )
+                )
                 
             if usuarios:
                 serializer=UsuarioSerializer(usuarios, many=True, context={'request': request})
@@ -527,8 +539,24 @@ class EditarPerfil(APIView):
 class RankingUsuarios(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
+        from django.db.models import Count, Subquery, OuterRef
         # Obtener los top 10 usuarios ordenados por rating_actual (puntuación de estrellas) de mayor a menor
-        usuarios = Usuario.objects.select_related('perfil').order_by('-rating_actual')[:10]
+        usuarios = Usuario.objects.select_related('perfil').annotate(
+            anotado_seguidores=Count('seguidores', filter=models.Q(seguidores__estado='ACEPTADO')),
+            anotado_seguidos=Count('siguiendo', filter=models.Q(siguiendo__estado='ACEPTADO')),
+        )
+        
+        if request.user and request.user.is_authenticated:
+            usuarios = usuarios.annotate(
+                anotado_estado_seguimiento=Subquery(
+                    Seguimiento.objects.filter(
+                        seguidor=request.user,
+                        seguido_usuario=OuterRef('pk')
+                    ).values('estado')[:1]
+                )
+            )
+
+        usuarios = usuarios.order_by('-rating_actual')[:10]
         serializer = UsuarioSerializer(usuarios, many=True, context={'request': request})
         return Response({
             "exito": True,

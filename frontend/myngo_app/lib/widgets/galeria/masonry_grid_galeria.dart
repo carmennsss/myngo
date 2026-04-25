@@ -24,7 +24,6 @@ class MasonryGridGaleria extends StatefulWidget {
 
 class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   final _servicioGaleria = ServicioGaleria();
-  final _scrollController = ScrollController();
   
   List<ImagenGaleria>? _items;
   bool _cargando = false;
@@ -37,21 +36,11 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   void initState() {
     super.initState();
     _cargarMas();
-    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      if (!_cargando && _hayMas) {
-        _cargarMas();
-      }
-    }
   }
 
   Future<void> _cargarMas() async {
@@ -154,29 +143,38 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     } else {
       contenido = Padding(
         padding: const EdgeInsets.all(8.0),
-        child: MasonryGridView.builder(
-          controller: _scrollController,
-          gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-          ),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          itemCount: _items!.length + (_hayMas ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == _items!.length) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(color: Color(0xFF248EA6)),
-                ),
-              );
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification scrollInfo) {
+            if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+              if (!_cargando && _hayMas) {
+                _cargarMas();
+              }
             }
-
-            final item = _items![index];
-            final double aspect = item.relacionAspecto > 0 ? item.relacionAspecto : (index % 3 == 0 ? 0.7 : 1.2);
-
-            return _buildTile(item, aspect);
+            return false;
           },
+          child: MasonryGridView.builder(
+            gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+            ),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            itemCount: _items!.length + (_hayMas ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == _items!.length) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+                  ),
+                );
+              }
+
+              final item = _items![index];
+              final double aspect = item.relacionAspecto > 0 ? item.relacionAspecto : (index % 3 == 0 ? 0.7 : 1.2);
+
+              return _buildTile(item, aspect);
+            },
+          ),
         ),
       );
     }

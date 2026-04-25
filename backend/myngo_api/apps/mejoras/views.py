@@ -2,7 +2,7 @@ from datetime import datetime, time
 from django.utils import timezone
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.db.models import Avg
+from django.db.models import Avg, Count
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -43,6 +43,9 @@ class EquipacionMejorasGlobales(APIView):
                             perfil.fondo=mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
                         elif mejora_u.mejora.tipo.casefold()=="marco":
                             perfil.marco=mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
+                        elif mejora_u.mejora.tipo.casefold() in ["estilo_post", "estilo post"]:
+                            # El estilo del post viene en datos_extra (fondo, borde, etc)
+                            perfil.estilo_post = mejora_u.mejora.datos_extra if mejora_u.esta_equipada else None
                         
                         # Guardar cambios
                         perfil.save()
@@ -378,9 +381,11 @@ class RankingUsuariosView(generics.ListAPIView):
 
     def get_queryset(self):
         # Evitar colisión con 'rating_medio' property usando un alias temporal
+        # También anotamos el conteo para cumplir con el requisito de 10 votos
         return Usuario.objects.annotate(
-            rating_db=Avg('votos_recibidos_perfil__estrellas')
-        ).filter(rating_db__isnull=False).order_by('-rating_db')[:10]
+            rating_db=Avg('votos_recibidos_perfil__estrellas'),
+            votos_count=Count('votos_recibidos_perfil')
+        ).filter(votos_count__gte=10).order_by('-rating_db')[:10]
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -396,7 +401,7 @@ class RankingUsuariosView(generics.ListAPIView):
             data.append({
                 "id": u.id,
                 "nombre": u.nombre_usuario,
-                "rating_medio": u.rating_medio, # Usa la property que tiene el límite de 10
+                "rating_medio": round(float(u.rating_db), 2) if u.rating_db else 0.0,
                 "url_foto": url_foto
             })
         return Response(data)
@@ -407,8 +412,9 @@ class RankingComunidadesView(generics.ListAPIView):
 
     def get_queryset(self):
         return Comunidad.objects.annotate(
-            rating_db=Avg('votos_recibidos_comunidad__estrellas')
-        ).filter(rating_db__isnull=False).order_by('-rating_db')[:10]
+            rating_db=Avg('votos_recibidos_comunidad__estrellas'),
+            votos_count=Count('votos_recibidos_comunidad')
+        ).filter(votos_count__gte=10).order_by('-rating_db')[:10]
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -417,7 +423,7 @@ class RankingComunidadesView(generics.ListAPIView):
             data.append({
                 "id": c.id,
                 "nombre": c.nombre,
-                "rating_medio": c.rating_medio,
+                "rating_medio": round(float(c.rating_db), 2) if c.rating_db else 0.0,
                 "url_foto": c.url_portada.url if c.url_portada else None
             })
         return Response(data)

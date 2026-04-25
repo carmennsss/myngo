@@ -37,7 +37,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
       
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
@@ -64,7 +64,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlBase}propias/'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
@@ -84,7 +84,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('$_urlBase$id/'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
       
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
@@ -103,7 +103,7 @@ class ServicioComunidades {
   /// Permite unirse a una comunidad o enviar solicitud.
   Future<RespuestaApi<Map<String, dynamic>>> unirseAComunidad(int id) async {
     try {
-      final respuesta = await http.post(Uri.parse('${_urlBase}$id/unirse/'), headers: await _getHeaders());
+      final respuesta = await http.post(Uri.parse('${_urlBase}$id/unirse/'), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, mensaje: datosJson['mensaje'] ?? 'Operación exitosa', datos: datosJson);
@@ -137,7 +137,7 @@ class ServicioComunidades {
         }
       }
 
-      final respuestaStream = await solicitud.send();
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 30));
       final respuesta = await http.Response.fromStream(respuestaStream);
 
       if (respuesta.statusCode == 201) {
@@ -171,7 +171,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlBase}$id/admin-dashboard/'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 20));
       if (respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: 'Dashboard obtenido', datos: jsonDecode(utf8.decode(respuesta.bodyBytes)));
       }
@@ -210,7 +210,7 @@ class ServicioComunidades {
         }
       }
 
-      final respuestaStream = await solicitud.send();
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 30));
       final respuesta = await http.Response.fromStream(respuestaStream);
 
       if (respuesta.statusCode == 200) {
@@ -260,9 +260,9 @@ class ServicioComunidades {
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGlobales({String ordering = '-fecha_creacion'}) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlContenido}publicaciones/?ordering=$ordering'),
+        Uri.parse('${_urlContenido}publicaciones/global/?ordering=$ordering'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
@@ -279,7 +279,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlContenido}publicaciones/?comunidad_id=$comunidadId&ordering=$ordering'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
@@ -296,7 +296,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlContenido}galeria/?comunidad_id=$comunidadId'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, datos: datos.map((i) => ImagenGaleria.fromJson(i)).toList(), mensaje: 'Galería cargada');
@@ -312,7 +312,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlMensajeria}salas/?comunidad_id=$comunidadId'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(respuesta.body);
         return RespuestaApi(exito: true, datos: datos.map((s) => SalaChat.fromJson(s)).toList(), mensaje: 'Salas cargadas');
@@ -360,7 +360,7 @@ class ServicioComunidades {
         }
       }
 
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 45));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -422,7 +422,7 @@ class ServicioComunidades {
       final respuesta = await http.get(
         Uri.parse('${_urlContenido}publicaciones/$id/'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 15));
       if (respuesta.statusCode == 200) {
         return RespuestaApi(
           exito: true, 
@@ -483,6 +483,11 @@ class ServicioComunidades {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

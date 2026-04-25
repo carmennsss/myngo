@@ -9,6 +9,7 @@ class CatalogoMejoras {
   final int? creadorId;
   final String? nombreCreador;
   final bool estaActivo;
+  final Map<String, dynamic>? datosExtra;
 
   CatalogoMejoras({
     required this.id,
@@ -19,6 +20,7 @@ class CatalogoMejoras {
     this.creadorId,
     this.nombreCreador,
     this.estaActivo = true,
+    this.datosExtra,
   });
 
   factory CatalogoMejoras.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,7 @@ class CatalogoMejoras {
       creadorId: json['creador'],
       nombreCreador: json['nombre_creador'],
       estaActivo: json['esta_activo'] ?? true,
+      datosExtra: json['datos_extra'] is Map ? Map<String, dynamic>.from(json['datos_extra']) : null,
     );
   }
 }

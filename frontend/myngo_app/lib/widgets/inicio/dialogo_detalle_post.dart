@@ -109,15 +109,52 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
 
   @override
   Widget build(BuildContext context) {
+    Color bgColor = Colors.white;
+    Color? borderColor;
+    String? bgImg;
+
+    if (widget.post.autorEstiloPost != null) {
+      try {
+        final estilo = widget.post.autorEstiloPost!;
+        final bgHex = estilo['fondo']?.toString().replaceAll('#', '');
+        final borderHex = estilo['borde']?.toString().replaceAll('#', '');
+        bgImg = estilo['url_fondo'];
+        
+        if (bgHex != null && bgHex.isNotEmpty) {
+          String hex = bgHex;
+          if (hex.length == 6) hex = 'FF$hex';
+          bgColor = Color(int.parse(hex, radix: 16));
+        }
+        
+        if (borderHex != null && borderHex.isNotEmpty) {
+          String hex = borderHex;
+          if (hex.length == 6) hex = 'FF$hex';
+          borderColor = Color(int.parse(hex, radix: 16));
+        }
+      } catch (e) {
+        // Ignorar
+      }
+    }
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent, // Background will be handled by the container
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            image: bgImg != null && bgImg!.isNotEmpty 
+                ? DecorationImage(image: CachedNetworkImageProvider(bgImg!), fit: BoxFit.cover, opacity: 0.8) 
+                : null,
+            borderRadius: BorderRadius.circular(16),
+            border: borderColor != null ? Border.all(color: borderColor!, width: 2.5) : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 8, top: 4),
               child: Row(
@@ -163,10 +200,14 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             children: [
                               CircleAvatar(
                                 radius: 20,
+                                backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
                                 backgroundImage: widget.post.autorFoto != null
                                     ? CachedNetworkImageProvider(widget.post.autorFoto!)
                                     : null,
-                                child: widget.post.autorFoto == null ? const Icon(Icons.person) : null,
+                                child: widget.post.autorFoto == null 
+                                    ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
+                                        style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold))
+                                    : null,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -271,7 +312,8 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

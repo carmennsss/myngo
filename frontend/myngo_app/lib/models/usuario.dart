@@ -18,6 +18,7 @@ class Usuario {
   final int numeroSeguidores;
   final int numeroSeguidos;
   final String? estadoSeguimiento;
+  final Map<String, dynamic>? estiloPost;
 
   Usuario({
     required this.id,
@@ -37,6 +38,7 @@ class Usuario {
     this.numeroSeguidores = 0,
     this.numeroSeguidos = 0,
     this.estadoSeguimiento,
+    this.estiloPost,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class Usuario {
         numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
         numeroSeguidos: int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
         estadoSeguimiento: json['estado_seguimiento']?.toString(),
+        estiloPost: json['estilo_post'] is Map ? Map<String, dynamic>.from(json['estilo_post']) : null,
       );
     } catch (e) {
       // ignore: avoid_print

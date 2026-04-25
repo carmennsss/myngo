@@ -15,11 +15,8 @@ class ServicioUsuarios {
       final respuesta = await http.post(
         Uri.parse('$_urlBase/login/'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': contrasena,
-        }),
-      );
+        body: jsonEncode({'email': email, 'password': contrasena}),
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
@@ -65,14 +62,14 @@ class ServicioUsuarios {
   Future<RespuestaApi<Usuario>> registrarse(String nombre_usuario, String email, String contrasena) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/registrar/'),
+        Uri.parse('$_urlBase/registro/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nombre_usuario': nombre_usuario,
           'email': email,
           'password': contrasena,
         }),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
@@ -106,10 +103,10 @@ class ServicioUsuarios {
   Future<RespuestaApi> recuperarContrasena(String email) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/recuperar-password/'),
+        Uri.parse('$_urlBase/recuperar-contrasena/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
@@ -167,8 +164,8 @@ class ServicioUsuarios {
       final uri = Uri.parse('$_urlBase/datos/');
       final respuesta = await http.get(
         uri,
-        headers: token != null ? {'Authorization': 'Token $token'} : null,
-      );
+        headers: token != null ? {'Authorization': 'Token $token'} : {},
+      ).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson['datos'] ?? [];
@@ -183,7 +180,7 @@ class ServicioUsuarios {
 
   Future<RespuestaApi<List<Usuario>>> obtenerRanking() async {
     try {
-      final respuesta = await http.get(Uri.parse('$_urlBase/ranking/'));
+      final respuesta = await http.get(Uri.parse('$_urlBase/ranking/')).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson['datos'] ?? [];
@@ -198,7 +195,7 @@ class ServicioUsuarios {
 
   Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int id) async {
     try {
-      final respuesta = await http.get(Uri.parse('$_urlBase/datos/$id/'));
+      final respuesta = await http.get(Uri.parse('$_urlBase/datos/$id/')).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi.fromJson(
@@ -207,6 +204,11 @@ class ServicioUsuarios {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener datos del usuario');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

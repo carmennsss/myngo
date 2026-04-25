@@ -36,7 +36,7 @@ class ServicioGaleria {
       if (usuarioId != null) url += '&usuario_id=$usuarioId';
       if (coleccionId != null) url += '&coleccion_id=$coleccionId';
 
-      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders());
+      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(respuesta.body);
@@ -48,6 +48,11 @@ class ServicioGaleria {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar galería: ${respuesta.statusCode}');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -67,7 +72,7 @@ class ServicioGaleria {
         url += '&etiquetas=${Uri.encodeComponent(etiquetas)}';
       }
 
-      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders());
+      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(respuesta.body);
@@ -79,6 +84,11 @@ class ServicioGaleria {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar feed: ${respuesta.statusCode}');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -94,7 +104,7 @@ class ServicioGaleria {
       if (comunidadId != null) url += '?comunidad_id=$comunidadId';
       else if (usuarioId != null) url += '?usuario_id=$usuarioId';
 
-      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders());
+      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 401) {
         return RespuestaApi(exito: true, datos: [], mensaje: 'Inicia sesión para ver colecciones privadas 🐾');
@@ -110,6 +120,11 @@ class ServicioGaleria {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar colecciones');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -127,12 +142,12 @@ class ServicioGaleria {
         Uri.parse('$_urlBase/colecciones/'),
         headers: await _getHeaders(),
         body: jsonEncode({
-          'nombre_coleccion': nombre,
+          'nombre': nombre,
           'descripcion': descripcion,
           'es_privada': esPrivada,
-          'comunidad': comunidadId,
+          if (comunidadId != null) 'comunidad': comunidadId,
         }),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 201) {
         return RespuestaApi(
@@ -142,6 +157,11 @@ class ServicioGaleria {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al crear colección');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -155,18 +175,23 @@ class ServicioGaleria {
   }) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/colecciones/$coleccionId/gestionar-imagenes/'),
+        Uri.parse('$_urlBase/colecciones/$coleccionId/gestionar_imagen/'),
         headers: await _getHeaders(),
         body: jsonEncode({
           'imagen_id': imagenId,
-          'accion': agregar ? 'add' : 'remove',
+          'accion': agregar ? 'agregar' : 'quitar',
         }),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: 'Operación realizada con éxito');
       }
       return RespuestaApi(exito: false, mensaje: 'Error al gestionar imagen en colección');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -178,11 +203,16 @@ class ServicioGaleria {
       final respuesta = await http.delete(
         Uri.parse('$_urlBase/colecciones/$coleccionId/'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 204) {
         return RespuestaApi(exito: true, mensaje: 'Colección eliminada');
       }
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la colección (${respuesta.statusCode})');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -215,7 +245,7 @@ class ServicioGaleria {
       );
       request.files.add(file);
 
-      final streamedRespuesta = await request.send();
+      final streamedRespuesta = await request.send().timeout(const Duration(seconds: 25));
       final respuesta = await http.Response.fromStream(streamedRespuesta);
 
       if (respuesta.statusCode == 201) {
@@ -227,6 +257,11 @@ class ServicioGaleria {
       }
       final errorBody = jsonDecode(respuesta.body);
       return RespuestaApi(exito: false, mensaje: errorBody['mensaje'] ?? 'Error al subir la imagen a la galería');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -236,9 +271,9 @@ class ServicioGaleria {
   Future<RespuestaApi<Map<String, dynamic>>> obtenerDetalleImagenExtendido(int imagenId) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/galeria/$imagenId/detalles/'),
+        Uri.parse('$_urlBase/galeria/$imagenId/detalle_extendido/'),
         headers: await _getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (respuesta.statusCode == 200) {
         return RespuestaApi(
@@ -259,14 +294,19 @@ class ServicioGaleria {
       final response = await http.delete(
         Uri.parse('$_urlBase/publicaciones/$id/'),
         headers: {
-          'Authorization': 'Token $token',
           'Content-Type': 'application/json',
+          'Authorization': 'Token $token',
         },
         body: jsonEncode({'razon': razon}),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Publicación eliminada');
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la publicación');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -278,14 +318,19 @@ class ServicioGaleria {
       final response = await http.patch(
         Uri.parse('$_urlBase/publicaciones/$id/'),
         headers: {
-          'Authorization': 'Token $token',
           'Content-Type': 'application/json',
+          'Authorization': 'Token $token',
         },
         body: jsonEncode(datos),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Publicación actualizada');
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar la publicación');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -297,14 +342,19 @@ class ServicioGaleria {
       final response = await http.delete(
         Uri.parse('$_urlBase/galeria/$id/'),
         headers: {
-          'Authorization': 'Token $token',
           'Content-Type': 'application/json',
+          'Authorization': 'Token $token',
         },
         body: jsonEncode({'razon': razon}),
-      );
+      ).timeout(const Duration(seconds: 25));
 
       if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Imagen eliminada de la galería');
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la imagen');
+    } on Exception catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
