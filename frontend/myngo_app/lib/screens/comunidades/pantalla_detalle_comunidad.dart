@@ -6,6 +6,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../models/comunidad.dart';
 import '../../models/publicacion.dart';
 import '../../models/sala_chat.dart';
+import '../mensajeria/pantalla_chat.dart';
 import '../../widgets/inicio/tarjeta_post.dart';
 import 'package:provider/provider.dart';
 import '../../providers/post_provider.dart';
@@ -1427,7 +1428,17 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           ),
           title: Text(sala.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: _colorTextoPrincipal(context))),
           trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (ctx) => PantallaChat(
+                  salaId: sala.id,
+                  nombreSala: sala.nombre,
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1447,7 +1458,17 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         title: Text('Chat General ✨', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: _colorTextoPrincipal(context))),
         subtitle: Text('¡Habla con toda la comunidad!', style: GoogleFonts.inter(color: _colorTextoSecundario(context), fontSize: 13)),
         trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFF28B50)),
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => PantallaChat(
+                salaId: widget.comunidad.id * -1, // ID negativo para la sala general
+                nombreSala: 'Chat General ✨ ${widget.comunidad.nombre}',
+              ),
+            ),
+          );
+        },
       ),
     );
   }
