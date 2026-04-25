@@ -9,9 +9,10 @@ import '../models/imagen_galeria.dart';
 import '../models/coleccion.dart';
 import '../models/publicacion.dart';
 import 'servicio_usuarios.dart';
+import '../utils/configuracion.dart';
 
 class ServicioGaleria {
-  static const String _urlBase = 'http://127.0.0.1:8000/contenido';
+  static const String _urlBase = '${Configuracion.baseUrl}/contenido';
   final _servicioUsuarios = ServicioUsuarios();
 
   Future<Map<String, String>> _getHeaders() async {

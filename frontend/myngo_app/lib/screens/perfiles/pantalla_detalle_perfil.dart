@@ -885,7 +885,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
               ),
             ),
 
-          if (_tabActual == 0) ...[
+          if (_tabActual == 0 && (usuario.id == _currentUserId || usuario.esPublico || _estadoSeguimiento == 'ACEPTADO')) ...[
             // ── VISTA PUBLICACIONES ──
             if (_cargandoPublicaciones || _publicaciones == null)
               const SliverToBoxAdapter(
@@ -903,7 +903,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
               )
             else
               _buildPublicacionesGrid(_publicaciones!),
-          ] else if (_tabActual == 1) ...[
+          ] else if (_tabActual == 1 && (usuario.id == _currentUserId || usuario.esPublico || _estadoSeguimiento == 'ACEPTADO')) ...[
             // ── VISTA GUARDADOS ──
             
             // Filtros de comunidad

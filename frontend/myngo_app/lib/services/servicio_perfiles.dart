@@ -7,11 +7,12 @@ import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import '../models/perfil.dart';
 import '../models/publicacion.dart';
+import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
 class ServicioPerfiles {
   // URLs para que crees los endpoints homólogos en tu backend
-  static const String _urlBase = 'http://127.0.0.1:8000/usuarios';
+  static const String _urlBase = '${Configuracion.baseUrl}/usuarios';
   final _servicioUsuarios = ServicioUsuarios();
 
   Future<Map<String, String>> _getHeaders() async {
@@ -120,7 +121,7 @@ class ServicioPerfiles {
   }) async {
     try {
       final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('http://127.0.0.1:8000/contenido/publicaciones/crear/');
+      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/crear/');
       
       var request = http.MultipartRequest('POST', uri);
       if (tokenInfo != null) {
@@ -168,7 +169,7 @@ class ServicioPerfiles {
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGuardadas({int? comunidadId}) async {
     try {
       final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('http://127.0.0.1:8000/contenido/publicaciones/?solo_guardados=true' + (comunidadId != null ? '&comunidad_id=$comunidadId' : ''));
+      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?solo_guardados=true' + (comunidadId != null ? '&comunidad_id=$comunidadId' : ''));
       final respuesta = await http.get(uri, headers: {
         'Content-Type': 'application/json',
         if (tokenInfo != null) 'Authorization': 'Token $tokenInfo',
@@ -192,7 +193,7 @@ class ServicioPerfiles {
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(int perfilId) async {
     try {
       final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('http://127.0.0.1:8000/contenido/publicaciones/?perfil_id=$perfilId');
+      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?perfil_id=$perfilId');
       final respuesta = await http.get(uri, headers: {
         'Content-Type': 'application/json',
         if (tokenInfo != null) 'Authorization': 'Token $tokenInfo',
@@ -219,7 +220,7 @@ class ServicioPerfiles {
   }) async {
     try {
       final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('http://127.0.0.1:8000/usuarios/perfil/editar/');
+      final uri = Uri.parse('${Configuracion.baseUrl}/usuarios/perfil/editar/');
       final respuesta = await http.patch(
         uri,
         headers: {
@@ -246,7 +247,7 @@ class ServicioPerfiles {
   }) async {
     try {
       final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('http://127.0.0.1:8000/usuarios/perfil/editar/');
+      final uri = Uri.parse('${Configuracion.baseUrl}/usuarios/perfil/editar/');
       var request = http.MultipartRequest('PATCH', uri);
       
       if (tokenInfo != null) {

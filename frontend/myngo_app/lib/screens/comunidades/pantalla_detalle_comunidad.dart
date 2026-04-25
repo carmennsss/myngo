@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../utils/configuracion.dart';
 import 'dart:math' as math;
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_usuarios.dart';
@@ -924,7 +925,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                   ),
                 )
               : Image.network(
-                  widget.comunidad.urlPortada.startsWith('http') ? widget.comunidad.urlPortada : 'http://127.0.0.1:8000${widget.comunidad.urlPortada}',
+                  widget.comunidad.urlPortada.startsWith('http') ? widget.comunidad.urlPortada : '${Configuracion.baseUrl}${widget.comunidad.urlPortada}',
                   fit: BoxFit.cover,
                   headers: const {'Access-Control-Allow-Origin': '*'},
                   errorBuilder: (context, error, stackTrace) => Container(

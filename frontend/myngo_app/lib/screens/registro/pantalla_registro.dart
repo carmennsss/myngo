@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../services/servicio_usuarios.dart';
+import '../../utils/configuracion.dart';
 
 class PantallaRegistro extends StatefulWidget {
   const PantallaRegistro({super.key});
@@ -327,7 +328,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     bool acepto = false;
     bool declino = false;
 
-    final futureDescargaPdf = http.get(Uri.parse('http://127.0.0.1:8000/documentos/reglas_comunidad/'))
+    final futureDescargaPdf = http.get(Uri.parse('${Configuracion.baseUrl}/documentos/reglas_comunidad/'))
       .then((res) async {
         if (res.statusCode != 200) throw Exception('Error API');
         final datos = jsonDecode(res.body);

@@ -4,11 +4,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import '../models/respuesta_api.dart';
 import '../models/catalogo_mejoras.dart';
+import '../utils/configuracion.dart';
 import './servicio_usuarios.dart';
 
 /// Servicio para gestionar las votaciones y el ranking.
 class ServicioMejoras {
-  static const String _urlBase = 'http://127.0.0.1:8000/mejoras';
+  static const String _urlBase = '${Configuracion.baseUrl}/mejoras';
 
   /// Envía un voto a un usuario o comunidad.
   /// Envía un voto a un usuario o comunidad.

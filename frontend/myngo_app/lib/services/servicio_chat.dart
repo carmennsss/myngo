@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/configuracion.dart';
 
 /// Servicio para gestionar la mensajería y presencia mediante WebSockets.
 class ServicioChat {
@@ -15,8 +16,8 @@ class ServicioChat {
   bool _isConnectedChat = false;
   bool _isConnectedPresence = false;
 
-  static const _baseUrl = "ws://localhost:8000/ws";
-  static const _apiUrl = "http://localhost:8000";
+  static const _baseUrl = Configuracion.wsUrl;
+  static const _apiUrl = Configuracion.baseUrl;
 
   /// Crea una sala de chat privada con otro usuario o la busca si ya existe.
   static Future<Map<String, dynamic>?> crearSalaPrivada(int otroUsuarioId) async {
