@@ -40,17 +40,19 @@ class ServicioInteraccion {
     }
   }
 
-  Future<RespuestaApi<List<Comentario>>> obtenerComentarios(int publicacionId) async {
+  Future<RespuestaApi<List<Comentario>>> obtenerComentarios(int publicacionId, {int limit = 10, int offset = 0}) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
+      final url = '$_urlBase/contenido/publicaciones/$publicacionId/comentarios/?limit=$limit&offset=$offset';
       final response = await http.get(
-        Uri.parse('$_urlBase/contenido/publicaciones/$publicacionId/comentarios/'),
+        Uri.parse(url),
         headers: {'Authorization': 'Token $token'},
       );
 
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
-        final List dynamicList = (decoded is List) ? decoded : [];
+        // Manejar tanto lista simple como respuesta paginada de Django (con 'results')
+        final List dynamicList = (decoded is Map) ? (decoded['results'] ?? []) : (decoded is List ? decoded : []);
         final comentarios = dynamicList.map((j) => Comentario.fromJson(j)).toList();
         return RespuestaApi(exito: true, mensaje: 'Comentarios cargados', datos: comentarios);
       }

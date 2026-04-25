@@ -29,8 +29,12 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
 
   List<Comentario> _comentarios = [];
   bool _cargandoComentarios = true;
+  bool _cargandoMas = false;
+  bool _hayMasComentarios = true;
   bool _enviandoComentario = false;
   bool _mostrandoInputComentario = false;
+  int _offset = 0;
+  final int _limit = 10;
 
   late bool _dioLike;
   late int _likesCount;
@@ -44,19 +48,43 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     _likesCount = widget.post.likesCount;
     _comentariosCount = widget.post.comentariosCount;
     _estaGuardado = widget.post.usuarioGuardoPost;
-    _cargarComentarios();
+    _cargarComentarios(reiniciar: true);
   }
 
-  Future<void> _cargarComentarios() async {
+  Future<void> _cargarComentarios({bool reiniciar = false}) async {
     if (!mounted) return;
-    setState(() => _cargandoComentarios = true);
-    final respuesta = await _servicioInteraccion.obtenerComentarios(widget.post.id);
+    if (reiniciar) {
+      setState(() {
+        _cargandoComentarios = true;
+        _offset = 0;
+        _hayMasComentarios = true;
+        _comentarios = [];
+      });
+    } else {
+      if (!_hayMasComentarios || _cargandoMas) return;
+      setState(() => _cargandoMas = true);
+    }
+
+    final respuesta = await _servicioInteraccion.obtenerComentarios(
+      widget.post.id,
+      limit: _limit,
+      offset: _offset,
+    );
+
     if (mounted) {
       setState(() {
         if (respuesta.exito) {
-          _comentarios = respuesta.datos ?? [];
+          final nuevos = respuesta.datos ?? [];
+          if (reiniciar) {
+            _comentarios = nuevos;
+          } else {
+            _comentarios.addAll(nuevos);
+          }
+          _hayMasComentarios = nuevos.length == _limit;
+          _offset += nuevos.length;
         }
         _cargandoComentarios = false;
+        _cargandoMas = false;
       });
     }
   }
@@ -82,7 +110,6 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     final respuesta = await _servicioInteraccion.toggleLike(widget.post.id);
     
     if (!respuesta.exito) {
-      // Revert in case of error
       if (mounted) {
         setState(() {
           _dioLike = !_dioLike;
@@ -148,7 +175,6 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
       ),
     );
     
-    // Al volver, actualizamos el estado local por si cambió
     if (mounted) {
       setState(() {
         _estaGuardado = widget.post.usuarioGuardoPost;
@@ -196,7 +222,6 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
           ),
         ),
         
-        // Input de comentario (si está visible)
         if (_mostrandoInputComentario)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -228,7 +253,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 _enviandoComentario
                     ? const SizedBox(width: 36, height: 36, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
                     : IconButton(
-                        icon: Icon(Icons.send_rounded, color: const Color(0xFF248EA6)),
+                        icon: const Icon(Icons.send_rounded, color: Color(0xFF248EA6)),
                         onPressed: _enviarComentario,
                       ),
               ],
@@ -238,7 +263,6 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
         const SizedBox(height: 16),
         Divider(height: 1, color: widget.colorTexto.withOpacity(0.1)),
         
-        // Lista de comentarios
         if (_cargandoComentarios)
           Padding(
             padding: const EdgeInsets.all(32.0),
@@ -254,7 +278,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
               ),
             ),
           )
-        else
+        else ...[
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -271,6 +295,22 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
               );
             },
           ),
+          if (_hayMasComentarios)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: _cargandoMas
+                  ? CircularProgressIndicator(color: widget.colorTexto.withOpacity(0.5), strokeWidth: 2)
+                  : TextButton(
+                      onPressed: () => _cargarComentarios(),
+                      child: Text('Cargar más comentarios 🐾', 
+                        style: GoogleFonts.outfit(color: widget.colorTexto.withOpacity(0.6), fontWeight: FontWeight.bold)
+                      ),
+                    ),
+              ),
+            ),
+        ],
+        const SizedBox(height: 150),
       ],
     );
   }

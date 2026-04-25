@@ -4,8 +4,10 @@ class Comentario {
   final int autorId;
   final String autorNombre;
   final String? autorFoto;
+  final String? autorMarco;
+  final String? autorFondo;
   final String contenido;
-  final bool esValidoIa; // Validado para prevenir agresiones [cite: 46]
+  final bool esValidoIa;
   final DateTime fechaCreacion;
 
   Comentario({
@@ -14,6 +16,8 @@ class Comentario {
     required this.autorId,
     required this.autorNombre,
     this.autorFoto,
+    this.autorMarco,
+    this.autorFondo,
     required this.contenido,
     required this.esValidoIa,
     required this.fechaCreacion,
@@ -26,10 +30,12 @@ class Comentario {
       autorId: int.tryParse(json['autor']?.toString() ?? '0') ?? 0,
       autorNombre: json['autor_nombre']?.toString() ?? 'Anónimo',
       autorFoto: json['autor_foto']?.toString(),
+      autorMarco: json['autor_marco']?.toString(),
+      autorFondo: json['autor_fondo']?.toString(),
       contenido: json['contenido']?.toString() ?? '',
       esValidoIa: json['es_valido_ia'] ?? true,
       fechaCreacion: json['fecha_creacion'] != null 
-          ? DateTime.parse(json['fecha_creacion'].toString()) 
+          ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now()
           : DateTime.now(),
     );
   }

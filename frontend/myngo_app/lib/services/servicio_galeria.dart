@@ -37,7 +37,7 @@ class ServicioGaleria {
       if (usuarioId != null) url += '&usuario_id=$usuarioId';
       if (coleccionId != null) url += '&coleccion_id=$coleccionId';
 
-      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
+      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 10));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(respuesta.body);
@@ -73,15 +73,17 @@ class ServicioGaleria {
         url += '&etiquetas=${Uri.encodeComponent(etiquetas)}';
       }
 
-      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
+      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 10));
 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> body = jsonDecode(respuesta.body);
-        final List<dynamic> results = body['results'] ?? [];
+        final String decodedBody = utf8.decode(respuesta.bodyBytes);
+        final dynamic body = jsonDecode(decodedBody);
+        final List<dynamic> results = body is Map ? (body['results'] ?? []) : [];
+        
         return RespuestaApi(
           exito: true,
           mensaje: 'Feed de inicio cargado',
-          datos: results.map((j) => Publicacion.fromJson(j)).toList(),
+          datos: results.map((j) => Publicacion.fromJson(j as Map<String, dynamic>)).toList(),
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar feed: ${respuesta.statusCode}');
@@ -105,7 +107,7 @@ class ServicioGaleria {
       if (comunidadId != null) url += '?comunidad_id=$comunidadId';
       else if (usuarioId != null) url += '?usuario_id=$usuarioId';
 
-      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 25));
+      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 10));
 
       if (respuesta.statusCode == 401) {
         return RespuestaApi(exito: true, datos: [], mensaje: 'Inicia sesión para ver colecciones privadas 🐾');
@@ -148,7 +150,7 @@ class ServicioGaleria {
           'es_privada': esPrivada,
           if (comunidadId != null) 'comunidad': comunidadId,
         }),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 201) {
         return RespuestaApi(
@@ -182,7 +184,7 @@ class ServicioGaleria {
           'imagen_id': imagenId,
           'accion': agregar ? 'agregar' : 'quitar',
         }),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
         return RespuestaApi(exito: true, mensaje: 'Operación realizada con éxito');
@@ -204,7 +206,7 @@ class ServicioGaleria {
       final respuesta = await http.delete(
         Uri.parse('$_urlBase/colecciones/$coleccionId/'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 15));
       if (respuesta.statusCode == 204) {
         return RespuestaApi(exito: true, mensaje: 'Colección eliminada');
       }
@@ -274,7 +276,7 @@ class ServicioGaleria {
       final respuesta = await http.get(
         Uri.parse('$_urlBase/galeria/$imagenId/detalle_extendido/'),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
         return RespuestaApi(
@@ -299,7 +301,7 @@ class ServicioGaleria {
           'Authorization': 'Token $token',
         },
         body: jsonEncode({'razon': razon}),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Publicación eliminada');
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la publicación');
@@ -323,7 +325,7 @@ class ServicioGaleria {
           'Authorization': 'Token $token',
         },
         body: jsonEncode(datos),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Publicación actualizada');
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar la publicación');
@@ -347,7 +349,7 @@ class ServicioGaleria {
           'Authorization': 'Token $token',
         },
         body: jsonEncode({'razon': razon}),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Imagen eliminada de la galería');
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la imagen');

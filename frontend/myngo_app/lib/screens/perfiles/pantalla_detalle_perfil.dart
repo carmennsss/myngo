@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -504,10 +503,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                               if (_marcoLocal != null && _marcoLocal!.isNotEmpty)
                                 Positioned.fill(
                                   child: IgnorePointer(
-                                    child: CachedNetworkImage(
-                                      imageUrl: _marcoLocal!,
-                                      fit: BoxFit.contain,
-                                    ),
+                                    child: Image.network(_marcoLocal!, fit: BoxFit.contain),
                                   ),
                                 ),
                               // 2. Avatar encima (capa superior)

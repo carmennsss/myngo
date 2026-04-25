@@ -196,7 +196,11 @@ class ServicioUsuarios {
 
   Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int id) async {
     try {
-      final respuesta = await http.get(Uri.parse('$_urlBase/datos/$id/')).timeout(const Duration(seconds: 25));
+      final token = await obtenerToken();
+      final respuesta = await http.get(
+        Uri.parse('$_urlBase/datos/$id/'),
+        headers: token != null ? {'Authorization': 'Token $token'} : {},
+      ).timeout(const Duration(seconds: 25));
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi.fromJson(

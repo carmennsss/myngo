@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/comentario.dart';
+import 'hover_profile_card.dart';
 
 class ComentarioItem extends StatelessWidget {
   final Comentario comentario;
@@ -36,17 +38,46 @@ class ComentarioItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: highlightColor?.withOpacity(0.1) ?? const Color(0xFFC35E34).withOpacity(0.1),
-            backgroundImage: comentario.autorFoto != null
-                ? CachedNetworkImageProvider(comentario.autorFoto!)
-                : null,
-            child: comentario.autorFoto == null
-                ? Text(comentario.autorNombre.isNotEmpty ? comentario.autorNombre[0].toUpperCase() : '?',
-                    style: TextStyle(color: highlightColor ?? const Color(0xFFC35E34), fontWeight: FontWeight.bold))
-                : null,
+          // Avatar con Hover Card (Solo aquí)
+          HoverProfileCard(
+            nombre: comentario.autorNombre,
+            avatarUrl: comentario.autorFoto,
+            marcoUrl: comentario.autorMarco,
+            fondoUrl: comentario.autorFondo,
+            puntos: 0,
+            onTap: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+              context.go('/inicio/perfiles/${comentario.autorId}');
+            },
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (comentario.autorMarco != null && comentario.autorMarco!.isNotEmpty)
+                    Positioned.fill(
+                      child: CachedNetworkImage(
+                        imageUrl: comentario.autorMarco!,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: highlightColor?.withOpacity(0.1) ?? const Color(0xFFC35E34).withOpacity(0.1),
+                    backgroundImage: comentario.autorFoto != null
+                        ? CachedNetworkImageProvider(comentario.autorFoto!)
+                        : null,
+                    child: comentario.autorFoto == null
+                        ? Text(comentario.autorNombre.isNotEmpty ? comentario.autorNombre[0].toUpperCase() : '?',
+                            style: TextStyle(color: highlightColor ?? const Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 12))
+                        : null,
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           // Contenido
@@ -70,13 +101,13 @@ class ComentarioItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                      Text(
-                        '· ${_formatFecha(comentario.fechaCreacion)}',
-                        style: GoogleFonts.outfit(
-                          color: subTextColor ?? Colors.grey.shade600,
-                          fontSize: 13,
-                        ),
+                    Text(
+                      '· ${_formatFecha(comentario.fechaCreacion)}',
+                      style: GoogleFonts.outfit(
+                        color: subTextColor ?? Colors.grey.shade600,
+                        fontSize: 13,
                       ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
