@@ -63,12 +63,6 @@ class PantallaInicioState extends State<PantallaInicio> {
     _inicializarDatos();
   }
 
-  @override
-  void dispose() {
-    _servicioNotifChat.dispose();
-    super.dispose();
-  }
-
   Future<void> _inicializarDatos() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
@@ -239,6 +233,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   @override
   void dispose() {
     _servicioChat.dispose();
+    _servicioNotifChat.dispose();
     super.dispose();
   }
 
