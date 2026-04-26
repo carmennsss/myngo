@@ -10,6 +10,7 @@ class HoverProfileCard extends StatefulWidget {
   final String? marcoUrl;
   final String? fondoUrl;
   final int puntos;
+  final String estado;
   final VoidCallback onTap;
 
   const HoverProfileCard({
@@ -20,6 +21,7 @@ class HoverProfileCard extends StatefulWidget {
     this.marcoUrl,
     this.fondoUrl,
     this.puntos = 0,
+    this.estado = 'DESCONECTADO',
     required this.onTap,
   });
 
@@ -147,7 +149,40 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                                           : null,
                                     ),
                                   ),
+                                  Positioned(
+                                    bottom: 4,
+                                    right: 4,
+                                    child: Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: BoxDecoration(
+                                        color: _getColorEstado(widget.estado),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 3),
+                                      ),
+                                    ),
+                                  ),
                                 ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _getColorEstado(widget.estado).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: _getColorEstado(widget.estado).withOpacity(0.2)),
+                                ),
+                                child: Text(
+                                  widget.estado == 'ACTIVO' ? 'Online' : (widget.estado == 'OCUPADO' ? 'Ocupado' : 'Offline'),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    color: _getColorEstado(widget.estado).withOpacity(0.8),
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -244,5 +279,17 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
         ),
       ),
     );
+  }
+
+  Color _getColorEstado(String estado) {
+    switch (estado) {
+      case 'ACTIVO':
+        return Colors.greenAccent;
+      case 'OCUPADO':
+        return Colors.amber;
+      case 'DESCONECTADO':
+      default:
+        return Colors.grey.shade400;
+    }
   }
 }
