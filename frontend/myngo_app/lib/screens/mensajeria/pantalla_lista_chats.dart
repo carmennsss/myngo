@@ -277,7 +277,6 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
             onTap: () async {
               await context.push('/mensajes/sala/${sala['id']}', extra: {'nombre': nombre, 'sala': sala});
               _cargar();
-              context.findAncestorStateOfType<PantallaInicioState>()?.cargarMensajesSinLeer();
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(

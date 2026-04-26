@@ -9,6 +9,7 @@ import 'screens/inicio/pantalla_inicio.dart';
 import 'screens/comunidades/pantalla_comunidades.dart';
 
 import 'package:provider/provider.dart';
+import 'providers/post_provider.dart';
 import 'providers/chat_provider.dart';
 import 'services/servicio_notificaciones_locales.dart';
 import 'router.dart';

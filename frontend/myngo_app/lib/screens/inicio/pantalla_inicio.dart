@@ -151,10 +151,40 @@ class PantallaInicioState extends State<PantallaInicio> {
       if (!mounted) return;
       if (data['type'] == 'new_message_notification') {
         chatProvider.procesarNuevaNotificacion(data);
+        // Mostrar Toast si no estamos en esa sala
+        if (chatProvider.salaActivaId != (data['sala_id'] as num).toInt()) {
+          _mostrarToastMensaje(data);
+        }
       }
     });
   }
+  void _mostrarToastMensaje(Map<String, dynamic> data) {
+    final salaId = data['sala_id'];
+    final sender = data['sender_username'] ?? 'Alguien';
+    final preview = data['preview'] ?? '';
+    final salaName = data['sala_nombre'] ?? 'Chat';
+    final avatar = data['sender_avatar'];
 
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _ToastMensaje(
+        sender: sender,
+        preview: preview,
+        avatar: avatar,
+        onTap: () {
+          entry.remove();
+          context.go('/mensajes/sala/$salaId',
+              extra: {'nombre': salaName});
+        },
+        onDismiss: () => entry.remove(),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 4), () {
+      if (entry.mounted) entry.remove();
+    });
+  }
 
   Future<void> _cargarComunidades() async {
     setState(() {
@@ -435,6 +465,179 @@ class PantallaInicioState extends State<PantallaInicio> {
             onTap: () { Navigator.pop(context); _alPulsarNav(2); },
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Toast overlay in-app para notificaciones de mensajes nuevos.
+class _ToastMensaje extends StatefulWidget {
+  final String sender;
+  final String preview;
+  final String? avatar;
+  final VoidCallback onTap;
+  final VoidCallback onDismiss;
+
+  const _ToastMensaje({
+    required this.sender,
+    required this.preview,
+    this.avatar,
+    required this.onTap,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_ToastMensaje> createState() => _ToastMensajeState();
+}
+
+class _ToastMensajeState extends State<_ToastMensaje>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<Offset> _slide;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _slide = Tween<Offset>(
+      begin: const Offset(0, -1.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 16,
+      left: 16,
+      right: 16,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SlideTransition(
+            position: _slide,
+            child: FadeTransition(
+              opacity: _fade,
+              child: Material(
+                elevation: 20,
+                borderRadius: BorderRadius.circular(24),
+                color: Colors.transparent,
+                child: GestureDetector(
+                  onTap: widget.onTap,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFC35E34).withOpacity(0.15),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Avatar circular con diseño premium
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 2),
+                            image: widget.avatar != null
+                                ? DecorationImage(image: NetworkImage(widget.avatar!), fit: BoxFit.cover)
+                                : null,
+                            color: const Color(0xFFF5EBE6),
+                          ),
+                          child: widget.avatar == null
+                              ? Center(
+                                  child: Text(
+                                    widget.sender[0].toUpperCase(),
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFC35E34),
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        // Contenido del texto
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    '@${widget.sender}',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFFC35E34),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    'ahora',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.preview,
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF4A4440),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Botón de cierre sutil
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: widget.onDismiss,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Icon(Icons.close_rounded, color: Colors.grey.shade300, size: 18),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

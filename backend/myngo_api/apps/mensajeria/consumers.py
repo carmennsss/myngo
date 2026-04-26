@@ -89,6 +89,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 # Notificar a cada miembro (excepto el emisor) por su canal personal
                 miembros_ids = await self.get_miembros_ids(self.room_id, exclude_user_id=self.user.id)
                 sala_nombre = await self.get_sala_nombre(self.room_id)
+                sender_avatar = await self.get_user_avatar(self.user.id)
                 preview = content[:60] + ('...' if len(content) > 60 else '')
 
                 for miembro_id in miembros_ids:
@@ -100,6 +101,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             'sala_nombre': sala_nombre,
                             'sender_id': self.user.id,
                             'sender_username': self.user.nombre_usuario,
+                            'sender_avatar': sender_avatar,
                             'preview': preview,
                         }
                     )
@@ -194,7 +196,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return True
         except Exception:
             return False
-
+    @database_sync_to_async
+    def get_user_avatar(self, user_id):
+        try:
+            perfil = Perfil.objects.get(usuario_id=user_id)
+            return perfil.avatar.url if perfil.avatar else None
+        except Exception:
+            return None
 
 class PresenceConsumer(AsyncWebsocketConsumer):
     async def connect(self):
