@@ -10,6 +10,8 @@ import 'tarjeta_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../comunes/estado_vacio_cargando.dart';
 
+enum FeedMode { social, gallery }
+
 class FeedPublicaciones extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onProfileSelected;
@@ -25,6 +27,8 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
   final _servicioComunidades = ServicioComunidades();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  
+  FeedMode _mode = FeedMode.social;
   List<Publicacion>? _posts;
   bool _cargando = true;
   bool _cargandoMas = false;
@@ -67,19 +71,28 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
   Future<void> _cargarPosts({String? busqueda}) async {
     setState(() {
       _cargando = true;
-      _posts = null; // Reiniciamos a null según la nueva lógica
+      _posts = null;
       _error = null;
     });
-    final res = await _servicio.obtenerPostsInicio(etiquetas: busqueda, limit: 20, offset: 0);
+
+    final res = _mode == FeedMode.social
+        ? await _servicio.obtenerFeedSocial(etiquetas: busqueda, limit: 20, offset: 0)
+        : await _servicio.obtenerPostsInicio(etiquetas: busqueda, limit: 20, offset: 0);
+
     if (mounted) {
       setState(() {
         _cargando = false;
         if (res.exito) {
           _posts = res.datos ?? [];
-          // Si recibimos menos del límite, es que no hay más
           _hayMasPosts = (res.datos?.length ?? 0) >= 20;
-          // Ordenamos por relevancia (likes + comentarios)
-          _posts!.sort((a, b) => (b.likesCount + b.comentariosCount).compareTo(a.likesCount + a.comentariosCount));
+          
+          if (_mode == FeedMode.gallery) {
+            // En galería solemos priorizar los que tienen más likes/comentarios
+            _posts!.sort((a, b) => (b.likesCount + b.comentariosCount).compareTo(a.likesCount + a.comentariosCount));
+          } else {
+            // En social el orden suele venir ya por fecha, pero por si acaso:
+            _posts!.sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+          }
         } else {
           _error = res.mensaje;
         }
@@ -92,11 +105,17 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
     
     setState(() => _cargandoMas = true);
     
-    final res = await _servicio.obtenerPostsInicio(
-      etiquetas: _searchController.text.isNotEmpty ? _searchController.text : null,
-      limit: 20,
-      offset: _posts!.length,
-    );
+    final res = _mode == FeedMode.social
+        ? await _servicio.obtenerFeedSocial(
+            etiquetas: _searchController.text.isNotEmpty ? _searchController.text : null,
+            limit: 20,
+            offset: _posts!.length,
+          )
+        : await _servicio.obtenerPostsInicio(
+            etiquetas: _searchController.text.isNotEmpty ? _searchController.text : null,
+            limit: 20,
+            offset: _posts!.length,
+          );
     
     if (mounted) {
       setState(() {
@@ -106,15 +125,12 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
           if (nuevos.isEmpty) {
             _hayMasPosts = false;
           } else {
-            // Evitar duplicados por si acaso
             for (var p in nuevos) {
               if (!_posts!.any((existente) => existente.id == p.id)) {
                 _posts!.add(p);
               }
             }
             _hayMasPosts = nuevos.length >= 20;
-            // No reordenamos todo para no saltar el scroll, solo las nuevas si acaso, 
-            // pero el backend ya debería dar un orden consistente si no es random.
           }
         }
       });
@@ -149,120 +165,263 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
-        color: const Color(0xFFF29C50),
-        child: Column(
-          children: [
+  Widget _buildTabs() {
+    return Row(
+      children: [
+        _buildTabItem('Para ti', FeedMode.social),
+        const SizedBox(width: 24),
+        _buildTabItem('Galería', FeedMode.gallery),
+      ],
+    );
+  }
+
+  Widget _buildTabItem(String label, FeedMode mode) {
+    final active = _mode == mode;
+    return GestureDetector(
+      onTap: () {
+        if (_mode != mode) {
+          setState(() {
+            _mode = mode;
+            _posts = null;
+          });
+          _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null);
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 22,
+              fontWeight: active ? FontWeight.w900 : FontWeight.w500,
+              color: active ? const Color(0xFF4A4440) : Colors.grey,
+            ),
+          ),
+          if (active)
             Container(
-              padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
-              color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Galería', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _searchController,
-                    onSubmitted: (valor) => _cargarPosts(busqueda: valor.isNotEmpty ? valor : null),
-                    style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
-                    decoration: InputDecoration(
-                      hintText: 'Busca en el universo Myngo... 🐾',
-                      prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFF29C50)),
-                      fillColor: Colors.white,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    ),
-                  ),
-                ],
+              margin: const EdgeInsets.only(top: 4),
+              width: 20,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF29C50),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            Expanded(
-              child: (_cargando || _posts == null)
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFF29C50)))
-                  : (_error != null || _posts!.isEmpty)
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _error != null ? Icons.wifi_off_rounded : Icons.search_off_rounded,
-                                size: 80,
-                                color: Colors.grey.withOpacity(0.5),
-                              ),
-                              const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 40),
-                                child: Text(
-                                  _error != null 
-                                      ? (_error!.contains('Tiempo de espera') 
-                                          ? '¡Miau! No hemos podido conectar a tiempo 😿\nRevisa tu conexión e inténtalo de nuevo.'
-                                          : _error!)
-                                      : 'Aún no hay publicaciones aquí 😿',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16),
-                                ),
-                              ),
-                              if (_error != null) ...[
-                                const SizedBox(height: 24),
-                                ElevatedButton.icon(
-                                  onPressed: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
-                                  icon: const Icon(Icons.refresh_rounded),
-                                  label: const Text('REINTENTAR'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF29C50),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        )
-                          : CustomScrollView(
-                              controller: _scrollController,
-                              physics: const BouncingScrollPhysics(),
-                              slivers: [
-                                SliverPadding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  sliver: SliverMasonryGrid.count(
-                                    crossAxisCount: MediaQuery.of(context).size.width < 900 ? 2 : 4,
-                                    mainAxisSpacing: 12,
-                                    crossAxisSpacing: 12,
-                                    childCount: _posts!.length,
-                                    itemBuilder: (context, index) {
-                                      final post = _posts![index];
-                                      return TarjetaPost(
-                                        key: ValueKey('post_${post.id}'),
-                                        post: post,
-                                        onJoin: () => _unirseAComunidad(post.comunidadId, index),
-                                        onComunidadSelected: widget.onComunidadSelected,
-                                        onProfileSelected: widget.onProfileSelected,
-                                        onEliminado: () {
-                                          if (mounted) {
-                                            setState(() {
-                                              _posts!.removeWhere((p) => p.id == post.id);
-                                            });
-                                          }
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                                if (_cargandoMas)
-                                  const SliverToBoxAdapter(
-                                    child: Center(child: Padding(padding: EdgeInsets.all(24.0), child: CircularProgressIndicator(color: Color(0xFFF29C50)))),
-                                  ),
-                                const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                              ],
-                            ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFEF5F1),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: PatronFondo(),
+            ),
+          ),
+          RefreshIndicator(
+            onRefresh: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
+            color: const Color(0xFFF29C50),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTabs(),
+                      if (_mode == FeedMode.gallery) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _searchController,
+                          onSubmitted: (valor) => _cargarPosts(busqueda: valor.isNotEmpty ? valor : null),
+                          style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
+                          decoration: InputDecoration(
+                            hintText: 'Busca en el universo Myngo... 🐾',
+                            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFF29C50)),
+                            fillColor: const Color(0xFFF5F5F5),
+                            filled: true,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: (_cargando || _posts == null)
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFF29C50)))
+                      : (_error != null || _posts!.isEmpty)
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _error != null ? Icons.wifi_off_rounded : Icons.search_off_rounded,
+                                    size: 80,
+                                    color: Colors.grey.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                                    child: Text(
+                                      _error != null 
+                                          ? (_error!.contains('Tiempo de espera') 
+                                              ? '¡Miau! No hemos podido conectar a tiempo 😿\nRevisa tu conexión e inténtalo de nuevo.'
+                                              : _error!)
+                                          : 'Aún no hay publicaciones aquí 😿',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16),
+                                    ),
+                                  ),
+                                  if (_error != null) ...[
+                                    const SizedBox(height: 24),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
+                                      icon: const Icon(Icons.refresh_rounded),
+                                      label: const Text('REINTENTAR'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFF29C50),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            )
+                              : CustomScrollView(
+                                  controller: _scrollController,
+                                  physics: const BouncingScrollPhysics(),
+                                  slivers: [
+                                    if (_mode == FeedMode.gallery)
+                                      SliverPadding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        sliver: SliverMasonryGrid.count(
+                                          crossAxisCount: MediaQuery.of(context).size.width < 900 ? 2 : 4,
+                                          mainAxisSpacing: 12,
+                                          crossAxisSpacing: 12,
+                                          childCount: _posts!.length,
+                                          itemBuilder: (context, index) {
+                                            final post = _posts![index];
+                                            return TarjetaPost(
+                                              key: ValueKey('post_grid_${post.id}'),
+                                              post: post,
+                                              onJoin: () => _unirseAComunidad(post.comunidadId, index),
+                                              onComunidadSelected: widget.onComunidadSelected,
+                                              onProfileSelected: widget.onProfileSelected,
+                                              onEliminado: () {
+                                                if (mounted) {
+                                                  setState(() {
+                                                    _posts!.removeWhere((p) => p.id == post.id);
+                                                  });
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    else
+                                      SliverPadding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
+                                        sliver: SliverList(
+                                          delegate: SliverChildBuilderDelegate(
+                                            (context, index) {
+                                              final post = _posts![index];
+                                              return Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: ConstrainedBox(
+                                                  constraints: const BoxConstraints(maxWidth: 650),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(bottom: 12),
+                                                    child: TarjetaPost(
+                                                      key: ValueKey('post_list_${post.id}'),
+                                                      post: post,
+                                                      onJoin: () => _unirseAComunidad(post.comunidadId, index),
+                                                      onComunidadSelected: widget.onComunidadSelected,
+                                                      onProfileSelected: widget.onProfileSelected,
+                                                      onEliminado: () {
+                                                        if (mounted) {
+                                                          setState(() {
+                                                            _posts!.removeWhere((p) => p.id == post.id);
+                                                          });
+                                                        }
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            childCount: _posts!.length,
+                                          ),
+                                        ),
+                                      ),
+                                    if (_cargandoMas)
+                                      const SliverToBoxAdapter(
+                                        child: Center(child: Padding(padding: EdgeInsets.all(24.0), child: CircularProgressIndicator(color: Color(0xFFF29C50)))),
+                                      ),
+                                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                                  ],
+                                ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PatronFondo extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFF29C50).withOpacity(0.03)
+      ..style = PaintingStyle.fill;
+
+    const spacing = 100.0;
+    for (double x = 0; x < size.width + spacing; x += spacing) {
+      for (double y = 0; y < size.height + spacing; y += spacing) {
+        final offset = (y / spacing).floor() % 2 == 0 ? 0.0 : spacing / 2;
+        _drawPaw(canvas, Offset(x + offset, y), paint);
+      }
+    }
+  }
+
+  void _drawPaw(Canvas canvas, Offset center, Paint paint) {
+    // Almohadilla central
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: 20, height: 16),
+        const Radius.circular(8),
+      ),
+      paint,
+    );
+    // Dedos
+    canvas.drawCircle(center.translate(-12, -10), 5, paint);
+    canvas.drawCircle(center.translate(-4, -15), 5, paint);
+    canvas.drawCircle(center.translate(4, -15), 5, paint);
+    canvas.drawCircle(center.translate(12, -10), 5, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

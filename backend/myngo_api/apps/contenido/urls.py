@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     PublicacionList, PublicacionCreate, PublicacionDetail, 
-    GaleriaList, GaleriaDetalleExtendido, DocumentosUtilidad, InicioGaleria, ColeccionViewSet,
+    GaleriaList, GaleriaDetalleExtendido, DocumentosUtilidad, InicioGaleria, InicioFeed, ColeccionViewSet,
     ReporteListCreate, ImagenGaleriaDetail, ComentarioDetail,
     ToggleLikeView, ComentarioListCreate, ResolverReporteView, TogglePostGuardadoView
 )
@@ -25,5 +25,6 @@ urlpatterns = [
     path('comentarios/<int:pk>/', ComentarioDetail.as_view(), name='comentario-detail'),
     path('reglas_comunidad/',DocumentosUtilidad.as_view(),name="reglas_comunidad"),
     path('inicio_galeria/',InicioGaleria.as_view(),name="inicio_galeria"),
+    path('inicio_feed/', InicioFeed.as_view(), name="inicio_feed"),
     path('', include(router.urls)),
 ]

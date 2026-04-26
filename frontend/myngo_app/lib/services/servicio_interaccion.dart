@@ -95,4 +95,28 @@ class ServicioInteraccion {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
+
+  Future<RespuestaApi<Map<String, dynamic>>> toggleGuardado(int publicacionId) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      final response = await http.post(
+        Uri.parse('$_urlBase/contenido/publicaciones/$publicacionId/guardar/'),
+        headers: {
+          'Authorization': 'Token $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return RespuestaApi(
+          exito: true, 
+          mensaje: 'Éxito', 
+          datos: jsonDecode(response.body)
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al procesar el guardado');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
 }

@@ -238,7 +238,10 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
           });
           setState(() => _isHovering = false);
         },
-        child: widget.child,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: widget.child,
+        ),
       ),
     );
   }
