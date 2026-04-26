@@ -19,10 +19,10 @@ application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": TokenAuthMiddleware(
         URLRouter([
-            # Rutas "indestructibles" (coinciden si el nombre está en cualquier parte de la URL)
-            re_path(r'chat/\d+/?', consumers.ChatConsumer.as_asgi()),
-            re_path(r'presence/?', consumers.PresenceConsumer.as_asgi()),
-            re_path(r'chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
+            # Comodines: Coinciden con cualquier cosa que contenga la palabra clave
+            re_path(r'.*chat/\d+/?', consumers.ChatConsumer.as_asgi()),
+            re_path(r'.*presence/?', consumers.PresenceConsumer.as_asgi()),
+            re_path(r'.*chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
         ])
     ),
 })
