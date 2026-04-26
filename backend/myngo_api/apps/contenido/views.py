@@ -452,27 +452,24 @@ class InicioFeed(generics.ListAPIView):
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas', None)
         
-        # Filtro base: Publicaciones válidas por IA
+        # Filtro base: Solo contenido validado por IA
         qs = Publicacion.objects.filter(es_valido_ia=True)
         
         if usuario:
-            # Subconsultas de presencia/membresía (mucho más eficientes que JOINs + DISTINCT)
-            es_miembro_comunidad = Miembros_comunidades.objects.filter(
-                usuario=usuario, comunidad_id=OuterRef('comunidad_id')
-            )
-            lo_sigue = Seguimiento.objects.filter(
-                seguidor=usuario, seguido_usuario_id=OuterRef('autor_id'), estado='ACEPTADO'
-            )
+            # Subconsultas de membresía y seguimiento
+            es_miembro = Miembros_comunidades.objects.filter(usuario=usuario, comunidad_id=OuterRef('comunidad_id'))
+            lo_sigue = Seguimiento.objects.filter(seguidor=usuario, seguido_usuario_id=OuterRef('autor_id'), estado='ACEPTADO')
             
-            # Filtro social inteligente: Mis comunidades OR Comunidades públicas OR Gente que sigo OR Perfiles públicos
+            # Filtro social estricto
             qs = qs.filter(
-                Q(comunidad_id__isnull=False, comunidad__es_publica=True) | 
-                Q(Exists(es_miembro_comunidad)) | 
-                Q(Exists(lo_sigue)) | 
-                Q(autor__perfil__es_publico=True)
+                Q(comunidad__isnull=True, autor__perfil__es_publico=True) | 
+                Q(comunidad__es_publica=True) |                            
+                Q(Exists(es_miembro)) |                                    
+                Q(Exists(lo_sigue)) |                                      
+                Q(autor=usuario)                                           
             )
             
-            # Subconsultas para conteos y estados personales
+            # Anotaciones
             likes_sub = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
             coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
             
@@ -483,7 +480,7 @@ class InicioFeed(generics.ListAPIView):
                 anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
             )
         else:
-            # Modo público: Solo comunidades y perfiles públicos
+            # Modo público
             qs = qs.filter(
                 Q(comunidad__es_publica=True) | 
                 Q(autor__perfil__es_publico=True)
@@ -496,7 +493,6 @@ class InicioFeed(generics.ListAPIView):
                 anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=models.IntegerField()), Value(0))
             )
 
-        # Carga optimizada de relaciones (Select Related)
         qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil').prefetch_related('imagenes')
             
         if etiquetas:
@@ -506,7 +502,7 @@ class InicioFeed(generics.ListAPIView):
                 Q(contenido_texto__icontains=etiquetas)
             )
             
-        return qs.order_by('-fecha_creacion')
+        return qs.distinct().order_by('-fecha_creacion')
 
 class ColeccionViewSet(viewsets.ModelViewSet):
     serializer_class = ColeccionSerializer
