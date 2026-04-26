@@ -33,4 +33,4 @@ class Mensajes_chat(models.Model):
     fecha_envio=models.DateTimeField(auto_now_add=True)
     leido=models.BooleanField(default=False)
     def __str__(self):
-        return self # TODO
+        return f"Mensaje #{self.id} en {self.sala.nombre}"
