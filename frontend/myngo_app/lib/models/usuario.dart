@@ -19,6 +19,7 @@ class Usuario {
   final int numeroSeguidos;
   final String? estadoSeguimiento;
   final Map<String, dynamic>? estiloPost;
+  final String? estado; // ACTIVO, OCUPADO, DESCONECTADO
 
   Usuario({
     required this.id,
@@ -39,6 +40,7 @@ class Usuario {
     this.numeroSeguidos = 0,
     this.estadoSeguimiento,
     this.estiloPost,
+    this.estado = 'DESCONECTADO',
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,7 @@ class Usuario {
         numeroSeguidos: int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
         estadoSeguimiento: json['estado_seguimiento']?.toString(),
         estiloPost: json['estilo_post'] is Map ? Map<String, dynamic>.from(json['estilo_post']) : null,
+        estado: json['estado']?.toString() ?? 'DESCONECTADO',
       );
     } catch (e) {
       // ignore: avoid_print

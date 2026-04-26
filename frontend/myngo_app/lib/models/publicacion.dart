@@ -21,6 +21,7 @@ class Publicacion {
   final String? autorFoto;
   final String? autorMarco;
   final String? autorFondo;
+  final String? autorEstado;
   final Map<String, dynamic>? autorEstiloPost;
   bool usuarioDioLike;
   bool usuarioGuardoPost;
@@ -43,6 +44,7 @@ class Publicacion {
     this.autorFoto,
     this.autorMarco,
     this.autorFondo,
+    this.autorEstado = 'DESCONECTADO',
     required this.fechaCreacion,
     this.likesCount = 0,
     this.comentariosCount = 0,
@@ -67,6 +69,7 @@ class Publicacion {
         autorFoto: json['autor_foto']?.toString(),
         autorMarco: json['autor_marco']?.toString(),
         autorFondo: json['autor_fondo']?.toString(),
+        autorEstado: json['autor_estado']?.toString() ?? 'DESCONECTADO',
         comunidadId: toInt(json['comunidad']),
         comunidadNombre: json['comunidad_nombre']?.toString() ?? 'General',
         creadorComunidadId: json['creador_comunidad_id'] != null ? toInt(json['creador_comunidad_id']) : null,

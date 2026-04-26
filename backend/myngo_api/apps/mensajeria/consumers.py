@@ -143,23 +143,23 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Marcar como online
-        await self.update_user_status(True)
+        # Marcar como online (respetando si está OCUPADO)
+        estado_actual = await self.establecer_usuario_online()
 
-        # Notificar estado
+        # Notificar estado real
         await self.channel_layer.group_send(
             self.group_name,
             {
                 'type': 'status_change',
                 'user_id': self.user.id,
-                'status': 'online'
+                'status': estado_actual
             }
         )
 
     async def disconnect(self, close_code):
         if not self.user.is_anonymous:
-            # Marcar como offline
-            await self.update_user_status(False)
+            # Marcar como DESCONECTADO
+            await self.update_user_status('DESCONECTADO')
 
             # Notificar
             await self.channel_layer.group_send(
@@ -167,7 +167,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'status_change',
                     'user_id': self.user.id,
-                    'status': 'offline',
+                    'status': 'DESCONECTADO',
                     'last_seen': timezone.now().isoformat()
                 }
             )
@@ -180,18 +180,27 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         if data.get('type') == 'heartbeat':
-            await self.update_user_status(True)
+            # El heartbeat simplemente confirma que sigue ahí
+            pass
 
     async def status_change(self, event):
         await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
-    def update_user_status(self, is_online):
+    def establecer_usuario_online(self):
         perfil = self.user.perfil
-        if not is_online:
+        # Solo cambiamos a ACTIVO si NO está en OCUPADO
+        if perfil.estado != 'OCUPADO':
+            perfil.estado = 'ACTIVO'
+            perfil.save()
+        return perfil.estado
+
+    @database_sync_to_async
+    def update_user_status(self, nuevo_estado):
+        perfil = self.user.perfil
+        perfil.estado = nuevo_estado
+        if nuevo_estado == 'DESCONECTADO':
             perfil.last_seen = timezone.now()
         perfil.save()
         
-        # Nota: El usuario pidió usar Redis para el contador de dispositivos.
-        # Por simplicidad y tiempo, aquí actualizamos la BD, pero en una implementación
-        # de escala real usaríamos Redis.
+        

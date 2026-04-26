@@ -17,6 +17,7 @@ class CabeceraPro extends StatelessWidget {
   final int indiceSeleccionado;
   final int? puntos;
   final int notificacionesSinLeer;
+  final String estado;
   final ValueChanged<int> onNavSelected;
   final Function(Usuario)? onProfileSelected;
 
@@ -30,6 +31,7 @@ class CabeceraPro extends StatelessWidget {
     required this.indiceSeleccionado,
     required this.puntos,
     required this.notificacionesSinLeer,
+    this.estado = 'DESCONECTADO',
     required this.onNavSelected,
     this.onProfileSelected,
   });
@@ -110,6 +112,7 @@ class CabeceraPro extends StatelessWidget {
             marcoUrl: marcoUrl,
             estaLogueado: estaLogueado,
             miId: miId,
+            estado: estado,
             onProfileSelected: onProfileSelected,
             puntos: puntos,
             isMobile: isMobile,
@@ -174,6 +177,7 @@ class _UserProfileHeader extends StatelessWidget {
   final bool estaLogueado;
   final int? miId;
   final int? puntos;
+  final String estado;
   final Function(Usuario)? onProfileSelected;
   final bool isMobile;
 
@@ -185,6 +189,7 @@ class _UserProfileHeader extends StatelessWidget {
     this.miId, 
     this.onProfileSelected, 
     this.puntos,
+    this.estado = 'DESCONECTADO',
     this.isMobile = false,
   });
 
@@ -270,6 +275,19 @@ class _UserProfileHeader extends StatelessWidget {
                     ),
                     child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
                   ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: _getColorEstado(estado),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -279,7 +297,16 @@ class _UserProfileHeader extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+                  Row(
+                    children: [
+                      Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+                      const SizedBox(width: 6),
+                      Text(
+                        estado == 'ACTIVO' ? 'Online' : (estado == 'OCUPADO' ? 'Ocupado' : 'Offline'),
+                        style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
@@ -296,5 +323,17 @@ class _UserProfileHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _getColorEstado(String estado) {
+    switch (estado) {
+      case 'ACTIVO':
+        return Colors.greenAccent;
+      case 'OCUPADO':
+        return Colors.amber;
+      case 'DESCONECTADO':
+      default:
+        return Colors.grey.shade400;
+    }
   }
 }

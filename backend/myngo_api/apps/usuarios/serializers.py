@@ -16,13 +16,14 @@ class UsuarioSerializer(serializers.ModelSerializer):
     marco = serializers.SerializerMethodField()
     estilo_post = serializers.SerializerMethodField()
     puntos = serializers.SerializerMethodField()
+    estado = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
         fields = [
            'id', 'perfil_id','nombre_usuario', 'email', 'es_verificado', 'rating_actual',
             'fecha_registro', 'password', 'numero_seguidores', 'numero_seguidos',
-            'estado_seguimiento', 'url_avatar', 'fondo', 'marco', 'estilo_post', 'biografia', 'es_publico', 'puntos'
+            'estado_seguimiento', 'url_avatar', 'fondo', 'marco', 'estilo_post', 'biografia', 'es_publico', 'puntos', 'estado'
         ]
         extra_kwargs = {
             'password': {'write_only': True}
@@ -100,6 +101,10 @@ class UsuarioSerializer(serializers.ModelSerializer):
     def get_puntos(self, obj):
         perfil = self._get_perfil(obj)
         return perfil.puntos if perfil else 0
+
+    def get_estado(self, obj):
+        perfil = self._get_perfil(obj)
+        return perfil.estado if perfil else 'DESCONECTADO'
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)

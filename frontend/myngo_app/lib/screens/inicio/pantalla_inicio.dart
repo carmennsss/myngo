@@ -19,7 +19,7 @@ import '../perfiles/pantalla_tienda_mejoras.dart';
 import '../galeria/pantalla_mis_cosas.dart';
 import '../../widgets/comunes/vista_requerir_login.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../../services/servicio_inicio.dart';
+import '../../services/servicio_chat.dart';
 import '../../models/publicacion.dart';
 // Widgets de inicio
 import '../../widgets/inicio/cabecera_pro.dart';
@@ -38,11 +38,13 @@ class PantallaInicio extends StatefulWidget {
 }
 
 class PantallaInicioState extends State<PantallaInicio> {
+  final ServicioChat _servicioChat = ServicioChat();
   int _indiceSeleccionado = 0;
   bool _estaLogueado = false;
   String? _miNombre;
   String? _miAvatar;
   String? _miMarco;
+  String _miEstado = 'DESCONECTADO';
   int? _miId;
   int? _puntos;
   int _notificacionesSinLeer = 0;
@@ -75,7 +77,16 @@ class PantallaInicioState extends State<PantallaInicio> {
           _miMarco = resDatos.datos!.marco;
           _miId = resDatos.datos!.id;
           _puntos = resDatos.datos!.puntos;
+          _miEstado = resDatos.datos!.estado ?? 'DESCONECTADO';
         });
+        
+        // Conectar a presencia global
+        _servicioChat.conectarPresencia((datos) {
+          if (datos['type'] == 'status_change' && datos['user_id'] == _miId) {
+            if (mounted) setState(() => _miEstado = datos['status']);
+          }
+        });
+
         _cargarComunidades();
         _cargarNotificacionesSinLeer();
       } else if (!resDatos.exito && mounted) {
@@ -171,6 +182,12 @@ class PantallaInicioState extends State<PantallaInicio> {
 
 
   @override
+  void dispose() {
+    _servicioChat.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
     
@@ -185,6 +202,7 @@ class PantallaInicioState extends State<PantallaInicio> {
             avatarUrl: _miAvatar,
             marcoUrl: _miMarco,
             miId: _miId,
+            estado: _miEstado,
             indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
             puntos: _puntos,
             notificacionesSinLeer: _notificacionesSinLeer,
