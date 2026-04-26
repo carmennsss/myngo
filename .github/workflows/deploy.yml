@@ -18,7 +18,8 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ubuntu/myngo
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             cd backend/myngo_api
             source venv/bin/activate
             pip install -r requirements.txt
