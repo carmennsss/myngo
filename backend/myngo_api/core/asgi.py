@@ -18,13 +18,14 @@ application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": TokenAuthMiddleware(
         URLRouter([
-            re_path(r'^ws/chat/(?P<room_id>\d+)/?$', consumers.ChatConsumer.as_asgi()),
-            re_path(r'^ws/presence/?$', consumers.PresenceConsumer.as_asgi()),
-            re_path(r'^ws/chat-notificaciones/?$', consumers.NotificacionesChatConsumer.as_asgi()),
-            # Fallbacks con barra inicial (algunos clientes/proxies las añaden)
-            re_path(r'^/ws/chat/(?P<room_id>\d+)/?$', consumers.ChatConsumer.as_asgi()),
-            re_path(r'^/ws/presence/?$', consumers.PresenceConsumer.as_asgi()),
-            re_path(r'^/ws/chat-notificaciones/?$', consumers.NotificacionesChatConsumer.as_asgi()),
+            # Rutas normales
+            re_path(r'ws/chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
+            re_path(r'ws/presence/?', consumers.PresenceConsumer.as_asgi()),
+            re_path(r'ws/chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
+            # Rutas con barra inicial (por si acaso)
+            re_path(r'/ws/chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
+            re_path(r'/ws/presence/?', consumers.PresenceConsumer.as_asgi()),
+            re_path(r'/ws/chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
         ])
     ),
 })
