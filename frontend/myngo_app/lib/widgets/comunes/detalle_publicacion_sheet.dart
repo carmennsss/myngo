@@ -7,6 +7,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../models/usuario.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart';
 import 'grid_imagenes_post.dart';
+import 'hover_profile_card.dart';
 import 'acciones_y_comentarios_post.dart';
 import '../../utils/estilo_post_helper.dart';
 
@@ -129,12 +130,16 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
             // ── Cabecera: avatar + nombre + menú ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: GestureDetector(
-                onTap: () => _irAPerfil(context),
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  children: [
-                    CircleAvatar(
+              child: Row(
+                children: [
+                  HoverProfileCard(
+                    nombre: publicacion.autorNombre,
+                    avatarUrl: avatarEfectivo,
+                    marcoUrl: publicacion.autorMarco,
+                    fondoUrl: publicacion.autorFondo ?? publicacion.autorEstiloPost?['url_fondo'],
+                    puntos: 0,
+                    onTap: () => _irAPerfil(context),
+                    child: CircleAvatar(
                       radius: 20,
                       backgroundColor: const Color(0xFF248EA6).withOpacity(0.3),
                       backgroundImage: avatarEfectivo.isNotEmpty ? NetworkImage(avatarEfectivo) : null,
@@ -145,8 +150,11 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                             )
                           : null,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _irAPerfil(context),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -174,20 +182,20 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                         ],
                       ),
                     ),
-                    MenuOpcionesContenido(
-                      tipoObjeto: 'POST',
-                      objetoId: publicacion.id,
-                      autorId: publicacion.autorId,
-                      comunidadId: publicacion.comunidadId,
-                      creadorComunidadId: publicacion.creadorComunidadId,
-                      iconColor: colorTexto,
-                      onEliminado: () {
-                        Navigator.pop(context);
-                        if (onEliminado != null) onEliminado!();
-                      },
-                    ),
-                  ],
-                ),
+                  ),
+                  MenuOpcionesContenido(
+                    tipoObjeto: 'POST',
+                    objetoId: publicacion.id,
+                    autorId: publicacion.autorId,
+                    comunidadId: publicacion.comunidadId,
+                    creadorComunidadId: publicacion.creadorComunidadId,
+                    iconColor: colorTexto,
+                    onEliminado: () {
+                      Navigator.pop(context);
+                      if (onEliminado != null) onEliminado!();
+                    },
+                  ),
+                ],
               ),
             ),
 

@@ -59,44 +59,6 @@ class ServicioGaleria {
     }
   }
 
-  /// Obtiene publicaciones del feed de inicio desde inicio_galeria.
-  /// Muestra publicaciones de comunidades (propias/públicas), perfiles públicos y perfiles seguidos.
-  /// Soporta scroll infinito con paginación y búsqueda por etiquetas.
-  Future<RespuestaApi<List<Publicacion>>> obtenerGaleriaInicio({
-    int limit = 20,
-    int offset = 0,
-    String? etiquetas,
-  }) async {
-    try {
-      String url = '$_urlBase/inicio_galeria/?limit=$limit&offset=$offset';
-      if (etiquetas != null && etiquetas.isNotEmpty) {
-        url += '&etiquetas=${Uri.encodeComponent(etiquetas)}';
-      }
-
-      final respuesta = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(const Duration(seconds: 10));
-
-      if (respuesta.statusCode == 200) {
-        final String decodedBody = utf8.decode(respuesta.bodyBytes);
-        final dynamic body = jsonDecode(decodedBody);
-        final List<dynamic> results = body is Map ? (body['results'] ?? []) : [];
-        
-        return RespuestaApi(
-          exito: true,
-          mensaje: 'Feed de inicio cargado',
-          datos: results.map((j) => Publicacion.fromJson(j as Map<String, dynamic>)).toList(),
-        );
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error al cargar feed: ${respuesta.statusCode}');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
-    } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
-    }
-  }
-
   /// Obtiene las colecciones de un usuario o comunidad
   Future<RespuestaApi<List<Coleccion>>> obtenerColecciones({
     int? comunidadId,

@@ -9,6 +9,7 @@ import '../../services/servicio_interaccion.dart';
 import '../comunes/menu_opciones_contenido.dart';
 import 'dialogo_detalle_post.dart';
 import '../comunes/grid_imagenes_post.dart';
+import '../comunes/hover_profile_card.dart';
 import '../../utils/estilo_post_helper.dart';
 
 class TarjetaPost extends StatefulWidget {
@@ -37,12 +38,14 @@ class _TarjetaPostState extends State<TarjetaPost> {
   final ServicioInteraccion _servicioInteraccion = ServicioInteraccion();
   late bool _dioLike;
   late int _likesCount;
+  late bool _estaGuardado;
 
   @override
   void initState() {
     super.initState();
     _dioLike = widget.post.usuarioDioLike;
     _likesCount = widget.post.likesCount;
+    _estaGuardado = widget.post.usuarioGuardoPost;
   }
 
   void _mostrarDetalles(BuildContext context) {
@@ -70,6 +73,33 @@ class _TarjetaPostState extends State<TarjetaPost> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _toggleGuardado() async {
+    setState(() {
+      _estaGuardado = !_estaGuardado;
+      widget.post.usuarioGuardoPost = _estaGuardado;
+    });
+
+    final res = await _servicioInteraccion.toggleGuardado(widget.post.id);
+    if (!res.exito && mounted) {
+      setState(() {
+        _estaGuardado = !_estaGuardado;
+        widget.post.usuarioGuardoPost = _estaGuardado;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_estaGuardado ? '¡Post guardado! 🐾' : 'Eliminado de tus miau-guardados'),
+          backgroundColor: const Color(0xFF248EA6),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -103,19 +133,30 @@ class _TarjetaPostState extends State<TarjetaPost> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTap: widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
-                    id: widget.post.comunidadId, 
-                    nombre: widget.post.comunidadNombre, 
-                    descripcion: '', 
-                    creadorNombre: 'Sistema',
-                    urlPortada: '',
-                    esPublica: true, 
-                    esVerificada: false,
-                    esMiembro: false,
-                    fechaCreacion: DateTime.now(), 
-                    ratingMedio: 0.0,
-                    creadorId: widget.post.creadorComunidadId ?? 0)) : null,
+                HoverProfileCard(
+                  nombre: widget.post.autorNombre,
+                  avatarUrl: widget.post.autorFoto,
+                  marcoUrl: widget.post.autorMarco,
+                  puntos: 0,
+                  onTap: () {
+                    if (widget.onProfileSelected != null) {
+                      widget.onProfileSelected!(Usuario(
+                        id: widget.post.autorId,
+                        perfilId: 0,
+                        nombreUsuario: widget.post.autorNombre,
+                        email: '',
+                        esVerificado: false,
+                        esPublico: true,
+                        ratingActual: 0.0,
+                        fechaRegistro: DateTime.now(),
+                        urlAvatar: widget.post.autorFoto,
+                        marco: widget.post.autorMarco,
+                        fondo: widget.post.autorFondo,
+                      ));
+                    } else {
+                      context.go('/inicio/perfiles/${widget.post.autorId}');
+                    }
+                  },
                   child: CircleAvatar(
                     radius: 20,
                     backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
@@ -140,7 +181,21 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(widget.post.comunidadNombre, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
+                                GestureDetector(
+                                  onTap: widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
+                                    id: widget.post.comunidadId, 
+                                    nombre: widget.post.comunidadNombre, 
+                                    descripcion: '', 
+                                    creadorNombre: 'Sistema',
+                                    urlPortada: '',
+                                    esPublica: true, 
+                                    esVerificada: false,
+                                    esMiembro: false,
+                                    fechaCreacion: DateTime.now(), 
+                                    ratingMedio: 0.0,
+                                    creadorId: widget.post.creadorComunidadId ?? 0)) : null,
+                                  child: Text(widget.post.comunidadNombre, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
+                                ),
                                 GestureDetector(
                                   onTap: () {
                                     if (widget.onProfileSelected != null) {
@@ -219,6 +274,14 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             color: textColor.withOpacity(0.7),
                             label: '${widget.post.comentariosCount}',
                             onTap: () => _mostrarDetalles(context),
+                            textColor: textColor,
+                          ),
+                          const Spacer(),
+                          _IconoAccion(
+                            icon: _estaGuardado ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                            color: _estaGuardado ? const Color(0xFF248EA6) : textColor.withOpacity(0.7),
+                            label: '',
+                            onTap: _toggleGuardado,
                             textColor: textColor,
                           ),
                         ],

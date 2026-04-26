@@ -85,6 +85,11 @@ class Perfil(models.Model):
     es_publico=models.BooleanField(default=True)
     last_seen=models.DateTimeField(null=True, blank=True)
     fecha_actualizacion=models.DateTimeField(auto_now_add=True)
+    estado=models.CharField(max_length=20, default='DESCONECTADO', choices=[
+        ('ACTIVO', 'Activo'),
+        ('DESCONECTADO', 'Desconectado'),
+        ('OCUPADO', 'Ocupado'),
+    ])
     #Metodo que recalcula los puntos generados por ese perfil en los días inactivos
     #sin pasarse del limite de 5.000 puntos
     def recalcular_puntos(self):
