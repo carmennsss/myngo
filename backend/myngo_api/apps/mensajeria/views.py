@@ -1,4 +1,4 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status, permissions, pagination
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Q, Count
@@ -99,9 +99,14 @@ def agregar_miembro(request, pk):
         return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
 
+class MensajePagination(pagination.LimitOffsetPagination):
+    default_limit = 30
+    max_limit = 100
+
 class MensajesChatList(generics.ListAPIView):
     serializer_class = MensajeChatSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = MensajePagination
 
     def get_queryset(self):
         sala_id = self.kwargs.get('sala_id')
@@ -109,7 +114,9 @@ class MensajesChatList(generics.ListAPIView):
             Q(id=sala_id, miembros=self.request.user) | Q(id=sala_id, es_publica=True)
         ).exists():
             return Mensajes_chat.objects.none()
-        return Mensajes_chat.objects.filter(sala_id=sala_id).order_by('-fecha_envio')[:50]
+        return Mensajes_chat.objects.filter(sala_id=sala_id)\
+            .select_related('emisor', 'emisor__perfil')\
+            .order_by('-fecha_envio')
 
 
 @api_view(['GET'])

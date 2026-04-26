@@ -51,11 +51,17 @@ class PublicacionList(generics.ListAPIView):
             .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
             .prefetch_related('imagenes')
 
+        from django.db.models import OuterRef, Subquery, IntegerField, Count
+        
+        # Subconsultas para conteos (más rápido que Count(distinct=True) en joins complejos)
+        likes_subquery = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(count=Count('id')).values('count')
+        comentarios_subquery = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(count=Count('id')).values('count')
+
         if user.is_authenticated:
             # Anotar si el usuario actual ha dado like o guardado
             qs = qs.annotate(
-                anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True),
+                anotado_likes_count=Subquery(likes_subquery, output_field=IntegerField()),
+                anotado_comentarios_count=Subquery(comentarios_subquery, output_field=IntegerField()),
                 anotado_usuario_dio_like=Exists(
                     Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=user)
                 ),
@@ -65,8 +71,8 @@ class PublicacionList(generics.ListAPIView):
             )
         else:
             qs = qs.annotate(
-                anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True)
+                anotado_likes_count=Subquery(likes_subquery, output_field=IntegerField()),
+                anotado_comentarios_count=Subquery(comentarios_subquery, output_field=IntegerField())
             )
         
         if solo_guardados == 'true' and user.is_authenticated:
@@ -399,22 +405,30 @@ class InicioGaleria(generics.ListAPIView):
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas', None)
         
+        # Filtro base: solo posts con imagen válida
+        qs = Publicacion.objects.filter(
+            imagen__isnull=False,
+            imagen__url_s3__gt='',
+            es_valido_ia=True
+        )
+
         if usuario:
+            # Solo comunidades a las que pertenece
             comunidades_usuario = Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
-            usuarios_seguidos = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO', seguido_usuario__isnull=False).values_list('seguido_usuario_id', flat=True)
-            publicaciones = Publicacion.objects.filter(
-                Q(comunidad_id__in=comunidades_usuario) | 
-                Q(comunidad__es_publica=True) | 
-                Q(autor_id__in=usuarios_seguidos) | 
-                Q(autor__perfil__es_publico=True),
-                imagen__isnull=False,
-                imagen__url_s3__gt='',
-            ).distinct()\
-            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
+            publicaciones = qs.filter(comunidad_id__in=comunidades_usuario)
+        else:
+            # Público: solo comunidades públicas
+            publicaciones = qs.filter(comunidad__es_publica=True)
+            
+        publicaciones = publicaciones.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
             .prefetch_related('imagenes')\
             .annotate(
                 anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True),
+                anotado_comentarios_count=Count('comentario', distinct=True)
+            )
+
+        if usuario:
+            publicaciones = publicaciones.annotate(
                 anotado_usuario_dio_like=Exists(
                     Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
                 ),
@@ -422,24 +436,11 @@ class InicioGaleria(generics.ListAPIView):
                     PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
                 )
             )
-        else:
-            publicaciones = Publicacion.objects.filter(
-                Q(comunidad__es_publica=True) | 
-                Q(autor__perfil__es_publico=True),
-                imagen__isnull=False,
-                imagen__url_s3__gt='',
-            ).distinct()\
-            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
-            .prefetch_related('imagenes')\
-            .annotate(
-                anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True)
-            )
             
         if etiquetas:
             publicaciones = publicaciones.filter(imagen__etiquetas__icontains=etiquetas)
             
-        return publicaciones.order_by('-fecha_creacion')
+        return publicaciones.distinct().order_by('-fecha_creacion')
 
 class InicioFeed(generics.ListAPIView):
     serializer_class = PublicacionSerializer
@@ -450,23 +451,26 @@ class InicioFeed(generics.ListAPIView):
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas', None)
         
+        # Filtro base
+        qs = Publicacion.objects.filter(es_valido_ia=True)
+
         if usuario:
+            # Solo comunidades a las que pertenece
             comunidades_usuario = Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
-            usuarios_seguidos = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO', seguido_usuario__isnull=False).values_list('seguido_usuario_id', flat=True)
+            publicaciones = qs.filter(comunidad_id__in=comunidades_usuario)
+        else:
+            # Público: solo comunidades públicas
+            publicaciones = qs.filter(comunidad__es_publica=True)
             
-            # Feed social: posts de mis comunidades, gente que sigo, comunidades públicas o perfiles públicos
-            publicaciones = Publicacion.objects.filter(
-                Q(comunidad_id__in=comunidades_usuario) | 
-                Q(comunidad__es_publica=True) | 
-                Q(autor_id__in=usuarios_seguidos) | 
-                Q(autor__perfil__es_publico=True),
-                es_valido_ia=True
-            ).distinct()\
-            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
+        publicaciones = publicaciones.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
             .prefetch_related('imagenes')\
             .annotate(
                 anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True),
+                anotado_comentarios_count=Count('comentario', distinct=True)
+            )
+
+        if usuario:
+            publicaciones = publicaciones.annotate(
                 anotado_usuario_dio_like=Exists(
                     Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
                 ),
@@ -474,29 +478,15 @@ class InicioFeed(generics.ListAPIView):
                     PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
                 )
             )
-        else:
-            # Público: solo comunidades y perfiles públicos
-            publicaciones = Publicacion.objects.filter(
-                Q(comunidad__es_publica=True) | 
-                Q(autor__perfil__es_publico=True),
-                es_valido_ia=True
-            ).distinct()\
-            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
-            .prefetch_related('imagenes')\
-            .annotate(
-                anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True)
-            )
             
         if etiquetas:
-            # En el feed general buscamos etiquetas tanto en el texto como en las imágenes si existen
             publicaciones = publicaciones.filter(
                 Q(etiquetas__icontains=etiquetas) | 
                 Q(imagen__etiquetas__icontains=etiquetas) |
                 Q(contenido_texto__icontains=etiquetas)
-            ).distinct()
+            )
             
-        return publicaciones.order_by('-fecha_creacion')
+        return publicaciones.distinct().order_by('-fecha_creacion')
 
 class ColeccionViewSet(viewsets.ModelViewSet):
     serializer_class = ColeccionSerializer
