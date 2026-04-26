@@ -41,6 +41,7 @@ class _PantallaChatState extends State<PantallaChat> {
   int _offset = 0;
   bool _hasMore = true;
   final int _limit = 30;
+  bool _chatConectado = false;
 
   /// IDs de mensajes que ya han sido leídos por el receptor.
   final Set<int> _mensajesLeidos = {};
@@ -175,11 +176,6 @@ class _PantallaChatState extends State<PantallaChat> {
 
   Future<void> _marcarLeidos() async {
     await ServicioChat.marcarLeidos(widget.salaId);
-    // Notificar al estado principal para actualizar el badge
-    if (mounted) {
-      final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-      inicioState?.cargarMensajesSinLeer();
-    }
   }
 
   void _conectarWebSockets() {
@@ -227,6 +223,8 @@ class _PantallaChatState extends State<PantallaChat> {
           }
         });
       }
+    }, onConnected: () {
+      if (mounted) setState(() => _chatConectado = true);
     });
 
     _servicioChat.conectarPresencia((data) {
@@ -329,9 +327,9 @@ class _PantallaChatState extends State<PantallaChat> {
                 Text(
                   _usuariosOnline > 0
                       ? '$_usuariosOnline conectado${_usuariosOnline > 1 ? 's' : ''} ahora'
-                      : 'Sin conexión',
+                      : (_chatConectado ? 'Conectado' : 'Conectando...'),
                   style: GoogleFonts.outfit(
-                    color: _usuariosOnline > 0
+                    color: _usuariosOnline > 0 || _chatConectado
                         ? const Color(0xFFC35E34)
                         : Colors.grey,
                     fontSize: 12,
