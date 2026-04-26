@@ -559,22 +559,33 @@ class _ToastMensajeState extends State<_ToastMensaje>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 2),
-                            image: widget.avatar != null
-                                ? DecorationImage(image: NetworkImage(widget.avatar!), fit: BoxFit.cover)
-                                : null,
                             color: const Color(0xFFF5EBE6),
                           ),
-                          child: widget.avatar == null
-                              ? Center(
-                                  child: Text(
-                                    widget.sender[0].toUpperCase(),
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFC35E34),
+                          child: ClipOval(
+                            child: widget.avatar != null
+                                ? Image.network(
+                                    widget.avatar!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Center(
+                                      child: Text(
+                                        widget.sender[0].toUpperCase(),
+                                        style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFFC35E34),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      widget.sender[0].toUpperCase(),
+                                      style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFC35E34),
+                                      ),
                                     ),
                                   ),
-                                )
-                              : null,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         // Contenido del texto
