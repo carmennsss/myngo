@@ -248,6 +248,15 @@ class ServicioChat {
     }
   }
 
+  /// Envía un evento de mensajes leídos por WebSocket.
+  void marcarLeidosWS() {
+    if (_isConnectedChat && _chatChannel != null) {
+      _chatChannel!.sink.add(jsonEncode({
+        'type': 'read_messages',
+      }));
+    }
+  }
+
   void agregarMiembro(int userId) {
     if (_isConnectedChat && _chatChannel != null) {
       _chatChannel!.sink.add(jsonEncode({

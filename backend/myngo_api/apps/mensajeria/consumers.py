@@ -31,7 +31,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         # Marcar mensajes previos como leídos
-        await self.marcar_mensajes_como_leidos()
+        updated_count = await self.marcar_mensajes_como_leidos()
+        
+        if updated_count > 0:
+            # Notificar a los demás que sus mensajes han sido leídos
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'messages_read',
+                    'user_id': self.user.id
+                }
+            )
 
         # Notificar a los demás que se ha unido
         await self.channel_layer.group_send(
@@ -94,6 +104,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         }
                     )
 
+        elif message_type == 'read_messages':
+            # El cliente indica que ha leído los mensajes de esta sala
+            updated_count = await self.marcar_mensajes_como_leidos()
+            if updated_count > 0:
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'messages_read',
+                        'user_id': self.user.id
+                    }
+                )
+
         elif message_type == 'add_member':
             target_user_id = data.get('user_id')
             if target_user_id:
@@ -137,6 +159,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def save_message(self, user, room_id, content):
         room = Salas_chat.objects.get(id=room_id)
         return Mensajes_chat.objects.create(sala=room, emisor=user, contenido=content)
+
+    @database_sync_to_async
+    def marcar_mensajes_como_leidos(self):
+        """Marca como leídos los mensajes de la sala que el usuario no ha enviado."""
+        # Buscamos mensajes que NO son del usuario actual y están sin leer
+        mensajes = Mensajes_chat.objects.filter(
+            sala_id=self.room_id,
+            es_leido=False
+        ).exclude(emisor=self.user)
+        
+        count = mensajes.count()
+        if count > 0:
+            mensajes.update(es_leido=True, fecha_lectura=timezone.now())
+        return count
 
     @database_sync_to_async
     def get_miembros_ids(self, room_id, exclude_user_id=None):
