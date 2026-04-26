@@ -1,4 +1,5 @@
 import os
+print(">>>> CARGANDO CONFIGURACION ASGI DE MYNGO <<<<")
 import sys
 from pathlib import Path
 
@@ -18,15 +19,10 @@ application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": TokenAuthMiddleware(
         URLRouter([
-            # Rutas oficiales con path (más seguras)
-            path('ws/chat/<int:room_id>/', consumers.ChatConsumer.as_asgi()),
-            path('ws/presence/', consumers.PresenceConsumer.as_asgi()),
-            path('ws/chat-notificaciones/', consumers.NotificacionesChatConsumer.as_asgi()),
-            
-            # Versiones sin barra final (por si acaso)
-            path('ws/chat/<int:room_id>', consumers.ChatConsumer.as_asgi()),
-            path('ws/presence', consumers.PresenceConsumer.as_asgi()),
-            path('ws/chat-notificaciones', consumers.NotificacionesChatConsumer.as_asgi()),
+            # Rutas "indestructibles" (coinciden si el nombre está en cualquier parte de la URL)
+            re_path(r'chat/\d+/?', consumers.ChatConsumer.as_asgi()),
+            re_path(r'presence/?', consumers.PresenceConsumer.as_asgi()),
+            re_path(r'chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
         ])
     ),
 })
