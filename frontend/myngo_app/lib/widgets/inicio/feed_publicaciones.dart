@@ -242,23 +242,34 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
                     ],
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _buildTabs(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildTabs(),
+                        ],
+                      ),
                       if (_mode == FeedMode.gallery) ...[
                         const SizedBox(height: 12),
-                        TextField(
-                          controller: _searchController,
-                          onSubmitted: (valor) => _cargarPosts(busqueda: valor.isNotEmpty ? valor : null),
-                          style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
-                          decoration: InputDecoration(
-                            hintText: 'Busca en el universo Myngo... 🐾',
-                            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFF29C50)),
-                            fillColor: const Color(0xFFF5F5F5),
-                            filled: true,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 800),
+                          child: TextField(
+                            controller: _searchController,
+                            onSubmitted: (valor) => _cargarPosts(busqueda: valor.isNotEmpty ? valor : null),
+                            style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
+                            decoration: InputDecoration(
+                              hintText: 'Busca en el universo Myngo... 🐾',
+                              prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFF29C50)),
+                              fillColor: const Color(0xFFF5F5F5),
+                              filled: true,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -346,7 +357,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
                                             (context, index) {
                                               final post = _posts![index];
                                               return Align(
-                                                alignment: Alignment.centerLeft,
+                                                alignment: Alignment.topCenter,
                                                 child: ConstrainedBox(
                                                   constraints: const BoxConstraints(maxWidth: 650),
                                                   child: Padding(

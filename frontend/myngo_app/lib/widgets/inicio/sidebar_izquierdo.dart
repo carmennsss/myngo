@@ -14,6 +14,7 @@ class SidebarIzquierdo extends StatelessWidget {
   final bool cargandoRanking;
   final int? misPuntos;
   final Function(Comunidad) onComunidadSelected;
+  final Function(Usuario) onUsuarioSelected;
   final Function(int, int) onReorder;
 
   const SidebarIzquierdo({
@@ -25,6 +26,7 @@ class SidebarIzquierdo extends StatelessWidget {
     this.cargandoRanking = false,
     this.misPuntos,
     required this.onComunidadSelected,
+    required this.onUsuarioSelected,
     required this.onReorder,
   });
 
@@ -73,7 +75,11 @@ class SidebarIzquierdo extends StatelessWidget {
                   children: rankingUsuarios!.take(5).toList().asMap().entries.map((entry) {
                     int index = entry.key;
                     Usuario u = entry.value;
-                    return _RankingItem(puesto: index + 1, usuario: u);
+                    return _RankingItem(
+                      puesto: index + 1, 
+                      usuario: u,
+                      onTap: () => onUsuarioSelected(u),
+                    );
                   }).toList(),
                 ),
         ),
@@ -537,74 +543,78 @@ void _mostrarDialogoComunidades(
 class _RankingItem extends StatelessWidget {
   final int puesto;
   final Usuario usuario;
-  const _RankingItem({required this.puesto, required this.usuario});
+  final VoidCallback onTap;
+  const _RankingItem({required this.puesto, required this.usuario, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 24,
-            child: Text(
-              puesto.toString(), 
-              style: GoogleFonts.outfit(fontSize: 16, color: const Color(0xFFC35E34), fontWeight: FontWeight.w900)
+    return BotonTactil(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              child: Text(
+                puesto.toString(), 
+                style: GoogleFonts.outfit(fontSize: 16, color: const Color(0xFFC35E34), fontWeight: FontWeight.w900)
+              ),
             ),
-          ),
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
-                    ? CachedNetworkImageProvider(usuario.urlAvatar!)
-                    : null,
-                child: (usuario.urlAvatar == null || usuario.urlAvatar!.isEmpty)
-                    ? const Icon(Icons.person, size: 18, color: Color(0xFFC35E34))
-                    : null,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Stack(
               children: [
-                Text(
-                  usuario.nombreUsuario, 
-                  style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)), 
-                  maxLines: 1, 
-                  overflow: TextOverflow.ellipsis
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                  backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
+                      ? CachedNetworkImageProvider(usuario.urlAvatar!)
+                      : null,
+                  child: (usuario.urlAvatar == null || usuario.urlAvatar!.isEmpty)
+                      ? const Icon(Icons.person, size: 18, color: Color(0xFFC35E34))
+                      : null,
                 ),
-                Text(
-                  usuario.estado == 'ACTIVO' ? 'En línea' : (usuario.estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-                  style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-          Row(
-            children: [
-              const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE89A6A)),
-              const SizedBox(width: 4),
-              Text(usuario.ratingActual.toStringAsFixed(1), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    usuario.nombreUsuario, 
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)), 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis
+                  ),
+                  Text(
+                    usuario.estado == 'ACTIVO' ? 'Activo' : (usuario.estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE89A6A)),
+                const SizedBox(width: 4),
+                Text(usuario.ratingActual.toStringAsFixed(1), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
