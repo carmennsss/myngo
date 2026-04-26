@@ -33,6 +33,11 @@ class _PantallaChatState extends State<PantallaChat> {
   int _usuariosOnline = 0;
   int? _miId;
   bool _cargandoHistorial = true;
+  bool _cargandoMas = false;
+  String? _errorHistorial;
+  int _offset = 0;
+  bool _hasMore = true;
+  final int _limit = 30;
 
   /// IDs de mensajes que ya han sido leídos por el receptor.
   final Set<int> _mensajesLeidos = {};
@@ -41,6 +46,16 @@ class _PantallaChatState extends State<PantallaChat> {
   void initState() {
     super.initState();
     _inicializar();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_cargandoMas &&
+        _hasMore) {
+      _cargarMasHistorial();
+    }
   }
 
   Future<void> _inicializar() async {
@@ -56,27 +71,27 @@ class _PantallaChatState extends State<PantallaChat> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     if (token == null) {
-      setState(() => _cargandoHistorial = false);
+      setState(() {
+        _cargandoHistorial = false;
+        _errorHistorial = 'Sesión no válida';
+      });
       return;
     }
     try {
       final res = await http.get(
-        Uri.parse('${Configuracion.baseUrl}/mensajeria/salas/${widget.salaId}/mensajes/'),
+        Uri.parse('${Configuracion.baseUrl}/mensajeria/salas/${widget.salaId}/mensajes/?limit=$_limit&offset=0'),
         headers: {'Authorization': 'Token $token'},
       );
       if (res.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(res.body);
+        final Map<String, dynamic> data = jsonDecode(res.body);
+        final List<dynamic> results = data['results'] ?? [];
+        
         setState(() {
-          _mensajes = data.map((m) => {
-            'type': 'chat_message',
-            'message_id': m['id'],
-            'content': m['content'] ?? '',
-            'user_id': m['emisor'],
-            'username': m['emisor_nombre'],
-            'timestamp': m['fecha_envio'],
-            'leido': m['leido'] ?? false,
-          }).toList();
-
+          _mensajes = results.map((m) => _parsearMensaje(m)).toList();
+          _offset = _limit;
+          _hasMore = data['next'] != null;
+          _errorHistorial = null;
+          
           // Pre-cargar los mensajes ya leídos
           for (final m in _mensajes) {
             if (m['leido'] == true) {
@@ -86,11 +101,63 @@ class _PantallaChatState extends State<PantallaChat> {
           _cargandoHistorial = false;
         });
       } else {
-        setState(() => _cargandoHistorial = false);
+        setState(() {
+          _errorHistorial = 'Error al cargar mensajes (${res.statusCode})';
+          _cargandoHistorial = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorHistorial = 'No se pudo conectar con el servidor 🐾';
+        _cargandoHistorial = false;
+      });
+    }
+  }
+
+  Future<void> _cargarMasHistorial() async {
+    if (_cargandoMas || !_hasMore) return;
+    
+    setState(() => _cargandoMas = true);
+    
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    
+    try {
+      final res = await http.get(
+        Uri.parse('${Configuracion.baseUrl}/mensajeria/salas/${widget.salaId}/mensajes/?limit=$_limit&offset=$_offset'),
+        headers: {'Authorization': 'Token $token'},
+      );
+      
+      if (res.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(res.body);
+        final List<dynamic> results = data['results'] ?? [];
+        
+        setState(() {
+          final nuevos = results.map((m) => _parsearMensaje(m)).toList();
+          _mensajes.addAll(nuevos);
+          _offset += _limit;
+          _hasMore = data['next'] != null;
+          _cargandoMas = false;
+        });
+      } else {
+        setState(() => _cargandoMas = false);
       }
     } catch (_) {
-      setState(() => _cargandoHistorial = false);
+      setState(() => _cargandoMas = false);
     }
+  }
+
+  Map<String, dynamic> _parsearMensaje(dynamic m) {
+    return {
+      'type': 'chat_message',
+      'message_id': m['id'],
+      'content': m['content'] ?? '',
+      'user_id': m['emisor'],
+      'username': m['emisor_nombre'],
+      'timestamp': m['fecha_envio'],
+      'leido': m['leido'] ?? false,
+      'hasError': (m['content'] == null || m['content'].toString().isEmpty),
+    };
   }
 
   Future<void> _marcarLeidos() async {
@@ -268,28 +335,56 @@ class _PantallaChatState extends State<PantallaChat> {
             child: _cargandoHistorial
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-                : _mensajes.isEmpty
+                : _errorHistorial != null
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.chat_bubble_outline_rounded,
-                                size: 56, color: Color(0xFFDDCCBB)),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Sé el primero en escribir 🐾',
-                              style: GoogleFonts.outfit(
-                                  color: Colors.grey.shade500, fontSize: 16),
+                            const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey),
+                            const SizedBox(height: 12),
+                            Text(_errorHistorial!, style: GoogleFonts.outfit(color: Colors.grey)),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _cargandoHistorial = true;
+                                  _errorHistorial = null;
+                                });
+                                _cargarHistorial();
+                              },
+                              child: const Text('Reintentar', style: TextStyle(color: Color(0xFFC35E34))),
                             ),
                           ],
                         ),
                       )
-                    : ListView.builder(
+                    : _mensajes.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.chat_bubble_outline_rounded,
+                                    size: 56, color: Color(0xFFDDCCBB)),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Sé el primero en escribir 🐾',
+                                  style: GoogleFonts.outfit(
+                                      color: Colors.grey.shade500, fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
                         controller: _scrollController,
                         reverse: true,
                         padding: const EdgeInsets.all(16),
-                        itemCount: _mensajes.length,
+                        itemCount: _mensajes.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index == _mensajes.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          }
+                          
                           final msg = _mensajes[index];
                           if (msg['type'] == 'system') {
                             return _buildSystemMessage(msg['content']);
@@ -390,12 +485,28 @@ class _PantallaChatState extends State<PantallaChat> {
                 ],
               ),
               child: Opacity(
-                opacity: msg['isOptimistic'] == true ? 0.6 : 1.0,
-                child: Text(
-                  msg['content'] ?? '',
-                  style: GoogleFonts.outfit(
-                      color: esMio ? Colors.white : const Color(0xFF4A4440),
-                      fontSize: 15),
+                opacity: (msg['isOptimistic'] == true || msg['hasError'] == true) ? 0.6 : 1.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      msg['content'] ?? '',
+                      style: GoogleFonts.outfit(
+                          color: esMio ? Colors.white : const Color(0xFF4A4440),
+                          fontSize: 15),
+                    ),
+                    if (msg['hasError'] == true) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'No se pudo cargar este mensaje',
+                        style: GoogleFonts.outfit(
+                          color: esMio ? Colors.white70 : Colors.red.shade400,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
