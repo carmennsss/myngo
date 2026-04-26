@@ -8,15 +8,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR / 'apps'))
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+django_asgi_app = get_asgi_application()
 
-from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.urls import re_path, path
 from mensajeria import consumers
 from mensajeria.middleware import TokenAuthMiddleware
 
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
+    "http": django_asgi_app,
     "websocket": TokenAuthMiddleware(
         URLRouter([
             # Comodines: Coinciden con cualquier cosa que contenga la palabra clave
