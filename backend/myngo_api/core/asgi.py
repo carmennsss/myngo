@@ -10,7 +10,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from django.urls import re_path
+from django.urls import re_path, path
 from mensajeria import consumers
 from mensajeria.middleware import TokenAuthMiddleware
 
@@ -18,14 +18,15 @@ application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": TokenAuthMiddleware(
         URLRouter([
-            # Rutas normales
-            re_path(r'ws/chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
-            re_path(r'ws/presence/?', consumers.PresenceConsumer.as_asgi()),
-            re_path(r'ws/chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
-            # Rutas con barra inicial (por si acaso)
-            re_path(r'/ws/chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
-            re_path(r'/ws/presence/?', consumers.PresenceConsumer.as_asgi()),
-            re_path(r'/ws/chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
+            # Rutas oficiales con path (más seguras)
+            path('ws/chat/<int:room_id>/', consumers.ChatConsumer.as_asgi()),
+            path('ws/presence/', consumers.PresenceConsumer.as_asgi()),
+            path('ws/chat-notificaciones/', consumers.NotificacionesChatConsumer.as_asgi()),
+            
+            # Versiones sin barra final (por si acaso)
+            path('ws/chat/<int:room_id>', consumers.ChatConsumer.as_asgi()),
+            path('ws/presence', consumers.PresenceConsumer.as_asgi()),
+            path('ws/chat-notificaciones', consumers.NotificacionesChatConsumer.as_asgi()),
         ])
     ),
 })
