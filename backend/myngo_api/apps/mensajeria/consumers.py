@@ -30,6 +30,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        # Marcar mensajes previos como leídos
+        await self.marcar_mensajes_como_leidos()
+
         # Notificar a los demás que se ha unido
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -42,16 +45,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if hasattr(self, 'room_group_name'):
-            # Notificar que se ha ido
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'user_left',
-                    'user_id': self.user.id,
-                    'username': self.user.nombre_usuario
-                }
-            )
-            # Salir del grupo
+            # Salir del grupo de la sala
             await self.channel_layer.group_discard(
                 self.room_group_name,
                 self.channel_name

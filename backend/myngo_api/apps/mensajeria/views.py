@@ -25,7 +25,7 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         # Subconsulta para contar mensajes no leídos de otros para esta sala
         no_leidos_subquery = Mensajes_chat.objects.filter(
             sala=OuterRef('pk'),
-            leido=False
+            es_leido=False
         ).exclude(emisor=self.request.user).values('sala').annotate(cnt=Count('id')).values('cnt')
 
         return Salas_chat.objects.filter(
@@ -133,7 +133,7 @@ def conteo_no_leidos(request):
     total = 0
     por_sala = []
     for sala in salas:
-        count = sala.mensajes.filter(leido=False).exclude(emisor=usuario).count()
+        count = sala.mensajes.filter(es_leido=False).exclude(emisor=usuario).count()
         if count > 0:
             por_sala.append({'sala_id': sala.id, 'count': count})
             total += count
@@ -157,11 +157,12 @@ def marcar_leidos(request, sala_id):
         return Response({"error": "Sala no encontrada o sin acceso"}, status=status.HTTP_404_NOT_FOUND)
 
     # Mensajes no leídos de otros en esta sala
-    mensajes_nuevos = sala.mensajes.filter(leido=False).exclude(emisor=request.user)
+    mensajes_nuevos = sala.mensajes.filter(es_leido=False).exclude(emisor=request.user)
     ids_leidos = list(mensajes_nuevos.values_list('id', flat=True))
 
     if ids_leidos:
-        mensajes_nuevos.update(leido=True)
+        from django.utils import timezone
+        mensajes_nuevos.update(es_leido=True, fecha_lectura=timezone.now())
 
         # Notificar por WebSocket al canal de la sala
         channel_layer = get_channel_layer()
