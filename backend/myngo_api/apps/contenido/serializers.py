@@ -9,6 +9,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
     autor_foto = serializers.SerializerMethodField()
     autor_marco = serializers.SerializerMethodField()
     autor_fondo = serializers.SerializerMethodField()
+    autor_estado = serializers.SerializerMethodField()
     autor_estilo_post = serializers.SerializerMethodField()
     comunidad_nombre = serializers.ReadOnlyField(source='comunidad.nombre')
     creador_comunidad_id = serializers.ReadOnlyField(source='comunidad.creador.id')
@@ -28,7 +29,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Publicacion
         fields = [
-            'id', 'autor', 'autor_nombre', 'autor_foto', 'autor_marco', 'autor_fondo', 'autor_estilo_post', 'comunidad', 'comunidad_nombre',
+            'id', 'autor', 'autor_nombre', 'autor_foto', 'autor_marco', 'autor_fondo', 'autor_estado', 'autor_estilo_post', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
             'url_imagen', 'urls_imagenes', 'imagenes_ids', 'relacion_aspecto', 'es_valido_ia', 'etiquetas', 'fecha_creacion',
             'likes_count', 'comentarios_count', 'usuario_dio_like', 'usuario_guardo_post'
@@ -81,6 +82,13 @@ class PublicacionSerializer(serializers.ModelSerializer):
             return default_storage.url(fondo_path.lstrip('/'))
         except:
             return None
+
+    def get_autor_estado(self, obj):
+        try:
+            perfil = getattr(obj.autor, 'perfil', None)
+            return perfil.estado if perfil else 'DESCONECTADO'
+        except:
+            return 'DESCONECTADO'
 
     def get_autor_estilo_post(self, obj):
         try:
