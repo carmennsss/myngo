@@ -158,33 +158,16 @@ class _TarjetaPostState extends State<TarjetaPost> {
                       context.go('/inicio/perfiles/${widget.post.autorId}');
                     }
                   },
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                        backgroundImage: widget.post.autorFoto != null
-                            ? CachedNetworkImageProvider(widget.post.autorFoto!)
-                            : null,
-                        child: widget.post.autorFoto == null
-                            ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
-                                style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16))
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: _getColorEstado(widget.post.autorEstado ?? 'DESCONECTADO'),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                    backgroundImage: widget.post.autorFoto != null
+                        ? CachedNetworkImageProvider(widget.post.autorFoto!)
+                        : null,
+                    child: widget.post.autorFoto == null
+                        ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
+                            style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16))
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 12),

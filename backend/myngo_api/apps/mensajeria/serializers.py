@@ -7,6 +7,7 @@ class MensajeChatSerializer(serializers.ModelSerializer):
     emisor_foto = serializers.SerializerMethodField()
 
     content = serializers.ReadOnlyField(source='contenido')
+    leido = serializers.BooleanField(source='es_leido', read_only=True)
 
     class Meta:
         model = Mensajes_chat
@@ -56,5 +57,5 @@ class SalaChatSerializer(serializers.ModelSerializer):
             
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.mensajes.filter(leido=False).exclude(emisor=request.user).count()
+            return obj.mensajes.filter(es_leido=False).exclude(emisor=request.user).count()
         return 0

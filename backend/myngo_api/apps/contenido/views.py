@@ -456,18 +456,44 @@ class InicioFeed(generics.ListAPIView):
         qs = Publicacion.objects.filter(es_valido_ia=True)
         
         if usuario:
-            # Filtro social básico (sin subconsultas para evitar el 502)
+            # 1. Filtros sociales
+            # Miembros de comunidades del usuario
+            mis_comunidades_ids = Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
+            # Usuarios a los que sigue (aceptados)
+            mis_seguidos_ids = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO').values_list('seguido_usuario_id', flat=True)
+            
             qs = qs.filter(
-                Q(comunidad__isnull=True, autor__perfil__es_publico=True) | 
-                Q(comunidad__es_publica=True) |                            
-                Q(autor=usuario)                                           
+                Q(comunidad_id__in=mis_comunidades_ids) |          # Mis comunidades
+                Q(autor_id__in=mis_seguidos_ids) |                # Gente que sigo
+                Q(comunidad__es_publica=True) |                   # Comunidades públicas
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True) | # Perfiles públicos (sin comunidad)
+                Q(autor=usuario)                                  # Mis propios posts
             ).distinct()
+
+            # 2. Anotaciones optimizadas (Subqueries para evitar el GROUP BY pesado)
+            likes_sub = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_usuario_dio_like=Exists(Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
+                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
+            )
         else:
             # Modo público
             qs = qs.filter(
                 Q(comunidad__es_publica=True) | 
-                Q(autor__perfil__es_publico=True)
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True)
             ).distinct()
+            
+            likes_sub = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=models.IntegerField()), Value(0))
+            )
 
         # Carga básica de relaciones
         qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')

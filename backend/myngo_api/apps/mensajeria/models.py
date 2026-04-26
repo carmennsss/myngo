@@ -21,6 +21,7 @@ class Participantes_chat(models.Model):
     sala=models.ForeignKey(Salas_chat,on_delete=models.CASCADE)
     usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
     fecha_union=models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
         return f"{self.usuario.nombre_usuario} en {self.sala.nombre}"
 class Mensajes_chat(models.Model):
@@ -31,6 +32,8 @@ class Mensajes_chat(models.Model):
     contenido=models.TextField(null=True, blank=True)
     url_archivo_s3=models.CharField(max_length=500,null=True,blank=True)
     fecha_envio=models.DateTimeField(auto_now_add=True)
-    leido=models.BooleanField(default=False)
+    es_leido = models.BooleanField(default=False)
+    fecha_lectura = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"Mensaje #{self.id} en {self.sala.nombre}"
