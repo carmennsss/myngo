@@ -543,6 +543,27 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                                       )
                                     : null,
                               ),
+                              // Puntito de estado en el avatar
+                              Positioned(
+                                bottom: 15,
+                                right: 15,
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: colorCard, width: 4),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -580,24 +601,54 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(
-                              child: Text(
-                                '@${usuario.nombreUsuario}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -1,
-                                  color: colorTextoP,
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '@${usuario.nombreUsuario}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -1,
+                                      color: colorTextoP,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                if (usuario.esVerificado) ...[
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.verified_rounded, size: 22, color: Color(0xFF248EA6)),
+                                ],
+                              ],
                             ),
-                            if (usuario.esVerificado) ...[
-                              const SizedBox(width: 8),
-                              const Icon(Icons.verified_rounded, size: 22, color: Color(0xFF248EA6)),
-                            ],
+                            const SizedBox(height: 4),
+                            // Etiqueta de estado
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  usuario.estado == 'ACTIVO' 
+                                      ? 'Activo' 
+                                      : (usuario.estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: _getColorEstado(usuario.estado ?? 'DESCONECTADO').withOpacity(0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -1464,7 +1515,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
               context,
               publicacion: publicacion,
               avatarUrl: publicacion.autorFoto ?? '',
-              onEliminado: _cargarPublicaciones, // Actualiza la página si se borra
+              onEliminado: _cargarPublicaciones, 
               onProfileSelected: (u) {
                 final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
                 if (inicioState != null) {
@@ -1477,6 +1528,18 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
         },
       ),
     );
+  }
+
+  Color _getColorEstado(String estado) {
+    switch (estado) {
+      case 'ACTIVO':
+        return Colors.greenAccent;
+      case 'OCUPADO':
+        return Colors.amber;
+      case 'DESCONECTADO':
+      default:
+        return Colors.grey.shade400;
+    }
   }
 }
 

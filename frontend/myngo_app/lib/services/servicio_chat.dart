@@ -140,13 +140,15 @@ class ServicioChat {
     }
   }
 
-  /// Conecta al sistema de presencia global.
+  /// Conecta al sistema de presencia global con reconexión automática.
   Future<void> conectarPresencia(Function(Map<String, dynamic>) onStatusChange) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     if (token == null) return;
 
-    final wsUrl = Uri.parse("$_baseUrl/presence/?token=$token");
+    // Aseguramos que la URL no tenga doble slash al concatenar
+    final baseUrlClean = _baseUrl.endsWith('/') ? _baseUrl.substring(0, _baseUrl.length - 1) : _baseUrl;
+    final wsUrl = Uri.parse("$baseUrlClean/presence/?token=$token");
 
     try {
       _presenceChannel = WebSocketChannel.connect(wsUrl);
@@ -157,8 +159,14 @@ class ServicioChat {
           final decoded = jsonDecode(data);
           onStatusChange(decoded);
         },
-        onDone: () => _isConnectedPresence = false,
-        onError: (error) => _isConnectedPresence = false,
+        onDone: () {
+          _isConnectedPresence = false;
+          _intentarReconexionPresencia(onStatusChange);
+        },
+        onError: (error) {
+          _isConnectedPresence = false;
+          _intentarReconexionPresencia(onStatusChange);
+        },
       );
 
       // Heartbeat cada 30 segundos
@@ -168,7 +176,15 @@ class ServicioChat {
       });
     } catch (e) {
       _isConnectedPresence = false;
+      _intentarReconexionPresencia(onStatusChange);
     }
+  }
+
+  void _intentarReconexionPresencia(Function(Map<String, dynamic>) onStatusChange) {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      if (!_isConnectedPresence) conectarPresencia(onStatusChange);
+    });
   }
 
   /// Conecta al canal personal de notificaciones de mensajes.

@@ -11,7 +11,9 @@ from core import settings
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
 from usuarios.models import Seguimiento, Usuario, Perfil
-from django.db.models import Q, Count, OuterRef, Exists
+from django.db import models
+from django.db.models import Q, Count, OuterRef, Exists, Subquery, Value
+from django.db.models.functions import Coalesce
 from comunidades.models import Miembros_comunidades
 from notificaciones.models import Notificacion
 
@@ -58,7 +60,6 @@ class PublicacionList(generics.ListAPIView):
         comentarios_subquery = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(count=Count('id')).values('count')
 
         if user.is_authenticated:
-            # Anotar si el usuario actual ha dado like o guardado
             qs = qs.annotate(
                 anotado_likes_count=Subquery(likes_subquery, output_field=IntegerField()),
                 anotado_comentarios_count=Subquery(comentarios_subquery, output_field=IntegerField()),

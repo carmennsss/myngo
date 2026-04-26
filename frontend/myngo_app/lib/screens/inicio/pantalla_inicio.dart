@@ -85,8 +85,30 @@ class PantallaInicioState extends State<PantallaInicio> {
         
         // Conectar a presencia global
         _servicioChat.conectarPresencia((datos) {
-          if (datos['type'] == 'status_change' && datos['user_id'] == _miId) {
-            if (mounted) setState(() => _miEstado = datos['status']);
+          if (!mounted) return;
+          final type = datos['type'];
+          
+          if (type == 'status_change') {
+            final userId = datos['user_id'];
+            final newStatus = datos['status'];
+            
+            // 1. Actualizar mi propio estado si soy yo
+            if (userId == _miId) {
+              setState(() => _miEstado = newStatus);
+            }
+            
+            // 2. Actualizar el estado en la lista del ranking si el usuario está ahí
+            if (_rankingUsuarios != null) {
+              final index = _rankingUsuarios!.indexWhere((u) => u.id == userId);
+              if (index != -1) {
+                setState(() {
+                  _rankingUsuarios![index].estado = newStatus;
+                });
+              }
+            }
+          } 
+          else if (type == 'presence_connection_established') {
+            setState(() => _miEstado = datos['status']);
           }
         });
 
@@ -322,6 +344,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                                         rankingUsuarios: _rankingUsuarios,
                                         cargandoRanking: _cargandoRanking == true,
                                         onComunidadSelected: _seleccionarComunidad,
+                                        onUsuarioSelected: _seleccionarUsuario,
                                         onReorder: _reordenarComunidades,
                                         misPuntos: _puntos,
                                       ),

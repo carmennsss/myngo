@@ -183,24 +183,19 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Marcar como online (respetando si está OCUPADO)
-        estado_actual = await self.establecer_usuario_online()
+        # Marcar como online en BD y obtener el estado resultante (ACTIVO u OCUPADO)
+        estado_actual = await self.establecer_usuario_online(True)
 
-        # Notificar estado real
-        # Marcar como online en BD
-        await self.update_user_status(True)
-
-        # ── FIX BUG PRESENCIA ──────────────────────────────────────────
-        # Enviar al propio cliente el snapshot de todos los usuarios online.
-        # Así, si el receptor abre el chat DESPUÉS que el emisor, recibe
-        # el estado actual en lugar de sólo su propio status_change.
+        # 1. Enviar al propio cliente confirmación de su estado y snapshot global
         online_ids = await self.get_online_user_ids()
         await self.send(text_data=json.dumps({
-            'type': 'online_users_snapshot',
-            'user_ids': online_ids,
+            'type': 'presence_connection_established',
+            'user_id': self.user.id,
+            'status': estado_actual,
+            'online_users': online_ids,
         }))
 
-        # Notificar al resto del grupo que este usuario se ha conectado
+        # 2. Notificar al resto del grupo que este usuario se ha conectado
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -212,8 +207,8 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if not self.user.is_anonymous:
-            # Marcar como DESCONECTADO
-            await self.update_user_status('DESCONECTADO')
+            # Marcar como DESCONECTADO en BD
+            await self.establecer_usuario_online(False)
 
             # Notificar al grupo
             await self.channel_layer.group_send(
@@ -234,39 +229,31 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         if data.get('type') == 'heartbeat':
-            # El heartbeat simplemente confirma que sigue ahí
             pass
 
     async def status_change(self, event):
         await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
-    def establecer_usuario_online(self):
-        perfil = self.user.perfil
-        # Solo cambiamos a ACTIVO si NO está en OCUPADO
-        if perfil.estado != 'OCUPADO':
-            perfil.estado = 'ACTIVO'
-            perfil.save()
-        return perfil.estado
-
-    @database_sync_to_async
-    def update_user_status(self, nuevo_estado):
-        perfil = self.user.perfil
-        perfil.estado = nuevo_estado
-        if nuevo_estado == 'DESCONECTADO':
-            perfil.last_seen = timezone.now()
-        perfil.save()
-        
-        
-    def update_user_status(self, is_online):
+    def establecer_usuario_online(self, is_online):
         try:
-            perfil = self.user.perfil
+            # Obtenemos el perfil fresco de la BD
+            perfil = Perfil.objects.get(usuario=self.user)
             perfil.esta_online = is_online
-            if not is_online:
+            
+            if is_online:
+                # Si se conecta y NO está ocupado, pasa a ACTIVO
+                if perfil.estado != 'OCUPADO':
+                    perfil.estado = 'ACTIVO'
+            else:
+                # Si se desconecta, pasa a DESCONECTADO
+                perfil.estado = 'DESCONECTADO'
                 perfil.last_seen = timezone.now()
-            perfil.save(update_fields=['esta_online', 'last_seen'] if not is_online else ['esta_online'])
+            
+            perfil.save()
+            return perfil.estado
         except Exception:
-            pass
+            return 'DESCONECTADO'
 
     @database_sync_to_async
     def get_online_user_ids(self):

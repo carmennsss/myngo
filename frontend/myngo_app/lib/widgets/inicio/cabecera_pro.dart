@@ -310,7 +310,7 @@ class _UserProfileHeader extends StatelessWidget {
                       Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
                       const SizedBox(width: 6),
                       Text(
-                        estado == 'ACTIVO' ? 'Online' : (estado == 'OCUPADO' ? 'Ocupado' : 'Offline'),
+                        estado == 'ACTIVO' ? 'Activo' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
                         style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.w600),
                       ),
                     ],

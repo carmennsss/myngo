@@ -14,12 +14,12 @@ class Usuario {
   final String? urlAvatar;
   final String? fondo;
   final String? marco;
-  final int? puntos;
+  int? puntos;
   final int numeroSeguidores;
   final int numeroSeguidos;
   final String? estadoSeguimiento;
   final Map<String, dynamic>? estiloPost;
-  final String? estado; // ACTIVO, OCUPADO, DESCONECTADO
+  String? estado; // ACTIVO, OCUPADO, DESCONECTADO
 
   Usuario({
     required this.id,
