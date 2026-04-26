@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/servicio_chat.dart';
 import '../inicio/pantalla_inicio.dart';
+import 'package:provider/provider.dart';
+import '../../providers/chat_provider.dart';
 
 class PantallaListaChats extends StatefulWidget {
   const PantallaListaChats({super.key});
@@ -362,23 +364,32 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                                 maxLines: 1,
                               ),
                             ),
-                            if (noLeidos > 0)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFC35E34),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  noLeidos.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                            Consumer<ChatProvider>(
+                              builder: (context, chat, child) {
+                                final liveNoLeidos = chat.noLeidosEnSala(sala['id']);
+                                // Usamos el máximo entre lo que vino de la API y lo que tiene el provider en tiempo real
+                                final displayNoLeidos = liveNoLeidos > 0 ? liveNoLeidos : noLeidos;
+                                
+                                if (displayNoLeidos == 0) return const SizedBox.shrink();
+                                
+                                return Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFC35E34),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                ),
-                              ),
+                                  child: Text(
+                                    displayNoLeidos.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ],

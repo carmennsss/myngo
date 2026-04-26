@@ -9,6 +9,9 @@ import '../../services/servicio_chat.dart';
 import '../../utils/configuracion.dart';
 import '../inicio/pantalla_inicio.dart';
 
+import 'package:provider/provider.dart';
+import '../../providers/chat_provider.dart';
+
 class PantallaChat extends StatefulWidget {
   final int salaId;
   final String nombreSala;
@@ -47,6 +50,16 @@ class _PantallaChatState extends State<PantallaChat> {
     super.initState();
     _inicializar();
     _scrollController.addListener(_onScroll);
+
+    // Notificar al provider que estamos en esta sala
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = context.read<ChatProvider>();
+        provider.setSalaActiva(widget.salaId);
+        // El recibo de lectura ya se envía en _inicializar() -> _marcarLeidos()
+        // pero podemos reforzarlo via WebSocket si ya está conectado.
+      }
+    });
   }
 
   void _onScroll() {
@@ -271,6 +284,12 @@ class _PantallaChatState extends State<PantallaChat> {
 
   @override
   void dispose() {
+    // Limpiar sala activa al salir
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        context.read<ChatProvider>().setSalaActiva(null);
+      }
+    });
     _servicioChat.dispose();
     _mensajeController.dispose();
     _scrollController.dispose();

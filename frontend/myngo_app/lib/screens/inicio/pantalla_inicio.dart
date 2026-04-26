@@ -10,6 +10,8 @@ import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_chat.dart';
+import '../../providers/chat_provider.dart';
+import 'package:provider/provider.dart';
 import '../comunidades/pantalla_comunidades.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
 import '../explorar/pantalla_explorar.dart';
@@ -49,7 +51,6 @@ class PantallaInicioState extends State<PantallaInicio> {
   int? _miId;
   int? _puntos;
   int _notificacionesSinLeer = 0;
-  int _mensajesSinLeer = 0;
   final ServicioChat _servicioNotifChat = ServicioChat();
   List<Comunidad>? _misComunidades;
   bool _cargandoComunidades = false;
@@ -114,8 +115,11 @@ class PantallaInicioState extends State<PantallaInicio> {
 
         _cargarComunidades();
         _cargarNotificacionesSinLeer();
-        _cargarMensajesSinLeer();
-        _conectarNotificacionesChat();
+        
+        // Inicializar ChatProvider
+        final chatProvider = context.read<ChatProvider>();
+        chatProvider.cargarConteosIniciales();
+        _conectarNotificacionesChat(chatProvider);
       } else if (!resDatos.exito && mounted) {
         // Si el token era inválido o expiró
         setState(() => _estaLogueado = false);
@@ -142,49 +146,15 @@ class PantallaInicioState extends State<PantallaInicio> {
     if (mounted) setState(() => _notificacionesSinLeer = conteo);
   }
 
-  Future<void> _cargarMensajesSinLeer() async {
-    if (!_estaLogueado) return;
-    final data = await ServicioChat.obtenerConteoNoLeidos();
-    if (mounted) setState(() => _mensajesSinLeer = (data['total'] as num?)?.toInt() ?? 0);
-  }
-
-  void cargarMensajesSinLeer() => _cargarMensajesSinLeer();
-
-  void _conectarNotificacionesChat() {
+  void _conectarNotificacionesChat(ChatProvider chatProvider) {
     _servicioNotifChat.conectarNotificacionesPersonales((data) {
       if (!mounted) return;
       if (data['type'] == 'new_message_notification') {
-        setState(() => _mensajesSinLeer++);
-        _mostrarToastMensaje(data);
+        chatProvider.procesarNuevaNotificacion(data);
       }
     });
   }
 
-  void _mostrarToastMensaje(Map<String, dynamic> data) {
-    final salaId = data['sala_id'];
-    final sender = data['sender_username'] ?? 'Alguien';
-    final preview = data['preview'] ?? '';
-    final salaName = data['sala_nombre'] ?? 'Chat';
-
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) => _ToastMensaje(
-        sender: sender,
-        preview: preview,
-        onTap: () {
-          entry.remove();
-          context.go('/mensajes/sala/$salaId',
-              extra: {'nombre': salaName});
-        },
-        onDismiss: () => entry.remove(),
-      ),
-    );
-    overlay.insert(entry);
-    Future.delayed(const Duration(seconds: 4), () {
-      if (entry.mounted) entry.remove();
-    });
-  }
 
   Future<void> _cargarComunidades() async {
     setState(() {
@@ -278,7 +248,7 @@ class PantallaInicioState extends State<PantallaInicio> {
             indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
             puntos: _puntos,
             notificacionesSinLeer: _notificacionesSinLeer,
-            mensajesSinLeer: _mensajesSinLeer,
+            mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
             onNavSelected: _alPulsarNav,
             onProfileSelected: _seleccionarUsuario,
           ),
@@ -443,11 +413,13 @@ class PantallaInicioState extends State<PantallaInicio> {
             onTap: () { Navigator.pop(context); _alPulsarNav(4); },
           ),
           ListTile(
-            leading: Badge(
-              label: _mensajesSinLeer > 0 ? Text('$_mensajesSinLeer') : null,
-              isLabelVisible: _mensajesSinLeer > 0,
-              backgroundColor: const Color(0xFFD95F43),
-              child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+            leading: Consumer<ChatProvider>(
+              builder: (context, chat, child) => Badge(
+                label: chat.totalNoLeidos > 0 ? Text('${chat.totalNoLeidos}') : null,
+                isLabelVisible: chat.totalNoLeidos > 0,
+                backgroundColor: const Color(0xFFD95F43),
+                child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+              ),
             ),
             title: Text('Chats', style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
             onTap: () { Navigator.pop(context); _alPulsarNav(3); },
@@ -468,135 +440,3 @@ class PantallaInicioState extends State<PantallaInicio> {
   }
 }
 
-/// Toast overlay in-app para notificaciones de mensajes nuevos.
-class _ToastMensaje extends StatefulWidget {
-  final String sender;
-  final String preview;
-  final VoidCallback onTap;
-  final VoidCallback onDismiss;
-
-  const _ToastMensaje({
-    required this.sender,
-    required this.preview,
-    required this.onTap,
-    required this.onDismiss,
-  });
-
-  @override
-  State<_ToastMensaje> createState() => _ToastMensajeState();
-}
-
-class _ToastMensajeState extends State<_ToastMensaje>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<Offset> _slide;
-  late Animation<double> _fade;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _slide = Tween<Offset>(
-      begin: const Offset(0, -1.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack));
-    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
-    _ctrl.forward();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 12,
-      left: 16,
-      right: 16,
-      child: SlideTransition(
-        position: _slide,
-        child: FadeTransition(
-          opacity: _fade,
-          child: Material(
-            elevation: 12,
-            borderRadius: BorderRadius.circular(20),
-            color: Colors.transparent,
-            child: GestureDetector(
-              onTap: widget.onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D2D2D),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Ícono de chat
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFC35E34),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.chat_bubble_rounded,
-                          color: Colors.white, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    // Texto
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '@${widget.sender}',
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.preview,
-                            style: GoogleFonts.outfit(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Botón cerrar
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded,
-                          color: Colors.white54, size: 18),
-                      onPressed: widget.onDismiss,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
