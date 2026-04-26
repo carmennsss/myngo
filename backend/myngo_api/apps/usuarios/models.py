@@ -84,6 +84,7 @@ class Perfil(models.Model):
     )
     es_publico=models.BooleanField(default=True)
     last_seen=models.DateTimeField(null=True, blank=True)
+    esta_online=models.BooleanField(default=False)
     fecha_actualizacion=models.DateTimeField(auto_now_add=True)
     estado=models.CharField(max_length=20, default='DESCONECTADO', choices=[
         ('ACTIVO', 'Activo'),
@@ -122,7 +123,7 @@ class Perfil(models.Model):
             #actualizamos la base de datos
             self.save()
     def __str__(self):
-        return self # TODO
+        return f"Perfil de {self.usuario.nombre_usuario}"
 class Seguimiento(models.Model):
     class Meta:
         db_table = 'seguimientos'

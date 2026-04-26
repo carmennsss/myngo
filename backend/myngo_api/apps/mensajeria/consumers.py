@@ -5,6 +5,7 @@ from django.utils import timezone
 from .models import Salas_chat, Mensajes_chat, Participantes_chat
 from usuarios.models import Usuario, Perfil
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
@@ -35,7 +36,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'user_joined',
                 'user_id': self.user.id,
-                'username': self.user.nombre_usuario
+                'username': self.user.nombre_usuario or f"Usuario_{self.user.id}"
             }
         )
 
@@ -65,20 +66,40 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if content:
                 # Guardar en BD
                 msg = await self.save_message(self.user, self.room_id, content)
-                
-                # Broadcast
+
+                # Broadcast al canal de la sala
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         'type': 'chat_message',
                         'message_id': msg.id,
+                        'client_id': data.get('client_id'), # Devolver el ID temporal del cliente
                         'content': content,
                         'user_id': self.user.id,
                         'username': self.user.nombre_usuario,
-                        'timestamp': msg.fecha_envio.isoformat()
+                        'timestamp': msg.fecha_envio.isoformat(),
+                        'leido': False,
                     }
                 )
-        
+
+                # Notificar a cada miembro (excepto el emisor) por su canal personal
+                miembros_ids = await self.get_miembros_ids(self.room_id, exclude_user_id=self.user.id)
+                sala_nombre = await self.get_sala_nombre(self.room_id)
+                preview = content[:60] + ('...' if len(content) > 60 else '')
+
+                for miembro_id in miembros_ids:
+                    await self.channel_layer.group_send(
+                        f'user_{miembro_id}_notif',
+                        {
+                            'type': 'new_message_notification',
+                            'sala_id': int(self.room_id),
+                            'sala_nombre': sala_nombre,
+                            'sender_id': self.user.id,
+                            'sender_username': self.user.nombre_usuario,
+                            'preview': preview,
+                        }
+                    )
+
         elif message_type == 'add_member':
             target_user_id = data.get('user_id')
             if target_user_id:
@@ -93,20 +114,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         }
                     )
 
-    # Handlers para eventos de grupo
+    # ── Handlers para eventos de grupo ────────────────────────────────
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event))
 
     async def user_joined(self, event):
-        await self.send(text_data=json.dumps(event))
+        # Evitar mostrar el mensaje de sistema al propio usuario que se acaba de conectar
+        if event.get('user_id') != self.user.id:
+            await self.send(text_data=json.dumps(event))
 
     async def user_left(self, event):
-        await self.send(text_data=json.dumps(event))
+        if event.get('user_id') != self.user.id:
+            await self.send(text_data=json.dumps(event))
 
     async def member_added(self, event):
         await self.send(text_data=json.dumps(event))
 
-    # Métodos de BD
+    async def messages_read(self, event):
+        """Notifica al emisor que sus mensajes han sido leídos."""
+        await self.send(text_data=json.dumps(event))
+
+    # ── Métodos de BD ─────────────────────────────────────────────────
     @database_sync_to_async
     def is_member(self, user, room_id):
         return Salas_chat.objects.filter(id=room_id, miembros=user).exists()
@@ -117,14 +145,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return Mensajes_chat.objects.create(sala=room, emisor=user, contenido=content)
 
     @database_sync_to_async
+    def get_miembros_ids(self, room_id, exclude_user_id=None):
+        qs = Salas_chat.objects.get(id=room_id).miembros.all()
+        if exclude_user_id:
+            qs = qs.exclude(id=exclude_user_id)
+        return list(qs.values_list('id', flat=True))
+
+    @database_sync_to_async
+    def get_sala_nombre(self, room_id):
+        return Salas_chat.objects.get(id=room_id).nombre
+
+    @database_sync_to_async
     def add_member_to_room(self, user_id, room_id):
         try:
             room = Salas_chat.objects.get(id=room_id)
             user = Usuario.objects.get(id=user_id)
             room.miembros.add(user)
             return True
-        except:
+        except Exception:
             return False
+
 
 class PresenceConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -134,7 +174,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             return
 
         self.group_name = 'online_users'
-        
+
         # Unirse al grupo global de presencia
         await self.channel_layer.group_add(
             self.group_name,
@@ -143,10 +183,20 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Marcar como online
+        # Marcar como online en BD
         await self.update_user_status(True)
 
-        # Notificar estado
+        # ── FIX BUG PRESENCIA ──────────────────────────────────────────
+        # Enviar al propio cliente el snapshot de todos los usuarios online.
+        # Así, si el receptor abre el chat DESPUÉS que el emisor, recibe
+        # el estado actual en lugar de sólo su propio status_change.
+        online_ids = await self.get_online_user_ids()
+        await self.send(text_data=json.dumps({
+            'type': 'online_users_snapshot',
+            'user_ids': online_ids,
+        }))
+
+        # Notificar al resto del grupo que este usuario se ha conectado
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -161,7 +211,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             # Marcar como offline
             await self.update_user_status(False)
 
-            # Notificar
+            # Notificar al grupo
             await self.channel_layer.group_send(
                 self.group_name,
                 {
@@ -187,11 +237,53 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_user_status(self, is_online):
-        perfil = self.user.perfil
-        if not is_online:
-            perfil.last_seen = timezone.now()
-        perfil.save()
-        
-        # Nota: El usuario pidió usar Redis para el contador de dispositivos.
-        # Por simplicidad y tiempo, aquí actualizamos la BD, pero en una implementación
-        # de escala real usaríamos Redis.
+        try:
+            perfil = self.user.perfil
+            perfil.esta_online = is_online
+            if not is_online:
+                perfil.last_seen = timezone.now()
+            perfil.save(update_fields=['esta_online', 'last_seen'] if not is_online else ['esta_online'])
+        except Exception:
+            pass
+
+    @database_sync_to_async
+    def get_online_user_ids(self):
+        """Retorna la lista de IDs de usuarios actualmente online según la BD."""
+        return list(Perfil.objects.filter(esta_online=True).values_list('usuario_id', flat=True))
+
+
+class NotificacionesChatConsumer(AsyncWebsocketConsumer):
+    """
+    Canal WebSocket personal por usuario.
+    Recibe notificaciones de nuevos mensajes en cualquier sala
+    aunque el usuario no esté en la pantalla de chat.
+    """
+    async def connect(self):
+        self.user = self.scope['user']
+        if self.user.is_anonymous:
+            await self.close()
+            return
+
+        self.group_name = f'user_{self.user.id}_notif'
+
+        await self.channel_layer.group_add(
+            self.group_name,
+            self.channel_name
+        )
+
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'group_name'):
+            await self.channel_layer.group_discard(
+                self.group_name,
+                self.channel_name
+            )
+
+    async def receive(self, text_data):
+        # Este consumer solo recibe, no procesa mensajes del cliente
+        pass
+
+    async def new_message_notification(self, event):
+        """Reenvía la notificación de nuevo mensaje al cliente Flutter."""
+        await self.send(text_data=json.dumps(event))

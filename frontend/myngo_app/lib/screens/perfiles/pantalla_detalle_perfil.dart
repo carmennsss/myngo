@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -1138,24 +1139,29 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
       height: 48,
       child: OutlinedButton.icon(
         onPressed: () async {
-          // Crear o buscar sala privada con este usuario
+          // Mostrar indicador mientras se crea/busca la sala
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Iniciando chat... 🐾'), duration: Duration(seconds: 1)),
+            const SnackBar(
+              content: Text('Iniciando chat... 🐾'),
+              duration: Duration(seconds: 1),
+            ),
           );
           final sala = await ServicioChat.crearSalaPrivada(usuario.id);
           if (sala != null && mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (ctx) => PantallaChat(
-                  salaId: sala['id'],
-                  nombreSala: sala['nombre'] ?? 'Chat con @${usuario.nombreUsuario}',
-                ),
-              ),
+            // Navegar a través del router → activa la pestaña "Chats"
+            context.go(
+              '/mensajes/sala/${sala['id']}',
+              extra: {
+                'nombre': 'Chat con @${usuario.nombreUsuario}',
+                'sala': sala,
+              },
             );
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No se pudo iniciar el chat. ¿Hay conexión al servidor?'), backgroundColor: Colors.red),
+              const SnackBar(
+                content: Text('No se pudo iniciar el chat. ¿Hay conexión al servidor?'),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         },

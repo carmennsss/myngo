@@ -17,6 +17,8 @@ import 'widgets/inicio/feed_publicaciones.dart';
 import 'screens/explorar/pantalla_explorar.dart';
 import 'screens/notificaciones/pantalla_notificaciones.dart';
 import 'screens/perfiles/pantalla_tienda_mejoras.dart';
+import 'screens/mensajeria/pantalla_lista_chats.dart';
+import 'screens/mensajeria/pantalla_chat.dart';
 import 'widgets/comunes/vista_requerir_login.dart';
 import 'models/comunidad.dart';
 import 'models/usuario.dart';
@@ -279,10 +281,24 @@ final GoRouter appRouter = GoRouter(
               path: '/mensajes',
               builder: (context, state) {
                 return const ProtectedRoute(
-                  title: 'Tus Mensajes',
-                  child: Center(child: Text('Chat próximamente 💬', style: TextStyle(color: Colors.white))),
+                  title: 'Tus Chats',
+                  child: PantallaListaChats(),
                 );
               },
+              routes: [
+                GoRoute(
+                  path: 'sala/:id',
+                  builder: (context, state) {
+                    final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    final extra = state.extra as Map<String, dynamic>?;
+                    final nombre = extra?['nombre'] as String? ?? 'Chat';
+                    return PantallaChat(
+                      salaId: id,
+                      nombreSala: nombre,
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
