@@ -10,14 +10,21 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from mensajeria.routing import websocket_urlpatterns
+from django.urls import re_path
+from mensajeria import consumers
 from mensajeria.middleware import TokenAuthMiddleware
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": TokenAuthMiddleware(
-        URLRouter(
-            websocket_urlpatterns
-        )
+        URLRouter([
+            re_path(r'ws/chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
+            re_path(r'ws/presence/?', consumers.PresenceConsumer.as_asgi()),
+            re_path(r'ws/chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
+            # Fallbacks con barra inicial
+            re_path(r'/ws/chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
+            re_path(r'/ws/presence/?', consumers.PresenceConsumer.as_asgi()),
+            re_path(r'/ws/chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
+        ])
     ),
 })

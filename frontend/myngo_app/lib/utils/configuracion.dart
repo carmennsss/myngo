@@ -1,8 +1,12 @@
 class Configuracion {
   /// La dirección IP base para todas las peticiones HTTP a la API.
   /// IMPORTANTE: Sin barra al final. 
-  static const String baseUrl = 'http://107.20.99.104';
+  /// Si usas 'runserver' en el EC2, el puerto es el 8000.
+  static const String baseUrl = 'http://107.20.99.104:8000';
+
 
   /// La dirección base para las conexiones de WebSockets.
-  static const String wsUrl = 'ws://107.20.99.104/ws';
+  /// Si usas 'runserver' o 'daphne' en el EC2, el puerto suele ser el 8000.
+  static const String wsUrl = 'ws://107.20.99.104:8000/ws';
+
 }

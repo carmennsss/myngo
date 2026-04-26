@@ -32,15 +32,25 @@ class SalaChatSerializer(serializers.ModelSerializer):
         ]
 
     def get_ultimo_mensaje(self, obj):
-        # Intentamos obtenerlo de la relación pre-cargada si es posible
-        # Pero como queremos el ÚLTIMO, lo mejor es usar un prefetch específico o mantener esto pero minimizando impacto
+        # Si hemos prefetcheado los mensajes, podemos obtenerlo sin query
+        # O si tenemos la fecha anotada, podríamos simplemente devolver eso, 
+        # pero para el objeto completo necesitamos el mensaje.
+        
+        # Optimizamos intentando usar mensajes prefetcheados si existen
+        if hasattr(obj, '_prefetched_objects_cache') and 'mensajes' in obj._prefetched_objects_cache:
+            msgs = list(obj.mensajes.all())
+            if msgs:
+                # Asumimos que vienen ordenados por fecha desc (como en el prefetch)
+                return MensajeChatSerializer(msgs[0]).data
+        
+        # Fallback (solo si no se optimizó en la vista)
         ultimo = obj.mensajes.all().order_by('-fecha_envio').first()
         if ultimo:
             return MensajeChatSerializer(ultimo).data
         return None
 
     def get_mensajes_no_leidos(self, obj):
-        # Si el queryset tiene la anotación count_no_leidos, la usamos
+        # Si el queryset tiene la anotación count_no_leidos, la usamos directamente
         if hasattr(obj, 'count_no_leidos'):
             return obj.count_no_leidos or 0
             
