@@ -21,7 +21,7 @@ application = ProtocolTypeRouter({
     "websocket": TokenAuthMiddleware(
         URLRouter([
             # Comodines: Coinciden con cualquier cosa que contenga la palabra clave
-            re_path(r'.*chat/\d+/?', consumers.ChatConsumer.as_asgi()),
+            re_path(r'.*chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
             re_path(r'.*presence/?', consumers.PresenceConsumer.as_asgi()),
             re_path(r'.*chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
         ])
