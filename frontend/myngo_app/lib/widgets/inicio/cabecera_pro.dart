@@ -18,6 +18,7 @@ class CabeceraPro extends StatelessWidget {
   final int? puntos;
   final int notificacionesSinLeer;
   final String estado;
+  final int mensajesSinLeer;
   final ValueChanged<int> onNavSelected;
   final Function(Usuario)? onProfileSelected;
 
@@ -32,6 +33,7 @@ class CabeceraPro extends StatelessWidget {
     required this.puntos,
     required this.notificacionesSinLeer,
     this.estado = 'DESCONECTADO',
+    this.mensajesSinLeer = 0,
     required this.onNavSelected,
     this.onProfileSelected,
   });
@@ -91,7 +93,13 @@ class CabeceraPro extends StatelessWidget {
                     const SizedBox(width: 12),
                     _CircularNavItem(icon: Icons.storefront_rounded, title: 'Tienda', isActive: indiceSeleccionado == 4, onTap: () => onNavSelected(4)),
                     const SizedBox(width: 12),
-                    _CircularNavItem(icon: Icons.chat_bubble_rounded, title: 'Chats', isActive: indiceSeleccionado == 3, onTap: () => onNavSelected(3)),
+                    _CircularNavItem(
+                      icon: Icons.chat_bubble_rounded,
+                      title: 'Chats',
+                      isActive: indiceSeleccionado == 3,
+                      onTap: () => onNavSelected(3),
+                      badge: estaLogueado && mensajesSinLeer > 0 ? mensajesSinLeer.toString() : null,
+                    ),
                     const SizedBox(width: 12),
                     _CircularNavItem(
                       icon: Icons.notifications_rounded,

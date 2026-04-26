@@ -6,9 +6,11 @@ class MensajeChatSerializer(serializers.ModelSerializer):
     emisor_nombre = serializers.ReadOnlyField(source='emisor.nombre_usuario')
     emisor_foto = serializers.SerializerMethodField()
 
+    content = serializers.ReadOnlyField(source='contenido')
+
     class Meta:
         model = Mensajes_chat
-        fields = ['id', 'sala', 'emisor', 'emisor_nombre', 'emisor_foto', 'contenido', 'fecha_envio']
+        fields = ['id', 'sala', 'emisor', 'emisor_nombre', 'emisor_foto', 'content', 'fecha_envio', 'leido']
 
     def get_emisor_foto(self, obj):
         if hasattr(obj.emisor, 'perfil') and obj.emisor.perfil.avatar:
@@ -19,13 +21,30 @@ class MensajeChatSerializer(serializers.ModelSerializer):
 class SalaChatSerializer(serializers.ModelSerializer):
     miembros_detalle = UsuarioSerializer(source='miembros', many=True, read_only=True)
     ultimo_mensaje = serializers.SerializerMethodField()
+    mensajes_no_leidos = serializers.SerializerMethodField()
 
     class Meta:
         model = Salas_chat
-        fields = ['id', 'nombre', 'es_grupal', 'es_publica', 'invite_token', 'miembros', 'miembros_detalle', 'ultimo_mensaje', 'fecha_creacion']
+        fields = [
+            'id', 'nombre', 'es_grupal', 'es_publica', 'invite_token',
+            'miembros', 'miembros_detalle', 'ultimo_mensaje',
+            'mensajes_no_leidos', 'fecha_creacion'
+        ]
 
     def get_ultimo_mensaje(self, obj):
-        ultimo = obj.mensajes.order_by('-fecha_envio').first()
+        # Intentamos obtenerlo de la relación pre-cargada si es posible
+        # Pero como queremos el ÚLTIMO, lo mejor es usar un prefetch específico o mantener esto pero minimizando impacto
+        ultimo = obj.mensajes.all().order_by('-fecha_envio').first()
         if ultimo:
             return MensajeChatSerializer(ultimo).data
         return None
+
+    def get_mensajes_no_leidos(self, obj):
+        # Si el queryset tiene la anotación count_no_leidos, la usamos
+        if hasattr(obj, 'count_no_leidos'):
+            return obj.count_no_leidos or 0
+            
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.mensajes.filter(leido=False).exclude(emisor=request.user).count()
+        return 0

@@ -7,4 +7,5 @@ class Configuracion {
   /// La dirección base para las conexiones de WebSockets.
   /// Si usas 'runserver' o 'daphne' en el EC2, el puerto suele ser el 8000.
   static const String wsUrl = 'ws://107.20.99.104/ws';
+
 }
