@@ -206,7 +206,7 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                                       border: Border.all(color: _getColorEstado(displayEstado).withOpacity(0.2)),
                                     ),
                                     child: Text(
-                                      displayEstado == 'ACTIVO' ? 'Online' : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Offline'),
+                                      displayEstado == 'ACTIVO' ? 'Activo' : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
                                       style: GoogleFonts.outfit(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w900,

@@ -317,11 +317,41 @@ class _UserProfileHeader extends StatelessWidget {
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                          onTap: () {
-                            if (onStatusChanged != null) {
-                              final nuevo = (estado == 'ACTIVO') ? 'OCUPADO' : 'ACTIVO';
-                              onStatusChanged!(nuevo);
-                            }
+                          onTapDown: (details) {
+                            final position = details.globalPosition;
+                            showMenu<String>(
+                              context: context,
+                              position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                              color: Colors.white,
+                              elevation: 10,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              items: [
+                                PopupMenuItem(
+                                  value: 'ACTIVO',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                      const SizedBox(width: 8),
+                                      Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'OCUPADO',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                      const SizedBox(width: 8),
+                                      Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ).then((nuevoEstado) {
+                              if (nuevoEstado != null && onStatusChanged != null) {
+                                onStatusChanged!(nuevoEstado);
+                              }
+                            });
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -329,13 +359,20 @@ class _UserProfileHeader extends StatelessWidget {
                               color: Colors.white.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                              estado == 'ACTIVO' ? 'Activo' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-                              style: GoogleFonts.outfit(
-                                color: Colors.white, 
-                                fontSize: 10, 
-                                fontWeight: FontWeight.w900,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  estado == 'ACTIVO' ? 'Activo' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white, 
+                                    fontSize: 10, 
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 12),
+                              ],
                             ),
                           ),
                         ),
