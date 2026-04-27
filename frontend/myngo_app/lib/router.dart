@@ -137,7 +137,7 @@ class _PostLoader extends StatelessWidget {
   }
 }
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _shellNavigatorKeyFeed = GlobalKey<NavigatorState>(debugLabel: 'shellFeed');
 final GlobalKey<NavigatorState> _shellNavigatorKeyExplorar = GlobalKey<NavigatorState>(debugLabel: 'shellExplorar');
 final GlobalKey<NavigatorState> _shellNavigatorKeyNotificaciones = GlobalKey<NavigatorState>(debugLabel: 'shellNotificaciones');
@@ -145,7 +145,7 @@ final GlobalKey<NavigatorState> _shellNavigatorKeyMensajes = GlobalKey<Navigator
 final GlobalKey<NavigatorState> _shellNavigatorKeyTienda = GlobalKey<NavigatorState>(debugLabel: 'shellTienda');
 
 final GoRouter appRouter = GoRouter(
-  navigatorKey: _rootNavigatorKey,
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/login',
   routes: [
     GoRoute(

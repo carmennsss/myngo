@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../utils/configuracion.dart';
 
 /// Servicio para gestionar la mensajería y presencia mediante WebSockets y REST.
@@ -17,6 +18,10 @@ class ServicioChat {
   bool _isConnectedChat = false;
   bool _isConnectedPresence = false;
   bool _isConnectedNotif = false;
+
+  bool get isConnectedChat => _isConnectedChat;
+  bool get isConnectedPresence => _isConnectedPresence;
+  bool get isConnectedNotif => _isConnectedNotif;
 
   static const _baseUrl = Configuracion.wsUrl;
   static const _apiUrl = Configuracion.baseUrl;
@@ -108,17 +113,21 @@ class ServicioChat {
 
   // ── WebSockets ────────────────────────────────────────────────────
 
-  /// Conecta a una sala de chat específica.
-  Future<void> conectarASala(int roomId, Function(Map<String, dynamic>) onMessage) async {
+  void conectarASala(int salaId, Function(Map<String, dynamic>) onMessage, {VoidCallback? onConnected}) {
+    _conectarChat(salaId, onMessage, onConnected: onConnected);
+  }
+
+  Future<void> _conectarChat(int salaId, Function(Map<String, dynamic>) onMessage, {VoidCallback? onConnected}) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     if (token == null) return;
 
-    final wsUrl = Uri.parse("$_baseUrl/chat/$roomId/?token=$token");
+    final wsUrl = Uri.parse("$_baseUrl/chat/$salaId/?token=$token");
 
     try {
       _chatChannel = WebSocketChannel.connect(wsUrl);
       _isConnectedChat = true;
+      if (onConnected != null) onConnected();
 
       _chatChannel!.stream.listen(
         (data) {
@@ -127,16 +136,16 @@ class ServicioChat {
         },
         onDone: () {
           _isConnectedChat = false;
-          _intentarReconexionChat(roomId, onMessage);
+          _intentarReconexionChat(salaId, onMessage);
         },
         onError: (error) {
           _isConnectedChat = false;
-          _intentarReconexionChat(roomId, onMessage);
+          _intentarReconexionChat(salaId, onMessage);
         },
       );
     } catch (e) {
       _isConnectedChat = false;
-      _intentarReconexionChat(roomId, onMessage);
+      _intentarReconexionChat(salaId, onMessage);
     }
   }
 
@@ -244,6 +253,15 @@ class ServicioChat {
         'type': 'message',
         'content': contenido,
         'client_id': clientId,
+      }));
+    }
+  }
+
+  /// Envía un evento de mensajes leídos por WebSocket.
+  void marcarLeidosWS() {
+    if (_isConnectedChat && _chatChannel != null) {
+      _chatChannel!.sink.add(jsonEncode({
+        'type': 'read_messages',
       }));
     }
   }
