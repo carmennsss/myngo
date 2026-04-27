@@ -266,11 +266,36 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        if data.get('type') == 'heartbeat':
+        message_type = data.get('type')
+        
+        if message_type == 'heartbeat':
             pass
+        elif message_type == 'change_status':
+            new_status = data.get('status')
+            if new_status in ['ACTIVO', 'OCUPADO']:
+                estado_actual = await self.actualizar_estado(new_status)
+                # Notificar a todos el cambio (incluido al remitente para confirmación)
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        'type': 'status_change',
+                        'user_id': self.user.id,
+                        'status': estado_actual
+                    }
+                )
 
     async def status_change(self, event):
         await self.send(text_data=json.dumps(event))
+
+    @database_sync_to_async
+    def actualizar_estado(self, new_status):
+        try:
+            perfil = Perfil.objects.get(usuario=self.user)
+            perfil.estado = new_status
+            perfil.save()
+            return perfil.estado
+        except Exception:
+            return 'DESCONECTADO'
 
     @database_sync_to_async
     def establecer_usuario_online(self, is_online):

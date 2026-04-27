@@ -48,6 +48,10 @@ class PantallaInicioState extends State<PantallaInicio> {
   String? _miAvatar;
   String? _miMarco;
   String _miEstado = 'DESCONECTADO';
+  int? get miId => _miId;
+  String? get miNombre => _miNombre;
+  String get miEstado => _miEstado;
+
   int? _miId;
   int? _puntos;
   int _notificacionesSinLeer = 0;
@@ -109,7 +113,16 @@ class PantallaInicioState extends State<PantallaInicio> {
             }
           } 
           else if (type == 'presence_connection_established') {
-            setState(() => _miEstado = datos['status']);
+            setState(() {
+              _miEstado = datos['status'];
+              // Sincronizar también en el ranking si ya está cargado
+              if (_rankingUsuarios != null && _miId != null) {
+                final index = _rankingUsuarios!.indexWhere((u) => u.id == _miId);
+                if (index != -1) {
+                  _rankingUsuarios![index].estado = _miEstado;
+                }
+              }
+            });
           }
         });
 
@@ -129,6 +142,10 @@ class PantallaInicioState extends State<PantallaInicio> {
     _cargarRanking();
   }
 
+  void cambiarEstado(String nuevoEstado) {
+    _servicioChat.cambiarEstado(nuevoEstado);
+  }
+
   Future<void> _cargarRanking() async {
     setState(() => _cargandoRanking = true);
     final res = await ServicioUsuarios().obtenerRanking();
@@ -136,6 +153,14 @@ class PantallaInicioState extends State<PantallaInicio> {
       setState(() {
         _rankingUsuarios = res.datos ?? [];
         _cargandoRanking = false;
+        
+        // Sincronizar mi propio estado si estoy en el ranking
+        if (_rankingUsuarios != null && _miId != null) {
+          final index = _rankingUsuarios!.indexWhere((u) => u.id == _miId);
+          if (index != -1) {
+            _rankingUsuarios![index].estado = _miEstado;
+          }
+        }
       });
     }
   }
@@ -281,6 +306,7 @@ class PantallaInicioState extends State<PantallaInicio> {
             mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
             onNavSelected: _alPulsarNav,
             onProfileSelected: _seleccionarUsuario,
+            onStatusChanged: cambiarEstado,
           ),
           Expanded(
             child: Stack(
