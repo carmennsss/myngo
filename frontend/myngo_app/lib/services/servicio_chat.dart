@@ -262,6 +262,15 @@ class ServicioChat {
       _presenceChannel!.sink.add(jsonEncode({'type': 'heartbeat'}));
     }
   }
+  
+  void cambiarEstado(String nuevoEstado) {
+    if (_isConnectedPresence && _presenceChannel != null) {
+      _presenceChannel!.sink.add(jsonEncode({
+        'type': 'change_status',
+        'status': nuevoEstado,
+      }));
+    }
+  }
 
   // ── Cierre ────────────────────────────────────────────────────────
 

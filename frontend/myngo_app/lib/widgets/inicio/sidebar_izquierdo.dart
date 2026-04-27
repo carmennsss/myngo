@@ -624,7 +624,7 @@ class _RankingItem extends StatelessWidget {
       case 'ACTIVO':
         return Colors.greenAccent;
       case 'OCUPADO':
-        return Colors.amber;
+        return Colors.redAccent;
       case 'DESCONECTADO':
       default:
         return Colors.grey.shade400;

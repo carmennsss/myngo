@@ -137,7 +137,8 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                     avatarUrl: avatarEfectivo,
                     marcoUrl: publicacion.autorMarco,
                     fondoUrl: publicacion.autorFondo ?? publicacion.autorEstiloPost?['url_fondo'],
-                    puntos: 0,
+                    estado: publicacion.autorEstado ?? 'DESCONECTADO',
+                    userId: publicacion.autorId,
                     onTap: () => _irAPerfil(context),
                     child: CircleAvatar(
                       radius: 20,
