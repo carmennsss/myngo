@@ -560,9 +560,42 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                                     return MouseRegion(
                                       cursor: usuario.id == _currentUserId ? SystemMouseCursors.click : SystemMouseCursors.basic,
                                       child: GestureDetector(
-                                        onTap: usuario.id == _currentUserId ? () {
-                                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                                          inicioState?.cambiarEstado(displayEstado == 'ACTIVO' ? 'OCUPADO' : 'ACTIVO');
+                                        onTapDown: usuario.id == _currentUserId ? (details) {
+                                          final position = details.globalPosition;
+                                          showMenu<String>(
+                                            context: context,
+                                            position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                                            color: Colors.white,
+                                            elevation: 10,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                            items: [
+                                              PopupMenuItem(
+                                                value: 'ACTIVO',
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                                    const SizedBox(width: 8),
+                                                    Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuItem(
+                                                value: 'OCUPADO',
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                                    const SizedBox(width: 8),
+                                                    Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ).then((nuevoEstado) {
+                                            if (nuevoEstado != null) {
+                                              final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                              inicioState?.cambiarEstado(nuevoEstado);
+                                            }
+                                          });
                                         } : null,
                                         child: Container(
                                           width: 24,
@@ -660,9 +693,42 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                                 return MouseRegion(
                                   cursor: usuario.id == _currentUserId ? SystemMouseCursors.click : SystemMouseCursors.basic,
                                   child: GestureDetector(
-                                    onTap: usuario.id == _currentUserId ? () {
-                                      final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                                      inicioState?.cambiarEstado(displayEstado == 'ACTIVO' ? 'OCUPADO' : 'ACTIVO');
+                                    onTapDown: usuario.id == _currentUserId ? (details) {
+                                      final position = details.globalPosition;
+                                      showMenu<String>(
+                                        context: context,
+                                        position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                                        color: Colors.white,
+                                        elevation: 10,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        items: [
+                                          PopupMenuItem(
+                                            value: 'ACTIVO',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                                const SizedBox(width: 8),
+                                                Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'OCUPADO',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                                const SizedBox(width: 8),
+                                                Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ).then((nuevoEstado) {
+                                        if (nuevoEstado != null) {
+                                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                          inicioState?.cambiarEstado(nuevoEstado);
+                                        }
+                                      });
                                     } : null,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -692,6 +758,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                                               color: _getColorEstado(displayEstado),
                                             ),
                                           ),
+                                          if (usuario.id == _currentUserId) ...[
+                                            const SizedBox(width: 4),
+                                            Icon(Icons.keyboard_arrow_down_rounded, color: _getColorEstado(displayEstado).withOpacity(0.5), size: 16),
+                                          ],
                                         ],
                                       ),
                                     ),
