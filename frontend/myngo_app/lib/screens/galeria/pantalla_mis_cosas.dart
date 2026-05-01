@@ -36,14 +36,12 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
   Future<void> _cargarDatos() async {
     setState(() => _cargando = true);
     
-    final coleccionesF = _servicioGaleria.obtenerColecciones(usuarioId: widget.usuarioId);
-
-    final resultados = await Future.wait([coleccionesF]);
+    final res = await _servicioGaleria.obtenerColecciones(idUsuario: widget.usuarioId);
 
     if (mounted) {
       setState(() {
-        if (resultados[0].exito) {
-          _misColecciones = resultados[0].datos as List<Coleccion>;
+        if (res.exito) {
+          _misColecciones = res.datos ?? [];
         }
         _cargando = false;
       });

@@ -187,7 +187,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   Future<void> _cargarEstadoVoto() async {
     if (_currentUserId == null) return;
     final res = await ServicioMejoras()
-        .obtenerEstadoVoto(receptorUsuarioId: widget.usuario.id);
+        .obtenerEstadoVoto(idReceptorUsuario: widget.usuario.id);
     if (mounted && res.exito) {
       final d = res.datos!;
       setState(() {
@@ -322,10 +322,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => SelectorEstrellas(
-        onVotado: (puntos) async {
-          final res = await ServicioMejoras().votarUsuario(
-            receptorUsuarioId: widget.usuario.id,
-            puntuacion: puntos,
+        onRatingChanged: (puntos) async {
+          final res = await ServicioMejoras().votar(
+            idReceptorUsuario: widget.usuario.id,
+            cantidadEstrellas: puntos,
           );
           if (res.exito) {
             _cargarEstadoVoto();
@@ -368,7 +368,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
         titulo: 'Nuevo Miau-Post',
         onPublicar: (txt, imgs, tags) async {
           final ok = await Provider.of<PostProvider>(context, listen: false)
-              .crearPost(texto: txt, imagenes: imgs, etiquetas: tags);
+              .crearPost(comunidadId: widget.comunidadIdContexto ?? 1, texto: txt, imagenes: imgs, etiquetas: tags);
           if (ok) _cargarPublicaciones();
           return ok;
         },

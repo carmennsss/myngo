@@ -122,7 +122,9 @@ class _TarjetaPostGuardado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = EstiloPostHelper.getEstilo(post.estiloId);
+    final estilo = post.autorEstiloPost;
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+    final textColor = esFondoClaro ? Colors.black87 : Colors.white;
 
     return GestureDetector(
       onTap: () {
@@ -132,33 +134,31 @@ class _TarjetaPostGuardado extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (context) => DetallePublicacionSheet(
             publicacion: post,
-            onInteraction: onUpdate,
+            avatarUrl: post.autorFoto ?? '',
+            onEliminado: onUpdate,
           ),
         );
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: style.backgroundColor ?? const Color(0xFF1E1E1E),
+        decoration: EstiloPostHelper.buildDecoracion(
+          estilo,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: style.borderColor ?? Colors.white.withOpacity(0.05),
-            width: 1.5,
-          ),
+          borderWidth: 1.5,
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            if (post.imagenes.isNotEmpty)
-              Image.network(post.imagenes.first, fit: BoxFit.cover),
+            if (post.urlsImagenes.isNotEmpty || post.urlImagen != null)
+              Image.network(post.urlsImagenes.isNotEmpty ? post.urlsImagenes.first : post.urlImagen!, fit: BoxFit.cover),
             Padding(
               padding: const EdgeInsets.all(8),
               child: Text(
-                post.contenido,
+                post.contenidoTexto,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: style.textColor ?? Colors.white.withOpacity(0.8)),
+                    color: textColor),
               ),
             ),
           ],

@@ -23,6 +23,7 @@ import 'widgets/comunes/vista_requerir_login.dart';
 import 'models/comunidad.dart';
 import 'models/usuario.dart';
 import 'models/publicacion.dart';
+import 'models/respuesta_api.dart';
 
 class ProtectedRoute extends StatefulWidget {
   final Widget child;
@@ -66,7 +67,7 @@ class _ComunidadLoader extends StatelessWidget {
     if (extra != null) {
       return PantallaDetalleComunidad(comunidad: extra!, esIntegrada: true, onBack: onBack);
     }
-    return FutureBuilder(
+    return FutureBuilder<RespuestaApi<Comunidad>>(
       future: ServicioComunidades().obtenerComunidad(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
@@ -90,7 +91,7 @@ class _PerfilLoader extends StatelessWidget {
     if (extra != null) {
       return PantallaDetallePerfil(usuario: extra!, esIntegrada: true, onBack: onBack);
     }
-    return FutureBuilder(
+    return FutureBuilder<RespuestaApi<Usuario>>(
       future: ServicioUsuarios().obtenerDatosUsuario(id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
@@ -115,8 +116,8 @@ class _PostLoader extends StatelessWidget {
     if (extra != null) {
       return PantallaDetallePost(post: extra!);
     }
-    return FutureBuilder(
-      future: ServicioComunidades().obtenerPublicacion(postId),
+    return FutureBuilder<RespuestaApi<Publicacion>>(
+      future: ServicioComunidades().obtenerDetallePublicacion(postId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(

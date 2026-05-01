@@ -102,7 +102,7 @@ class DialogosComunidad {
                             nombre: nombreCtrl.text,
                             descripcion: descCtrl.text,
                             esPrivada: esPrivada,
-                            comunidadId: comunidadId,
+                            idComunidad: comunidadId,
                           );
 
                           if (context.mounted) {

@@ -45,7 +45,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
   Future<void> _agregarAColeccion(Coleccion coleccion) async {
     if (widget.imagenId == null) return;
     setState(() => _guardando = true);
-    final res = await _servicioGaleria.gestionarImagenEnColeccion(coleccionId: coleccion.id, imagenId: widget.imagenId!, agregar: true);
+    final res = await _servicioGaleria.gestionarImagenEnColeccion(idColeccion: coleccion.id, idImagen: widget.imagenId!, agregar: true);
     if (mounted) {
       setState(() => _guardando = false);
       Navigator.pop(context);
@@ -60,7 +60,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
   Future<void> _toggleGuardarPost() async {
     if (widget.postId == null) return;
     setState(() => _guardando = true);
-    final res = await _servicioComunidades.toggleGuardarPost(widget.postId!);
+    final res = await _servicioComunidades.alternarGuardadoPost(widget.postId!);
     if (mounted) {
       if (res.exito) {
         setState(() {
