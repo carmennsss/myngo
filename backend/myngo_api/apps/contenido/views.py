@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 """Punto de entrada del módulo de vistas de contenido.
 
 Re-exporta todas las vistas desde los submódulos para mantener
@@ -45,3 +46,717 @@ __all__ = [
     'ResolverReporteView',
     'TogglePostGuardadoView',
 ]
+=======
+from rest_framework import generics, filters, permissions, viewsets, pagination, serializers
+from .models import Publicacion, Imagenes_galeria, Coleccion, Reporte, Comentario, Me_gustas, PostGuardado
+from .serializers import PublicacionSerializer, ImagenGaleriaSerializer, ColeccionSerializer, ReporteSerializer, ComentarioSerializer
+from .ia_service import validar_contenido_toxico
+from rest_framework.decorators import action
+from .permissions import IsAuthorOrAdmin
+from comunidades.models import Comunidad
+from rest_framework.views import APIView,status
+from rest_framework.response import Response
+from core import settings
+from django.http import JsonResponse
+from django.core.files.storage import default_storage
+from usuarios.models import Seguimiento, Usuario, Perfil
+from django.db import models
+from django.db.models import Q, Count, OuterRef, Exists, Subquery, Value
+from django.db.models.functions import Coalesce
+from comunidades.models import Miembros_comunidades
+from notificaciones.models import Notificacion
+
+class GaleriaPagination(pagination.LimitOffsetPagination):
+    default_limit = 20
+    max_limit = 100
+
+class DocumentosUtilidad(APIView):
+    """
+    Endpoint para obtener las rutas de documentos legales de Myngo.
+    """
+    def get(self, request):
+        nombre_archivo = "legal/Reglas_comunidad.pdf"
+        
+        # Al tener querystring_auth=True en settings, esto genera 
+        # automáticamente la URL con el token de seguridad de Amazon
+        try:
+            url_s3 = default_storage.url(nombre_archivo)
+            return Response({"reglas_comunidad": url_s3}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PublicacionList(generics.ListAPIView):
+    serializer_class = PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['fecha_creacion']
+
+    def get_queryset(self):
+        user = self.request.user #obtengo usuario
+        comunidad_id = self.request.query_params.get('comunidad_id') #obtengo comunidad
+        perfil_id=self.request.query_params.get('perfil_id') #obtengo perfil
+        solo_guardados = self.request.query_params.get('solo_guardados')
+
+        # Filtro base: Solo válidos por IA para usuarios normales
+        qs = Publicacion.objects.filter(es_valido_ia=True)\
+            .select_related('autor', 'comunidad', 'imagen', 'autor__perfil')\
+            .prefetch_related('imagenes')
+
+        from django.db.models import OuterRef, Subquery, IntegerField, Count
+        
+        # Subconsultas para conteos (más rápido que Count(distinct=True) en joins complejos)
+        likes_subquery = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(count=Count('id')).values('count')
+        comentarios_subquery = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(count=Count('id')).values('count')
+
+        if user.is_authenticated:
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_subquery, output_field=IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(comentarios_subquery, output_field=IntegerField()), Value(0)),
+                anotado_usuario_dio_like=Exists(
+                    Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=user)
+                ),
+                anotado_usuario_guardo_post=Exists(
+                    PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=user)
+                )
+            )
+        else:
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_subquery, output_field=IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(comentarios_subquery, output_field=IntegerField()), Value(0))
+            )
+        
+        if solo_guardados == 'true' and user.is_authenticated:
+            # Combinamos guardado formal con guardado histórico via colecciones
+            qs = qs.filter(
+                Q(guardado_por__usuario=user) | 
+                Q(imagenes__en_colecciones__usuario=user)
+            ).distinct()
+            if comunidad_id:
+                qs = qs.filter(comunidad_id=comunidad_id)
+            return qs.order_by('-fecha_creacion')
+
+        if comunidad_id:#si he recibido una comunidad
+            try:
+                comunidad = Comunidad.objects.get(id=comunidad_id)#extraigo comunidad
+            except Comunidad.DoesNotExist:
+                return Publicacion.objects.none()
+
+            if not comunidad.es_publica:#si no es publica
+                if user.is_authenticated:
+                    # Verificar membresía aceptada
+                    es_miembro = Seguimiento.objects.filter(
+                        seguidor=user, 
+                        seguida_comunidad=comunidad, 
+                        estado='ACEPTADO'
+                    ).exists()
+                    if not es_miembro and comunidad.creador != user:#si el creador no es el usuario y no es miembro
+                        return Publicacion.objects.none()
+                else:
+                    # Usuario anónimo no puede ver comunidad privada
+                    return Publicacion.objects.none()
+            
+            return qs.filter(comunidad_id=comunidad_id).order_by('-fecha_creacion') #retorna publicaciones
+        if perfil_id: #si he recibido perfil (que en frontend es el id del usuario)
+            try:
+                perfil=Perfil.objects.get(id=perfil_id)#extraigo perfil
+            except Perfil.DoesNotExist:
+                return Publicacion.objects.none()
+            
+            if not perfil.es_publico:#si no es publico
+                if user.is_authenticated:
+                    #compruebo amistad
+                    es_miembro = Seguimiento.objects.filter(
+                        seguidor=user, 
+                        seguido_usuario=perfil.usuario, 
+                        estado='ACEPTADO'
+                    ).exists()
+                    if not es_miembro and perfil.usuario != user:#si no es amigo y no es el propietario
+                        return Publicacion.objects.none()
+                else:
+                    return Publicacion.objects.none()
+            return qs.filter(autor=perfil.usuario,comunidad__isnull=True).order_by('-fecha_creacion')#devuelve publicaciones
+        # Feed Global: últimas publicaciones de comunidades públicas
+        return qs.filter(comunidad__es_publica=True).order_by('-fecha_creacion')
+
+class PublicacionCreate(generics.CreateAPIView):
+    serializer_class = PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        from django.db import transaction
+        
+        archivos = request.FILES.getlist('url_archivo_s3')
+        
+        titulo = request.data.get('titulo', '') or ''
+        contenido_texto = request.data.get('contenido_texto', '') or ''
+        texto = f"{titulo} {contenido_texto}".strip()
+        es_valido = validar_contenido_toxico(texto)
+
+        try:
+            with transaction.atomic():
+                # 1. Crear la publicación primero
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
+
+                # 2. Guardar imagenes y asociarlas (Max 4)
+                imagenes_creadas = []
+                for archivo in archivos[:4]:
+                    img_instancia = Imagenes_galeria.objects.create(
+                        propietario=request.user,
+                        url_s3=archivo,
+                        comunidad_id=request.data.get('comunidad') or None,
+                        relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
+                        etiquetas=request.data.get('etiquetas', ''),
+                    )
+                    imagenes_creadas.append(img_instancia)
+
+                if imagenes_creadas:
+                    publicacion.imagen = imagenes_creadas[0] # Para compatibilidad (1ra imagen)
+                    publicacion.imagenes.set(imagenes_creadas) # Para multi-imagen
+                    publicacion.save()
+
+                # Usamos el serializer de nuevo para retornar los datos completos
+                from .serializers import PublicacionSerializer
+                return Response(PublicacionSerializer(publicacion, context={'request': request}).data, status=201)
+                
+        except Exception as e:
+            # Si ocurre cualquier error, transaction.atomic revertirá la base de datos automáticamente
+            return Response({'error': f'Se ha cancelado la creación de la publicación debido a un error: {str(e)}'}, status=400)
+class PublicacionDelete(generics.DestroyAPIView):
+    serializer_class= PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        titulo_seguro = instance.titulo or "Sin título"
+        
+        # Si el que borra no es el autor (es admin), notificar
+        if instance.autor != request.user:
+            titulo_seguro = instance.titulo or "Sin título"
+            Notificacion.objects.create(
+                usuario=instance.autor,
+                tipo="CONTENIDO_BORRADO",
+                mensaje=f"Tu post '{titulo_seguro[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.comunidad
+            )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='POST', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
+            
+        # Borrar imagenes multiples
+        imgs = list(instance.imagenes.all())
+        if instance.imagen and instance.imagen not in imgs:
+            instance.imagen.delete()
+        for img in imgs:
+            img.delete()
+            
+        instance.delete()
+        return Response({"mensaje": "Publicación eliminada correctamente"}, status=status.HTTP_200_OK)
+class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Publicacion.objects.all()
+    serializer_class = PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        titulo = request.data.get('titulo') if request.data.get('titulo') is not None else (instance.titulo or '')
+        contenido_texto = request.data.get('contenido_texto') if request.data.get('contenido_texto') is not None else (instance.contenido_texto or '')
+        texto = f"{titulo} {contenido_texto}".strip()
+        es_valido = validar_contenido_toxico(texto)
+
+        serializer.save(es_valido_ia=es_valido)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        titulo_seguro = instance.titulo or "Sin título"
+        
+        # Si el que borra no es el autor (es admin), notificar
+        if instance.autor != request.user:
+            Notificacion.objects.create(
+                usuario=instance.autor,
+                tipo="CONTENIDO_BORRADO",
+                mensaje=f"Tu post '{titulo_seguro[:20]}...' ha sido borrado por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.comunidad
+            )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='POST', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
+            
+        # Borrar imagenes multiples
+        imgs = list(instance.imagenes.all())
+        if instance.imagen and instance.imagen not in imgs:
+            instance.imagen.delete()
+        for img in imgs:
+            img.delete()
+            
+        instance.delete()
+        return Response({"mensaje": "Publicación eliminada correctamente"}, status=status.HTTP_200_OK)
+
+class ImagenGaleriaDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Imagenes_galeria.objects.all()
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        
+        if instance.propietario != request.user:
+            Notificacion.objects.create(
+                usuario=instance.propietario,
+                tipo="CONTENIDO_BORRADO",
+                mensaje=f"Tu imagen de la galería ha sido borrada por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.comunidad
+            )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='IMAGEN', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
+        
+        instance.delete()
+        return Response({"mensaje": "Imagen eliminada"}, status=status.HTTP_200_OK)
+
+class ReporteListCreate(generics.ListCreateAPIView):
+    queryset = Reporte.objects.all()
+    serializer_class = ReporteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        reporte = serializer.save(informador=self.request.user)
+        
+        # Si el reporte es dentro de una comunidad, avisar a los moderadores
+        if reporte.comunidad:
+            mods = Miembros_comunidades.objects.filter(
+                comunidad=reporte.comunidad,
+                rol__in=['Administrador', 'Moderador']
+            )
+            for mod in mods:
+                # Evitar que el propio informador se notifique a sí mismo si es mod
+                if mod.usuario != self.request.user:
+                    Notificacion.objects.create(
+                        usuario=mod.usuario,
+                        tipo='NUEVO_REPORTE',
+                        mensaje=f"¡Atención! Hay un nuevo reporte de {reporte.tipo_objeto} en '{reporte.comunidad.nombre}'.",
+                        referencia_comunidad=reporte.comunidad,
+                        referencia_id=reporte.id
+                    )
+
+class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comentario.objects.all()
+    serializer_class = ComentarioSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        
+        if instance.autor != request.user:
+            Notificacion.objects.create(
+                usuario=instance.autor,
+                tipo="COMENTARIO_BORRADO",
+                mensaje=f"Tu comentario ha sido borrado por un administrador. Motivo: {razon}",
+                referencia_comunidad=instance.publicacion.comunidad
+            )
+        
+        # Auto-resolver reportes pendientes
+        Reporte.objects.filter(tipo_objeto='COMENTARIO', objeto_id=instance.id, estado='PENDIENTE').update(estado='RESUELTO')
+        
+        instance.delete()
+        return Response({"mensaje": "Comentario eliminado"}, status=status.HTTP_200_OK)
+
+class GaleriaList(generics.ListCreateAPIView):
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = GaleriaPagination
+
+    def get_queryset(self):
+        comunidad_id = self.request.query_params.get('comunidad_id')
+        propietario_id = self.request.query_params.get('usuario_id')
+        coleccion_id = self.request.query_params.get('coleccion_id')
+        
+        qs = Imagenes_galeria.objects.filter(es_publica=True)
+
+        if coleccion_id:
+            try:
+                from .models import Coleccion
+                coleccion = Coleccion.objects.get(id=coleccion_id)
+                # Omitimos la verificación de privacidad estricta temporalmente si es el autor
+                if coleccion.es_privada and getattr(coleccion, 'usuario', None) != self.request.user:
+                    return Imagenes_galeria.objects.none()
+                return coleccion.imagenes.all().order_by('-fecha_subida')
+            except Exception:
+                return Imagenes_galeria.objects.none()
+
+        if comunidad_id:
+            # Si es comunidad privada, verificar membresía
+            try:
+                comunidad = Comunidad.objects.get(id=comunidad_id)
+                if not comunidad.es_publica:
+                    es_miembro = Miembros_comunidades.objects.filter(
+                        comunidad=comunidad, usuario=self.request.user
+                    ).exists()
+                    if not es_miembro and comunidad.creador != self.request.user:
+                        return Imagenes_galeria.objects.none()
+                return Imagenes_galeria.objects.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
+            except Comunidad.DoesNotExist:
+                return Imagenes_galeria.objects.none()
+
+        if propietario_id:
+            # Si es mi galería, veo todo; si es de otro, solo lo público
+            if str(propietario_id) == str(self.request.user.id):
+                return Imagenes_galeria.objects.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+            return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+            
+        return qs.order_by('-fecha_subida')
+
+    def perform_create(self, serializer):
+        serializer.save(propietario=self.request.user)
+
+class GaleriaDetalleExtendido(generics.RetrieveAPIView):
+    queryset = Imagenes_galeria.objects.all()
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        imagen = self.get_object()
+        
+        # Buscar publicaciones asociadas a esta imagen
+        from .models import Publicacion, Coleccion
+        from .serializers import PublicacionSerializer, ColeccionSerializer
+        
+        pub = Publicacion.objects.filter(imagen=imagen).first()
+        pub_data = PublicacionSerializer(pub, context={'request': request}).data if pub else None
+
+        # Buscar colecciones donde aparece esta imagen (sólo mostramos las públicas o propias)
+        cols = Coleccion.objects.filter(imagenes=imagen)
+        cols = cols.filter(Q(es_privada=False) | Q(usuario=request.user))
+        cols_data = [{'id': c.id, 'nombre': c.nombre_coleccion, 'privada': c.es_privada} for c in cols]
+
+        return Response({
+            'imagen': self.get_serializer(imagen).data,
+            'publicacion': pub_data,
+            'colecciones': cols_data
+        })
+
+class InicioGaleria(generics.ListAPIView):
+    serializer_class = PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = GaleriaPagination
+    
+    def get_queryset(self):
+        usuario = self.request.user if self.request.user.is_authenticated else None
+        etiquetas = self.request.query_params.get('etiquetas', None)
+        
+        # Filtro base: solo posts con imagen válida
+        qs = Publicacion.objects.filter(
+            imagen__isnull=False,
+            imagen__url_s3__gt='',
+            es_valido_ia=True
+        )
+
+        if usuario:
+            mis_comunidades_ids = Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
+            mis_seguidos_ids = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO').values_list('seguido_usuario_id', flat=True)
+            
+            qs = qs.filter(
+                Q(comunidad_id__in=mis_comunidades_ids) |
+                Q(autor_id__in=mis_seguidos_ids) |
+                Q(comunidad__es_publica=True) |
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True) |
+                Q(autor=usuario)
+            ).distinct()
+
+            # Anotaciones optimizadas con Subqueries
+            likes_sub = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_usuario_dio_like=Exists(Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
+                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
+            )
+        else:
+            # Público: solo comunidades públicas y perfiles públicos
+            qs = qs.filter(
+                Q(comunidad__es_publica=True) | 
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+            ).distinct()
+            
+            likes_sub = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=models.IntegerField()), Value(0))
+            )
+
+        # Carga básica de relaciones
+        qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil').prefetch_related('imagenes')
+            
+        if etiquetas:
+            qs = qs.filter(imagen__etiquetas__icontains=etiquetas)
+            
+        return qs.order_by('-fecha_creacion')
+
+class InicioFeed(generics.ListAPIView):
+    serializer_class = PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = GaleriaPagination
+    
+    def get_queryset(self):
+        usuario = self.request.user if self.request.user.is_authenticated else None
+        etiquetas = self.request.query_params.get('etiquetas', None)
+        
+        # Filtro base: Solo contenido validado por IA
+        qs = Publicacion.objects.filter(es_valido_ia=True)
+        
+        if usuario:
+            # 1. Filtros sociales
+            # Miembros de comunidades del usuario
+            mis_comunidades_ids = Miembros_comunidades.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
+            # Usuarios a los que sigue (aceptados)
+            mis_seguidos_ids = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO').values_list('seguido_usuario_id', flat=True)
+            
+            qs = qs.filter(
+                Q(comunidad_id__in=mis_comunidades_ids) |          # Mis comunidades
+                Q(autor_id__in=mis_seguidos_ids) |                # Gente que sigo
+                Q(comunidad__es_publica=True) |                   # Comunidades públicas
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True) | # Perfiles públicos (sin comunidad)
+                Q(autor=usuario)                                  # Mis propios posts
+            ).distinct()
+
+            # 2. Anotaciones optimizadas (Subqueries para evitar el GROUP BY pesado)
+            likes_sub = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_usuario_dio_like=Exists(Me_gustas.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
+                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
+            )
+        else:
+            # Modo público
+            qs = qs.filter(
+                Q(comunidad__es_publica=True) | 
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+            ).distinct()
+            
+            likes_sub = Me_gustas.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=models.IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=models.IntegerField()), Value(0))
+            )
+
+        # Carga básica de relaciones
+        qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')
+            
+        if etiquetas:
+            qs = qs.filter(contenido_texto__icontains=etiquetas)
+            
+        return qs.order_by('-fecha_creacion')
+
+class ColeccionViewSet(viewsets.ModelViewSet):
+    serializer_class = ColeccionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = GaleriaPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        comunidad_id = self.request.query_params.get('comunidad_id')
+        usuario_id = self.request.query_params.get('usuario_id')
+
+        if comunidad_id:
+            return Coleccion.objects.filter(comunidad_id=comunidad_id)
+        if usuario_id:
+            if str(usuario_id) == str(user.id):
+                return Coleccion.objects.filter(usuario_id=usuario_id)
+            return Coleccion.objects.filter(usuario_id=usuario_id, es_privada=False)
+        
+        return Coleccion.objects.filter(usuario=user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import PermissionDenied
+        from comunidades.models import Miembros_comunidades
+        user = self.request.user
+        if instance.comunidad:
+            # Colección de comunidad: solo creador o admin/moderador
+            es_gestor = (
+                instance.comunidad.creador == user or
+                Miembros_comunidades.objects.filter(
+                    usuario=user,
+                    comunidad=instance.comunidad,
+                    rol__in=['Administrador', 'Moderador']
+                ).exists()
+            )
+            if not es_gestor:
+                raise PermissionDenied('Solo el creador o moderadores pueden eliminar colecciones de comunidad.')
+        elif instance.usuario and instance.usuario != user:
+            # Colección de perfil: solo el dueño
+            raise PermissionDenied('Solo el propietario puede eliminar esta colección.')
+        instance.delete()
+
+    @action(detail=True, methods=['post'], url_path='gestionar-imagenes')
+    def gestionar_imagenes(self, request, pk=None):
+        coleccion = self.get_object()
+        imagen_id = request.data.get('imagen_id')
+        accion = request.data.get('accion') # 'add' o 'remove'
+
+        try:
+            imagen = Imagenes_galeria.objects.get(id=imagen_id)
+        except Imagenes_galeria.DoesNotExist:
+            return Response({'error': 'Imagen no encontrada'}, status=404)
+
+        if accion == 'add':
+            coleccion.imagenes.add(imagen)
+            return Response({'status': 'Imagen añadida'})
+        elif accion == 'remove':
+            from comunidades.models import Miembros_comunidades
+            # Verificar permisos antes de quitar
+            if coleccion.comunidad:
+                es_gestor = (
+                    coleccion.comunidad.creador == request.user or
+                    Miembros_comunidades.objects.filter(
+                        usuario=request.user,
+                        comunidad=coleccion.comunidad,
+                        rol__in=['Administrador', 'Moderador']
+                    ).exists()
+                )
+                if not es_gestor:
+                    return Response({'error': 'Sin permiso para modificar esta colección'}, status=403)
+            elif coleccion.usuario and coleccion.usuario != request.user:
+                return Response({'error': 'Solo el propietario puede modificar esta colección'}, status=403)
+            coleccion.imagenes.remove(imagen)
+            return Response({'status': 'Imagen removida'})
+        
+        return Response({'error': 'Acción no válida'}, status=400)
+
+class ToggleLikeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            publicacion = Publicacion.objects.get(pk=pk)
+        except Publicacion.DoesNotExist:
+            return Response({'error': 'Publicación no encontrada'}, status=404)
+
+        # RESTRICCIÓN: Solo miembros pueden dar Like si es de una comunidad
+        if publicacion.comunidad:
+            es_miembro = Miembros_comunidades.objects.filter(
+                usuario=request.user, 
+                comunidad=publicacion.comunidad
+            ).exists()
+            if not es_miembro:
+                return Response(
+                    {'error': 'Debes ser miembro de la comunidad para interactuar con este post 🐾'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+        like, created = Me_gustas.objects.get_or_create(usuario=request.user, publicacion=publicacion)
+        
+        if not created:
+            like.delete()
+            return Response({'mensaje': 'Like eliminado', 'resultado': 'unliked'}, status=200)
+        
+        # Opcional: Crear notificación para el autor
+        if publicacion.autor != request.user:
+            Notificacion.objects.create(
+                usuario=publicacion.autor,
+                tipo='LIKE',
+                mensaje=f"A {request.user.nombre_usuario} le ha gustado tu miau-post ✨",
+                referencia_id=publicacion.id
+            )
+
+        return Response({'mensaje': 'Like añadido', 'resultado': 'liked'}, status=201)
+
+class ComentarioListCreate(generics.ListCreateAPIView):
+    serializer_class = ComentarioSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        publicacion_id = self.kwargs.get('pk')
+        return Comentario.objects.filter(publicacion_id=publicacion_id).order_by('fecha_creacion')
+
+    def perform_create(self, serializer):
+        try:
+            publicacion = Publicacion.objects.get(pk=self.kwargs.get('pk'))
+        except Publicacion.DoesNotExist:
+            raise serializers.ValidationError({"error": "La publicación no existe"})
+        
+        # RESTRICCIÓN: Solo miembros pueden comentar si es de una comunidad
+        if publicacion.comunidad:
+            es_miembro = Miembros_comunidades.objects.filter(
+                usuario=self.request.user, 
+                comunidad=publicacion.comunidad
+            ).exists()
+            if not es_miembro:
+                raise permissions.PermissionDenied("Debes ser miembro de la comunidad para comentar 🐾")
+
+        serializer.save(autor=self.request.user, publicacion=publicacion)
+
+        # Notificación para el autor
+        if publicacion.autor != self.request.user:
+            Notificacion.objects.create(
+                usuario=publicacion.autor,
+                tipo='COMENTARIO',
+                mensaje=f"{self.request.user.nombre_usuario} ha comentado tu miau-post 🐾",
+                referencia_id=publicacion.id
+            )
+
+class ResolverReporteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            reporte = Reporte.objects.get(pk=pk)
+        except Reporte.DoesNotExist:
+            return Response({'error': 'Reporte no encontrado'}, status=404)
+
+        # Solo el creador o moderadores de la comunidad pueden resolver
+        if reporte.comunidad:
+            es_gestor = reporte.comunidad.creador == request.user or Miembros_comunidades.objects.filter(
+                usuario=request.user, comunidad=reporte.comunidad, rol__in=['Administrador', 'Moderador']
+            ).exists()
+            if not es_gestor:
+                return Response({'error': 'No tienes permiso para resolver este reporte'}, status=403)
+
+        nuevo_estado = request.data.get('estado')
+        if nuevo_estado not in ['RESUELTO', 'DESESTIMADO']:
+            return Response({'error': 'Estado no válido'}, status=400)
+
+        reporte.estado = nuevo_estado
+        reporte.save()
+        
+        return Response({'mensaje': f'Reporte marcado como {nuevo_estado}'}, status=200)
+
+class TogglePostGuardadoView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            publicacion = Publicacion.objects.get(pk=pk)
+        except Publicacion.DoesNotExist:
+            return Response({'error': 'Publicación no encontrada'}, status=404)
+
+        guardado, created = PostGuardado.objects.get_or_create(usuario=request.user, publicacion=publicacion)
+        
+        if not created:
+            guardado.delete()
+            return Response({'mensaje': 'Post eliminado de guardados', 'resultado': 'removed'}, status=200)
+        
+        return Response({'mensaje': 'Post guardado en tu perfil', 'resultado': 'added'}, status=201)
+>>>>>>> Stashed changes

@@ -228,7 +228,7 @@ class PantallaInicioState extends State<PantallaInicio> {
     if (widget.navigationShell != null) {
       widget.navigationShell!.goBranch(
         index,
-        initialLocation: index == widget.navigationShell!.currentIndex,
+        initialLocation: true,
       );
     } else {
       setState(() {
