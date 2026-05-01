@@ -1,10 +1,16 @@
+"""Servicio de validación de contenido mediante IA.
+
+Utiliza modelos de Hugging Face para detectar toxicidad, insultos y contenido
+inapropiado en los textos de las publicaciones.
+"""
+
 import requests
-import time
 from django.conf import settings
 
 # Modelo multilingüe para toxicidad, insultos, odio y sexualidad implícita
 API_URL = "https://router.huggingface.co/hf-inference/models/unitary/multilingual-toxic-xlm-roberta"
 
+# Umbrales de decisión para cada categoría de toxicidad
 LABEL_THRESHOLDS = {
     'toxicity': 0.40,
     'severe_toxicity': 0.25,
@@ -19,11 +25,23 @@ LABEL_THRESHOLDS = {
 
 
 def _get_hf_token():
-    """Lee el token fresco de settings en cada llamada."""
+    """Obtiene el token de Hugging Face desde la configuración de Django.
+
+    Returns:
+        str: Token de API.
+    """
     return getattr(settings, 'HUGGING_FACE_TOKEN', '')
 
 
 def _normalize_predictions(resultado):
+    """Normaliza la respuesta de la API de Hugging Face a una lista de diccionarios.
+
+    Args:
+        resultado: Respuesta JSON de la API.
+
+    Returns:
+        list: Lista de predicciones normalizada o None si el formato es inválido.
+    """
     if isinstance(resultado, dict):
         if 'error' in resultado:
             return None
@@ -43,6 +61,14 @@ def _normalize_predictions(resultado):
 
 
 def _es_malicioso(prediccion):
+    """Determina si una predicción individual supera los umbrales de toxicidad.
+
+    Args:
+        prediccion (dict): Diccionario con 'label' y 'score'.
+
+    Returns:
+        bool: True si el contenido se considera malicioso.
+    """
     if not isinstance(prediccion, dict):
         return False
 
@@ -59,12 +85,23 @@ def _es_malicioso(prediccion):
 
 
 def validar_contenido_toxico(texto):
+    """Valida si un texto contiene contenido tóxico o inapropiado.
+
+    Realiza una petición a la API de inferencia de Hugging Face. Si falla la conexión
+    o el token no está configurado, permite el contenido por defecto.
+
+    Args:
+        texto (str): Texto a analizar.
+
+    Returns:
+        bool: True si el contenido es válido, False si es tóxico.
+    """
     if not texto or len(texto.strip()) < 3:
         return True
 
     hf_token = _get_hf_token()
     if not hf_token or hf_token == 'hf_placeholder':
-        print('Moderación IA: token de Hugging Face faltante, permitiendo contenido sin moderación')
+        # Silenciamos el log en producción si no hay token, permitiendo flujo normal
         return True
 
     headers = {"Authorization": f"Bearer {hf_token}"}
@@ -74,30 +111,21 @@ def validar_contenido_toxico(texto):
     }
 
     try:
-        print(f'Moderación IA: analizando texto "{texto[:80]}..."')
         response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-        
+
         if response.status_code != 200:
-            print(f'Moderación IA: status inesperado {response.status_code} - {response.text[:200]}')
             return True
 
         resultado = response.json()
-        print(f'Moderación IA: respuesta raw = {resultado}')
-        
         predictions = _normalize_predictions(resultado)
+
         if predictions is None:
-            print('Moderación IA: formato inesperado, permitiendo contenido', resultado)
             return True
 
         for prediccion in predictions:
             if _es_malicioso(prediccion):
-                label = prediccion.get('label')
-                score = prediccion.get('score')
-                print(f"Moderación IA: BLOQUEADO por {label} (score={score})")
                 return False
-        
-        print('Moderación IA: contenido aprobado')
+
         return True
-    except Exception as e:
-        print(f'Error conexión moderación IA: {e}, permitiendo contenido')
-        return True
+    except Exception:
+        return True

@@ -1,13 +1,24 @@
+"""Consumidores de WebSocket para el sistema de chat y presencia.
+
+Incluye la lógica de envío/recepción de mensajes en tiempo real,
+gestión de estado online/offline (presencia) y notificaciones push.
+"""
+
 import json
-from channels.generic.websocket import AsyncWebsocketConsumer
+
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
-from .models import Salas_chat, Mensajes_chat, Participantes_chat
-from usuarios.models import Usuario, Perfil
+
+from usuarios.models import Perfil, Usuario
+from .models import MensajeChat, SalaChat
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    """Consumidor para la comunicación en tiempo real dentro de una sala de chat."""
+
     async def connect(self):
+        """Establece la conexión WebSocket y valida la pertenencia a la sala."""
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.room_group_name = f'chat_{self.room_id}'
         self.user = self.scope['user']
@@ -54,14 +65,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
+        """Abandona el grupo de la sala al desconectarse."""
         if hasattr(self, 'room_group_name'):
-            # Salir del grupo de la sala
             await self.channel_layer.group_discard(
                 self.room_group_name,
                 self.channel_name
             )
 
     async def receive(self, text_data):
+        """Procesa los mensajes entrantes del cliente WebSocket."""
         data = json.loads(text_data)
         message_type = data.get('type', 'message')
 
@@ -77,7 +89,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     {
                         'type': 'chat_message',
                         'message_id': msg.id,
-                        'client_id': data.get('client_id'), # Devolver el ID temporal del cliente
+                        'client_id': data.get('client_id'),
                         'content': content,
                         'user_id': self.user.id,
                         'username': self.user.nombre_usuario,
@@ -133,40 +145,46 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     )
 
     # ── Handlers para eventos de grupo ────────────────────────────────
+
     async def chat_message(self, event):
+        """Envía el mensaje de chat al cliente."""
         await self.send(text_data=json.dumps(event))
 
     async def user_joined(self, event):
-        # Evitar mostrar el mensaje de sistema al propio usuario que se acaba de conectar
+        """Notifica que un usuario se ha unido (excepto a él mismo)."""
         if event.get('user_id') != self.user.id:
             await self.send(text_data=json.dumps(event))
 
     async def user_left(self, event):
+        """Notifica que un usuario ha salido (excepto a él mismo)."""
         if event.get('user_id') != self.user.id:
             await self.send(text_data=json.dumps(event))
 
     async def member_added(self, event):
+        """Notifica que un nuevo miembro fue añadido a la sala."""
         await self.send(text_data=json.dumps(event))
 
     async def messages_read(self, event):
-        """Notifica al emisor que sus mensajes han sido leídos."""
+        """Notifica que los mensajes han sido leídos."""
         await self.send(text_data=json.dumps(event))
 
     # ── Métodos de BD ─────────────────────────────────────────────────
+
     @database_sync_to_async
     def is_member(self, user, room_id):
-        return Salas_chat.objects.filter(id=room_id, miembros=user).exists()
+        """Verifica si el usuario pertenece a la sala de chat."""
+        return SalaChat.objects.filter(id=room_id, miembros=user).exists()
 
     @database_sync_to_async
     def save_message(self, user, room_id, content):
-        room = Salas_chat.objects.get(id=room_id)
-        return Mensajes_chat.objects.create(sala=room, emisor=user, contenido=content)
+        """Guarda un nuevo mensaje en la base de datos."""
+        room = SalaChat.objects.get(id=room_id)
+        return MensajeChat.objects.create(sala=room, emisor=user, contenido=content)
 
     @database_sync_to_async
     def marcar_mensajes_como_leidos(self):
-        """Marca como leídos los mensajes de la sala que el usuario no ha enviado."""
-        # Buscamos mensajes que NO son del usuario actual y están sin leer
-        mensajes = Mensajes_chat.objects.filter(
+        """Marca como leídos los mensajes no leídos enviados por otros usuarios."""
+        mensajes = MensajeChat.objects.filter(
             sala_id=self.room_id,
             es_leido=False
         ).exclude(emisor=self.user)
@@ -178,34 +196,43 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_miembros_ids(self, room_id, exclude_user_id=None):
-        qs = Salas_chat.objects.get(id=room_id).miembros.all()
+        """Obtiene la lista de IDs de todos los miembros de la sala."""
+        qs = SalaChat.objects.get(id=room_id).miembros.all()
         if exclude_user_id:
             qs = qs.exclude(id=exclude_user_id)
         return list(qs.values_list('id', flat=True))
 
     @database_sync_to_async
     def get_sala_nombre(self, room_id):
-        return Salas_chat.objects.get(id=room_id).nombre
+        """Obtiene el nombre de la sala de chat."""
+        return SalaChat.objects.get(id=room_id).nombre
 
     @database_sync_to_async
     def add_member_to_room(self, user_id, room_id):
+        """Añade un usuario a la sala de chat."""
         try:
-            room = Salas_chat.objects.get(id=room_id)
+            room = SalaChat.objects.get(id=room_id)
             user = Usuario.objects.get(id=user_id)
             room.miembros.add(user)
             return True
         except Exception:
             return False
+
     @database_sync_to_async
     def get_user_avatar(self, user_id):
+        """Obtiene la URL del avatar de un usuario."""
         try:
             perfil = Perfil.objects.get(usuario_id=user_id)
             return perfil.avatar.url if perfil.avatar else None
         except Exception:
             return None
 
+
 class PresenceConsumer(AsyncWebsocketConsumer):
+    """Consumidor global para gestionar el estado de presencia (online/offline)."""
+
     async def connect(self):
+        """Establece conexión de presencia y marca al usuario como online."""
         self.user = self.scope['user']
         if self.user.is_anonymous:
             await self.close()
@@ -213,7 +240,6 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
         self.group_name = 'online_users'
 
-        # Unirse al grupo global de presencia
         await self.channel_layer.group_add(
             self.group_name,
             self.channel_name
@@ -221,10 +247,8 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Marcar como online en BD y obtener el estado resultante (ACTIVO u OCUPADO)
         estado_actual = await self.establecer_usuario_online(True)
 
-        # 1. Enviar al propio cliente confirmación de su estado y snapshot global
         online_ids = await self.get_online_user_ids()
         await self.send(text_data=json.dumps({
             'type': 'presence_connection_established',
@@ -233,7 +257,6 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             'online_users': online_ids,
         }))
 
-        # 2. Notificar al resto del grupo que este usuario se ha conectado
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -244,11 +267,10 @@ class PresenceConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
+        """Marca al usuario como offline al desconectarse."""
         if not self.user.is_anonymous:
-            # Marcar como DESCONECTADO en BD
             await self.establecer_usuario_online(False)
 
-            # Notificar al grupo
             await self.channel_layer.group_send(
                 self.group_name,
                 {
@@ -265,6 +287,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             )
 
     async def receive(self, text_data):
+        """Procesa actualizaciones de heartbeat y cambios manuales de estado."""
         data = json.loads(text_data)
         message_type = data.get('type')
         
@@ -274,7 +297,6 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             new_status = data.get('status')
             if new_status in ['ACTIVO', 'OCUPADO']:
                 estado_actual = await self.actualizar_estado(new_status)
-                # Notificar a todos el cambio (incluido al remitente para confirmación)
                 await self.channel_layer.group_send(
                     self.group_name,
                     {
@@ -285,10 +307,12 @@ class PresenceConsumer(AsyncWebsocketConsumer):
                 )
 
     async def status_change(self, event):
+        """Notifica el cambio de estado de un usuario al grupo."""
         await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
     def actualizar_estado(self, new_status):
+        """Actualiza el estado de disponibilidad del usuario."""
         try:
             perfil = Perfil.objects.get(usuario=self.user)
             perfil.estado = new_status
@@ -299,6 +323,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def actualizar_heartbeat(self):
+        """Actualiza la fecha de última conexión activa."""
         try:
             Perfil.objects.filter(usuario=self.user).update(last_seen=timezone.now(), esta_online=True)
         except Exception:
@@ -306,18 +331,16 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def establecer_usuario_online(self, is_online):
+        """Actualiza los flags de conexión online/offline en la base de datos."""
         try:
-            # Obtenemos el perfil fresco de la BD
             perfil = Perfil.objects.get(usuario=self.user)
             perfil.esta_online = is_online
             perfil.last_seen = timezone.now()
             
             if is_online:
-                # Si se conecta y NO está ocupado, pasa a ACTIVO
                 if perfil.estado != 'OCUPADO':
                     perfil.estado = 'ACTIVO'
             else:
-                # Si se desconecta, pasa a DESCONECTADO
                 perfil.estado = 'DESCONECTADO'
                 perfil.last_seen = timezone.now()
             
@@ -328,24 +351,20 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_online_user_ids(self):
-        """Retorna la lista de IDs de usuarios actualmente online según la BD."""
-        # Limpieza perezosa de fantasmas (usuarios sin señales en más de 2 minutos)
+        """Retorna los IDs de usuarios online, limpiando usuarios fantasmas."""
         try:
             umbral = timezone.now() - timezone.timedelta(minutes=2)
             Perfil.objects.filter(esta_online=True, last_seen__lt=umbral).update(esta_online=False, estado='DESCONECTADO')
         except Exception:
             pass
-            
         return list(Perfil.objects.filter(esta_online=True).values_list('usuario_id', flat=True))
 
 
 class NotificacionesChatConsumer(AsyncWebsocketConsumer):
-    """
-    Canal WebSocket personal por usuario.
-    Recibe notificaciones de nuevos mensajes en cualquier sala
-    aunque el usuario no esté en la pantalla de chat.
-    """
+    """Canal WebSocket personal para recibir notificaciones de mensajes pendientes."""
+
     async def connect(self):
+        """Une al usuario a su grupo de notificaciones personal."""
         self.user = self.scope['user']
         if self.user.is_anonymous:
             await self.close()
@@ -361,6 +380,7 @@ class NotificacionesChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
+        """Abandona el grupo de notificaciones personal."""
         if hasattr(self, 'group_name'):
             await self.channel_layer.group_discard(
                 self.group_name,
@@ -368,9 +388,9 @@ class NotificacionesChatConsumer(AsyncWebsocketConsumer):
             )
 
     async def receive(self, text_data):
-        # Este consumer solo recibe, no procesa mensajes del cliente
+        """Ignora mensajes recibidos del cliente."""
         pass
 
     async def new_message_notification(self, event):
-        """Reenvía la notificación de nuevo mensaje al cliente Flutter."""
+        """Reenvía la notificación de nuevo mensaje al cliente."""
         await self.send(text_data=json.dumps(event))

@@ -1,0 +1,198 @@
+"""Vistas de galería de imágenes y colecciones."""
+
+from django.db.models import Count, Exists, OuterRef, Q
+from rest_framework import generics, pagination, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from comunidades.models import Comunidad, MiembrosComunidad
+from notificaciones.models import Notificacion
+
+from .models import Coleccion, ImagenGaleria, MeGusta, PostGuardado, Publicacion, Reporte
+from .permissions import IsAuthorOrAdmin
+from .serializers import ColeccionSerializer, ImagenGaleriaSerializer, PublicacionSerializer
+
+
+class PaginacionGaleria(pagination.LimitOffsetPagination):
+    """Paginación estándar para listas de contenido. Límite por defecto: 20 items."""
+
+    default_limit = 20
+    max_limit = 100
+
+
+class GaleriaList(generics.ListCreateAPIView):
+    """Lista imágenes de la galería filtrando por comunidad, usuario o colección.
+
+    Aplica controles de privacidad según el tipo de galería consultada.
+    """
+
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PaginacionGaleria
+
+    def get_queryset(self):
+        """Filtra el conjunto de imágenes según el contexto (comunidad, usuario, colección).
+
+        Returns:
+            QuerySet: Imágenes filtradas según permisos y parámetros.
+        """
+        comunidad_id = self.request.query_params.get('comunidad_id')
+        propietario_id = self.request.query_params.get('usuario_id')
+        coleccion_id = self.request.query_params.get('coleccion_id')
+        qs = ImagenGaleria.objects.filter(es_publica=True)
+
+        if coleccion_id:
+            try:
+                coleccion = Coleccion.objects.get(id=coleccion_id)
+                if coleccion.es_privada and getattr(coleccion, 'usuario', None) != self.request.user:
+                    return ImagenGaleria.objects.none()
+                return coleccion.imagenes.all().order_by('-fecha_subida')
+            except Exception:
+                return ImagenGaleria.objects.none()
+
+        if comunidad_id:
+            try:
+                comunidad = Comunidad.objects.get(id=comunidad_id)
+                if not comunidad.es_publica:
+                    es_miembro = MiembrosComunidad.objects.filter(
+                        comunidad=comunidad, usuario=self.request.user
+                    ).exists()
+                    if not es_miembro and comunidad.creador != self.request.user:
+                        return ImagenGaleria.objects.none()
+                return ImagenGaleria.objects.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
+            except Comunidad.DoesNotExist:
+                return ImagenGaleria.objects.none()
+
+        if propietario_id:
+            if str(propietario_id) == str(self.request.user.id):
+                return ImagenGaleria.objects.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+            return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+
+        return qs.order_by('-fecha_subida')
+
+    def perform_create(self, serializer):
+        """Asigna automáticamente el propietario a la nueva imagen.
+
+        Args:
+            serializer: Serializador con los datos de la imagen.
+        """
+        serializer.save(propietario=self.request.user)
+
+
+class GaleriaDetalleExtendido(generics.RetrieveAPIView):
+    """Retorna una imagen con sus publicaciones y colecciones asociadas."""
+
+    queryset = ImagenGaleria.objects.all()
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """Construye una respuesta extendida con relaciones de la imagen.
+
+        Args:
+            request: Petición GET.
+            *args: Argumentos adicionales.
+            **kwargs: Argumentos de palabra clave.
+
+        Returns:
+            Response: Datos de la imagen, post asociado y colecciones donde aparece.
+        """
+        imagen = self.get_object()
+        pub = Publicacion.objects.filter(imagen=imagen).first()
+        pub_data = PublicacionSerializer(pub, context={'request': request}).data if pub else None
+        cols = Coleccion.objects.filter(imagenes=imagen).filter(
+            Q(es_privada=False) | Q(usuario=request.user)
+        )
+        cols_data = [{'id': c.id, 'nombre': c.nombre_coleccion, 'privada': c.es_privada} for c in cols]
+        return Response({
+            'imagen': self.get_serializer(imagen).data,
+            'publicacion': pub_data,
+            'colecciones': cols_data,
+        })
+
+
+class ImagenGaleriaDetail(generics.RetrieveUpdateDestroyAPIView):
+    """Recupera, actualiza o elimina una imagen de la galería.
+
+    Al eliminar, si el propietario no es quien borra, notifica al autor.
+    """
+
+    queryset = ImagenGaleria.objects.all()
+    serializer_class = ImagenGaleriaSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
+
+    def destroy(self, request, *args, **kwargs):
+        """Elimina la imagen y gestiona notificaciones y reportes.
+
+        Args:
+            request: Petición DELETE.
+            *args: Argumentos adicionales.
+            **kwargs: Argumentos de palabra clave.
+
+        Returns:
+            Response: Confirmación de eliminación.
+        """
+        instance = self.get_object()
+        razon = request.data.get('razon', 'Incumplimiento de normas')
+        if instance.propietario != request.user:
+            Notificacion.objects.create(
+                usuario=instance.propietario,
+                tipo='CONTENIDO_BORRADO',
+                mensaje=f'Tu imagen de la galería ha sido borrada por un administrador. Motivo: {razon}',
+                referencia_comunidad=instance.comunidad,
+            )
+        Reporte.objects.filter(
+            tipo_objeto='IMAGEN', objeto_id=instance.id, estado='PENDIENTE'
+        ).update(estado='RESUELTO')
+        instance.delete()
+        return Response({'mensaje': 'Imagen eliminada'}, status=status.HTTP_200_OK)
+
+
+class InicioGaleria(generics.ListAPIView):
+    """Feed de imágenes para la pantalla de exploración de galería.
+
+    Filtra según las comunidades del usuario autenticado, con soporte de etiquetas.
+    """
+
+    serializer_class = PublicacionSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = PaginacionGaleria
+
+    def get_queryset(self):
+        """Genera el feed de imágenes para exploración.
+
+        Returns:
+            QuerySet: Publicaciones con imagen filtradas por comunidad o etiquetas.
+        """
+        usuario = self.request.user if self.request.user.is_authenticated else None
+        etiquetas = self.request.query_params.get('etiquetas')
+        qs = Publicacion.objects.filter(
+            imagen__isnull=False, imagen__url_s3__gt='', es_valido_ia=True
+        )
+        if usuario:
+            comunidades_usuario = MiembrosComunidad.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
+            publicaciones = qs.filter(comunidad_id__in=comunidades_usuario)
+        else:
+            publicaciones = qs.filter(comunidad__es_publica=True)
+
+        publicaciones = (
+            publicaciones.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')
+            .prefetch_related('imagenes')
+            .annotate(
+                anotado_likes_count=Count('me_gustas', distinct=True),
+                anotado_comentarios_count=Count('comentario', distinct=True),
+            )
+        )
+        if usuario:
+            publicaciones = publicaciones.annotate(
+                anotado_usuario_dio_like=Exists(MeGusta.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
+                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
+            )
+        if etiquetas:
+            publicaciones = publicaciones.filter(imagen__etiquetas__icontains=etiquetas)
+        return publicaciones.distinct().order_by('-fecha_creacion')
+
+
+class ColeccionViewSet:
+    """Importado desde views.py principal para mantener compatibilidad."""
+    pass

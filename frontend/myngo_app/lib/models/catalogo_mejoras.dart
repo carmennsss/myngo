@@ -1,14 +1,24 @@
-// lib/models/catalogo_mejoras.dart
-
+/// Modelo que representa un artículo disponible en el catálogo de mejoras.
+///
+/// Incluye cosméticos globales (marcos, fondos) o específicos de comunidad,
+/// junto con su precio en puntos y metadatos adicionales.
 class CatalogoMejoras {
   final int id;
-  final String tipo; // Ej: 'MARCO', 'FONDO'
+
+  /// Tipo de mejora (e.g., 'MARCO', 'FONDO', 'ESTILO_POST').
+  final String tipo;
+
   final int precioPuntos;
+
+  /// URL del recurso visual asociado a la mejora.
   final String urlRecurso;
+
   final int? comunidadId;
   final int? creadorId;
   final String? nombreCreador;
   final bool estaActivo;
+
+  /// Datos técnicos adicionales para el renderizado (e.g., colores, bordes).
   final Map<String, dynamic>? datosExtra;
 
   CatalogoMejoras({
@@ -23,6 +33,7 @@ class CatalogoMejoras {
     this.datosExtra,
   });
 
+  /// Crea una instancia de [CatalogoMejoras] a partir de un mapa JSON.
   factory CatalogoMejoras.fromJson(Map<String, dynamic> json) {
     return CatalogoMejoras(
       id: json['id'] ?? 0,
@@ -33,7 +44,9 @@ class CatalogoMejoras {
       creadorId: json['creador'],
       nombreCreador: json['nombre_creador'],
       estaActivo: json['esta_activo'] ?? true,
-      datosExtra: json['datos_extra'] is Map ? Map<String, dynamic>.from(json['datos_extra']) : null,
+      datosExtra: json['datos_extra'] is Map
+          ? Map<String, dynamic>.from(json['datos_extra'])
+          : null,
     );
   }
 }

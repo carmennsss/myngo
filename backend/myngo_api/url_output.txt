@@ -1,3 +1,0 @@
-31 objects imported automatically (use -v 2 for details).
-
-https://s3.us-east-1.amazonaws.com/myngo-s3-media/publicaciones/archivos/65e25872d79e3b0354796fd5f567cee6.png?AWSAccessKeyId=AKIA4PKYEL3C5C6L2HW2&Signature=EiCDk5pw9JCLhCWp1IhxgLzRddE%3D&Expires=1775412144

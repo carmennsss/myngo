@@ -1,25 +1,34 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import '../models/respuesta_api.dart';
 import '../models/comunidad.dart';
-import '../utils/configuracion.dart';
-import '../models/publicacion.dart';
 import '../models/imagen_galeria.dart';
+import '../models/publicacion.dart';
+import '../models/respuesta_api.dart';
 import '../models/sala_chat.dart';
+import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio para gestionar las operaciones relacionadas con las comunidades.
+/// Servicio encargado de gestionar el ciclo de vida de las comunidades y su contenido.
+///
+/// Provee funcionalidades para la administración de miembros, personalización estética,
+/// gestión de publicaciones, galerías multimedia y salas de chat grupales.
 class ServicioComunidades {
-  static const String _urlBase = '${Configuracion.baseUrl}/comunidades/';
-  static const String _urlContenido = '${Configuracion.baseUrl}/contenido/';
-  static const String _urlMensajeria = '${Configuracion.baseUrl}/mensajeria/';
+  /// URL base para los endpoints de comunidades.
+  static const String _urlComunidades = '${Configuracion.baseUrl}/comunidades/';
   
+  /// URL base para los endpoints de contenido multimedia y publicaciones.
+  static const String _urlContenido = '${Configuracion.baseUrl}/contenido/';
+  
+  /// URL base para los endpoints de mensajería grupal.
+  static const String _urlMensajeria = '${Configuracion.baseUrl}/mensajeria/';
+
   final _servicioUsuarios = ServicioUsuarios();
 
-  Future<Map<String, String>> _getHeaders() async {
+  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
       'Content-Type': 'application/json',
@@ -27,99 +36,107 @@ class ServicioComunidades {
     };
   }
 
-  /// Obtiene la lista de comunidades filtradas opcionalmente por un término de búsqueda.
+  /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda.
   Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda}) async {
     try {
-      String url = _urlBase;
-      if (busqueda != null && busqueda.isNotEmpty) {
-        url += '?search=$busqueda';
-      }
-
+      final query = busqueda != null && busqueda.isNotEmpty ? '?search=$busqueda' : '';
       final respuesta = await http.get(
-        Uri.parse(url),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
-      
+        Uri.parse('$_urlComunidades$query'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
         final List<dynamic> listaJson = datosJson is List ? datosJson : (datosJson['results'] ?? []);
-        final comunidades = listaJson.map((item) => Comunidad.fromJson(item)).toList();
-        
-        return RespuestaApi(exito: true, mensaje: 'Comunidades obtenidas', datos: comunidades);
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Comunidades recuperadas',
+          datos: listaJson.map((item) => Comunidad.fromJson(item)).toList(),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al listar comunidades (${respuesta.statusCode})');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene comunidades populares para sugerencias.
+  /// Sugiere comunidades populares basadas en su actividad.
   Future<RespuestaApi<List<Comunidad>>> listarComunidadesPopulares() async {
-    // Por ahora usamos la lista general, pero podríamos filtrar por las más activas en el futuro.
     return listarComunidades();
   }
 
-  /// Obtiene las comunidades donde el usuario es creador o miembro.
+  /// Obtiene las comunidades a las que pertenece el usuario autenticado.
   Future<RespuestaApi<List<Comunidad>>> listarComunidadesPropias() async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlBase}propias/'),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+        Uri.parse('${_urlComunidades}propias/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> listaJson = datosJson is List ? datosJson : (datosJson['results'] ?? []);
-        final comunidades = listaJson.map((item) => Comunidad.fromJson(item)).toList();
-        return RespuestaApi(exito: true, mensaje: 'Mis comunidades obtenidas', datos: comunidades);
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Comunidades propias recuperadas',
+          datos: listaJson.map((item) => Comunidad.fromJson(item)).toList(),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener comunidades propias');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene los detalles de una comunidad específica por su ID.
-  Future<RespuestaApi<Comunidad>> obtenerComunidad(int id) async {
+  /// Recupera la información detallada de una comunidad por su ID.
+  Future<RespuestaApi<Comunidad>> obtenerComunidad(int idComunidad) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('$_urlBase$id/'),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
-      
+        Uri.parse('$_urlComunidades$idComunidad/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
         return RespuestaApi(
-          exito: true, 
-          mensaje: 'Comunidad obtenida', 
-          datos: Comunidad.fromJson(datosJson)
+          exito: true,
+          mensaje: 'Detalle de comunidad cargado',
+          datos: Comunidad.fromJson(datosJson),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar comunidad');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Permite unirse a una comunidad o enviar solicitud.
-  Future<RespuestaApi<Map<String, dynamic>>> unirseAComunidad(int id) async {
+  /// Solicita el acceso o se une directamente a una comunidad.
+  Future<RespuestaApi<Map<String, dynamic>>> unirseAComunidad(int idComunidad) async {
     try {
-      final respuesta = await http.post(Uri.parse('${_urlBase}$id/unirse/'), headers: await _getHeaders()).timeout(const Duration(seconds: 10));
+      final respuesta = await http.post(
+        Uri.parse('${_urlComunidades}$idComunidad/unirse/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
       if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        return RespuestaApi(exito: true, mensaje: datosJson['mensaje'] ?? 'Operación exitosa', datos: datosJson);
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Operación realizada correctamente',
+          datos: jsonDecode(respuesta.body),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'No se pudo procesar la unión');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Crea una nueva comunidad en el servidor soportando subida de imagen.
-  Future<RespuestaApi<Comunidad>> crearComunidad(Comunidad comunidad, {XFile? imagen}) async {
+  /// Crea una nueva comunidad permitiendo la subida de una imagen de portada.
+  Future<RespuestaApi<Comunidad>> crearComunidad(Comunidad comunidad, {XFile? imagenPortada}) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      var solicitud = http.MultipartRequest('POST', Uri.parse(_urlBase));
+      var solicitud = http.MultipartRequest('POST', Uri.parse(_urlComunidades));
+      
       if (token != null) solicitud.headers['Authorization'] = 'Token $token';
 
       solicitud.fields['nombre'] = comunidad.nombre;
@@ -127,64 +144,81 @@ class ServicioComunidades {
       solicitud.fields['es_publica'] = comunidad.esPublica.toString();
       solicitud.fields['min_rating_acceso'] = comunidad.minRatingAcceso.toString();
 
-      if (imagen != null) {
+      if (imagenPortada != null) {
         if (kIsWeb) {
-          final bytes = await imagen.readAsBytes();
-          final ext = imagen.name.split('.').last.toLowerCase();
-          final subtype = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp', 'gif': 'gif'}[ext] ?? 'jpeg';
-          solicitud.files.add(http.MultipartFile.fromBytes('url_portada', bytes, filename: imagen.name, contentType: MediaType('image', subtype)));
+          final bytes = await imagenPortada.readAsBytes();
+          solicitud.files.add(http.MultipartFile.fromBytes(
+            'url_portada',
+            bytes,
+            filename: imagenPortada.name,
+            contentType: MediaType('image', 'jpeg'),
+          ));
         } else {
-          solicitud.files.add(await http.MultipartFile.fromPath('url_portada', imagen.path));
+          solicitud.files.add(await http.MultipartFile.fromPath('url_portada', imagenPortada.path));
         }
       }
 
-      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 30));
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
       final respuesta = await http.Response.fromStream(respuestaStream);
 
       if (respuesta.statusCode == 201) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        return RespuestaApi(exito: true, mensaje: 'Comunidad creada con éxito', datos: Comunidad.fromJson(datosJson));
+        return RespuestaApi(
+          exito: true,
+          mensaje: '¡Comunidad creada con éxito!',
+          datos: Comunidad.fromJson(datosJson),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al crear comunidad (${respuesta.statusCode})');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Responde a una petición de unión (Aceptar/Rechazar).
-  Future<RespuestaApi<void>> responderPeticion(int idPeticion, bool aceptar) async {
+  /// Moderación: Acepta o rechaza una solicitud de unión pendiente.
+  Future<RespuestaApi<void>> responderPeticionAcceso(int idPeticion, bool aceptar) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('${_urlBase}responder-peticion/$idPeticion/'),
-        headers: await _getHeaders(),
+        Uri.parse('${_urlComunidades}responder-peticion/$idPeticion/'),
+        headers: await _obtenerCabeceras(),
         body: jsonEncode({'aceptar': aceptar}),
-      );
-      if (respuesta.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Respuesta enviada');
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Petición procesada');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al responder petición');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene los datos del panel de administración (solicitudes y reportes).
-  Future<RespuestaApi<Map<String, dynamic>>> obtenerAdminDashboard(int id) async {
+  /// Recupera métricas y solicitudes para el panel de administración de la comunidad.
+  Future<RespuestaApi<Map<String, dynamic>>> obtenerDashboardAdmin(int idComunidad) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlBase}$id/admin-dashboard/'),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 20));
+        Uri.parse('${_urlComunidades}$idComunidad/admin-dashboard/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 25));
+
       if (respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: 'Dashboard obtenido', datos: jsonDecode(utf8.decode(respuesta.bodyBytes)));
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Datos de administración cargados',
+          datos: jsonDecode(utf8.decode(respuesta.bodyBytes)),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar panel administrativo');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<Comunidad>> actualizarComunidad(int id, {
-    String? nombre, 
-    String? descripcion, 
+  /// Actualiza los parámetros estéticos y funcionales de una comunidad.
+  Future<RespuestaApi<Comunidad>> actualizarComunidad(
+    int idComunidad, {
+    String? nombre,
+    String? descripcion,
     String? colorTema,
     bool? tiendaHabilitada,
     XFile? banner,
@@ -195,7 +229,8 @@ class ServicioComunidades {
   }) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      var solicitud = http.MultipartRequest('PATCH', Uri.parse('${_urlBase}$id/'));
+      var solicitud = http.MultipartRequest('PATCH', Uri.parse('${_urlComunidades}$idComunidad/'));
+      
       if (token != null) solicitud.headers['Authorization'] = 'Token $token';
 
       if (nombre != null) solicitud.fields['nombre'] = nombre;
@@ -205,317 +240,323 @@ class ServicioComunidades {
       if (fondoPostsConfig != null) solicitud.fields['fondo_posts_config'] = jsonEncode(fondoPostsConfig);
       if (fuenteComunidad != null) solicitud.fields['fuente_comunidad'] = fuenteComunidad;
 
-      if (banner != null) {
-        if (kIsWeb) {
-          final bytes = await banner.readAsBytes();
-          final ext = banner.name.split('.').last.toLowerCase();
-          final subtype = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp'}[ext] ?? 'jpeg';
-          solicitud.files.add(http.MultipartFile.fromBytes('url_portada', bytes, filename: banner.name, contentType: MediaType('image', subtype)));
-        } else {
-          solicitud.files.add(await http.MultipartFile.fromPath('url_portada', banner.path));
-        }
-      }
-      
-      if (avatar != null) {
-        if (kIsWeb) {
-          final bytes = await avatar.readAsBytes();
-          final ext = avatar.name.split('.').last.toLowerCase();
-          final subtype = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp'}[ext] ?? 'jpeg';
-          solicitud.files.add(http.MultipartFile.fromBytes('url_avatar', bytes, filename: avatar.name, contentType: MediaType('image', subtype)));
-        } else {
-          solicitud.files.add(await http.MultipartFile.fromPath('url_avatar', avatar.path));
+      final archivos = {
+        'url_portada': banner,
+        'url_avatar': avatar,
+        'url_fondo': fondo,
+      };
+
+      for (var entrada in archivos.entries) {
+        final archivo = entrada.value;
+        if (archivo != null) {
+          if (kIsWeb) {
+            final bytes = await archivo.readAsBytes();
+            solicitud.files.add(http.MultipartFile.fromBytes(
+              entrada.key,
+              bytes,
+              filename: archivo.name,
+              contentType: MediaType('image', 'jpeg'),
+            ));
+          } else {
+            solicitud.files.add(await http.MultipartFile.fromPath(entrada.key, archivo.path));
+          }
         }
       }
 
-      if (fondo != null) {
-        if (kIsWeb) {
-          final bytes = await fondo.readAsBytes();
-          final ext = fondo.name.split('.').last.toLowerCase();
-          final subtype = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp'}[ext] ?? 'jpeg';
-          solicitud.files.add(http.MultipartFile.fromBytes('url_fondo', bytes, filename: fondo.name, contentType: MediaType('image', subtype)));
-        } else {
-          solicitud.files.add(await http.MultipartFile.fromPath('url_fondo', fondo.path));
-        }
-      }
-
-      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 30));
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 50));
       final respuesta = await http.Response.fromStream(respuestaStream);
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        return RespuestaApi(exito: true, mensaje: 'Ajustes guardados ✨', datos: Comunidad.fromJson(datosJson));
+        return RespuestaApi(
+          exito: true,
+          mensaje: '¡Comunidad actualizada!',
+          datos: Comunidad.fromJson(datosJson),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar comunidad');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Cambia el rol de un miembro de la comunidad.
-  Future<RespuestaApi<void>> gestionarRolMiembro(int miembroId, String nuevoRol) async {
+  /// Cambia el rango administrativo de un miembro en la comunidad.
+  Future<RespuestaApi<void>> gestionarRolMiembro(int idMiembro, String nuevoRol) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('${_urlBase}$miembroId/gestionar-rol-miembro/'),
-        headers: await _getHeaders(),
+        Uri.parse('${_urlComunidades}$idMiembro/gestionar-rol-miembro/'),
+        headers: await _obtenerCabeceras(),
         body: jsonEncode({'rol': nuevoRol}),
-      );
-      if (respuesta.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Rol actualizado');
-      return RespuestaApi(exito: false, mensaje: 'Error al actualizar el rol');
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Rol de miembro actualizado');
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al cambiar rol');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene el rol de un usuario en una comunidad específica.
-  Future<RespuestaApi<String>> obtenerRolUsuarioEnComunidad(int comunidadId, int usuarioId) async {
+  /// Recupera el rango oficial de un usuario dentro de una comunidad.
+  Future<RespuestaApi<String>> obtenerRolUsuarioEnComunidad(int idComunidad, int idUsuario) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlBase}$comunidadId/obtener-rol-usuario/?usuario_id=$usuarioId'),
-        headers: await _getHeaders(),
-      );
+        Uri.parse('${_urlComunidades}$idComunidad/obtener-rol-usuario/?usuario_id=$idUsuario'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
       if (respuesta.statusCode == 200) {
         final datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        return RespuestaApi(exito: true, mensaje: 'Rol obtenido', datos: datos['rol']);
+        return RespuestaApi(exito: true, mensaje: 'Rol recuperado', datos: datos['rol']);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'No se pudo obtener el rol');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  // --- MÉTODOS DE CONTENIDO Y MENSAJERÍA ---
+  // --- CONTENIDO Y MENSAJERÍA ---
 
-  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGlobales({String ordering = '-fecha_creacion'}) async {
+  /// Obtiene publicaciones de comunidades públicas para el feed global.
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGlobales({String orden = '-fecha_creacion'}) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlContenido}publicaciones/global/?ordering=$ordering'),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+        Uri.parse('${_urlContenido}publicaciones/global/?ordering=$orden'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
-        return RespuestaApi(exito: true, datos: lista.map((p) => Publicacion.fromJson(p)).toList(), mensaje: 'Feed global cargado');
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Feed global cargado',
+          datos: lista.map((p) => Publicacion.fromJson(p)).toList(),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar feed');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<List<Publicacion>>> obtenerPublicaciones(int comunidadId, {String ordering = '-fecha_creacion'}) async {
+  /// Recupera las publicaciones registradas en una comunidad específica.
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesComunidad(int idComunidad, {String orden = '-fecha_creacion'}) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlContenido}publicaciones/?comunidad_id=$comunidadId&ordering=$ordering'),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+        Uri.parse('${_urlContenido}publicaciones/?comunidad_id=$idComunidad&ordering=$orden'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
-        return RespuestaApi(exito: true, datos: lista.map((p) => Publicacion.fromJson(p)).toList(), mensaje: 'Publicaciones cargadas');
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Publicaciones de comunidad cargadas',
+          datos: lista.map((p) => Publicacion.fromJson(p)).toList(),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar publicaciones');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<List<ImagenGaleria>>> obtenerGaleria(int comunidadId) async {
+  /// Recupera la galería de imágenes destacadas de la comunidad.
+  Future<RespuestaApi<List<ImagenGaleria>>> obtenerGaleriaComunidad(int idComunidad) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlContenido}galeria/?comunidad_id=$comunidadId'),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+        Uri.parse('${_urlContenido}galeria/?comunidad_id=$idComunidad'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(respuesta.body);
-        return RespuestaApi(exito: true, datos: datos.map((i) => ImagenGaleria.fromJson(i)).toList(), mensaje: 'Galería cargada');
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Galería de comunidad cargada',
+          datos: datos.map((i) => ImagenGaleria.fromJson(i)).toList(),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar galería');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<List<SalaChat>>> obtenerSalasChat(int comunidadId) async {
+  /// Obtiene las salas de chat activas vinculadas a la comunidad.
+  Future<RespuestaApi<List<SalaChat>>> obtenerSalasChat(int idComunidad) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlMensajeria}salas/?comunidad_id=$comunidadId'),
-        headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 10));
+        Uri.parse('${_urlMensajeria}salas/?comunidad_id=$idComunidad'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final List<dynamic> datos = jsonDecode(respuesta.body);
-        return RespuestaApi(exito: true, datos: datos.map((s) => SalaChat.fromJson(s)).toList(), mensaje: 'Salas cargadas');
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Salas de chat cargadas',
+          datos: datos.map((s) => SalaChat.fromJson(s)).toList(),
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar salas de chat');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Crea una nueva publicación permitiendo el envío de múltiples archivos multimedia.
   Future<RespuestaApi<Publicacion>> crearPublicacion({
-    required int comunidadId,
+    required int idComunidad,
     required String texto,
     List<XFile>? imagenes,
     String? etiquetas,
   }) async {
     try {
-      final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('${_urlContenido}publicaciones/crear/');
+      final token = await _servicioUsuarios.obtenerToken();
+      var solicitud = http.MultipartRequest('POST', Uri.parse('${_urlContenido}publicaciones/crear/'));
       
-      var request = http.MultipartRequest('POST', uri);
-      if (tokenInfo != null) {
-        request.headers['Authorization'] = 'Token $tokenInfo';
-      }
-      
-      request.fields['comunidad'] = comunidadId.toString();
-      request.fields['contenido_texto'] = texto;
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+
+      solicitud.fields['comunidad'] = idComunidad.toString();
+      solicitud.fields['contenido_texto'] = texto;
       if (etiquetas != null && etiquetas.trim().isNotEmpty) {
-        request.fields['etiquetas'] = etiquetas.trim();
+        solicitud.fields['etiquetas'] = etiquetas.trim();
       }
-      
+
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var img in imagenes) {
           if (kIsWeb) {
             final bytes = await img.readAsBytes();
-            request.files.add(http.MultipartFile.fromBytes(
-              'url_archivo_s3', 
-              bytes, 
+            solicitud.files.add(http.MultipartFile.fromBytes(
+              'url_archivo_s3',
+              bytes,
               filename: img.name,
-              contentType: MediaType('image', 'jpeg')
+              contentType: MediaType('image', 'jpeg'),
             ));
           } else {
-            request.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
+            solicitud.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
           }
         }
       }
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 45));
-      final response = await http.Response.fromStream(streamedResponse);
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 50));
+      final respuesta = await http.Response.fromStream(respuestaStream);
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
+      if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
         return RespuestaApi(
-          exito: true, 
-          datos: Publicacion.fromJson(jsonDecode(utf8.decode(response.bodyBytes))),
-          mensaje: 'Publicación creada'
+          exito: true,
+          mensaje: '¡Publicación enviada!',
+          datos: Publicacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
         );
       }
 
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final mensajeError = decoded is Map<String, dynamic>
-          ? decoded['error']?.toString() ?? decoded['detail']?.toString() ?? 'Error al crear la publicación (${response.statusCode})'
-          : 'Error al crear la publicación (${response.statusCode})';
+      final datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+      final mensajeError = datosJson is Map<String, dynamic>
+          ? datosJson['error']?.toString() ?? datosJson['mensaje']?.toString() ?? 'Error al publicar'
+          : 'Error en la publicación';
       return RespuestaApi(exito: false, mensaje: mensajeError);
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi> eliminarComunidad(int id) async {
+  /// Elimina una comunidad y todo su contenido asociado permanentemente.
+  Future<RespuestaApi> eliminarComunidad(int idComunidad) async {
     try {
-      final token = await _servicioUsuarios.obtenerToken();
-      final response = await http.delete(
-        Uri.parse('$_urlBase$id/'),
-        headers: {'Authorization': 'Token $token'},
-      );
+      final respuesta = await http.delete(
+        Uri.parse('$_urlComunidades$idComunidad/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
 
-      if (response.statusCode == 204) return RespuestaApi(exito: true, mensaje: 'Comunidad eliminada');
-      return RespuestaApi(exito: false, mensaje: 'Error al eliminar la comunidad');
+      if (respuesta.statusCode == 204) {
+        return RespuestaApi(exito: true, mensaje: 'Comunidad eliminada correctamente');
+      }
+      return RespuestaApi(exito: false, mensaje: 'No se pudo eliminar la comunidad');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi> editarComunidad(int id, Map<String, dynamic> datos) async {
-    try {
-      final token = await _servicioUsuarios.obtenerToken();
-      final response = await http.patch(
-        Uri.parse('$_urlBase$id/'),
-        headers: {
-          'Authorization': 'Token $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(datos),
-      );
+  // --- MODERACIÓN DE CONTENIDO ---
 
-      if (response.statusCode == 200) return RespuestaApi(exito: true, mensaje: 'Comunidad actualizada');
-      return RespuestaApi(exito: false, mensaje: 'Error al actualizar la comunidad');
-    } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
-    }
-  }
-
-  // --- MÉTODOS DE MODERACIÓN ---
-
-  Future<RespuestaApi<Publicacion>> obtenerPublicacion(int id) async {
+  /// Recupera los detalles técnicos y de contenido de una publicación.
+  Future<RespuestaApi<Publicacion>> obtenerDetallePublicacion(int idPublicacion) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('${_urlContenido}publicaciones/$id/'),
-        headers: await _getHeaders(),
+        Uri.parse('${_urlContenido}publicaciones/$idPublicacion/'),
+        headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
+
       if (respuesta.statusCode == 200) {
         return RespuestaApi(
-          exito: true, 
+          exito: true,
+          mensaje: 'Publicación cargada',
           datos: Publicacion.fromJson(jsonDecode(respuesta.body)),
-          mensaje: 'Publicación cargada'
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Publicación no encontrada');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi> eliminarPublicacion(int id, {String? razon}) async {
+  /// Retira una publicación del sistema por motivos de moderación.
+  Future<RespuestaApi> eliminarPublicacionModeracion(int idPublicacion, {String? razon}) async {
     try {
       final respuesta = await http.delete(
-        Uri.parse('${_urlContenido}publicaciones/$id/'),
-        headers: await _getHeaders(),
+        Uri.parse('${_urlContenido}publicaciones/$idPublicacion/'),
+        headers: await _obtenerCabeceras(),
         body: razon != null ? jsonEncode({'razon': razon}) : null,
-      );
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 204 || respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: 'Publicación eliminada');
+        return RespuestaApi(exito: true, mensaje: 'Publicación retirada');
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al retirar publicación');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi> eliminarComentario(int id, {String? razon}) async {
+  /// Retira un comentario individual del sistema por motivos de moderación.
+  Future<RespuestaApi> eliminarComentarioModeracion(int idComentario, {String? razon}) async {
     try {
       final respuesta = await http.delete(
-        Uri.parse('${_urlContenido}comentarios/$id/'),
-        headers: await _getHeaders(),
+        Uri.parse('${_urlContenido}comentarios/$idComentario/'),
+        headers: await _obtenerCabeceras(),
         body: razon != null ? jsonEncode({'razon': razon}) : null,
-      );
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 204 || respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: 'Comentario eliminado');
+        return RespuestaApi(exito: true, mensaje: 'Comentario retirado');
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al retirar comentario');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi> toggleGuardarPost(int postId) async {
+  /// Alterna el estado de guardado (bookmark) de una publicación en el perfil del usuario.
+  Future<RespuestaApi> alternarGuardadoPost(int idPublicacion) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('${_urlContenido}publicaciones/$postId/guardar/'),
-        headers: await _getHeaders(),
-      );
+        Uri.parse('${_urlContenido}publicaciones/$idPublicacion/guardar/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
-        final data = jsonDecode(respuesta.body);
+        final datos = jsonDecode(respuesta.body);
         return RespuestaApi(
-          exito: true, 
-          mensaje: data['mensaje'] ?? 'Operación exitosa',
-          datos: data['resultado'] // 'added' or 'removed'
+          exito: true,
+          mensaje: datos['mensaje'] ?? 'Operación exitosa',
+          datos: datos['resultado'],
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error al procesar guardado');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

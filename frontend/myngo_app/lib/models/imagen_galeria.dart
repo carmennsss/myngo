@@ -1,3 +1,7 @@
+/// Modelo que representa un recurso multimedia (imagen o vídeo) en la galería.
+///
+/// Contiene información del propietario, la comunidad de origen, metadatos
+/// técnicos y visibilidad.
 class ImagenGaleria {
   final int id;
   final int propietarioId;
@@ -7,7 +11,10 @@ class ImagenGaleria {
   final int? creadorComunidadId;
   final bool usuarioEsMiembro;
   final String urlArchivo;
-  final String tipoArchivo; // 'I' o 'V'
+
+  /// Tipo de archivo: 'I' para imagen, 'V' para vídeo.
+  final String tipoArchivo;
+
   final double relacionAspecto;
   final bool esPublica;
   final DateTime fechaSubida;
@@ -29,6 +36,7 @@ class ImagenGaleria {
     this.etiquetas,
   });
 
+  /// Crea una instancia de [ImagenGaleria] a partir de un mapa JSON.
   factory ImagenGaleria.fromJson(Map<String, dynamic> json) {
     return ImagenGaleria(
       id: json['id'] ?? 0,
@@ -38,12 +46,13 @@ class ImagenGaleria {
       comunidadNombre: json['comunidad_nombre']?.toString(),
       creadorComunidadId: json['creador_comunidad_id'] as int?,
       usuarioEsMiembro: json['usuario_es_miembro'] ?? false,
-      urlArchivo: json['url_archivo']?.toString() ?? json['url_s3']?.toString() ?? '',
+      urlArchivo:
+          json['url_archivo']?.toString() ?? json['url_s3']?.toString() ?? '',
       tipoArchivo: json['tipo_archivo']?.toString() ?? 'I',
       relacionAspecto: (json['relacion_aspecto'] ?? 1.0).toDouble(),
       esPublica: json['es_publica'] ?? true,
-      fechaSubida: json['fecha_subida'] != null 
-          ? DateTime.parse(json['fecha_subida']) 
+      fechaSubida: json['fecha_subida'] != null
+          ? DateTime.parse(json['fecha_subida'])
           : DateTime.now(),
       etiquetas: json['etiquetas']?.toString(),
     );

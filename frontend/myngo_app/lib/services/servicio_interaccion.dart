@@ -1,117 +1,133 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:myngo_app/services/servicio_usuarios.dart';
+import '../models/comentario.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
-import '../models/comentario.dart';
+import 'servicio_usuarios.dart';
 
+/// Servicio encargado de gestionar las interacciones sociales en publicaciones.
+///
+/// Administra los "me gusta", el sistema de comentarios y la funcionalidad
+/// de guardar publicaciones para acceso rápido posterior.
 class ServicioInteraccion {
-  final String _urlBase = Configuracion.baseUrl;
+  /// URL base para las peticiones de interacción.
+  static const String _urlBase = '${Configuracion.baseUrl}/contenido';
+
   final _servicioUsuarios = ServicioUsuarios();
 
-  Future<RespuestaApi<Map<String, dynamic>>> toggleLike(int publicacionId) async {
-    try {
-      final token = await _servicioUsuarios.obtenerToken();
-      final response = await http.post(
-        Uri.parse('$_urlBase/contenido/publicaciones/$publicacionId/like/'),
-        headers: {
-          'Authorization': 'Token $token',
-          'Content-Type': 'application/json',
-        },
-      );
+  /// Genera las cabeceras estándar (JSON + Token) para las peticiones.
+  Future<Map<String, String>> _obtenerCabeceras() async {
+    final token = await _servicioUsuarios.obtenerToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Token $token',
+    };
+  }
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+  /// Alterna el estado de "me gusta" en una publicación específica.
+  Future<RespuestaApi<Map<String, dynamic>>> alternarMeGusta(int publicacionId) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlBase/publicaciones/$publicacionId/like/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
         return RespuestaApi(
-          exito: true, 
-          mensaje: 'Éxito', 
-          datos: jsonDecode(response.body)
+          exito: true,
+          mensaje: 'Interacción registrada',
+          datos: jsonDecode(respuesta.body),
         );
       }
-      
-      String errorMsg = 'Error al procesar el like';
+
+      String mensajeError = 'No se pudo procesar el me gusta';
       try {
-        final Map<String, dynamic> body = jsonDecode(response.body);
-        if (body.containsKey('error')) errorMsg = body['error'];
+        final Map<String, dynamic> cuerpo = jsonDecode(respuesta.body);
+        if (cuerpo.containsKey('error')) mensajeError = cuerpo['error'];
       } catch (_) {}
-      
-      return RespuestaApi(exito: false, mensaje: errorMsg);
+
+      return RespuestaApi(exito: false, mensaje: mensajeError);
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<List<Comentario>>> obtenerComentarios(int publicacionId, {int limit = 10, int offset = 0}) async {
+  /// Recupera los comentarios de una publicación con soporte para paginación.
+  Future<RespuestaApi<List<Comentario>>> obtenerComentarios(
+    int publicacionId, {
+    int limit = 10,
+    int offset = 0,
+  }) async {
     try {
-      final token = await _servicioUsuarios.obtenerToken();
-      final url = '$_urlBase/contenido/publicaciones/$publicacionId/comentarios/?limit=$limit&offset=$offset';
-      final response = await http.get(
+      final url = '$_urlBase/publicaciones/$publicacionId/comentarios/?limit=$limit&offset=$offset';
+      final respuesta = await http.get(
         Uri.parse(url),
-        headers: {'Authorization': 'Token $token'},
-      );
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
-        final dynamic decoded = jsonDecode(response.body);
-        // Manejar tanto lista simple como respuesta paginada de Django (con 'results')
-        final List dynamicList = (decoded is Map) ? (decoded['results'] ?? []) : (decoded is List ? decoded : []);
-        final comentarios = dynamicList.map((j) => Comentario.fromJson(j)).toList();
-        return RespuestaApi(exito: true, mensaje: 'Comentarios cargados', datos: comentarios);
+      if (respuesta.statusCode == 200) {
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List listaJson = (datosJson is Map)
+            ? (datosJson['results'] ?? [])
+            : (datosJson is List ? datosJson : []);
+            
+        final comentarios = listaJson.map((j) => Comentario.fromJson(j)).toList();
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Comentarios recuperados',
+          datos: comentarios,
+        );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al cargar comentarios', datos: []);
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar comentarios');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e', datos: []);
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<Comentario>> crearComentario(int publicacionId, String contenido) async {
+  /// Publica un nuevo comentario en la plataforma.
+  Future<RespuestaApi<Comentario>> crearComentario(int publicacionId, String texto) async {
     try {
-      final token = await _servicioUsuarios.obtenerToken();
-      final response = await http.post(
-        Uri.parse('$_urlBase/contenido/publicaciones/$publicacionId/comentarios/'),
-        headers: {
-          'Authorization': 'Token $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'contenido': contenido}),
-      );
+      final respuesta = await http.post(
+        Uri.parse('$_urlBase/publicaciones/$publicacionId/comentarios/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'contenido': texto}),
+      ).timeout(const Duration(seconds: 20));
 
-      if (response.statusCode == 201) {
+      if (respuesta.statusCode == 201) {
         return RespuestaApi(
-          exito: true, 
-          mensaje: 'Comentario enviado', 
-          datos: Comentario.fromJson(jsonDecode(response.body))
+          exito: true,
+          mensaje: 'Comentario publicado',
+          datos: Comentario.fromJson(jsonDecode(respuesta.body)),
         );
       }
-      
-      String errorMsg = 'Error al enviar comentario';
+
+      String mensajeError = 'Error al enviar comentario';
       try {
-        final Map<String, dynamic> body = jsonDecode(response.body);
-        if (body.containsKey('error') || body.containsKey('detail')) {
-            errorMsg = body['error'] ?? body['detail'];
+        final Map<String, dynamic> cuerpo = jsonDecode(respuesta.body);
+        if (cuerpo.containsKey('error') || cuerpo.containsKey('detail')) {
+          mensajeError = cuerpo['error'] ?? cuerpo['detail'];
         }
       } catch (_) {}
-      
-      return RespuestaApi(exito: false, mensaje: errorMsg);
+
+      return RespuestaApi(exito: false, mensaje: mensajeError);
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<Map<String, dynamic>>> toggleGuardado(int publicacionId) async {
+  /// Alterna si una publicación está guardada en el perfil del usuario.
+  Future<RespuestaApi<Map<String, dynamic>>> alternarGuardado(int publicacionId) async {
     try {
-      final token = await _servicioUsuarios.obtenerToken();
-      final response = await http.post(
-        Uri.parse('$_urlBase/contenido/publicaciones/$publicacionId/guardar/'),
-        headers: {
-          'Authorization': 'Token $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      final respuesta = await http.post(
+        Uri.parse('$_urlBase/publicaciones/$publicacionId/guardar/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
         return RespuestaApi(
-          exito: true, 
-          mensaje: 'Éxito', 
-          datos: jsonDecode(response.body)
+          exito: true,
+          mensaje: 'Estado de guardado actualizado',
+          datos: jsonDecode(respuesta.body),
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar el guardado');

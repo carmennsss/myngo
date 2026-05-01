@@ -1,5 +1,9 @@
-import 'usuario.dart'; // Importante para el campo datosUsuario
+import 'usuario.dart';
 
+/// Modelo que representa el perfil extendido de un usuario.
+///
+/// Incluye personalizaciones visuales, estadísticas de seguidores
+/// y el objeto [Usuario] anidado con los datos de cuenta.
 class Perfil {
   final String? biografia;
   final String? urlAvatar;
@@ -7,12 +11,25 @@ class Perfil {
   final String? marco;
   final int numeroSeguidores;
   final int numeroSeguidos;
+
+  /// Estado de la relación de seguimiento entre el usuario autenticado y este perfil.
   final String? estadoSeguimiento;
+
+  /// Configuración visual de los posts para este perfil.
   final Map<String, dynamic>? estiloPost;
-  final Usuario? datosUsuario; // El "perro" que va dentro del "gato"
-String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
+
+  /// Datos básicos de cuenta del usuario asociado a este perfil.
+  final Usuario? datosUsuario;
+
+  /// Nombre de usuario heredado de los datos de cuenta.
+  String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
+
+  /// Reputación media heredada de los datos de cuenta.
   double get ratingActual => datosUsuario?.ratingActual ?? 0.0;
+
+  /// Estado de verificación heredado de los datos de cuenta.
   bool get esVerificado => datosUsuario?.esVerificado ?? false;
+
   Perfil({
     this.biografia,
     this.urlAvatar,
@@ -25,30 +42,23 @@ String get nombreUsuario => datosUsuario?.nombreUsuario ?? 'Desconocido';
     this.datosUsuario,
   });
 
+  /// Crea una instancia de [Perfil] a partir de un mapa JSON.
   factory Perfil.fromJson(Map<String, dynamic> json) {
     return Perfil(
-      // 1. Biografía (String opcional)
       biografia: json['biografia']?.toString(),
-
-      // 2. URL Avatar (String opcional generado por el SerializerMethodField)
       urlAvatar: json['url_avatar']?.toString(),
-
       fondo: json['fondo']?.toString(),
       marco: json['marco']?.toString(),
-      estiloPost: json['estilo_post'] is Map ? Map<String, dynamic>.from(json['estilo_post']) : null,
-
-      // 3. Número de seguidores (int, con fallback a 0)
-      numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
-
-      // 4. Número de seguidos (int, con fallback a 0)
-      numeroSeguidos: int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
-
-      // 5. Estado de seguimiento (String opcional: 'ACEPTADO', 'SOLICITUD', etc.)
+      estiloPost: json['estilo_post'] is Map
+          ? Map<String, dynamic>.from(json['estilo_post'])
+          : null,
+      numeroSeguidores:
+          int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
+      numeroSeguidos:
+          int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
       estadoSeguimiento: json['estado_seguimiento']?.toString(),
-
-      // 6. Datos del Usuario (Objeto anidado transformado por el UsuarioSerializer)
-      datosUsuario: json['datos_usuario'] != null 
-          ? Usuario.fromJson(json['datos_usuario']) 
+      datosUsuario: json['datos_usuario'] != null
+          ? Usuario.fromJson(json['datos_usuario'])
           : null,
     );
   }

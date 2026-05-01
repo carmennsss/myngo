@@ -1,3 +1,7 @@
+/// Modelo que representa una propuesta de nueva mejora para una comunidad.
+///
+/// Incluye el tipo de mejora, el recurso visual propuesto y el estado
+/// de moderación ('PENDIENTE', 'APROBADA', 'RECHAZADA').
 class PeticionMejora {
   final int id;
   final int usuarioId;
@@ -23,6 +27,7 @@ class PeticionMejora {
     required this.fechaCreacion,
   });
 
+  /// Crea una instancia de [PeticionMejora] a partir de un mapa JSON.
   factory PeticionMejora.fromJson(Map<String, dynamic> json) {
     return PeticionMejora(
       id: json['id'] ?? 0,
@@ -34,8 +39,8 @@ class PeticionMejora {
       urlRecurso: json['url_recurso'] ?? '',
       estado: json['estado'] ?? 'PENDIENTE',
       precioSugerido: json['precio_sugerido'] ?? 0,
-      fechaCreacion: json['fecha_creacion'] != null 
-          ? DateTime.parse(json['fecha_creacion']) 
+      fechaCreacion: json['fecha_creacion'] != null
+          ? DateTime.parse(json['fecha_creacion'])
           : DateTime.now(),
     );
   }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/servicio_chat.dart';
+import '../services/servicio_mensajeria.dart';
 import '../services/servicio_notificaciones_locales.dart';
 
 class ChatProvider extends ChangeNotifier {
-  final ServicioChat _servicioChat = ServicioChat();
+  final ServicioMensajeria _servicioChat = ServicioMensajeria();
   
   int _totalNoLeidos = 0;
   Map<int, int> _noLeidosPorSala = {};
@@ -25,7 +25,7 @@ class ChatProvider extends ChangeNotifier {
 
   /// Carga inicial de conteos desde la API REST.
   Future<void> cargarConteosIniciales() async {
-    final data = await ServicioChat.obtenerConteoNoLeidos();
+    final data = await ServicioMensajeria().obtenerConteoMensajesNoLeidos();
     _totalNoLeidos = (data['total'] as num?)?.toInt() ?? 0;
     
     final porSala = data['por_sala'] as List<dynamic>? ?? [];

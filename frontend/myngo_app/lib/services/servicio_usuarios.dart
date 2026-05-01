@@ -1,177 +1,183 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/configuracion.dart';
 
-/// Clase de servicio que encapsula la lógica de comunicación con la API de usuarios.
+/// Servicio encargado de la gestión de usuarios, autenticación y sesiones.
+///
+/// Proporciona métodos para el inicio de sesión, registro, recuperación de
+/// credenciales y persistencia de la sesión en el dispositivo.
 class ServicioUsuarios {
-  /// URL base para los endpoints relacionados con usuarios.
-  static const String _urlBase = '${Configuracion.baseUrl}/usuarios';
+  /// URL base para los endpoints relacionados con la gestión de usuarios.
+  static const String _urlUsuarios = '${Configuracion.baseUrl}/usuarios';
 
-  /// Realiza una solicitud de autenticación al servidor.
-  Future<RespuestaApi<Usuario>> iniciarSesion(String email, String contrasena) async {
+  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  Future<Map<String, String>> _obtenerCabeceras() async {
+    final token = await obtenerToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Token $token',
+    };
+  }
+
+  /// Realiza la autenticación del usuario en la plataforma.
+  ///
+  /// Tras un inicio de sesión exitoso, persiste el token y los datos básicos
+  /// del usuario en las preferencias compartidas del dispositivo.
+  Future<RespuestaApi<Usuario>> iniciarSesion(String correo, String contrasena) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/login/'),
+        Uri.parse('$_urlUsuarios/login/'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': contrasena}),
-      ).timeout(const Duration(seconds: 25));
+        body: jsonEncode({'email': correo, 'password': contrasena}),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        
         if (datosJson.containsKey('token')) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', datosJson['token']);
-          if (datosJson.containsKey('datos') && datosJson['datos']['id'] != null) {
-            await prefs.setInt('usuario_id', datosJson['datos']['id']);
-            if (datosJson['datos']['nombre_usuario'] != null) {
-              await prefs.setString('nombre_usuario', datosJson['datos']['nombre_usuario']);
+          final preferencias = await SharedPreferences.getInstance();
+          await preferencias.setString('auth_token', datosJson['token']);
+
+          if (datosJson['datos'] != null) {
+            final datos = datosJson['datos'];
+            if (datos['id'] != null) {
+              await preferencias.setInt('usuario_id', datos['id']);
+            }
+            if (datos['nombre_usuario'] != null) {
+              await preferencias.setString('nombre_usuario', datos['nombre_usuario']);
             }
           }
         }
 
         return RespuestaApi.fromJson(
           datosJson,
-          transformador: (json) => Usuario.fromJson(json),
+          transformador: (j) => Usuario.fromJson(j),
         );
-      } else {
-        try {
-          final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-          return RespuestaApi(
-            exito: false,
-            mensaje: datosJson['mensaje'] ?? 'Error en la autenticación',
-            errores: datosJson['errores'],
-          );
-        } catch (_) {
-          return RespuestaApi(
-            exito: false,
-            mensaje: 'Error en la autenticación: ${respuesta.statusCode}',
-          );
-        }
       }
-    } catch (e) {
+
       return RespuestaApi(
         exito: false,
-        mensaje: 'Error de conexión con el servidor: $e',
+        mensaje: datosJson['mensaje'] ?? 'Error en la autenticación (${respuesta.statusCode})',
+        errores: datosJson['errores'],
       );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<Usuario>> registrarse(String nombre_usuario, String email, String contrasena) async {
+  /// Registra una nueva cuenta de usuario en el sistema.
+  Future<RespuestaApi<Usuario>> registrarse(
+      String nombreUsuario, String correo, String contrasena) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/registro/'),
+        Uri.parse('$_urlUsuarios/registro/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'nombre_usuario': nombre_usuario,
-          'email': email,
+          'nombre_usuario': nombreUsuario,
+          'email': correo,
           'password': contrasena,
         }),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
 
       if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi.fromJson(
           datosJson,
-          transformador: (json) => Usuario.fromJson(json),
+          transformador: (j) => Usuario.fromJson(j),
         );
-      } else {
-        try {
-          final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-          return RespuestaApi(
-            exito: false,
-            mensaje: datosJson['mensaje'] ?? 'Error en el registro',
-            errores: datosJson['errores'],
-          );
-        } catch (_) {
-          return RespuestaApi(
-            exito: false,
-            mensaje: 'Error en el registro: ${respuesta.statusCode}',
-          );
-        }
       }
-    } catch (e) {
+
       return RespuestaApi(
         exito: false,
-        mensaje: 'Error de conexión con el servidor: $e',
+        mensaje: datosJson['mensaje'] ?? 'Error en el registro (${respuesta.statusCode})',
+        errores: datosJson['errores'],
       );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi> recuperarContrasena(String email) async {
+  /// Solicita el restablecimiento de contraseña para el correo proporcionado.
+  Future<RespuestaApi> recuperarContrasena(String correo) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/recuperar-contrasena/'),
+        Uri.parse('$_urlUsuarios/recuperar-contrasena/'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
-      ).timeout(const Duration(seconds: 25));
+        body: jsonEncode({'email': correo}),
+      ).timeout(const Duration(seconds: 20));
 
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi.fromJson(datosJson);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al recuperar contraseña: ${respuesta.statusCode}');
-    } catch (e) {
+
       return RespuestaApi(
         exito: false,
-        mensaje: 'Error de conexión con el servidor: $e',
+        mensaje: datosJson['mensaje'] ?? 'Error al recuperar la contraseña',
       );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Recupera el token de sesión almacenado localmente.
   Future<String?> obtenerToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString('auth_token');
-    } catch (e) {
+      final preferencias = await SharedPreferences.getInstance();
+      return preferencias.getString('auth_token');
+    } catch (_) {
       return null;
     }
   }
 
+  /// Obtiene el identificador numérico del usuario actual.
   Future<int?> obtenerIdUsuario() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt('usuario_id');
-    } catch (e) {
+      final preferencias = await SharedPreferences.getInstance();
+      return preferencias.getInt('usuario_id');
+    } catch (_) {
       return null;
     }
   }
 
+  /// Obtiene el nombre de usuario de la sesión actual.
   Future<String?> obtenerNombreUsuario() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString('nombre_usuario');
-    } catch (e) {
+      final preferencias = await SharedPreferences.getInstance();
+      return preferencias.getString('nombre_usuario');
+    } catch (_) {
       return null;
     }
   }
 
+  /// Obtiene la información completa del usuario que ha iniciado sesión.
   Future<RespuestaApi<Usuario>> obtenerDatosPropios() async {
-    try {
-      final id = await obtenerIdUsuario();
-      if (id == null) return RespuestaApi(exito: false, mensaje: 'Usuario no logueado');
-      return obtenerDatosUsuario(id);
-    } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error: $e');
-    }
+    final id = await obtenerIdUsuario();
+    if (id == null) return RespuestaApi(exito: false, mensaje: 'Sesión no activa');
+    return obtenerDatosUsuario(id);
   }
 
+  /// Obtiene una lista de todos los usuarios registrados en la plataforma.
   Future<RespuestaApi<List<Usuario>>> listarUsuarios() async {
     try {
-      final token = await obtenerToken();
-      final uri = Uri.parse('$_urlBase/datos/');
       final respuesta = await http.get(
-        uri,
-        headers: token != null ? {'Authorization': 'Token $token'} : {},
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlUsuarios/datos/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson['datos'] ?? [];
-        final usuarios = lista.map((js) => Usuario.fromJson(js)).toList();
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: usuarios);
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Usuarios recuperados',
+          datos: lista.map((j) => Usuario.fromJson(j)).toList(),
+        );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al listar usuarios');
     } catch (e) {
@@ -179,48 +185,59 @@ class ServicioUsuarios {
     }
   }
 
+  /// Obtiene el ranking global de usuarios basado en su reputación.
   Future<RespuestaApi<List<Usuario>>> obtenerRanking() async {
     try {
-      final respuesta = await http.get(Uri.parse('$_urlBase/ranking/')).timeout(const Duration(seconds: 25));
+      final respuesta = await http.get(
+        Uri.parse('$_urlUsuarios/ranking/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson['datos'] ?? [];
-        final usuarios = lista.map((js) => Usuario.fromJson(js)).toList();
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: usuarios);
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener el ranking');
-    } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
-    }
-  }
-
-  Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int id) async {
-    try {
-      final token = await obtenerToken();
-      final respuesta = await http.get(
-        Uri.parse('$_urlBase/datos/$id/'),
-        headers: token != null ? {'Authorization': 'Token $token'} : {},
-      ).timeout(const Duration(seconds: 25));
-      if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        return RespuestaApi.fromJson(
-          datosJson,
-          transformador: (json) => Usuario.fromJson(json),
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Ranking recuperado',
+          datos: lista.map((j) => Usuario.fromJson(j)).toList(),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener datos del usuario');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener ranking');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Obtiene la información detallada de un usuario específico por su ID.
+  Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int idUsuario) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlUsuarios/datos/$idUsuario/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi.fromJson(
+          datosJson,
+          transformador: (j) => Usuario.fromJson(j),
+        );
+      }
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'Error al obtener datos',
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Finaliza la sesión actual y limpia los datos locales.
   Future<void> cerrarSesion() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    try {
+      final preferencias = await SharedPreferences.getInstance();
+      await preferencias.clear();
+    } catch (_) {}
   }
 }

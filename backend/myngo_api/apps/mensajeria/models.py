@@ -1,37 +1,70 @@
+"""Modelos del dominio de mensajería: salas, participantes y mensajes de chat."""
+
 from django.db import models
+
 from comunidades.models import Comunidad
 from usuarios.models import Usuario
-class Salas_chat(models.Model):
+
+
+class SalaChat(models.Model):
+    """Sala de conversación para usuarios.
+
+    Puede estar vinculada a una comunidad o ser una sala privada global.
+    Las salas pueden ser grupales o individuales (DM).
+    """
+
     class Meta:
         db_table = 'salas_chat'
-    nombre=models.CharField(max_length=100)
-    comunidad=models.ForeignKey(Comunidad,on_delete=models.CASCADE, null=True, blank=True) # Opcional si es global
-    es_grupal=models.BooleanField(default=False)
-    es_publica=models.BooleanField(default=False)
-    invite_token=models.CharField(max_length=100, unique=True, null=True, blank=True)
-    miembros=models.ManyToManyField(Usuario, related_name='salas_pertenecientes', blank=True)
-    fecha_creacion=models.DateTimeField(auto_now_add=True)
-    
+
+    nombre = models.CharField(max_length=100)
+    comunidad = models.ForeignKey(
+        Comunidad, on_delete=models.CASCADE, null=True, blank=True
+    )
+    es_grupal = models.BooleanField(default=False)
+    es_publica = models.BooleanField(default=False)
+    invite_token = models.CharField(
+        max_length=100, unique=True, null=True, blank=True
+    )
+    miembros = models.ManyToManyField(
+        Usuario, related_name='salas_pertenecientes', blank=True
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
         return self.nombre
-    
-class Participantes_chat(models.Model):
+
+
+class ParticipanteChat(models.Model):
+    """Relación de pertenencia de un usuario a una sala de chat."""
+
     class Meta:
         db_table = 'participantes_chat'
-    sala=models.ForeignKey(Salas_chat,on_delete=models.CASCADE)
-    usuario=models.ForeignKey(Usuario,on_delete=models.CASCADE)
-    fecha_union=models.DateTimeField(auto_now_add=True)
+
+    sala = models.ForeignKey(SalaChat, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    fecha_union = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.usuario.nombre_usuario} en {self.sala.nombre}"
-class Mensajes_chat(models.Model):
+
+
+class MensajeChat(models.Model):
+    """Mensaje individual enviado dentro de una sala de chat.
+
+    Soporta texto y referencias a archivos almacenados en S3.
+    Mantiene el estado de lectura del mensaje.
+    """
+
     class Meta:
         db_table = 'mensajes_chat'
-    sala=models.ForeignKey(Salas_chat, on_delete=models.CASCADE, related_name='mensajes')
-    emisor=models.ForeignKey(Usuario,on_delete=models.CASCADE)
-    contenido=models.TextField(null=True, blank=True)
-    url_archivo_s3=models.CharField(max_length=500,null=True,blank=True)
-    fecha_envio=models.DateTimeField(auto_now_add=True)
+
+    sala = models.ForeignKey(
+        SalaChat, on_delete=models.CASCADE, related_name='mensajes'
+    )
+    emisor = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    contenido = models.TextField(null=True, blank=True)
+    url_archivo_s3 = models.CharField(max_length=500, null=True, blank=True)
+    fecha_envio = models.DateTimeField(auto_now_add=True)
     es_leido = models.BooleanField(default=False)
     fecha_lectura = models.DateTimeField(null=True, blank=True)
 

@@ -52,7 +52,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
       );
 
       if (tieneNoLeidasNormales) {
-        await _servicioNotificaciones.marcarTodasLeidas();
+        await _servicioNotificaciones.marcarTodasComoLeidas();
         if (mounted) {
           setState(() {
             _notificaciones = _notificaciones.map((n) {
@@ -73,9 +73,9 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     
     dynamic respuesta;
     if (notif.nombreComunidad != null && notif.nombreComunidad!.isNotEmpty) {
-      respuesta = await _servicioComunidades.responderPeticion(notif.referenciaId!, aceptar);
+      respuesta = await _servicioComunidades.responderPeticionAcceso(notif.referenciaId!, aceptar);
     } else {
-      respuesta = await _servicioPerfiles.responderPeticion(notif.referenciaId!, aceptar);
+      respuesta = await _servicioPerfiles.responderSolicitudSeguimiento(notif.referenciaId!, aceptar);
     }
 
     if (mounted) {
@@ -94,7 +94,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
   void _navegarADetalle(Notificacion notif) async {
     // Marcar como leída localmente e informar al servidor
     if (!notif.leida) {
-      _servicioNotificaciones.marcarLeida(notif.id);
+      _servicioNotificaciones.marcarComoLeida(notif.id);
       setState(() {
         final index = _notificaciones.indexWhere((n) => n.id == notif.id);
         if (index != -1) {

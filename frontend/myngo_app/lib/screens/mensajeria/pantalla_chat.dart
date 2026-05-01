@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../../utils/configuracion.dart';
-import '../../services/servicio_chat.dart';
+import '../../services/servicio_mensajeria.dart';
 import '../../utils/configuracion.dart';
 import '../inicio/pantalla_inicio.dart';
 
@@ -27,7 +27,7 @@ class PantallaChat extends StatefulWidget {
 }
 
 class _PantallaChatState extends State<PantallaChat> {
-  final ServicioChat _servicioChat = ServicioChat();
+  final ServicioMensajeria _servicioChat = ServicioMensajeria();
   final TextEditingController _mensajeController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -175,7 +175,7 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   Future<void> _marcarLeidos() async {
-    await ServicioChat.marcarLeidos(widget.salaId);
+    await ServicioMensajeria().marcarMensajesComoLeidos(widget.salaId);
   }
 
   void _conectarWebSockets() {
@@ -223,7 +223,7 @@ class _PantallaChatState extends State<PantallaChat> {
           }
         });
       }
-    }, onConnected: () {
+    }, alConectar: () {
       if (mounted) setState(() => _chatConectado = true);
     });
 
@@ -266,7 +266,7 @@ class _PantallaChatState extends State<PantallaChat> {
         _mensajes.insert(0, mensajeOptimista);
       });
 
-      _servicioChat.enviarMensaje(texto, clientId: clientId);
+      _servicioChat.enviarMensajeChat(texto, idCliente: clientId);
       _mensajeController.clear();
       
       // Auto-scroll si no estamos arriba

@@ -9,7 +9,7 @@ import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
-import '../../services/servicio_chat.dart';
+import '../../services/servicio_mensajeria.dart';
 import '../../providers/chat_provider.dart';
 import 'package:provider/provider.dart';
 import '../comunidades/pantalla_comunidades.dart';
@@ -22,7 +22,6 @@ import '../perfiles/pantalla_tienda_mejoras.dart';
 import '../galeria/pantalla_mis_cosas.dart';
 import '../../widgets/comunes/vista_requerir_login.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../../services/servicio_chat.dart';
 import '../../models/publicacion.dart';
 // Widgets de inicio
 import '../../widgets/inicio/cabecera_pro.dart';
@@ -41,7 +40,7 @@ class PantallaInicio extends StatefulWidget {
 }
 
 class PantallaInicioState extends State<PantallaInicio> {
-  final ServicioChat _servicioChat = ServicioChat();
+  final ServicioMensajeria _servicioChat = ServicioMensajeria();
   int _indiceSeleccionado = 0;
   bool _estaLogueado = false;
   String? _miNombre;
@@ -55,7 +54,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   int? _miId;
   int? _puntos;
   int _notificacionesSinLeer = 0;
-  final ServicioChat _servicioNotifChat = ServicioChat();
+  final ServicioMensajeria _servicioNotifChat = ServicioMensajeria();
   List<Comunidad>? _misComunidades;
   bool _cargandoComunidades = false;
   bool _isSidebarOpen = true;
@@ -143,7 +142,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   }
 
   void cambiarEstado(String nuevoEstado) {
-    _servicioChat.cambiarEstado(nuevoEstado);
+    _servicioChat.cambiarEstadoDisponibilidad(nuevoEstado);
   }
 
   Future<void> _cargarRanking() async {
