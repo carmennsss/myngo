@@ -21,7 +21,7 @@ class PostProvider with ChangeNotifier {
     notifyListeners();
     
     try {
-      final res = await _servicio.obtenerPublicaciones(comunidadId);
+      final res = await _servicio.obtenerPublicacionesComunidad(comunidadId);
       if (res.exito) {
         _posts = res.datos ?? [];
         _state = PostState.success;
@@ -49,7 +49,7 @@ class PostProvider with ChangeNotifier {
       // Nota: Aquí se debería llamar a un servicio que soporte POST multipart
       // Por brevedad, simulamos la respuesta del backend tras validación IA
       final res = await _servicio.crearPublicacion(
-        comunidadId: comunidadId,
+        idComunidad: comunidadId,
         texto: texto,
         imagenes: imagenes,
         etiquetas: etiquetas,

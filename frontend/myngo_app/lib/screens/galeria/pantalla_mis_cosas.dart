@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/servicio_galeria.dart';
 import '../../models/imagen_galeria.dart';
 import '../../models/coleccion.dart';
+import '../../models/respuesta_api.dart';
 import '../../widgets/galeria/masonry_grid_galeria.dart';
 import 'dart:math' as math;
 import 'pantalla_detalle_coleccion.dart';
@@ -36,14 +37,15 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
   Future<void> _cargarDatos() async {
     setState(() => _cargando = true);
     
-    final coleccionesF = _servicioGaleria.obtenerColecciones(usuarioId: widget.usuarioId);
+    final coleccionesF = _servicioGaleria.obtenerColecciones(idUsuario: widget.usuarioId);
 
     final resultados = await Future.wait([coleccionesF]);
 
     if (mounted) {
       setState(() {
-        if (resultados[0].exito) {
-          _misColecciones = resultados[0].datos as List<Coleccion>;
+        final resColecciones = resultados[0] as RespuestaApi<List<Coleccion>>;
+        if (resColecciones.exito && resColecciones.datos != null) {
+          _misColecciones = resColecciones.datos!;
         }
         _cargando = false;
       });

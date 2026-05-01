@@ -27,7 +27,7 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
 
   Future<void> _cargarPeticiones() async {
     setState(() => _cargando = true);
-    final res = await _servicio.obtenerPeticionesModeracion(widget.comunidad.id);
+    final res = await _servicio.obtenerPropuestasPendientes(widget.comunidad.id);
     if (mounted) {
       setState(() {
         _cargando = false;
@@ -39,7 +39,7 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
   }
 
   Future<void> _moderar(PeticionMejora peticion, String estado, int precio) async {
-    final res = await _servicio.moderarPeticion(peticion.id, estado, precio);
+    final res = await _servicio.moderarPropuesta(peticion.id, estado, precio);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res.mensaje), backgroundColor: res.exito ? Colors.green : Colors.red),

@@ -136,13 +136,17 @@ class MenuOpcionesContenido extends StatelessWidget {
                 final servicioComunidades = ServicioComunidades();
 
                 if (tipoObjeto == 'POST') {
-                  res = await servicioComunidades.eliminarPublicacion(objetoId, razon: esModeracion ? razon : null);
+                  res = esModeracion 
+                      ? await servicioComunidades.eliminarPublicacionModeracion(objetoId, razon: razon)
+                      : await servicioGaleria.eliminarPublicacion(objetoId, razon: razon);
                 } else if (tipoObjeto == 'IMAGEN') {
                   res = await servicioGaleria.eliminarImagen(objetoId, razon: esModeracion ? razon : null);
                 } else if (tipoObjeto == 'COMUNIDAD') {
                   res = await servicioComunidades.eliminarComunidad(objetoId);
                 } else if (tipoObjeto == 'COMENTARIO') {
-                  res = await servicioComunidades.eliminarComentario(objetoId, razon: esModeracion ? razon : null);
+                  res = esModeracion
+                      ? await servicioComunidades.eliminarComentarioModeracion(objetoId, razon: razon)
+                      : RespuestaApi(exito: false, mensaje: 'Eliminar comentario no implementado');
                 }
 
                 if (res.exito) {
@@ -209,7 +213,7 @@ class MenuOpcionesContenido extends StatelessWidget {
               onPressed: motivoSeleccionado == null ? null : () async {
                 final res = await servicioModeracion.reportarContenido(
                   tipoObjeto: tipoObjeto,
-                  objetoId: objetoId,
+                  idObjeto: objetoId,
                   motivo: motivoSeleccionado!,
                   comentario: comentarioController.text.trim().isEmpty ? null : comentarioController.text.trim(),
                   comunidadId: comunidadId,

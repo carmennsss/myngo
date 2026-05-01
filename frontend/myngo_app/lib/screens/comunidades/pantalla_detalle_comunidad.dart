@@ -111,7 +111,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Future<void> _cargarColecciones() async {
     final res = await _servicioGaleria.obtenerColecciones(
-        comunidadId: widget.comunidad.id);
+        idComunidad: widget.comunidad.id);
     if (res.exito && res.datos != null && mounted) {
       setState(() => _colecciones = res.datos!);
     }
@@ -404,7 +404,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   void _mostrarDialogoNuevaColeccion(BuildContext context) {
     DialogosComunidad.mostrarDialogoNuevaColeccion(
       context,
-      comunidadId: widget.comunidad.id,
+      idComunidad: widget.comunidad.id,
       onCreada: _cargarColecciones,
     );
   }

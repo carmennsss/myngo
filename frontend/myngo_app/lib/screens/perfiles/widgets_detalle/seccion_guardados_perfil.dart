@@ -122,43 +122,38 @@ class _TarjetaPostGuardado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = EstiloPostHelper.getEstilo(post.estiloId);
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(post.autorEstiloPost);
+    final colorTexto = esFondoClaro ? Colors.black87 : Colors.white.withOpacity(0.9);
 
     return GestureDetector(
       onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => DetallePublicacionSheet(
-            publicacion: post,
-            onInteraction: onUpdate,
-          ),
+        DetallePublicacionSheet.mostrar(
+          context,
+          publicacion: post,
+          avatarUrl: post.autorFoto ?? '',
+          onEliminado: onUpdate,
         );
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: style.backgroundColor ?? const Color(0xFF1E1E1E),
+        decoration: EstiloPostHelper.buildDecoracion(
+          post.autorEstiloPost,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: style.borderColor ?? Colors.white.withOpacity(0.05),
-            width: 1.5,
-          ),
+          borderWidth: 1.5,
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            if (post.imagenes.isNotEmpty)
-              Image.network(post.imagenes.first, fit: BoxFit.cover),
+            if (post.urlsImagenes.isNotEmpty)
+              Image.network(post.urlsImagenes.first, fit: BoxFit.cover),
             Padding(
               padding: const EdgeInsets.all(8),
               child: Text(
-                post.contenido,
+                post.contenidoTexto,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: style.textColor ?? Colors.white.withOpacity(0.8)),
+                    color: colorTexto),
               ),
             ),
           ],

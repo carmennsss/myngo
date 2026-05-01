@@ -64,29 +64,24 @@ class _TarjetaPostPerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = EstiloPostHelper.getEstilo(post.estiloId);
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(post.autorEstiloPost);
+    final colorTexto = esFondoClaro ? Colors.black87 : Colors.white.withOpacity(0.9);
 
     return GestureDetector(
       onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => DetallePublicacionSheet(
-            publicacion: post,
-            onInteraction: onUpdate,
-          ),
+        DetallePublicacionSheet.mostrar(
+          context,
+          publicacion: post,
+          avatarUrl: post.autorFoto ?? '',
+          onEliminado: onUpdate,
         );
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: style.backgroundColor ?? const Color(0xFF1E1E1E),
+        decoration: EstiloPostHelper.buildDecoracion(
+          post.autorEstiloPost,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: style.borderColor ?? Colors.white.withOpacity(0.05),
-            width: 1.5,
-          ),
-          boxShadow: [
+          borderWidth: 1.5,
+          shadows: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
               blurRadius: 10,
@@ -98,9 +93,9 @@ class _TarjetaPostPerfil extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (post.imagenes.isNotEmpty)
+            if (post.urlsImagenes.isNotEmpty)
               Image.network(
-                post.imagenes.first,
+                post.urlsImagenes.first,
                 fit: BoxFit.cover,
               ),
             Padding(
@@ -109,12 +104,12 @@ class _TarjetaPostPerfil extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    post.contenido,
+                    post.contenidoTexto,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: style.textColor ?? Colors.white.withOpacity(0.9),
+                      color: colorTexto,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -124,7 +119,7 @@ class _TarjetaPostPerfil extends StatelessWidget {
                           color: Color(0xFFF28B50), size: 12),
                       const SizedBox(width: 4),
                       Text(
-                        '${post.likes}',
+                        '${post.likesCount}',
                         style: GoogleFonts.inter(
                             fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
                       ),

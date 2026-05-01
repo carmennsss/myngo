@@ -69,7 +69,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
         fechaCreacion: DateTime.now(),
       );
 
-      final respuesta = await _servicio.crearComunidad(nuevaComunidad, imagen: _imagenSeleccionada);
+      final respuesta = await _servicio.crearComunidad(nuevaComunidad, imagenPortada: _imagenSeleccionada);
       _estaCargando.value = false;
 
       if (mounted) {

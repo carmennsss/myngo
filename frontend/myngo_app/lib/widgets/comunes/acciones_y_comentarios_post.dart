@@ -107,7 +107,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
       widget.post.likesCount = _likesCount;
     });
 
-    final respuesta = await _servicioInteraccion.toggleLike(widget.post.id);
+    final respuesta = await _servicioInteraccion.alternarMeGusta(widget.post.id);
     
     if (!respuesta.exito) {
       if (mounted) {
