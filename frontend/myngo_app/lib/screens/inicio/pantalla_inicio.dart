@@ -490,6 +490,66 @@ class PantallaInicioState extends State<PantallaInicio> {
             title: Text('Notificaciones', style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
             onTap: () { Navigator.pop(context); _alPulsarNav(2); },
           ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'MIS COMUNIDADES',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.grey.shade500,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+          if (_cargandoComunidades)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+          else if (_misComunidades != null && _misComunidades!.isNotEmpty)
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: _misComunidades!.length,
+                itemBuilder: (context, index) {
+                  final comunidad = _misComunidades![index];
+                  return ListTile(
+                    leading: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        image: DecorationImage(
+                          image: CachedNetworkImageProvider(comunidad.urlPortada),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      comunidad.nombre,
+                      style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _seleccionarComunidad(comunidad);
+                    },
+                  );
+                },
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Aún no te has unido a ninguna comunidad 🐾',
+                style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
+              ),
+            ),
         ],
       ),
     );

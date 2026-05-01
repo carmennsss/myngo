@@ -326,7 +326,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
                                       SliverPadding(
                                         padding: const EdgeInsets.all(16.0),
                                         sliver: SliverMasonryGrid.count(
-                                          crossAxisCount: MediaQuery.of(context).size.width < 900 ? 2 : 4,
+                                          crossAxisCount: MediaQuery.of(context).size.width < 600 ? 1 : (MediaQuery.of(context).size.width < 900 ? 2 : 4),
                                           mainAxisSpacing: 12,
                                           crossAxisSpacing: 12,
                                           childCount: _posts!.length,
