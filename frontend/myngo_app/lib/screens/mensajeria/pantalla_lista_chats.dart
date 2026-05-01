@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/servicio_chat.dart';
+import '../../services/servicio_mensajeria.dart';
 import '../inicio/pantalla_inicio.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
@@ -42,7 +42,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     _miId = prefs.getInt('usuario_id');
     
     // Obtener salas (el backend ya está optimizado con prefetch)
-    final salas = await ServicioChat.obtenerSalas();
+    final salas = await ServicioMensajeria().obtenerSalasChat();
     
     if (mounted) {
       setState(() {

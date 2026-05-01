@@ -1,10 +1,24 @@
+"""Configuración de rutas de URL para el módulo de mensajería."""
+
 from django.urls import path
-from . import views
+
+from .views import (
+    MensajesChatList,
+    SalaChatListCreate,
+    agregar_miembro,
+    conteo_no_leidos,
+    marcar_leidos,
+)
 
 urlpatterns = [
-    path('salas/', views.SalaChatListCreate.as_view(), name='lista_salas'),
-    path('salas/<int:pk>/agregar_miembro/', views.agregar_miembro, name='agregar_miembro'),
-    path('salas/<int:sala_id>/mensajes/', views.MensajesChatList.as_view(), name='historial_mensajes'),
-    path('salas/<int:sala_id>/marcar-leidos/', views.marcar_leidos, name='marcar_leidos'),
-    path('no-leidos/', views.conteo_no_leidos, name='conteo_no_leidos'),
+    # Gestión de Salas
+    path('salas/', SalaChatListCreate.as_view(), name='lista_salas'),
+    path('salas/<int:pk>/agregar_miembro/', agregar_miembro, name='agregar_miembro'),
+
+    # Mensajes e Historial
+    path('salas/<int:sala_id>/mensajes/', MensajesChatList.as_view(), name='historial_mensajes'),
+    path('salas/<int:sala_id>/marcar-leidos/', marcar_leidos, name='marcar_leidos'),
+
+    # Estadísticas
+    path('no-leidos/', conteo_no_leidos, name='conteo_no_leidos'),
 ]

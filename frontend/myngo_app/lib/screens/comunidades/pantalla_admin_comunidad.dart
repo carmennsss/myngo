@@ -51,7 +51,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   Future<void> _cargarDatos({bool silencioso = false}) async {
     if (!silencioso) setState(() => _cargando = true);
-    final res = await _servicioComunidades.obtenerAdminDashboard(widget.comunidad.id);
+    final res = await _servicioComunidades.obtenerDashboardAdmin(widget.comunidad.id);
     if (res.exito && mounted) {
       setState(() {
         _datos = res.datos;
@@ -257,7 +257,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   // --- HELPERS ---
 
   Future<void> _responderPeticion(int id, bool aceptar) async {
-    final res = await _servicioComunidades.responderPeticion(id, aceptar);
+    final res = await _servicioComunidades.responderPeticionAcceso(id, aceptar);
     if (res.exito) {
       _cargarDatos(silencioso: true);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -327,9 +327,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   Future<void> _moderarContenido(int id, String tipo, int reporteId, String razon) async {
     dynamic resBorrado;
-    if (tipo == 'POST') resBorrado = await _servicioComunidades.eliminarPublicacion(id, razon: razon);
+    if (tipo == 'POST') resBorrado = await _servicioComunidades.eliminarPublicacionModeracion(id, razon: razon);
     else if (tipo == 'IMAGEN') resBorrado = await _servicioGaleria.eliminarImagen(id, razon: razon);
-    else if (tipo == 'COMENTARIO') resBorrado = await _servicioComunidades.eliminarComentario(id, razon: razon);
+    else if (tipo == 'COMENTARIO') resBorrado = await _servicioComunidades.eliminarComentarioModeracion(id, razon: razon);
 
     if (resBorrado?.exito == true) {
        _cargarDatos(silencioso: true);

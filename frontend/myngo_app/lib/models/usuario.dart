@@ -1,25 +1,44 @@
-// lib/models/usuario.dart
-
+/// Modelo que representa a un usuario del sistema Myngo.
+///
+/// Contiene la información básica de la cuenta, metadatos del perfil,
+/// estadísticas de reputación y estado de conexión.
 class Usuario {
   final int id;
   final int perfilId;
   final String nombreUsuario;
   final String email;
-  final String? contrasena; 
-  final bool esVerificado; // Necesario para poder votar 
-  final bool esPublico; // Determina si la biografía es visible y cómo se le sigue
-  final double ratingActual; // Sistema de 0 a 5 estrellas 
+  final String? contrasena;
+
+  /// Indica si el usuario ha verificado su cuenta (necesario para votar).
+  final bool esVerificado;
+
+  /// Determina si el perfil es público o si requiere solicitud de seguimiento.
+  final bool esPublico;
+
+  /// Puntuación de reputación media del usuario (0.0 a 5.0).
+  final double ratingActual;
+
   final DateTime fechaRegistro;
   final String? biografia;
   final String? urlAvatar;
   final String? fondo;
   final String? marco;
+
+  /// Puntos acumulados por actividad en la plataforma.
   int? puntos;
+
   final int numeroSeguidores;
   final int numeroSeguidos;
+
+  /// Estado de la relación entre el usuario autenticado y este usuario
+  /// (e.g., 'ACEPTADO', 'SOLICITUD', null).
   final String? estadoSeguimiento;
+
+  /// Configuración visual para la personalización de posts.
   final Map<String, dynamic>? estiloPost;
-  String? estado; // ACTIVO, OCUPADO, DESCONECTADO
+
+  /// Estado de presencia en tiempo real ('ACTIVO', 'OCUPADO', 'DESCONECTADO').
+  String? estado;
 
   Usuario({
     required this.id,
@@ -43,29 +62,36 @@ class Usuario {
     this.estado = 'DESCONECTADO',
   });
 
+  /// Crea una instancia de [Usuario] a partir de un mapa JSON.
   factory Usuario.fromJson(Map<String, dynamic> json) {
     try {
       return Usuario(
         id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
-        perfilId: int.tryParse(json['perfil_id']?.toString()??'0')??0,
+        perfilId: int.tryParse(json['perfil_id']?.toString() ?? '0') ?? 0,
         nombreUsuario: json['nombre_usuario']?.toString() ?? 'Desconocido',
         email: json['email']?.toString() ?? '',
         contrasena: json['contrasena']?.toString(),
-        esVerificado: json['es_verificado'] == true, 
-        esPublico: json['es_publico'] != false, 
-        ratingActual: double.tryParse(json['rating_actual']?.toString() ?? '0.0') ?? 0.0, 
-        fechaRegistro: json['fecha_registro'] != null 
-            ? DateTime.tryParse(json['fecha_registro'].toString()) ?? DateTime.now() 
+        esVerificado: json['es_verificado'] == true,
+        esPublico: json['es_publico'] != false,
+        ratingActual:
+            double.tryParse(json['rating_actual']?.toString() ?? '0.0') ?? 0.0,
+        fechaRegistro: json['fecha_registro'] != null
+            ? DateTime.tryParse(json['fecha_registro'].toString()) ??
+                DateTime.now()
             : DateTime.now(),
         biografia: json['biografia']?.toString(),
         urlAvatar: json['url_avatar']?.toString(),
         fondo: json['fondo']?.toString(),
         marco: json['marco']?.toString(),
         puntos: int.tryParse(json['puntos']?.toString() ?? '0'),
-        numeroSeguidores: int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
-        numeroSeguidos: int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
+        numeroSeguidores:
+            int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,
+        numeroSeguidos:
+            int.tryParse(json['numero_seguidos']?.toString() ?? '0') ?? 0,
         estadoSeguimiento: json['estado_seguimiento']?.toString(),
-        estiloPost: json['estilo_post'] is Map ? Map<String, dynamic>.from(json['estilo_post']) : null,
+        estiloPost: json['estilo_post'] is Map
+            ? Map<String, dynamic>.from(json['estilo_post'])
+            : null,
         estado: json['estado']?.toString() ?? 'DESCONECTADO',
       );
     } catch (e) {

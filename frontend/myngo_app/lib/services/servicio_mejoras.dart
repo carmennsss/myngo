@@ -1,407 +1,305 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
-import '../models/respuesta_api.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
 import '../models/catalogo_mejoras.dart';
+import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import './servicio_usuarios.dart';
 
-/// Servicio para gestionar las votaciones y el ranking.
+/// Servicio encargado de gestionar el sistema de puntos, reputación y la tienda de cosméticos.
+///
+/// Administra las votaciones entre usuarios/comunidades, el catálogo de mejoras
+/// visuales (marcos, fondos, estilos) y el flujo de propuestas de nuevos artículos.
 class ServicioMejoras {
-  static const String _urlBase = '${Configuracion.baseUrl}/mejoras';
+  /// URL base para los endpoints del módulo de mejoras y reputación.
+  static const String _urlMejoras = '${Configuracion.baseUrl}/mejoras';
 
-  /// Envía un voto a un usuario o comunidad.
-  /// Envía un voto a un usuario o comunidad.
-  Future<RespuestaApi> votar({int? receptorUsuarioId, int? receptorComunidadId, required int estrellas}) async {
+  final _servicioUsuarios = ServicioUsuarios();
+
+  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  Future<Map<String, String>> _obtenerCabeceras() async {
+    final token = await _servicioUsuarios.obtenerToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Token $token',
+    };
+  }
+
+  /// Registra una valoración de estrellas para un usuario o una comunidad.
+  Future<RespuestaApi> votar({
+    int? idReceptorUsuario,
+    int? idReceptorComunidad,
+    required int cantidadEstrellas,
+  }) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/votar/'),
-        headers: {
-          'Authorization': 'Token $token',
-          'Content-Type': 'application/json',
-        },
+        Uri.parse('$_urlMejoras/votar/'),
+        headers: await _obtenerCabeceras(),
         body: jsonEncode({
-          if (receptorUsuarioId != null) 'receptor_usuario': receptorUsuarioId,
-          if (receptorComunidadId != null) 'receptor_comunidad': receptorComunidadId,
-          'estrellas': estrellas,
+          if (idReceptorUsuario != null) 'receptor_usuario': idReceptorUsuario,
+          if (idReceptorComunidad != null) 'receptor_comunidad': idReceptorComunidad,
+          'estrellas': cantidadEstrellas,
         }),
       ).timeout(const Duration(seconds: 25));
 
       final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-      
+
       if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
         return RespuestaApi(
-          exito: true, 
-          mensaje: datosJson['mensaje'] ?? 'Voto registrado',
-          datos: datosJson['nueva_media']
-        );
-      } else {
-        return RespuestaApi(
-          exito: false, 
-          mensaje: datosJson['error'] ?? 'Error al votar'
+          exito: true,
+          mensaje: datosJson['mensaje'] ?? '¡Voto registrado!',
+          datos: datosJson['nueva_media'],
         );
       }
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al procesar el voto');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene el estado del voto actual y el tiempo para el próximo bono.
-  Future<RespuestaApi<Map<String, dynamic>>> obtenerEstadoVoto({int? receptorUsuarioId, int? receptorComunidadId}) async {
+  /// Recupera el estado actual de la valoración y el tiempo de espera (cooldown) restante.
+  Future<RespuestaApi<Map<String, dynamic>>> obtenerEstadoVoto({
+    int? idReceptorUsuario,
+    int? idReceptorComunidad,
+  }) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
+      final parametros = idReceptorUsuario != null
+          ? 'receptor_usuario=$idReceptorUsuario'
+          : 'receptor_comunidad=$idReceptorComunidad';
 
-      String params = receptorUsuarioId != null ? 'receptor_usuario=$receptorUsuarioId' : 'receptor_comunidad=$receptorComunidadId';
-      
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/votar/?$params'),
-        headers: {
-          'Authorization': 'Token $token',
-        },
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/votar/?$parametros'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: datosJson);
+        return RespuestaApi(exito: true, mensaje: 'Estado recuperado', datos: datosJson);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener estado');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener estado de votación');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Consulta el ranking de usuarios.
-  Future<RespuestaApi<List<dynamic>>> obtenerRankingUsuarios() async {
-    try {
-      final respuesta = await http.get(Uri.parse('$_urlBase/ranking/usuarios/')).timeout(const Duration(seconds: 25));
-      if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(respuesta.body);
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener ranking');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
-    } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
-    }
-  }
-
-  /// Obtiene las mejoras globales
+  /// Obtiene la lista de artículos cosméticos disponibles en la tienda global.
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasGlobales() async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/tienda/global/'),
-        headers: {'Authorization': 'Token $token'},
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/global/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        final mejoras = datos.map((e) => CatalogoMejoras.fromJson(e)).toList();
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: mejoras);
+        final List<dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final listaMejoras = datosJson.map((e) => CatalogoMejoras.fromJson(e)).toList();
+        return RespuestaApi(exito: true, mensaje: 'Catálogo global cargado', datos: listaMejoras);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo global');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: 'No se pudo cargar la tienda global');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene las mejoras de una comunidad
-  Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasComunidad(int comunidadId) async {
+  /// Obtiene los artículos cosméticos exclusivos de una comunidad específica.
+  Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasComunidad(int idComunidad) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/tienda/comunidad/$comunidadId/'),
-        headers: {'Authorization': 'Token $token'},
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/comunidad/$idComunidad/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        final mejoras = datos.map((e) => CatalogoMejoras.fromJson(e)).toList();
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: mejoras);
+        final List<dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final listaMejoras = datosJson.map((e) => CatalogoMejoras.fromJson(e)).toList();
+        return RespuestaApi(exito: true, mensaje: 'Catálogo de comunidad cargado', datos: listaMejoras);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo de comunidad');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: 'No se pudo cargar la tienda de la comunidad');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Envía una propuesta de diseño (Multipart para imagen)
-  Future<RespuestaApi> enviarPeticionMejora({
-    required int comunidadId,
-    required String tipo,
-    required String filePath,
-    Uint8List? bytes,
+  /// Envía una propuesta de diseño artístico para ser integrada en el catálogo.
+  Future<RespuestaApi> enviarPropuestaMejora({
+    required int idComunidad,
+    required String tipoArticulo,
+    required String rutaArchivo,
+    Uint8List? bytesWeb,
     int precioSugerido = 0,
   }) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
-      final url = Uri.parse('$_urlBase/tienda/peticiones/crear/');
+      final token = await _servicioUsuarios.obtenerToken();
+      final url = Uri.parse('$_urlMejoras/tienda/peticiones/crear/');
+
+      var solicitud = http.MultipartRequest('POST', url);
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
       
-      var request = http.MultipartRequest('POST', url);
-      request.headers['Authorization'] = 'Token $token';
-      request.fields['comunidad'] = comunidadId.toString();
-      request.fields['tipo'] = tipo;
-      request.fields['precio_sugerido'] = precioSugerido.toString();
-      
-      if (kIsWeb && bytes != null) {
-        request.files.add(http.MultipartFile.fromBytes(
-          'url_recurso', 
-          bytes,
-          filename: 'upload.png'
+      solicitud.fields['comunidad'] = idComunidad.toString();
+      solicitud.fields['tipo'] = tipoArticulo;
+      solicitud.fields['precio_sugerido'] = precioSugerido.toString();
+
+      if (kIsWeb && bytesWeb != null) {
+        solicitud.files.add(http.MultipartFile.fromBytes(
+          'url_recurso',
+          bytesWeb,
+          filename: 'propuesta_web.png',
         ));
       } else {
-        request.files.add(await http.MultipartFile.fromPath('url_recurso', filePath));
+        solicitud.files.add(await http.MultipartFile.fromPath('url_recurso', rutaArchivo));
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
+      final respuesta = await http.Response.fromStream(respuestaStream);
 
-      if (response.statusCode == 201) {
-        return RespuestaApi(exito: true, mensaje: 'Propuesta enviada con éxito');
-      } else {
-        final error = jsonDecode(response.body);
-        return RespuestaApi(exito: false, mensaje: error['error'] ?? 'Error al enviar propuesta');
+      if (respuesta.statusCode == 201) {
+        return RespuestaApi(exito: true, mensaje: '¡Propuesta enviada a moderación!');
       }
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      final datosError = jsonDecode(respuesta.body);
+      return RespuestaApi(exito: false, mensaje: datosError['error'] ?? 'Error al enviar propuesta');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene peticiones pendientes para moderar
-  Future<RespuestaApi<List<dynamic>>> obtenerPeticionesModeracion(int comunidadId) async {
+  /// Recupera las propuestas de mejoras pendientes de revisión para una comunidad.
+  Future<RespuestaApi<List<dynamic>>> obtenerPropuestasPendientes(int idComunidad) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/tienda/peticiones/moderacion/$comunidadId/'),
-        headers: {'Authorization': 'Token $token'},
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/peticiones/moderacion/$idComunidad/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
+        final List<dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(exito: true, mensaje: 'Propuestas cargadas', datos: datosJson);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al obtener peticiones');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: 'No se pudieron recuperar las propuestas');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Modera una petición
-  Future<RespuestaApi> moderarPeticion(int pk, String estado, int precio) async {
+  /// Aprueba o rechaza una propuesta de mejora configurando su precio final.
+  Future<RespuestaApi> moderarPropuesta(int idPropuesta, String nuevoEstado, int precioFinal) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/tienda/peticiones/$pk/moderar/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Token $token',
-        },
-        body: jsonEncode({'estado': estado, 'precio': precio}),
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/peticiones/$idPropuesta/moderar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'estado': nuevoEstado, 'precio': precioFinal}),
+      ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: 'Acción realizada correctamente');
+        return RespuestaApi(exito: true, mensaje: 'Moderación completada');
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al moderar');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error al procesar la moderación');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Compra una mejora del catálogo
-  Future<RespuestaApi> comprarMejora(int mejoraId) async {
+  /// Realiza la compra de un artículo del catálogo utilizando puntos del usuario.
+  Future<RespuestaApi> comprarMejora(int idMejora) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/tienda/comprar/$mejoraId/'),
-        headers: {'Authorization': 'Token $token'},
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/comprar/$idMejora/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
 
-      final datos = jsonDecode(respuesta.body);
+      final datosJson = jsonDecode(respuesta.body);
       if (respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: datos['mensaje'], datos: datos['puntos_restantes']);
+        return RespuestaApi(
+          exito: true,
+          mensaje: datosJson['mensaje'] ?? '¡Compra realizada!',
+          datos: datosJson['puntos_restantes'],
+        );
       }
-      return RespuestaApi(exito: false, mensaje: datos['error'] ?? 'Error en la compra');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error en la transacción');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
-  /// Obtiene los elementos comprados por el usuario
-  Future<RespuestaApi<List<dynamic>>> obtenerMisMejoras() async {
+
+  /// Recupera el inventario completo de artículos adquiridos por el usuario actual.
+  Future<RespuestaApi<List<dynamic>>> obtenerInventarioUsuario() async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/tienda/mis-mejoras/'),
-        headers: {'Authorization': 'Token $token'},
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/mis-mejoras/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: datos);
+        final List<dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(exito: true, mensaje: 'Inventario cargado', datos: datosJson);
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al cargar mis mejoras');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar tu inventario');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Equipa o desequipa una mejora
-  Future<RespuestaApi> equiparMejora(int mejoraId) async {
+  /// Activa o desactiva visualmente un cosmético del inventario.
+  Future<RespuestaApi> equiparMejora(int idMejora) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/tienda/equipar/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Token $token',
-        },
-        body: jsonEncode({'mejora_id': mejoraId}),
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/equipar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'mejora_id': idMejora}),
+      ).timeout(const Duration(seconds: 20));
 
-      final datos = jsonDecode(respuesta.body);
+      final datosJson = jsonDecode(respuesta.body);
       if (respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: datos['resultado']);
+        return RespuestaApi(exito: true, mensaje: datosJson['resultado'] ?? 'Cambio aplicado');
       }
-      return RespuestaApi(exito: false, mensaje: datos['error'] ?? 'Error al equipar/desequipar');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al equipar mejora');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene todo el catálogo de una comunidad (para gestión de admin)
-  Future<RespuestaApi<List<CatalogoMejoras>>> obtenerCatalogoGestion(int comunidadId) async {
+  /// Recupera el catálogo completo de una comunidad para fines de gestión administrativa.
+  Future<RespuestaApi<List<CatalogoMejoras>>> obtenerCatalogoGestion(int idComunidad) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/tienda/gestion/$comunidadId/'),
-        headers: {'Authorization': 'Token $token'},
-      ).timeout(const Duration(seconds: 25));
+        Uri.parse('$_urlMejoras/tienda/gestion/$idComunidad/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        final mejoras = datos.map((e) => CatalogoMejoras.fromJson(e)).toList();
-        return RespuestaApi(exito: true, mensaje: 'OK', datos: mejoras);
+        final List<dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final listaMejoras = datosJson.map((e) => CatalogoMejoras.fromJson(e)).toList();
+        return RespuestaApi(exito: true, mensaje: 'Catálogo administrativo cargado', datos: listaMejoras);
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo de gestión');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Actualiza el estado o precio de un item del catálogo
-  Future<RespuestaApi> actualizarItemCatalogo(int comunidadId, int itemId, {bool? estaActivo, int? precio}) async {
+  /// Actualiza los parámetros de precio y disponibilidad de un artículo en el catálogo.
+  Future<RespuestaApi> actualizarArticuloCatalogo(
+    int idComunidad,
+    int idArticulo, {
+    bool? estaActivo,
+    int? precioFinal,
+  }) async {
     try {
-      final token = await ServicioUsuarios().obtenerToken();
       final respuesta = await http.patch(
-        Uri.parse('$_urlBase/tienda/gestion/$comunidadId/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Token $token',
-        },
+        Uri.parse('$_urlMejoras/tienda/gestion/$idComunidad/'),
+        headers: await _obtenerCabeceras(),
         body: jsonEncode({
-          'item_id': itemId,
+          'item_id': idArticulo,
           if (estaActivo != null) 'esta_activo': estaActivo,
-          if (precio != null) 'precio': precio,
+          if (precioFinal != null) 'precio': precioFinal,
         }),
-      ).timeout(const Duration(seconds: 25));
+      ).timeout(const Duration(seconds: 20));
 
-      final datos = jsonDecode(respuesta.body);
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
       if (respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: datos['mensaje']);
+        return RespuestaApi(exito: true, mensaje: datosJson['mensaje'] ?? 'Artículo actualizado');
       }
-      return RespuestaApi(exito: false, mensaje: datos['error'] ?? 'Error al actualizar item');
-    } on http.ClientException catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
-    } on Exception catch (e) {
-      if (e.toString().contains('TimeoutException')) {
-        return RespuestaApi(exito: false, mensaje: 'Tiempo de espera agotado. Por favor, revisa tu conexión.');
-      }
-      return RespuestaApi(exito: false, mensaje: 'Error inesperado: $e');
+      return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al actualizar el artículo');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

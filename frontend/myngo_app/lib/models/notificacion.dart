@@ -1,3 +1,7 @@
+/// Modelo que representa una notificación recibida por el usuario.
+///
+/// Contiene el mensaje, el tipo de evento y referencias opcionales a
+/// usuarios o comunidades relacionadas.
 class Notificacion {
   final int id;
   final String tipo;
@@ -7,8 +11,13 @@ class Notificacion {
   final int? idGenerador;
   final String? nombreComunidad;
   final int? idComunidad;
+
+  /// ID del objeto al que hace referencia la notificación (e.g., post, solicitud).
   final int? referenciaId;
+
+  /// Estado de la petición asociada si la notificación es de tipo solicitud.
   final String? estadoPeticion;
+
   final DateTime fechaNotificacion;
 
   Notificacion({
@@ -25,6 +34,7 @@ class Notificacion {
     required this.fechaNotificacion,
   });
 
+  /// Crea una instancia de [Notificacion] a partir de un mapa JSON.
   factory Notificacion.fromJson(Map<String, dynamic> json) {
     try {
       return Notificacion(
@@ -33,16 +43,20 @@ class Notificacion {
         mensaje: json['mensaje']?.toString() ?? 'Nueva notificación',
         leida: json['leida'] == true,
         nombreGenerador: json['nombre_generador']?.toString(),
-        idGenerador: int.tryParse(json['id_generator']?.toString() ?? json['id_generador']?.toString() ?? ''),
+        idGenerador: int.tryParse(json['id_generator']?.toString() ??
+            json['id_generador']?.toString() ??
+            ''),
         nombreComunidad: json['nombre_comunidad']?.toString(),
         idComunidad: int.tryParse(json['id_comunidad']?.toString() ?? ''),
         referenciaId: int.tryParse(json['referencia_id']?.toString() ?? ''),
         estadoPeticion: json['estado_peticion']?.toString(),
-        fechaNotificacion: json['fecha_notificacion'] != null 
-            ? DateTime.tryParse(json['fecha_notificacion'].toString()) ?? DateTime.now()
+        fechaNotificacion: json['fecha_notificacion'] != null
+            ? DateTime.tryParse(json['fecha_notificacion'].toString()) ??
+                DateTime.now()
             : DateTime.now(),
       );
     } catch (e) {
+      // ignore: avoid_print
       print('Error parsing Notificacion: $e');
       return Notificacion(
         id: 0,
@@ -54,12 +68,14 @@ class Notificacion {
     }
   }
 
+  /// Crea una copia de la notificación con algunos campos modificados.
   Notificacion copyWith({
     int? id,
     String? tipo,
     String? mensaje,
     bool? leida,
     String? nombreGenerador,
+    int? idGenerador,
     String? nombreComunidad,
     int? idComunidad,
     int? referenciaId,
@@ -71,6 +87,7 @@ class Notificacion {
       tipo: tipo ?? this.tipo,
       mensaje: mensaje ?? this.mensaje,
       leida: leida ?? this.leida,
+      nombreGenerador: nombreGenerador ?? this.nombreGenerador,
       idGenerador: idGenerador ?? this.idGenerador,
       nombreComunidad: nombreComunidad ?? this.nombreComunidad,
       idComunidad: idComunidad ?? this.idComunidad,

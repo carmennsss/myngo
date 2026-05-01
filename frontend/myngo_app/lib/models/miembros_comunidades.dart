@@ -1,11 +1,18 @@
-class MiembrosComunidades {
+/// Modelo que representa la pertenencia de un usuario a una comunidad.
+///
+/// Define el rol del usuario (e.g., 'ADMIN', 'MODERADOR', 'MIEMBRO')
+/// y la fecha en que se unió.
+class MiembroComunidad {
   final int id;
   final int usuarioId;
   final int comunidadId;
-  final String rol; // 'MIEMBRO' o 'ADMIN' 
+
+  /// Rol asignado al usuario en esta comunidad.
+  final String rol;
+
   final DateTime fechaUnion;
 
-  MiembrosComunidades({
+  MiembroComunidad({
     required this.id,
     required this.usuarioId,
     required this.comunidadId,
@@ -13,14 +20,15 @@ class MiembrosComunidades {
     required this.fechaUnion,
   });
 
-  factory MiembrosComunidades.fromJson(Map<String, dynamic> json) {
-    return MiembrosComunidades(
+  /// Crea una instancia de [MiembroComunidad] a partir de un mapa JSON.
+  factory MiembroComunidad.fromJson(Map<String, dynamic> json) {
+    return MiembroComunidad(
       id: json['id'] ?? 0,
       usuarioId: json['usuario'] ?? 0,
       comunidadId: json['comunidad'] ?? 0,
       rol: json['rol']?.toString() ?? 'MIEMBRO',
-      fechaUnion: json['fecha_union'] != null 
-          ? DateTime.parse(json['fecha_union']) 
+      fechaUnion: json['fecha_union'] != null
+          ? DateTime.parse(json['fecha_union'])
           : DateTime.now(),
     );
   }

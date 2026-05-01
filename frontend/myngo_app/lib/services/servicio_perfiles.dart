@@ -1,21 +1,27 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import '../models/respuesta_api.dart';
-import '../models/usuario.dart';
 import '../models/perfil.dart';
 import '../models/publicacion.dart';
+import '../models/respuesta_api.dart';
+import '../models/usuario.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
+/// Servicio encargado de la gestión de perfiles de usuario y sus interacciones sociales.
+///
+/// Ofrece funcionalidades para consultar perfiles, gestionar seguimientos,
+/// editar información personal y recuperar el historial de publicaciones.
 class ServicioPerfiles {
-  // URLs para que crees los endpoints homólogos en tu backend
-  static const String _urlBase = '${Configuracion.baseUrl}/usuarios';
+  /// URL base para los endpoints relacionados con usuarios.
+  static const String _urlUsuarios = '${Configuracion.baseUrl}/usuarios';
+
   final _servicioUsuarios = ServicioUsuarios();
 
-  Future<Map<String, String>> _getHeaders() async {
+  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
       'Content-Type': 'application/json',
@@ -23,275 +29,277 @@ class ServicioPerfiles {
     };
   }
 
+  /// Recupera una lista de perfiles, con soporte para filtrado por búsqueda.
   Future<RespuestaApi<List<Perfil>>> listarPerfiles({String? busqueda}) async {
     try {
-      final uri = busqueda != null && busqueda.isNotEmpty 
-          ? Uri.parse('$_urlBase/?search=$busqueda')
-          : Uri.parse('$_urlBase/');
-          
-      final respuesta = await http.get(uri, headers: await _getHeaders());
+      final query = busqueda != null && busqueda.isNotEmpty ? '?search=$busqueda' : '';
+      final respuesta = await http.get(
+        Uri.parse('$_urlUsuarios/$query'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      final dynamic datosJson = jsonDecode(respuesta.body);
 
       if (respuesta.statusCode == 200) {
-        final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> listaJson = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         return RespuestaApi(
           exito: true,
-          mensaje: 'Perfiles cargados',
+          mensaje: 'Perfiles recuperados',
           datos: listaJson.map((j) => Perfil.fromJson(j)).toList(),
         );
       }
-      return RespuestaApi(
-        exito: false, 
-        mensaje: 'Error al cargar perfiles: ${respuesta.statusCode}'
-      );
+
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar perfiles (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Ha ocurrido un error en la api: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Obtiene la información detallada de un usuario mediante su identificador único.
   Future<RespuestaApi<Usuario>> obtenerPerfil(String nombreUsuario) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('$_urlBase/$nombreUsuario/'),
-        headers: await _getHeaders(),
-      );
+        Uri.parse('$_urlUsuarios/$nombreUsuario/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(respuesta.body);
         return RespuestaApi.fromJson(
-          json, 
-          transformador: (j) => Usuario.fromJson(j)
+          datosJson,
+          transformador: (j) => Usuario.fromJson(j),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al cargar perfil');
+
+      return RespuestaApi(exito: false, mensaje: datosJson['mensaje'] ?? 'Error al cargar perfil');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Ha ocurrido un error en la api: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<String>> enviarSolicitud(String nombreUsuario) async {
+  /// Envía una solicitud de seguimiento a un usuario específico.
+  Future<RespuestaApi<String>> enviarSolicitudSeguimiento(String nombreUsuario) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/$nombreUsuario/solicitud'),
-        headers: await _getHeaders(),
-      );
+        Uri.parse('$_urlUsuarios/$nombreUsuario/solicitud'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+
       if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
-        final Map<String, dynamic> json = jsonDecode(respuesta.body);
         return RespuestaApi(
-          exito: true, 
-          mensaje: json['mensaje'] ?? 'Solicitud procesada con éxito',
-          datos: json['estado'], // Extraemos el nuevo estado
+          exito: true,
+          mensaje: datosJson['mensaje'] ?? 'Operación exitosa',
+          datos: datosJson['estado'],
         );
-      } else {
-        String mensajeError = 'Error al enviar solicitud: ${respuesta.statusCode}';
-        try {
-          final Map<String, dynamic> jsonErr = jsonDecode(respuesta.body);
-          if (jsonErr.containsKey('error')) {
-            mensajeError = jsonErr['error'];
-          } else if (jsonErr.containsKey('mensaje')) {
-            mensajeError = jsonErr['mensaje'];
-          }
-        } catch (_) {}
-        return RespuestaApi(exito: false, mensaje: mensajeError);
       }
+
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? datosJson['error'] ?? 'Error al enviar solicitud',
+      );
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<void>> responderPeticion(int idPeticion, bool aceptar) async {
+  /// Gestiona la respuesta (aceptar/rechazar) a una solicitud de seguimiento recibida.
+  Future<RespuestaApi<void>> responderSolicitudSeguimiento(int idSolicitud, bool aceptar) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlBase/peticiones/$idPeticion/responder/'),
-        headers: await _getHeaders(),
+        Uri.parse('$_urlUsuarios/peticiones/$idSolicitud/responder/'),
+        headers: await _obtenerCabeceras(),
         body: jsonEncode({'aceptar': aceptar}),
-      );
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
-        return RespuestaApi(exito: true, mensaje: 'Respuesta enviada correctamente');
+        return RespuestaApi(exito: true, mensaje: 'Solicitud procesada');
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+
+      return RespuestaApi(exito: false, mensaje: 'Error al responder la solicitud');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  Future<RespuestaApi<void>> crearPostPerfil({
+  /// Publica contenido en el muro personal del usuario con soporte multimedia.
+  Future<RespuestaApi<void>> crearPublicacionPerfil({
     required String texto,
     List<XFile>? imagenes,
     String? etiquetas,
   }) async {
     try {
-      final tokenInfo = await _servicioUsuarios.obtenerToken();
+      final token = await _servicioUsuarios.obtenerToken();
       final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/crear/');
-      
-      var request = http.MultipartRequest('POST', uri);
-      if (tokenInfo != null) {
-        request.headers['Authorization'] = 'Token $tokenInfo';
-      }
-      
-      request.fields['contenido_texto'] = texto;
+
+      var solicitud = http.MultipartRequest('POST', uri);
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+
+      solicitud.fields['contenido_texto'] = texto;
       if (etiquetas != null && etiquetas.trim().isNotEmpty) {
-        request.fields['etiquetas'] = etiquetas.trim();
+        solicitud.fields['etiquetas'] = etiquetas.trim();
       }
-      
+
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var img in imagenes) {
           if (kIsWeb) {
             final bytes = await img.readAsBytes();
-            request.files.add(http.MultipartFile.fromBytes(
-              'url_archivo_s3', 
-              bytes, 
+            solicitud.files.add(http.MultipartFile.fromBytes(
+              'url_archivo_s3',
+              bytes,
               filename: img.name,
-              contentType: MediaType('image', 'jpeg')
+              contentType: MediaType('image', 'jpeg'),
             ));
           } else {
-            request.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
+            solicitud.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
           }
         }
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
+      final respuesta = await http.Response.fromStream(respuestaStream);
 
-      if (response.statusCode == 201) {
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-        final nuevaPub = Publicacion.fromJson(decoded);
-        if (!nuevaPub.esValidoIa) {
-          return RespuestaApi(exito: false, mensaje: 'Tu publicación infringe las normas de Myngo (Moderación IA) 🐾');
+      if (respuesta.statusCode == 201) {
+        final datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final nuevaPublicacion = Publicacion.fromJson(datosJson);
+        if (!nuevaPublicacion.esValidoIa) {
+          return RespuestaApi(
+            exito: false,
+            mensaje: 'Contenido rechazado por el filtro de seguridad (IA) 🐾',
+          );
         }
-        return RespuestaApi(exito: true, mensaje: '¡Post subido a tu perfil!');
+        return RespuestaApi(exito: true, mensaje: '¡Publicación realizada!');
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al enviar publicación: ${response.statusCode}');
+
+      return RespuestaApi(exito: false, mensaje: 'Error al publicar (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión con Myngo API: $e');
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Recupera la lista de publicaciones que el usuario ha marcado como favoritas.
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGuardadas({int? comunidadId}) async {
     try {
-      final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?solo_guardados=true' + (comunidadId != null ? '&comunidad_id=$comunidadId' : ''));
-      final respuesta = await http.get(uri, headers: {
-        'Content-Type': 'application/json',
-        if (tokenInfo != null) 'Authorization': 'Token $tokenInfo',
-      });
+      final query = comunidadId != null ? '&comunidad_id=$comunidadId' : '';
+      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?solo_guardados=true$query');
       
+      final respuesta = await http.get(
+        uri,
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         return RespuestaApi(
-          exito: true, 
-          datos: lista.map((p) => Publicacion.fromJson(p)).toList(), 
-          mensaje: 'Publicaciones guardadas cargadas'
+          exito: true,
+          mensaje: 'Favoritos recuperados',
+          datos: lista.map((p) => Publicacion.fromJson(p)).toList(),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar favoritos');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Recupera el historial completo de publicaciones de un perfil específico.
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(int perfilId) async {
     try {
-      final tokenInfo = await _servicioUsuarios.obtenerToken();
       final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?perfil_id=$perfilId');
-      final respuesta = await http.get(uri, headers: {
-        'Content-Type': 'application/json',
-        if (tokenInfo != null) 'Authorization': 'Token $tokenInfo',
-      });
-      
+      final respuesta = await http.get(
+        uri,
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         return RespuestaApi(
-          exito: true, 
-          datos: lista.map((p) => Publicacion.fromJson(p)).toList(), 
-          mensaje: 'Publicaciones cargadas'
+          exito: true,
+          mensaje: 'Publicaciones del perfil recuperadas',
+          datos: lista.map((p) => Publicacion.fromJson(p)).toList(),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar publicaciones');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Actualiza la descripción biográfica del perfil del usuario.
   Future<RespuestaApi<void>> editarBiografia({
-    required String biografia, 
-    required int perfilId, // Nuevo parámetro
+    required String textoBiografia,
+    required int perfilId,
   }) async {
     try {
-      final tokenInfo = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('${Configuracion.baseUrl}/usuarios/perfil/editar/');
       final respuesta = await http.patch(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          if (tokenInfo != null) 'Authorization': 'Token $tokenInfo',
-        },
+        Uri.parse('${Configuracion.baseUrl}/usuarios/perfil/editar/'),
+        headers: await _obtenerCabeceras(),
         body: jsonEncode({
-          'perfil_id': perfilId, // Enviamos el ID al backend
-          'biografia': biografia,
+          'perfil_id': perfilId,
+          'biografia': textoBiografia,
         }),
-      );
+      ).timeout(const Duration(seconds: 20));
+
       if (respuesta.statusCode == 200 || respuesta.statusCode == 204) {
-        return RespuestaApi(exito: true, mensaje: '¡Biografía actualizada!');
+        return RespuestaApi(exito: true, mensaje: 'Biografía actualizada');
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al actualizar: ${respuesta.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar biografía');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
+  /// Actualiza la imagen de avatar del perfil del usuario.
   Future<RespuestaApi<String>> editarAvatarPerfil({
-    required dynamic imagen, 
-    required int perfilId, // Nuevo parámetro
+    required dynamic imagen,
+    required int perfilId,
   }) async {
     try {
-      final tokenInfo = await _servicioUsuarios.obtenerToken();
+      final token = await _servicioUsuarios.obtenerToken();
       final uri = Uri.parse('${Configuracion.baseUrl}/usuarios/perfil/editar/');
-      var request = http.MultipartRequest('PATCH', uri);
-      
-      if (tokenInfo != null) {
-        request.headers['Authorization'] = 'Token $tokenInfo';
-      }
-      
-      // Añadimos el perfil_id como campo de texto (convertido a String)
-      request.fields['perfil_id'] = perfilId.toString();
-      //Le indicamos que es una imagen de perfil para almacenarlo en el s3 de avatares
-      request.fields['es_perfil']='True';
+      var solicitud = http.MultipartRequest('PATCH', uri);
+
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+
+      solicitud.fields['perfil_id'] = perfilId.toString();
+      solicitud.fields['es_perfil'] = 'True';
+
       if (imagen is XFile) {
         if (kIsWeb) {
           final bytes = await imagen.readAsBytes();
-          request.files.add(http.MultipartFile.fromBytes(
-            'url_avatar', 
-            bytes, 
+          solicitud.files.add(http.MultipartFile.fromBytes(
+            'url_avatar',
+            bytes,
             filename: imagen.name,
             contentType: MediaType('image', 'jpeg'),
           ));
         } else {
-          request.files.add(await http.MultipartFile.fromPath('url_avatar', imagen.path));
+          solicitud.files.add(await http.MultipartFile.fromPath('url_avatar', imagen.path));
         }
       }
 
-      final streamed = await request.send();
-      final response = await http.Response.fromStream(streamed);
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
+      final respuesta = await http.Response.fromStream(respuestaStream);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        // Extraer la url directamente de la raíz, que ahora la hemos puesto
-        String? urlFinal = data['url_avatar']?.toString();
-        
-        // Fallback por si viene dentro de datos
-        if (urlFinal == null && data['datos'] != null && data['datos'] is Map) {
-            urlFinal = data['datos']['url_avatar']?.toString();
+      if (respuesta.statusCode == 200) {
+        final datosJson = jsonDecode(respuesta.body);
+        String? urlFinal = datosJson['url_avatar']?.toString();
+
+        if (urlFinal == null && datosJson['datos'] != null) {
+          urlFinal = datosJson['datos']['url_avatar']?.toString();
         }
-            
+
         return RespuestaApi(
-          exito: true, 
-          mensaje: '¡Foto actualizada!', 
-          datos: urlFinal
+          exito: true,
+          mensaje: '¡Foto de perfil actualizada!',
+          datos: urlFinal,
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al subir imagen: ${response.statusCode}');
+      return RespuestaApi(exito: false, mensaje: 'Error al subir la imagen');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

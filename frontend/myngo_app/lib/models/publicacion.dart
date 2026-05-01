@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+/// Modelo que representa una publicación (post) en Myngo.
+///
+/// Incluye información del autor, la comunidad, el contenido multimedia,
+/// metadatos de personalización y estadísticas de interacción.
 class Publicacion {
   final int id;
   final int autorId;
@@ -9,21 +13,42 @@ class Publicacion {
   final int? creadorComunidadId;
   final String titulo;
   final String contenidoTexto;
+
+  /// URL de la imagen principal (si existe).
   final String? urlImagen;
+
   final int? imagenId;
+
+  /// Lista de URLs para publicaciones con múltiples imágenes.
   final List<String> urlsImagenes;
+
   final List<int> imagenesIds;
+
   final double relacionAspecto;
+
+  /// Indica si el contenido ha pasado el filtro de seguridad de la IA.
   final bool esValidoIa;
+
   final DateTime fechaCreacion;
+
+  /// Conteo total de likes recibidos.
   int likesCount;
+
+  /// Conteo total de comentarios recibidos.
   int comentariosCount;
+
   final String? autorFoto;
   final String? autorMarco;
   final String? autorFondo;
   final String? autorEstado;
+
+  /// Estilo visual personalizado del autor para renderizar el post.
   final Map<String, dynamic>? autorEstiloPost;
+
+  /// Indica si el usuario autenticado ha dado like a este post.
   bool usuarioDioLike;
+
+  /// Indica si el usuario autenticado ha guardado este post en su perfil.
   bool usuarioGuardoPost;
 
   Publicacion({
@@ -53,9 +78,9 @@ class Publicacion {
     this.usuarioGuardoPost = false,
   });
 
+  /// Crea una instancia de [Publicacion] a partir de un mapa JSON.
   factory Publicacion.fromJson(Map<String, dynamic> json) {
     try {
-      // Función auxiliar para parsear enteros de forma segura
       int toInt(dynamic val, [int def = 0]) {
         if (val == null) return def;
         if (val is int) return val;
@@ -72,21 +97,36 @@ class Publicacion {
         autorEstado: json['autor_estado']?.toString() ?? 'DESCONECTADO',
         comunidadId: toInt(json['comunidad']),
         comunidadNombre: json['comunidad_nombre']?.toString() ?? 'General',
-        creadorComunidadId: json['creador_comunidad_id'] != null ? toInt(json['creador_comunidad_id']) : null,
+        creadorComunidadId: json['creador_comunidad_id'] != null
+            ? toInt(json['creador_comunidad_id'])
+            : null,
         titulo: json['titulo']?.toString() ?? '',
         contenidoTexto: json['contenido_texto']?.toString() ?? '',
         urlImagen: (json['url_archivo_s3'] ?? json['url_imagen'])?.toString(),
-        imagenId: json['imagen_id'] != null ? toInt(json['imagen_id']) : (json['imagen'] != null ? toInt(json['imagen']) : null),
-        urlsImagenes: (json['urls_imagenes'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-        imagenesIds: (json['imagenes_ids'] as List<dynamic>?)?.map((e) => toInt(e)).toList() ?? [],
-        relacionAspecto: double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ?? 1.0,
+        imagenId: json['imagen_id'] != null
+            ? toInt(json['imagen_id'])
+            : (json['imagen'] != null ? toInt(json['imagen']) : null),
+        urlsImagenes: (json['urls_imagenes'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        imagenesIds: (json['imagenes_ids'] as List<dynamic>?)
+                ?.map((e) => toInt(e))
+                .toList() ??
+            [],
+        relacionAspecto:
+            double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ??
+                1.0,
         esValidoIa: json['es_valido_ia'] == true,
-        fechaCreacion: json['fecha_creacion'] != null 
-            ? DateTime.tryParse(json['fecha_creacion'].toString()) ?? DateTime.now() 
+        fechaCreacion: json['fecha_creacion'] != null
+            ? DateTime.tryParse(json['fecha_creacion'].toString()) ??
+                DateTime.now()
             : DateTime.now(),
         likesCount: toInt(json['likes_count']),
         comentariosCount: toInt(json['comentarios_count']),
-        autorEstiloPost: json['autor_estilo_post'] is Map ? Map<String, dynamic>.from(json['autor_estilo_post']) : null,
+        autorEstiloPost: json['autor_estilo_post'] is Map
+            ? Map<String, dynamic>.from(json['autor_estilo_post'])
+            : null,
         usuarioDioLike: json['usuario_dio_like'] == true,
         usuarioGuardoPost: json['usuario_guardo_post'] == true,
       );
@@ -106,6 +146,7 @@ class Publicacion {
     }
   }
 
+  /// Crea una copia de la publicación con algunos campos modificados.
   Publicacion copyWith({
     int? id,
     int? autorId,
