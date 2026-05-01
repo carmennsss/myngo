@@ -11,8 +11,9 @@ import '../../widgets/comunes/hover_profile_card.dart';
 
 class PantallaDetallePost extends StatefulWidget {
   final Publicacion post;
+  final VoidCallback? onBack;
 
-  const PantallaDetallePost({super.key, required this.post});
+  const PantallaDetallePost({super.key, required this.post, this.onBack});
 
   @override
   State<PantallaDetallePost> createState() => _PantallaDetallePostState();
@@ -44,7 +45,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.close, color: colorTexto),
-          onPressed: () => context.pop(),
+          onPressed: widget.onBack ?? () => context.pop(),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

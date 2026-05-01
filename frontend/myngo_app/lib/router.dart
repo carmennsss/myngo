@@ -108,13 +108,14 @@ class _PostLoader extends StatelessWidget {
   final int postId;
   final int comunidadId;
   final Publicacion? extra;
+  final VoidCallback? onBack;
 
-  const _PostLoader({required this.postId, required this.comunidadId, this.extra});
+  const _PostLoader({required this.postId, required this.comunidadId, this.extra, this.onBack});
 
   @override
   Widget build(BuildContext context) {
     if (extra != null) {
-      return PantallaDetallePost(post: extra!);
+      return PantallaDetallePost(post: extra!, onBack: onBack);
     }
     return FutureBuilder<RespuestaApi<Publicacion>>(
       future: ServicioComunidades().obtenerDetallePublicacion(postId),
@@ -126,7 +127,7 @@ class _PostLoader extends StatelessWidget {
           );
         }
         if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetallePost(post: snapshot.data!.datos!);
+          return PantallaDetallePost(post: snapshot.data!.datos!, onBack: onBack);
         }
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
@@ -194,6 +195,7 @@ final GoRouter appRouter = GoRouter(
                       postId: postId,
                       comunidadId: comunidadId,
                       extra: state.extra as Publicacion?,
+                      onBack: () => context.go('/inicio/comunidades/$comunidadId'),
                     );
                   },
                 ),
@@ -242,6 +244,7 @@ final GoRouter appRouter = GoRouter(
                       postId: postId,
                       comunidadId: comunidadId,
                       extra: state.extra as Publicacion?,
+                      onBack: () => context.go('/explorar/comunidades/$comunidadId'),
                     );
                   },
                 ),
