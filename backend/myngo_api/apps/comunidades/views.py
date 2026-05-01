@@ -171,11 +171,26 @@ class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ComunidadSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def perform_update(self, serializer):
+        comunidad = self.get_object()
+        usuario = self.request.user
+        
+        # Verificar si es creador o tiene rol de Admin/Mod
+        es_gestor = comunidad.creador == usuario or Miembros_comunidades.objects.filter(
+            usuario=usuario, comunidad=comunidad, rol__in=['Administrador', 'Moderador']
+        ).exists()
+        
+        if not es_gestor:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Solo los administradores y moderadores pueden modificar la comunidad.")
+            
+        serializer.save()
+
     def perform_destroy(self, instance):
         if instance.creador != self.request.user:
-            return Response({"error": "Solo el creador puede borrar la comunidad"}, status=403)
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Solo el creador puede borrar la comunidad")
         instance.delete()
-        return Response(status=204)
 
 class AdminDashboardView(APIView):
     """

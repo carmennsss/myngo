@@ -319,7 +319,7 @@ class _PantallaChatState extends State<PantallaChat> {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: _usuariosOnline > 0 ? Colors.green : Colors.grey,
+                    color: (_usuariosOnline > 0 || _chatConectado) ? Colors.green : Colors.grey,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -329,7 +329,7 @@ class _PantallaChatState extends State<PantallaChat> {
                       ? '$_usuariosOnline conectado${_usuariosOnline > 1 ? 's' : ''} ahora'
                       : (_chatConectado ? 'Conectado' : 'Conectando...'),
                   style: GoogleFonts.outfit(
-                    color: _usuariosOnline > 0 || _chatConectado
+                    color: (_usuariosOnline > 0 || _chatConectado)
                         ? const Color(0xFFC35E34)
                         : Colors.grey,
                     fontSize: 12,

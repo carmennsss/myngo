@@ -144,7 +144,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
       final res = await ServicioComunidades().obtenerRolUsuarioEnComunidad(
         widget.comunidadIdContexto!, 
         widget.usuario.id
-      );
+                                  );
       if (res.exito && mounted) {
         setState(() => _rolEnComunidad = res.datos);
       }
@@ -191,7 +191,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
     
     final respuesta = await ServicioMejoras().obtenerEstadoVoto(
       receptorUsuarioId: widget.usuario.id,
-    );
+                                  );
 
     if (mounted && respuesta.exito) {
       final datos = respuesta.datos!;
@@ -296,7 +296,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           ),
         ],
       ),
-    );
+                                  );
     if (resultado != null && mounted) {
       final respuesta = await ServicioPerfiles().editarBiografia(biografia: resultado,perfilId:widget.usuario.perfilId );
       if (mounted) {
@@ -368,7 +368,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
         ),
-      );
+                                  );
     }
   }
 
@@ -380,7 +380,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           backgroundColor: Color(0xFFF28B50),
           behavior: SnackBarBehavior.floating,
         ),
-      );
+                                  );
       return;
     }
     if (_estadoSeguimiento == 'ACEPTADO' || _estadoSeguimiento == 'SOLICITUD') {
@@ -412,7 +412,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
             ),
           ],
         ),
-      );
+                                  );
       if (confirmar != true) return;
     }
     await _enviarSolicitud();
@@ -453,129 +453,138 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
               ),
             )
           : null,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 500,
-                pinned: true,
-                stretch: true,
-                backgroundColor: colorGradBot,
-                surfaceTintColor: Colors.transparent,
-                leading: widget.esIntegrada ? IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), shape: BoxShape.circle),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+      body: CustomScrollView(
+  slivers: [
+    SliverAppBar(
+      expandedHeight: 180,
+      pinned: true,
+      stretch: true,
+      backgroundColor: colorGradBot,
+      surfaceTintColor: Colors.transparent,
+      leading: widget.esIntegrada
+          ? IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+              ),
+              onPressed: widget.onBack,
+            )
+          : null,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: (_fondoLocal != null && _fondoLocal!.isNotEmpty)
+              ? BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(_fondoLocal!),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
                   ),
-                  onPressed: widget.onBack,
-                ) : null,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: (_fondoLocal != null && _fondoLocal!.isNotEmpty)
-                        ? BoxDecoration(
-                            image: DecorationImage(
-                              image: NetworkImage(_fondoLocal!),
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                            ),
-                          )
-                        : BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [colorGradTop.withOpacity(0.5), Colors.transparent],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
+                )
+              : BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colorGradTop.withOpacity(0.5), Colors.transparent],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+          child: Center(
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: _currentUserId == usuario.id ? _editarAvatar : null,
+                  child: SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (_marcoLocal != null && _marcoLocal!.isNotEmpty)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: Image.network(_marcoLocal!, fit: BoxFit.contain),
                             ),
                           ),
-                child: Center(
-                  child: Stack(
-                    children: [
-                      GestureDetector(
-                        onTap: _currentUserId == usuario.id ? _editarAvatar : null,
-                        child: SizedBox(
-                          width: 160,
-                          height: 160,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // 1. Marco detrás (capa inferior)
-                              if (_marcoLocal != null && _marcoLocal!.isNotEmpty)
-                                Positioned.fill(
-                                  child: IgnorePointer(
-                                    child: Image.network(_marcoLocal!, fit: BoxFit.contain),
-                                  ),
-                                ),
-                              // 2. Avatar encima (capa superior)
-                              Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: (_marcoLocal == null || _marcoLocal!.isEmpty) 
-                                      ? Border.all(color: const Color(0xFF248EA6), width: 3)
-                                      : null,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.5),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                  image: (_avatarLocal != null && _avatarLocal!.isNotEmpty)
-                                      ? DecorationImage(
-                                          image: NetworkImage(_avatarLocal!),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
-                                ),
-                                child: (_avatarLocal == null || _avatarLocal!.isEmpty)
-                                    ? Center(
-                                        child: Text(
-                                          inicial,
-                                          style: const TextStyle(
-                                            fontSize: 48,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF248EA6),
-                                          ),
-                                        ),
-                                      )
-                                    : null,
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: (_marcoLocal == null || _marcoLocal!.isEmpty)
+                                ? Border.all(color: const Color(0xFF248EA6), width: 3)
+                                : null,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.5),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
                               ),
-                              // Puntito de estado en el avatar
-                              Positioned(
-                                bottom: 15,
-                                right: 15,
-                                child: Builder(
-                                  builder: (context) {
-                                    String displayEstado = usuario.estado ?? 'DESCONECTADO';
-                                    try {
-                                      final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                                      if (inicioState != null && inicioState.miId == usuario.id) {
-                                        displayEstado = inicioState.miEstado;
-                                      }
-                                    } catch (_) {}
-                                    
-                                    return MouseRegion(
-                                      cursor: usuario.id == _currentUserId ? SystemMouseCursors.click : SystemMouseCursors.basic,
-                                      child: GestureDetector(
-                                        onTapDown: usuario.id == _currentUserId ? (details) {
+                            ],
+                            image: (_avatarLocal != null && _avatarLocal!.isNotEmpty)
+                                ? DecorationImage(
+                                    image: NetworkImage(_avatarLocal!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: (_avatarLocal == null || _avatarLocal!.isEmpty)
+                              ? Center(
+                                  child: Text(
+                                    inicial,
+                                    style: const TextStyle(
+                                      fontSize: 48,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF248EA6),
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 15,
+                          right: 15,
+                          child: Builder(
+                            builder: (context) {
+                              String displayEstado = usuario.estado ?? 'DESCONECTADO';
+                              try {
+                                final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                if (inicioState != null && inicioState.miId == usuario.id) {
+                                  displayEstado = inicioState.miEstado;
+                                }
+                              } catch (_) {}
+
+                              return MouseRegion(
+                                cursor: usuario.id == _currentUserId
+                                    ? SystemMouseCursors.click
+                                    : SystemMouseCursors.basic,
+                                child: GestureDetector(
+                                  onTapDown: usuario.id == _currentUserId
+                                      ? (details) {
                                           final position = details.globalPosition;
                                           showMenu<String>(
                                             context: context,
-                                            position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                                            position: RelativeRect.fromLTRB(
+                                                position.dx, position.dy, position.dx, position.dy),
                                             color: Colors.white,
                                             elevation: 10,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(16)),
                                             items: [
                                               PopupMenuItem(
                                                 value: 'ACTIVO',
                                                 child: Row(
                                                   children: [
-                                                    const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                                    const Icon(Icons.circle,
+                                                        color: Colors.greenAccent, size: 12),
                                                     const SizedBox(width: 8),
-                                                    Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                    Text('Activo',
+                                                        style: GoogleFonts.outfit(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: const Color(0xFF4A4440))),
                                                   ],
                                                 ),
                                               ),
@@ -583,132 +592,148 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                                                 value: 'OCUPADO',
                                                 child: Row(
                                                   children: [
-                                                    const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                                    const Icon(Icons.circle,
+                                                        color: Colors.redAccent, size: 12),
                                                     const SizedBox(width: 8),
-                                                    Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                    Text('Ocupado',
+                                                        style: GoogleFonts.outfit(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: const Color(0xFF4A4440))),
                                                   ],
                                                 ),
                                               ),
                                             ],
                                           ).then((nuevoEstado) {
                                             if (nuevoEstado != null) {
-                                              final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                              final inicioState =
+                                                  context.findAncestorStateOfType<PantallaInicioState>();
                                               inicioState?.cambiarEstado(nuevoEstado);
                                             }
                                           });
-                                        } : null,
-                                        child: Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: _getColorEstado(displayEstado),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: colorCard, width: 4),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.2),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
-                                          ),
+                                        }
+                                      : null,
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: _getColorEstado(displayEstado),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: colorCard, width: 4),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (_currentUserId == usuario.id)
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: _editarAvatar,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF28B50),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    '@${usuario.nombreUsuario}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -1,
-                                      color: colorTextoP,
+                                      ],
                                     ),
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                if (usuario.esVerificado) ...[
-                                  const SizedBox(width: 8),
-                                  const Icon(Icons.verified_rounded, size: 22, color: Color(0xFF248EA6)),
-                                ],
-                              ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_currentUserId == usuario.id)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _editarAvatar,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF28B50),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ), // ← cierre correcto de SliverAppBar
+
+    SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              '@${usuario.nombreUsuario}',
+                              style: GoogleFonts.inter(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -1,
+                                color: colorTextoP,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
-                            // Etiqueta de estado
-                            Builder(
-                              builder: (context) {
-                                String displayEstado = usuario.estado ?? 'DESCONECTADO';
-                                try {
-                                  final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                                  if (inicioState != null && inicioState.miId == usuario.id) {
-                                    displayEstado = inicioState.miEstado;
-                                  }
-                                } catch (_) {}
-                                
-                                return MouseRegion(
-                                  cursor: usuario.id == _currentUserId ? SystemMouseCursors.click : SystemMouseCursors.basic,
-                                  child: GestureDetector(
-                                    onTapDown: usuario.id == _currentUserId ? (details) {
+                          ),
+                          if (usuario.esVerificado) ...[
+                            const SizedBox(width: 8),
+                            const Icon(Icons.verified_rounded, size: 22, color: Color(0xFF248EA6)),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Builder(
+                        builder: (context) {
+                          String displayEstado = usuario.estado ?? 'DESCONECTADO';
+                          try {
+                            final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                            if (inicioState != null && inicioState.miId == usuario.id) {
+                              displayEstado = inicioState.miEstado;
+                            }
+                          } catch (_) {}
+
+                          return MouseRegion(
+                            cursor: usuario.id == _currentUserId
+                                ? SystemMouseCursors.click
+                                : SystemMouseCursors.basic,
+                            child: GestureDetector(
+                              onTapDown: usuario.id == _currentUserId
+                                  ? (details) {
                                       final position = details.globalPosition;
                                       showMenu<String>(
                                         context: context,
-                                        position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                                        position: RelativeRect.fromLTRB(
+                                            position.dx, position.dy, position.dx, position.dy),
                                         color: Colors.white,
                                         elevation: 10,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16)),
                                         items: [
                                           PopupMenuItem(
                                             value: 'ACTIVO',
                                             child: Row(
                                               children: [
-                                                const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                                const Icon(Icons.circle,
+                                                    color: Colors.greenAccent, size: 12),
                                                 const SizedBox(width: 8),
-                                                Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                Text('Activo',
+                                                    style: GoogleFonts.outfit(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: const Color(0xFF4A4440))),
                                               ],
                                             ),
                                           ),
@@ -716,443 +741,493 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                                             value: 'OCUPADO',
                                             child: Row(
                                               children: [
-                                                const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                                const Icon(Icons.circle,
+                                                    color: Colors.redAccent, size: 12),
                                                 const SizedBox(width: 8),
-                                                Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                Text('Ocupado',
+                                                    style: GoogleFonts.outfit(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: const Color(0xFF4A4440))),
                                               ],
                                             ),
                                           ),
                                         ],
                                       ).then((nuevoEstado) {
                                         if (nuevoEstado != null) {
-                                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                          final inicioState =
+                                              context.findAncestorStateOfType<PantallaInicioState>();
                                           inicioState?.cambiarEstado(nuevoEstado);
                                         }
                                       });
-                                    } : null,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    }
+                                  : null,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _getColorEstado(displayEstado).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
                                       decoration: BoxDecoration(
-                                        color: _getColorEstado(displayEstado).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            width: 8,
-                                            height: 8,
-                                            decoration: BoxDecoration(
-                                              color: _getColorEstado(displayEstado),
-                                              shape: BoxShape.circle,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            displayEstado == 'ACTIVO' 
-                                                ? 'Activo' 
-                                                : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w900,
-                                              color: _getColorEstado(displayEstado),
-                                            ),
-                                          ),
-                                          if (usuario.id == _currentUserId) ...[
-                                            const SizedBox(width: 4),
-                                            Icon(Icons.keyboard_arrow_down_rounded, color: _getColorEstado(displayEstado).withOpacity(0.5), size: 16),
-                                          ],
-                                        ],
+                                        color: _getColorEstado(displayEstado),
+                                        shape: BoxShape.circle,
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          if (_currentUserId == usuario.id)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: IconButton(
-                                icon: const Icon(Icons.edit_rounded, color: Color(0xFFC35E34), size: 18),
-                                onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const PantallaPersonalizarPerfil()),
-                                    ).then((_) {
-                                      _recargarUsuarioActualizado();
-                                    });
-                                },
-                                style: IconButton.styleFrom(
-                                  backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                                  padding: const EdgeInsets.all(8),
-                                  minimumSize: Size.zero,
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      displayEstado == 'ACTIVO'
+                                          ? 'Activo'
+                                          : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w900,
+                                        color: _getColorEstado(displayEstado),
+                                      ),
+                                    ),
+                                    if (usuario.id == _currentUserId) ...[
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        color: _getColorEstado(displayEstado).withOpacity(0.5),
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                             ),
-                          _ChipPrivacidad(esPublica: usuario.esPublico),
-                        ],
+                          );
+                        },
                       ),
                     ],
                   ),
-                  if (_rolEnComunidad != null && _rolEnComunidad != 'Visitante' && _rolEnComunidad != 'Miembro')
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
-                              ? Colors.amber.withOpacity(0.1) 
-                              : const Color(0xFF248EA6).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
-                                ? Colors.amber.withOpacity(0.4) 
-                                : const Color(0xFF248EA6).withOpacity(0.4),
+                ),
+                Row(
+                  children: [
+                    if (_currentUserId == usuario.id)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: IconButton(
+                          icon: const Icon(Icons.edit_rounded, color: Color(0xFFC35E34), size: 18),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const PantallaPersonalizarPerfil()),
+                            ).then((_) {
+                              _recargarUsuarioActualizado();
+                            });
+                          },
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                            padding: const EdgeInsets.all(8),
+                            minimumSize: Size.zero,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
-                                  ? Icons.stars_rounded 
-                                  : Icons.gavel_rounded, 
-                              color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') 
-                                  ? Colors.amber.shade700 
-                                  : const Color(0xFF248EA6), 
-                              size: 14
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador') ? 'CREADOR' : 'MODERADOR',
-                              style: GoogleFonts.outfit(
-                                color: colorTextoP,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
-                    ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        '${usuario.numeroSeguidores}',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: colorTextoP),
-                      ),
-                      const SizedBox(width: 4),
-                      Text('Seguidores', style: GoogleFonts.inter(color: colorTextoS, fontSize: 14)),
-                      const SizedBox(width: 20),
-                      Text(
-                        '${usuario.numeroSeguidos}',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: colorTextoP),
-                      ),
-                      const SizedBox(width: 4),
-                      Text('Siguiendo', style: GoogleFonts.inter(color: colorTextoS, fontSize: 14)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // --- BOTONES DE ACCIÓN (Seguimiento / Edición) ---
-                  _construirSeccionAcciones(usuario),
-                  const SizedBox(height: 16),
-                  
-                  // --- SECCIÓN DE VOTACIÓN (BOTÓN) ---
-                  if (_currentUserId != usuario.id) ...[
-                    _construirBotonVotar(usuario, ratingTexto),
-                    if (_mostrarPanelVoto && !_haVotadoHoy) ...[
-                      const SizedBox(height: 12),
-                      _construirPanelSeleccionVoto(usuario, ratingTexto),
-                    ],
+                    _ChipPrivacidad(esPublica: usuario.esPublico),
                   ],
-                  const SizedBox(height: 24),
-
-                  // Stats Row
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    decoration: BoxDecoration(
-                      color: colorCard,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: colorBorder),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _StatColumn(
-                          icono: Icons.star_rounded,
-                          color: const Color(0xFFF29C50),
-                          valor: ratingTexto,
-                          etiqueta: 'Media',
-                          colorTexto: colorTextoP,
-                          colorSecundario: colorTextoS,
-                        ),
-                        Container(width: 1, height: 40, color: colorBorder),
-                        _StatColumn(
-                          icono: Icons.calendar_today_rounded,
-                          color: Colors.blueGrey,
-                          valor: fecha,
-                          etiqueta: 'Se unió',
-                          colorTexto: colorTextoP,
-                          colorSecundario: colorTextoS,
-                        ),
-                        if (usuario.puntos != null) ...[
-                          Container(width: 1, height: 40, color: colorBorder),
-                          _StatColumn(
-                            icono: Icons.workspace_premium_rounded,
-                            color: const Color(0xFFF28B50),
-                            valor: usuario.puntos.toString(),
-                            etiqueta: 'Puntos',
-                            colorTexto: colorTextoP,
-                            colorSecundario: colorTextoS,
-                          ),
-                        ],
-                      ],
+                ),
+              ],
+            ),
+            if (_rolEnComunidad != null &&
+                _rolEnComunidad != 'Visitante' &&
+                _rolEnComunidad != 'Miembro')
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador')
+                        ? Colors.amber.withOpacity(0.1)
+                        : const Color(0xFF248EA6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador')
+                          ? Colors.amber.withOpacity(0.4)
+                          : const Color(0xFF248EA6).withOpacity(0.4),
                     ),
                   ),
-                  
-                  const SizedBox(height: 48),
-
-                  Text(
-                    'Sobre Mí',
-                    style: GoogleFonts.inter(
-                      fontSize: 18, 
-                      fontWeight: FontWeight.bold, 
-                      color: colorTextoP,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador')
+                            ? Icons.stars_rounded
+                            : Icons.gavel_rounded,
+                        color: (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador')
+                            ? Colors.amber.shade700
+                            : const Color(0xFF248EA6),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        (_rolEnComunidad == 'Administrador' || _rolEnComunidad == 'Creador')
+                            ? 'CREADOR'
+                            : 'MODERADOR',
+                        style: GoogleFonts.outfit(
+                          color: colorTextoP,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  if (!usuario.esPublico && usuario.id != _currentUserId && _estadoSeguimiento != 'ACEPTADO') 
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.lock_rounded, size: 48, color: Color(0xFF2A2A2A)),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Esta cuenta es privada',
-                              style: GoogleFonts.inter(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Sigue a este usuario para ver sus fotos y su biografía',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    GestureDetector(
-                      onTap: _currentUserId == usuario.id ? _mostrarDialogoEditarBiografia : null,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _currentUserId == usuario.id ? colorCard : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: _currentUserId == usuario.id
-                              ? Border.all(color: colorBorder)
-                              : null,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                (_biografiaLocal == null || _biografiaLocal!.isEmpty)
-                                  ? (_currentUserId == usuario.id ? 'Toca para añadir tu biografía 🐾' : 'Este usuario aún no ha escrito su biografía.')
-                                  : _biografiaLocal!,
-                                style: GoogleFonts.inter(
-                                  fontSize: 15, 
-                                  color: (_biografiaLocal == null || _biografiaLocal!.isEmpty) ? colorTextoS : colorTextoP,
-                                  height: 1.6
-                                ),
-                              ),
-                            ),
-                            if (_currentUserId == usuario.id)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 8.0, top: 2),
-                                child: Icon(Icons.edit_rounded, size: 16, color: Color(0xFF248EA6)),
-                              ),
-                          ],
-                        ),
-                      ),
+                ),
+              ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  '${usuario.numeroSeguidores}',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: colorTextoP),
+                ),
+                const SizedBox(width: 4),
+                Text('Seguidores', style: GoogleFonts.inter(color: colorTextoS, fontSize: 14)),
+                const SizedBox(width: 20),
+                Text(
+                  '${usuario.numeroSeguidos}',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: colorTextoP),
+                ),
+                const SizedBox(width: 4),
+                Text('Siguiendo', style: GoogleFonts.inter(color: colorTextoS, fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            _construirSeccionAcciones(usuario),
+            const SizedBox(height: 16),
+
+            if (_currentUserId != usuario.id) ...[
+              _construirBotonVotar(usuario, ratingTexto),
+              if (_mostrarPanelVoto && !_haVotadoHoy) ...[
+                const SizedBox(height: 12),
+                _construirPanelSeleccionVoto(usuario, ratingTexto),
+              ],
+            ],
+            const SizedBox(height: 24),
+
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: colorCard,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: colorBorder),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _StatColumn(
+                    icono: Icons.star_rounded,
+                    color: const Color(0xFFF29C50),
+                    valor: ratingTexto,
+                    etiqueta: 'Media',
+                    colorTexto: colorTextoP,
+                    colorSecundario: colorTextoS,
+                  ),
+                  Container(width: 1, height: 40, color: colorBorder),
+                  _StatColumn(
+                    icono: Icons.calendar_today_rounded,
+                    color: Colors.blueGrey,
+                    valor: fecha,
+                    etiqueta: 'Se unió',
+                    colorTexto: colorTextoP,
+                    colorSecundario: colorTextoS,
+                  ),
+                  if (usuario.puntos != null) ...[
+                    Container(width: 1, height: 40, color: colorBorder),
+                    _StatColumn(
+                      icono: Icons.workspace_premium_rounded,
+                      color: const Color(0xFFF28B50),
+                      valor: usuario.puntos.toString(),
+                      etiqueta: 'Puntos',
+                      colorTexto: colorTextoP,
+                      colorSecundario: colorTextoS,
                     ),
-                  
-                  const SizedBox(height: 24),
+                  ],
                 ],
               ),
             ),
-          ),
-          
-          // ── TABS (Solo para dueño) ──
-          if (_currentUserId == usuario.id)
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  padding: const EdgeInsets.all(4),
-                  indicator: BoxDecoration(
-                    color: const Color(0xFF248EA6),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(color: const Color(0xFF248EA6).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
-                    ],
-                  ),
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
-                  tabs: [
-                    Tab(
-                      height: 40,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.grid_view_rounded, size: 18),
-                          SizedBox(width: 8),
-                          Text('Publicaciones'),
-                        ],
-                      ),
-                    ),
-                    Tab(
-                      height: 40,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.bookmark_outline_rounded, size: 18),
-                          SizedBox(width: 8),
-                          Text('Guardados'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+
+            const SizedBox(height: 48),
+
+            Text(
+              'Sobre Mí',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorTextoP,
               ),
             ),
-
-          if (_tabActual == 0 && (usuario.id == _currentUserId || usuario.esPublico || _estadoSeguimiento == 'ACEPTADO')) ...[
-            // ── VISTA PUBLICACIONES ──
-            if (_cargandoPublicaciones || _publicaciones == null)
-              const SliverToBoxAdapter(
-                child: Center(child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(color: Color(0xFFF28B50)),
-                )),
-              )
-            else if (_publicaciones!.isEmpty)
-              const SliverToBoxAdapter(
-                child: EstadoVacioCargando(
-                  icon: Icons.feed_outlined,
-                  message: 'Aún no hay publicaciones',
+            const SizedBox(height: 16),
+            if (!usuario.esPublico &&
+                usuario.id != _currentUserId &&
+                _estadoSeguimiento != 'ACEPTADO')
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.lock_rounded, size: 48, color: Color(0xFF2A2A2A)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Esta cuenta es privada',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sigue a este usuario para ver sus fotos y su biografía',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else
-              _buildPublicacionesGrid(_publicaciones!),
-          ] else if (_tabActual == 1 && (usuario.id == _currentUserId || usuario.esPublico || _estadoSeguimiento == 'ACEPTADO')) ...[
-            // ── VISTA GUARDADOS ──
-            
-            // Filtros de comunidad
-            if (_comunidadesFiltro.isNotEmpty)
-              SliverToBoxAdapter(
+              GestureDetector(
+                onTap: _currentUserId == usuario.id ? _mostrarDialogoEditarBiografia : null,
                 child: Container(
-                  height: 50,
-                  margin: const EdgeInsets.only(top: 8),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _comunidadesFiltro.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: Text('Todos', style: GoogleFonts.outfit(fontSize: 12)),
-                            selected: _filtroComunidadId == null,
-                            onSelected: (v) {
-                              setState(() => _filtroComunidadId = null);
-                              _cargarGuardados();
-                            },
-                            backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-                            selectedColor: const Color(0xFF248EA6),
-                            checkmarkColor: Colors.white,
-                            labelStyle: TextStyle(color: _filtroComunidadId == null ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.grey : Colors.grey.shade700)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _currentUserId == usuario.id ? colorCard : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: _currentUserId == usuario.id
+                        ? Border.all(color: colorBorder)
+                        : null,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          (_biografiaLocal == null || _biografiaLocal!.isEmpty)
+                              ? (_currentUserId == usuario.id
+                                  ? 'Toca para añadir tu biografía 🐾'
+                                  : 'Este usuario aún no ha escrito su biografía.')
+                              : _biografiaLocal!,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            color: (_biografiaLocal == null || _biografiaLocal!.isEmpty)
+                                ? colorTextoS
+                                : colorTextoP,
+                            height: 1.6,
                           ),
-                        );
-                      }
-                      final com = _comunidadesFiltro[index - 1];
-                      final isSelected = _filtroComunidadId == com['id'];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(com['nombre'], style: GoogleFonts.outfit(fontSize: 12)),
-                          selected: isSelected,
-                          onSelected: (v) {
-                            setState(() => _filtroComunidadId = v ? com['id'] : null);
-                            _cargarGuardados(comunidadId: _filtroComunidadId);
-                          },
-                          backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-                          selectedColor: const Color(0xFF248EA6),
-                          checkmarkColor: Colors.white,
-                          labelStyle: TextStyle(color: isSelected ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? Colors.grey : Colors.grey.shade700)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
                         ),
-                      );
-                    },
+                      ),
+                      if (_currentUserId == usuario.id)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 8.0, top: 2),
+                          child: Icon(Icons.edit_rounded, size: 16, color: Color(0xFF248EA6)),
+                        ),
+                    ],
                   ),
                 ),
               ),
 
-            if (_cargandoGuardados || _publicacionesGuardadas == null)
-              const SliverToBoxAdapter(
-                child: Center(child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(color: Color(0xFF248EA6)),
-                )),
-              )
-            else if (_publicacionesGuardadas!.isEmpty)
-              const SliverToBoxAdapter(
-                child: EstadoVacioCargando(
-                  icon: Icons.bookmark_border_rounded,
-                  message: 'No tienes contenido guardado aún',
-                ),
-              )
-            else
-              _buildPublicacionesGrid(_publicacionesGuardadas!),
+            const SizedBox(height: 24),
           ],
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ),
+      ),
+    ),
+
+    // ── TABS (Solo para dueño) ──
+    if (_currentUserId == usuario.id)
+      SliverToBoxAdapter(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF1E1E1E)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)),
+            ],
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: Colors.transparent,
+            padding: const EdgeInsets.all(4),
+            indicator: BoxDecoration(
+              color: const Color(0xFF248EA6),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF248EA6).withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2)),
+              ],
+            ),
+            labelColor: Colors.white,
+            unselectedLabelColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey.shade400
+                : Colors.grey.shade600,
+            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
+            tabs: [
+              Tab(
+                height: 40,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.grid_view_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Publicaciones'),
+                  ],
+                ),
+              ),
+              Tab(
+                height: 40,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.bookmark_outline_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Guardados'),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
-    );
+
+    if (_tabActual == 0 &&
+        (usuario.id == _currentUserId ||
+            usuario.esPublico ||
+            _estadoSeguimiento == 'ACEPTADO')) ...[
+      if (_cargandoPublicaciones || _publicaciones == null)
+        const SliverToBoxAdapter(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40.0),
+              child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+            ),
+          ),
+        )
+      else if (_publicaciones!.isEmpty)
+        const SliverToBoxAdapter(
+          child: EstadoVacioCargando(
+            icon: Icons.feed_outlined,
+            message: 'Aún no hay publicaciones',
+          ),
+        )
+      else
+        _buildPublicacionesGrid(_publicaciones!),
+    ] else if (_tabActual == 1 &&
+        (usuario.id == _currentUserId ||
+            usuario.esPublico ||
+            _estadoSeguimiento == 'ACEPTADO')) ...[
+      if (_comunidadesFiltro.isNotEmpty)
+        SliverToBoxAdapter(
+          child: Container(
+            height: 50,
+            margin: const EdgeInsets.only(top: 8),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _comunidadesFiltro.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text('Todos', style: GoogleFonts.outfit(fontSize: 12)),
+                      selected: _filtroComunidadId == null,
+                      onSelected: (v) {
+                        setState(() => _filtroComunidadId = null);
+                        _cargarGuardados();
+                      },
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF1E1E1E)
+                          : Colors.grey.shade100,
+                      selectedColor: const Color(0xFF248EA6),
+                      checkmarkColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: _filtroComunidadId == null
+                            ? Colors.white
+                            : (Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey
+                                : Colors.grey.shade700),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+                    ),
+                  );
+                }
+                final com = _comunidadesFiltro[index - 1];
+                final isSelected = _filtroComunidadId == com['id'];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(com['nombre'], style: GoogleFonts.outfit(fontSize: 12)),
+                    selected: isSelected,
+                    onSelected: (v) {
+                      setState(() => _filtroComunidadId = v ? com['id'] : null);
+                      _cargarGuardados(comunidadId: _filtroComunidadId);
+                    },
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey.shade100,
+                    selectedColor: const Color(0xFF248EA6),
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey
+                              : Colors.grey.shade700),
+                    ),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20), side: BorderSide.none),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      if (_cargandoGuardados || _publicacionesGuardadas == null)
+        const SliverToBoxAdapter(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40.0),
+              child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+            ),
+          ),
+        )
+      else if (_publicacionesGuardadas!.isEmpty)
+        const SliverToBoxAdapter(
+          child: EstadoVacioCargando(
+            icon: Icons.bookmark_border_rounded,
+            message: 'No tienes contenido guardado aún',
+          ),
+        )
+      else
+        _buildPublicacionesGrid(_publicacionesGuardadas!),
+      const SliverToBoxAdapter(child: SizedBox(height: 100)),
+    ],  
+  ],    
+),     
+);      
   }
 
   Widget _construirSeccionAcciones(Usuario usuario) {
@@ -1173,7 +1248,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                       titulo: 'Mi Galería',
                     ),
                   ),
-                );
+                                  );
               },
               icon: const Icon(Icons.collections_rounded, size: 18, color: Colors.white),
               label: Text(
@@ -1201,7 +1276,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                       onPuntosActualizados: (p) => inicioState?.actualizarPuntos(p),
                     ),
                   ),
-                );
+                                  );
               },
               icon: const Icon(Icons.store_rounded, size: 18, color: Colors.white),
               label: Text(
@@ -1216,7 +1291,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
             ),
           ),
         ],
-      );
+                                  );
     }
 
     // Si es el perfil de otro, muestro Seguir, Galería y Mensaje
@@ -1243,7 +1318,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                       titulo: 'Galería de @${usuario.nombreUsuario}',
                     ),
                   ),
-                );
+                                  );
             },
             icon: const Icon(Icons.photo_library_outlined, size: 18, color: Colors.white),
             label: Text(
@@ -1259,7 +1334,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           ),
         ),
       ],
-    );
+                                  );
   }
 
   Widget _construirBotonSeguimiento(Usuario usuario) {
@@ -1302,7 +1377,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           ),
         ),
       ),
-    );
+                                  );
   }
 
   Widget _construirBotonMensaje(Usuario usuario) {
@@ -1316,7 +1391,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
               content: Text('Iniciando chat... 🐾'),
               duration: Duration(seconds: 1),
             ),
-          );
+                                  );
           final sala = await ServicioChat.crearSalaPrivada(usuario.id);
           if (sala != null && mounted) {
             // Navegar a través del router → activa la pestaña "Chats"
@@ -1326,14 +1401,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                 'nombre': 'Chat con @${usuario.nombreUsuario}',
                 'sala': sala,
               },
-            );
+                                  );
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('No se pudo iniciar el chat. ¿Hay conexión al servidor?'),
                 backgroundColor: Colors.red,
               ),
-            );
+                                  );
           }
         },
         icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: Colors.white),
@@ -1348,7 +1423,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           elevation: 0,
         ),
       ),
-    );
+                                  );
   }
 
   Widget _construirBotonVotar(Usuario usuario, String ratingActual) {
@@ -1370,7 +1445,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
             Text('Solo los seguidores pueden votar', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: colorTextoS)),
           ],
         ),
-      );
+                                  );
     }
 
     if (_haVotadoHoy) {
@@ -1397,7 +1472,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
             ),
           ],
         ),
-      );
+                                  );
     }
 
     return SizedBox(
@@ -1412,7 +1487,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                 backgroundColor: Color(0xFF248EA6),
                 behavior: SnackBarBehavior.floating,
               ),
-            );
+                                  );
             return;
           }
           setState(() {
@@ -1433,7 +1508,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           elevation: 0,
         ),
       ),
-    );
+                                  );
   }
 
   Widget _construirPanelSeleccionVoto(Usuario usuario, String ratingActual) {
@@ -1479,7 +1554,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                 final respuesta = await ServicioMejoras().votar(
                   receptorUsuarioId: usuario.id,
                   estrellas: _puntuacionTemporal,
-                );
+                                  );
                 
                 if (respuesta.exito) {
                   setState(() {
@@ -1499,7 +1574,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                );
+                                  );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF248EA6),
@@ -1514,7 +1589,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           ),
         ],
       ),
-    );
+                                  );
   }
 
   void _mostrarDialogoCrearPost() {
@@ -1528,21 +1603,21 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           if (texto.trim().isEmpty && (imagenes == null || imagenes.isEmpty)) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Añade texto o imágenes para publicar'))
-            );
+                                  );
             return false;
           }
           final respuesta = await ServicioPerfiles().crearPostPerfil(
             texto: texto.trim().isEmpty ? ' ' : texto.trim(),
             imagenes: imagenes,
             etiquetas: etiquetas,
-          );
+                                  );
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(respuesta.mensaje),
                 backgroundColor: respuesta.exito ? Colors.green : Colors.red,
               )
-            );
+                                  );
             if (respuesta.exito) {
               _cargarPublicaciones();
               return true;
@@ -1551,7 +1626,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
           return false;
         },
       ),
-    );
+                                  );
   }
 
   Widget _buildPublicacionesGrid(List<Publicacion> posts) {
@@ -1628,7 +1703,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                       ),
                     ],
                   ),
-                );
+                                  );
 
           return GestureDetector(
             onTap: () => DetallePublicacionSheet.mostrar(
@@ -1644,10 +1719,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
               },
             ),
             child: celda,
-          );
+                                  );
         },
       ),
-    );
+                                  );
   }
 
   Color _getColorEstado(String estado) {
@@ -1694,7 +1769,7 @@ class _ChipPrivacidad extends StatelessWidget {
           ),
         ],
       ),
-    );
+                                  );
   }
 }
 
@@ -1747,6 +1822,6 @@ class _StatColumn extends StatelessWidget {
           ),
         ),
       ],
-    );
+                                  );
   }
 }

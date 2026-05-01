@@ -47,8 +47,8 @@ class CabeceraPro extends StatelessWidget {
     final isSmallMobile = screenWidth < 500;
 
     return Container(
-      height: 80,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 40),
+      height: 60,
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFFC35E34), Color(0xFFE89A6A)],
@@ -73,10 +73,10 @@ class CabeceraPro extends StatelessWidget {
               onTap: () => onNavSelected(0),
               child: Row(
                 children: [
-                  Icon(Icons.pets, color: Colors.white, size: isMobile ? 28 : 34),
+                  Icon(Icons.pets, color: Colors.white, size: isMobile ? 24 : 28),
                   if (!isSmallMobile) ...[
-                    SizedBox(width: isMobile ? 8 : 14),
-                    Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: isMobile ? 24 : 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                    SizedBox(width: isMobile ? 8 : 12),
+                    Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: isMobile ? 20 : 26, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
                   ],
                 ],
               ),
@@ -92,9 +92,9 @@ class CabeceraPro extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _CircularNavItem(icon: Icons.explore_rounded, title: 'Explorar', isActive: indiceSeleccionado == 1, onTap: () => onNavSelected(1)),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     _CircularNavItem(icon: Icons.storefront_rounded, title: 'Tienda', isActive: indiceSeleccionado == 4, onTap: () => onNavSelected(4)),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     _CircularNavItem(
                       icon: Icons.chat_bubble_rounded,
                       title: 'Chats',
@@ -102,7 +102,7 @@ class CabeceraPro extends StatelessWidget {
                       onTap: () => onNavSelected(3),
                       badge: estaLogueado && mensajesSinLeer > 0 ? mensajesSinLeer.toString() : null,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     _CircularNavItem(
                       icon: Icons.notifications_rounded,
                       title: 'Notificaciones',
@@ -114,7 +114,7 @@ class CabeceraPro extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(width: isMobile ? 16 : 40),
+            SizedBox(width: isMobile ? 16 : 24),
           ],
           _UserProfileHeader(
             name: nombreUsuario,
@@ -156,9 +156,9 @@ class _CircularNavItem extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(color: isActive ? Colors.white.withOpacity(0.2) : Colors.transparent, shape: BoxShape.circle),
-                  child: Icon(icon, color: Colors.white, size: 22),
+                  child: Icon(icon, color: Colors.white, size: 20),
                 ),
                 if (badge != null)
                   Positioned(
@@ -172,8 +172,8 @@ class _CircularNavItem extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(title, style: GoogleFonts.outfit(color: Colors.white, fontSize: 13, fontWeight: isActive ? FontWeight.w900 : FontWeight.w500)),
+            const SizedBox(height: 2),
+            Text(title, style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: isActive ? FontWeight.w900 : FontWeight.w500)),
           ],
         ),
       ),
@@ -258,14 +258,14 @@ class _UserProfileHeader extends StatelessWidget {
         PopupMenuItem(value: 'logout', child: Row(children: [const Icon(Icons.logout_rounded, color: Color(0xFFD95F43), size: 22), const SizedBox(width: 12), Text('Cerrar Miau-Sesión', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFFD95F43)))])),
       ],
       child: Container(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(40)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 44,
-              height: 44,
+              width: 38,
+              height: 38,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -277,8 +277,8 @@ class _UserProfileHeader extends StatelessWidget {
                       ),
                     ),
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withOpacity(0.3),
@@ -292,12 +292,12 @@ class _UserProfileHeader extends StatelessWidget {
                     bottom: 0,
                     right: 0,
                     child: Container(
-                      width: 12,
-                      height: 12,
+                      width: 10,
+                      height: 10,
                       decoration: BoxDecoration(
                         color: _getColorEstado(estado),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                     ),
                   ),
@@ -312,7 +312,7 @@ class _UserProfileHeader extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+                      Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
                       const SizedBox(width: 6),
                       MouseRegion(
                         cursor: SystemMouseCursors.click,

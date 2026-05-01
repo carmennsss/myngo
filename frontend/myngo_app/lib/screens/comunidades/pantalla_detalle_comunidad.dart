@@ -18,6 +18,7 @@ import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
 import '../galeria/pantalla_detalle_coleccion.dart';
 import 'pantalla_admin_comunidad.dart';
+import 'pantalla_personalizacion_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import '../perfiles/pantalla_perfiles.dart';
 import 'pantalla_enviar_propuesta.dart';
@@ -84,6 +85,39 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   List<SalaChat>? _salasChat;
   bool _estaCargandoDatos = false;
   Key _galeriaKey = UniqueKey(); // Clave para forzar refresco
+
+  /// Obtiene el estilo de texto con la fuente personalizada de la comunidad.
+  TextStyle _getEstiloComunidad({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+    List<Shadow>? shadows,
+  }) {
+    final fuente = widget.comunidad.fuenteComunidad ?? 'Outfit';
+    try {
+      return GoogleFonts.getFont(
+        fuente,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+        height: height,
+        shadows: shadows,
+      );
+    } catch (e) {
+      // Fallback a Outfit si la fuente no carga o no existe
+      return GoogleFonts.outfit(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+        height: height,
+        shadows: shadows,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -163,7 +197,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       setState(() => _estaCargandoPeticion = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(respuesta.mensaje, style: GoogleFonts.inter()),
+          content: Text(respuesta.mensaje, style: GoogleFonts.outfit()),
           backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
         ),
       );
@@ -191,12 +225,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       final previewContent = Stack(
         children: [
           Positioned.fill(child: _buildBackgroundFeed()),
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: _buildPreview(context),
-            ),
-          ),
+          _buildPreview(context),
         ],
       );
       return widget.esIntegrada ? previewContent : Scaffold(backgroundColor: _colorPagina(context), body: previewContent);
@@ -205,12 +234,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final dashboardContent = Stack(
       children: [
         Positioned.fill(child: _buildBackgroundFeed()),
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: _buildDashboard(context),
-          ),
-        ),
+        _buildDashboard(context),
       ],
     );
 
@@ -238,7 +262,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverAppBar(
-                  expandedHeight: 500,
+                  expandedHeight: 180,
                   pinned: false,
                   stretch: true,
                   backgroundColor: _colorPagina(context),
@@ -371,7 +395,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               SliverAppBar(
-                expandedHeight: 500,
+                expandedHeight: 180,
                 pinned: false,
                 stretch: true,
                 backgroundColor: _colorPagina(context),
@@ -484,15 +508,17 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             ),
           ),
           // Contenido
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (widget.esIntegrada) ...[
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (widget.esIntegrada) ...[
+                    Padding(
                       padding: const EdgeInsets.only(bottom: 12, right: 12),
                       child: IconButton(
                         onPressed: widget.onBack,
@@ -503,8 +529,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
                 // Avatar pequeño
                 Container(
                   width: 70,
@@ -573,8 +598,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    ),
     );
   }
 
@@ -636,13 +662,13 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       builder: (context) => Container(
         padding: const EdgeInsets.only(top: 24, bottom: 48, left: 16, right: 16),
         decoration: const BoxDecoration(
-          color: Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 24),
             ListTile(
               leading: Container(
@@ -650,8 +676,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                 decoration: BoxDecoration(color: const Color(0xFFF28B50).withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFFF28B50)),
               ),
-              title: Text('Subir Imagen Cruda', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              subtitle: Text('Directo a la galería de la comunidad', style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+              title: Text('Subir Imagen Cruda', style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold, fontSize: 16)),
+              subtitle: Text('Directo a la galería de la comunidad', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
               onTap: () async {
                 Navigator.pop(context);
                 final picker = ImagePicker();
@@ -677,8 +703,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                 decoration: BoxDecoration(color: const Color(0xFF248EA6).withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.create_new_folder_rounded, color: Color(0xFF248EA6)),
               ),
-              title: Text('Nueva Colección', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              subtitle: Text('Clasifica de forma pública o privada tus capturas', style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+              title: Text('Nueva Colección', style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold, fontSize: 16)),
+              subtitle: Text('Clasifica de forma pública o privada tus capturas', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
                 _mostrarDialogoNuevaColeccion(context);
@@ -704,42 +730,42 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         builder: (context, setModalState) => Container(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E), 
+            color: Colors.white, 
             borderRadius: BorderRadius.vertical(top: Radius.circular(32))
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Crear Colección', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text('Crear Colección', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
               const SizedBox(height: 24),
               TextField(
                 controller: nombreCtrl,
-                style: GoogleFonts.inter(color: Colors.white),
+                style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
                 decoration: InputDecoration(
                   hintText: 'Nombre de la colección',
-                  hintStyle: GoogleFonts.inter(color: Colors.grey),
+                  hintStyle: GoogleFonts.outfit(color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                   filled: true,
-                  fillColor: const Color(0xFF121212),
+                  fillColor: const Color(0xFFFBF9F8),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: descCtrl,
                 maxLines: 2,
-                style: GoogleFonts.inter(color: Colors.white),
+                style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
                 decoration: InputDecoration(
                   hintText: 'Descripción (opcional)',
-                  hintStyle: GoogleFonts.inter(color: Colors.grey),
+                  hintStyle: GoogleFonts.outfit(color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                   filled: true,
-                  fillColor: const Color(0xFF121212),
+                  fillColor: const Color(0xFFFBF9F8),
                 ),
               ),
               const SizedBox(height: 16),
               SwitchListTile(
-                title: Text(esPrivada ? 'Privada' : 'Pública', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: Text(esPrivada ? 'Solo tú podrás ver esta colección' : 'Cualquiera podrá ver esta colección', style: GoogleFonts.inter(color: Colors.grey, fontSize: 12)),
+                title: Text(esPrivada ? 'Privada' : 'Pública', style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold)),
+                subtitle: Text(esPrivada ? 'Solo tú podrás ver esta colección' : 'Cualquiera podrá ver esta colección', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
                 value: esPrivada,
                 activeColor: const Color(0xFF248EA6),
                 onChanged: (val) => setModalState(() => esPrivada = val),
@@ -828,7 +854,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1E1E1E),
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
@@ -836,11 +862,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ajustes de Comunidad', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text('Ajustes de Comunidad', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.edit_rounded, color: Color(0xFFF29C50)),
-              title: Text('Editar Información', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+              title: Text('Editar Información', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
               onTap: () { Navigator.pop(context); },
             ),
             ListTile(
@@ -850,8 +876,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                 backgroundColor: Colors.redAccent,
                 child: const Icon(Icons.security_rounded, color: Color(0xFFF29C50)),
               ),
-              title: Text('Panel de Administración', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
-              subtitle: Text('Gestiona solicitudes y reportes', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+              title: Text('Panel de Administración', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+              subtitle: Text('Gestiona solicitudes y reportes', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
               onTap: () async { 
                 Navigator.pop(context);
                 final resultado = await Navigator.push(
@@ -879,7 +905,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final puedeAdministrar = esAdministrador || esModerador;
 
     return SliverAppBar(
-      expandedHeight: isDashboard ? 260 : 280,
+      expandedHeight: isDashboard ? 160 : 180,
       pinned: !isPreview, // No fijar en modo preview para evitar duplicación
       stretch: true,
       backgroundColor: Colors.transparent,
@@ -910,7 +936,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       ],
       flexibleSpace: FlexibleSpaceBar(
         title: isDashboard ? Text(widget.comunidad.nombre, 
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: _colorTextoPrincipal(context))) : null,
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: _colorTextoPrincipal(context))) : null,
         background: Stack(
           fit: StackFit.expand,
           children: [
@@ -1010,7 +1036,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                   height: 1.0,
                 ),
                 maxLines: 1,
-                overflow: TextOverflow.clip,
               ),
             ),
           ),
@@ -1020,30 +1045,97 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildBackgroundFeed() {
+    final urlFondo = widget.comunidad.urlFondo;
+    final tienePortada = widget.comunidad.urlPortada.isNotEmpty;
+    
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 800) return const SizedBox.shrink();
+        final fondo = Container(
+          color: _colorPagina(context),
+          child: (urlFondo != null && urlFondo.isNotEmpty)
+              ? Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: _esAppClara(context) ? 0.4 : 0.2,
+                        child: CachedNetworkImage(
+                          imageUrl: urlFondo,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : (tienePortada
+                  ? Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: _esAppClara(context) ? 0.15 : 0.08,
+                            child: CachedNetworkImage(
+                              imageUrl: widget.comunidad.urlPortada,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Container(
+                            color: widget.comunidad.colorTema.withOpacity(_esAppClara(context) ? 0.05 : 0.1),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Container(color: widget.comunidad.colorTema.withOpacity(_esAppClara(context) ? 0.05 : 0.1))),
+        );
+
+        if (constraints.maxWidth < 800) return fondo;
         
         final colorBorde = _esAppClara(context) ? Colors.black.withOpacity(0.06) : Colors.white.withOpacity(0.06);
-        final colorFeed = _esAppClara(context) ? Colors.white : const Color(0xFF141414);
         
-        return Row(
+        Color colorFeed = _esAppClara(context) ? Colors.white : const Color(0xFF141414);
+        Gradient? gradienteFeed;
+        
+        final config = widget.comunidad.fondoPostsConfig;
+        if (config != null) {
+          final tipo = config['tipo'];
+          if (tipo == 'solido' && config['color1'] != null) {
+            colorFeed = Color(int.parse(config['color1'].toString().replaceFirst('#', '0xFF')));
+          } else if (tipo == 'gradiente' && config['color1'] != null && config['color2'] != null) {
+            colorFeed = Colors.transparent;
+            gradienteFeed = LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(int.parse(config['color1'].toString().replaceFirst('#', '0xFF'))),
+                Color(int.parse(config['color2'].toString().replaceFirst('#', '0xFF'))),
+              ],
+            );
+          }
+        }
+        
+        return Stack(
           children: [
-            Expanded(child: _buildSideBarDecorativa(izquierda: true)),
-            Container(
-              width: 728,
-              decoration: BoxDecoration(
-                color: colorFeed,
-                border: Border(
-                  left: BorderSide(color: colorBorde, width: 1.5),
-                  right: BorderSide(color: colorBorde, width: 1.5),
+            Positioned.fill(child: fondo),
+            Row(
+              children: [
+                Expanded(child: const SizedBox()),
+                Container(
+                  width: 728,
+                  decoration: BoxDecoration(
+                    color: gradienteFeed == null ? colorFeed : null,
+                    gradient: gradienteFeed,
+                    border: Border(
+                      left: BorderSide(color: colorBorde, width: 1.5),
+                      right: BorderSide(color: colorBorde, width: 1.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, spreadRadius: 5)
+                    ],
+                  ),
                 ),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, spreadRadius: 5)
-                ]
-              ),
+                Expanded(child: const SizedBox()),
+              ],
             ),
-            Expanded(child: _buildSideBarDecorativa(izquierda: false)),
           ],
         );
       },
@@ -1057,7 +1149,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     
     return RefreshIndicator(
       color: const Color(0xFFF28B50),
-      backgroundColor: _esAppClara(context) ? Colors.white : const Color(0xFF1E1E1E),
+      backgroundColor: _esAppClara(context) ? Colors.white : Colors.white,
       onRefresh: () => _cargarDatosSeccion(0),
       child: _publicaciones!.isEmpty 
         ? _buildEmptyState(Icons.feed_outlined, 'Aún no hay publicaciones')
@@ -1137,7 +1229,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         final coloresHex = [0xFF248EA6, 0xFFF28B50, 0xFFD95F43, 0xFF8338EC];
         final color = Color(coloresHex[index % coloresHex.length]);
 
-        return GestureDetector(
+        return InkWell(
+          borderRadius: BorderRadius.circular(10),
+          splashColor: color.withOpacity(0.1),
           onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleColeccion(
               coleccion: col,
@@ -1148,7 +1242,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             angle: rotacion,
             child: Container(
               decoration: BoxDecoration(
-                color: _esAppClara(context) ? Colors.white : const Color(0xFF1E1E1E),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(2, 2)),
@@ -1230,13 +1324,13 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 24.0),
             child: GestureDetector(
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Inicia sesión para ver los detalles 👉', style: GoogleFonts.inter()),
-                  backgroundColor: const Color(0xFF248EA6),
-                  duration: const Duration(seconds: 3),
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Inicia sesión para ver los detalles 👉', style: GoogleFonts.outfit()),
+                    backgroundColor: const Color(0xFFC35E34),
+                    duration: const Duration(seconds: 3),
+                  ),
                 ),
-              ),
               child: Opacity(
                 opacity: 0.7,
                 child: TarjetaPost(
@@ -1275,9 +1369,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         final col = _colecciones![index];
         final color = widget.comunidad.colorTema;
         return InkWell(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           onTap: () => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Inicia sesión para acceder a la galería 🔐', style: GoogleFonts.inter()),
+              content: Text('Inicia sesión para acceder a la galería 🔐', style: GoogleFonts.outfit()),
               backgroundColor: const Color(0xFF248EA6),
               duration: const Duration(seconds: 3),
             ),
@@ -1372,11 +1467,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFF28B50) : (_esAppClara(context) ? Colors.black.withValues(alpha: 0.05) : const Color(0xFF1E1E1E)),
+          color: active ? const Color(0xFFF28B50) : (_esAppClara(context) ? Colors.black.withValues(alpha: 0.05) : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: active ? const Color(0xFFF28B50) : (_esAppClara(context) ? Colors.black12 : const Color(0xFF2A2A2A))),
         ),
-        child: Text(label, style: GoogleFonts.inter(color: active ? Colors.white : _colorTextoSecundario(context), fontWeight: FontWeight.bold, fontSize: 13)),
+        child: Text(label, style: GoogleFonts.outfit(color: active ? Colors.white : _colorTextoSecundario(context), fontWeight: FontWeight.bold, fontSize: 13)),
       ),
     );
   }
@@ -1424,10 +1519,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           leading: Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: _esAppClara(context) ? Colors.black.withValues(alpha: 0.05) : const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: _esAppClara(context) ? Colors.black.withValues(alpha: 0.05) : Colors.white, borderRadius: BorderRadius.circular(12)),
             child: const Icon(Icons.tag, color: Colors.grey),
           ),
-          title: Text(sala.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: _colorTextoPrincipal(context))),
+          title: Text(sala.nombre, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: _colorTextoPrincipal(context))),
           trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
           onTap: () {
             Navigator.push(
@@ -1449,15 +1544,15 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: _esAppClara(context) ? Colors.black.withValues(alpha: 0.02) : const Color(0xFF1E1E1E),
+        color: _esAppClara(context) ? Colors.black.withValues(alpha: 0.02) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFF28B50).withOpacity(0.4)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: const CircleAvatar(backgroundColor: Color(0xFFF28B50), child: Icon(Icons.forum_rounded, color: Colors.white, size: 20)),
-        title: Text('Chat General ✨', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: _colorTextoPrincipal(context))),
-        subtitle: Text('¡Habla con toda la comunidad!', style: GoogleFonts.inter(color: _colorTextoSecundario(context), fontSize: 13)),
+        title: Text('Chat General ✨', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: _colorTextoPrincipal(context))),
+        subtitle: Text('¡Habla con toda la comunidad!', style: GoogleFonts.outfit(color: _colorTextoSecundario(context), fontSize: 13)),
         trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFF28B50)),
         onTap: () {
           Navigator.push(
@@ -1480,11 +1575,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Salas de Chat', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white)),
+          Text('Salas de Chat', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF4A4440))),
           TextButton.icon(
             onPressed: () {}, 
             icon: const Icon(Icons.add_circle_outline, size: 20, color: Color(0xFF248EA6)), 
-            label: Text('Crear Sala', style: GoogleFonts.inter(color: const Color(0xFF248EA6), fontWeight: FontWeight.bold))
+            label: Text('Crear Sala', style: GoogleFonts.outfit(color: const Color(0xFF248EA6), fontWeight: FontWeight.bold))
           ),
         ],
       ),
@@ -1573,6 +1668,37 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
     }
   }
 
+  TextStyle _getEstiloComunidad({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+    List<Shadow>? shadows,
+  }) {
+    final fuente = widget.comunidad.fuenteComunidad ?? 'Outfit';
+    try {
+      return GoogleFonts.getFont(
+        fuente,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+        height: height,
+        shadows: shadows,
+      );
+    } catch (e) {
+      return GoogleFonts.outfit(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+        height: height,
+        shadows: shadows,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final esCreador = widget.miId != null && widget.miId == widget.comunidad.creadorId;
@@ -1582,7 +1708,7 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
 
     return SizedBox(
       width: double.infinity,
-      height: 500,
+      height: 180,
       child: Stack(
         children: [
           // Fondo con imagen
@@ -1597,7 +1723,7 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
           else
             Positioned.fill(child: Container(color: widget.comunidad.colorTema)),
           
-          // Degradado oscuro para que resalte el texto y botones
+          // Degradado oscuro para que resalte el texto
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -1605,36 +1731,51 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.5),
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.2),
+                    Colors.black.withOpacity(0.8),
                   ],
                 ),
               ),
             ),
           ),
 
-          // Botones superiores (Cerrar y Administrar)
+          // Botones superiores (Administrar y Cerrar) a la derecha
           Positioned(
             top: 16,
-            left: 16,
             right: 16,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), shape: BoxShape.circle),
-                  child: IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
-                    onPressed: widget.onCerrar,
-                    tooltip: 'Cerrar vista de comunidad',
-                  ),
-                ),
-                if (esCreador || _miRol == 'Moderador')
+                if (esCreador || _miRol == 'Moderador') ...[
                   Container(
-                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), shape: BoxShape.circle),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.4), shape: BoxShape.circle),
                     child: IconButton(
-                      icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
+                      icon: const Icon(Icons.palette_rounded, color: Colors.white, size: 22),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PantallaPersonalizacionComunidad(
+                              comunidad: widget.comunidad,
+                              onComunidadActualizada: () {
+                                if (widget.onComunidadActualizada != null) {
+                                  // Forzar recarga obteniendo de nuevo los datos
+                                  widget.onComunidadActualizada!(widget.comunidad);
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      tooltip: 'Personalización Visual',
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.4), shape: BoxShape.circle),
+                    child: IconButton(
+                      icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 22),
                       onPressed: () async {
                         final actualizada = await Navigator.push<Comunidad>(
                           context,
@@ -1649,75 +1790,97 @@ class _BarraContextoComunidadState extends State<_BarraContextoComunidad> {
                       tooltip: 'Administrar Comunidad',
                     ),
                   ),
+                ],
+                Container(
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.4), shape: BoxShape.circle),
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                    onPressed: widget.onCerrar,
+                    tooltip: 'Cerrar vista',
+                  ),
+                ),
               ],
             ),
           ),
 
-          // Contenido central (Avatar + Título)
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+          // Contenido agrupado (Avatar + Título + Etiqueta) abajo a la izquierda
+          Positioned(
+            bottom: 20,
+            left: 24,
+            right: 24,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Avatar redondo
                 Container(
-                  width: 160,
-                  height: 160,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: widget.comunidad.colorTema, width: 4),
+                    border: Border.all(color: Colors.white, width: 3),
                     boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2)],
-                    image: (widget.comunidad.urlPortada != null && widget.comunidad.urlPortada!.isNotEmpty)
+                    image: (widget.comunidad.urlAvatar != null && widget.comunidad.urlAvatar!.isNotEmpty)
                         ? DecorationImage(
-                            image: CachedNetworkImageProvider(widget.comunidad.urlPortada!),
+                            image: CachedNetworkImageProvider(widget.comunidad.urlAvatar!),
                             fit: BoxFit.cover,
                           )
-                        : null,
+                        : (widget.comunidad.urlPortada.isNotEmpty
+                            ? DecorationImage(
+                                image: CachedNetworkImageProvider(widget.comunidad.urlPortada),
+                                fit: BoxFit.cover,
+                              )
+                            : null),
                   ),
-                  child: (widget.comunidad.urlPortada == null || widget.comunidad.urlPortada!.isEmpty)
-                      ? const Icon(Icons.groups_rounded, color: Colors.white, size: 60)
+                  child: (widget.comunidad.urlAvatar == null || widget.comunidad.urlAvatar!.isEmpty) && widget.comunidad.urlPortada.isEmpty
+                      ? const Icon(Icons.groups_rounded, color: Colors.white, size: 40)
                       : null,
                 ),
-                const SizedBox(height: 16),
-                // Título
-                Text(
-                  widget.comunidad.nombre,
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 28,
-                    shadows: const [Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 2))],
+                const SizedBox(width: 16),
+                
+                // Textos
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        widget.comunidad.nombre,
+                        style: _getEstiloComunidad(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 26,
+                          shadows: const [Shadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2))],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Etiqueta de Rol
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colorRol.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(iconRol, size: 14, color: Colors.white),
+                            const SizedBox(width: 6),
+                            Text(
+                              rolLabel.toUpperCase(),
+                              style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-          
-          // Etiqueta de Rol abajo a la izquierda
-          Positioned(
-            bottom: 24,
-            left: 24,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: colorRol.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(iconRol, size: 14, color: Colors.white),
-                  const SizedBox(width: 6),
-                  Text(
-                    rolLabel.toUpperCase(),
-                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
         ],
       ),
     );

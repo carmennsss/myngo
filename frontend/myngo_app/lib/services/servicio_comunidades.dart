@@ -182,13 +182,16 @@ class ServicioComunidades {
     }
   }
 
-  /// Actualiza los ajustes de una comunidad (Nombre, Descripción, Color, Banner).
   Future<RespuestaApi<Comunidad>> actualizarComunidad(int id, {
     String? nombre, 
     String? descripcion, 
     String? colorTema,
     bool? tiendaHabilitada,
-    XFile? banner
+    XFile? banner,
+    XFile? avatar,
+    XFile? fondo,
+    Map<String, dynamic>? fondoPostsConfig,
+    String? fuenteComunidad,
   }) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
@@ -199,6 +202,8 @@ class ServicioComunidades {
       if (descripcion != null) solicitud.fields['descripcion'] = descripcion;
       if (colorTema != null) solicitud.fields['color_tema'] = colorTema;
       if (tiendaHabilitada != null) solicitud.fields['tienda_habilitada'] = tiendaHabilitada.toString();
+      if (fondoPostsConfig != null) solicitud.fields['fondo_posts_config'] = jsonEncode(fondoPostsConfig);
+      if (fuenteComunidad != null) solicitud.fields['fuente_comunidad'] = fuenteComunidad;
 
       if (banner != null) {
         if (kIsWeb) {
@@ -208,6 +213,28 @@ class ServicioComunidades {
           solicitud.files.add(http.MultipartFile.fromBytes('url_portada', bytes, filename: banner.name, contentType: MediaType('image', subtype)));
         } else {
           solicitud.files.add(await http.MultipartFile.fromPath('url_portada', banner.path));
+        }
+      }
+      
+      if (avatar != null) {
+        if (kIsWeb) {
+          final bytes = await avatar.readAsBytes();
+          final ext = avatar.name.split('.').last.toLowerCase();
+          final subtype = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp'}[ext] ?? 'jpeg';
+          solicitud.files.add(http.MultipartFile.fromBytes('url_avatar', bytes, filename: avatar.name, contentType: MediaType('image', subtype)));
+        } else {
+          solicitud.files.add(await http.MultipartFile.fromPath('url_avatar', avatar.path));
+        }
+      }
+
+      if (fondo != null) {
+        if (kIsWeb) {
+          final bytes = await fondo.readAsBytes();
+          final ext = fondo.name.split('.').last.toLowerCase();
+          final subtype = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp'}[ext] ?? 'jpeg';
+          solicitud.files.add(http.MultipartFile.fromBytes('url_fondo', bytes, filename: fondo.name, contentType: MediaType('image', subtype)));
+        } else {
+          solicitud.files.add(await http.MultipartFile.fromPath('url_fondo', fondo.path));
         }
       }
 

@@ -5,6 +5,9 @@ import '../../models/coleccion.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_usuarios.dart';
+import '../../services/servicio_comunidades.dart';
+import '../../models/publicacion.dart';
+import 'package:image_picker/image_picker.dart';
 
 class PantallaDetalleColeccion extends StatefulWidget {
   final Coleccion coleccion;
@@ -103,20 +106,20 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           '¿Eliminar colección?',
-          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900),
+          style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.w900),
         ),
         content: Text(
           'Se borrará "${_coleccion.nombreColeccion}" y todo su contenido (las imágenes no se eliminan, solo se desvinculan).',
-          style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
+          style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.white38)),
+            child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -147,13 +150,141 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     }
   }
 
+  Future<void> _subirDesdeGaleria() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    setState(() => _procesando = true);
+    
+    // 1. Subir a la galería general de la comunidad (o perfil)
+    final resSubida = await _servicio.subirImagenGaleria(
+      image,
+      comunidadId: _coleccion.comunidadId,
+      esPublica: !_coleccion.esPrivada,
+    );
+
+    if (mounted) {
+      if (resSubida.exito && resSubida.datos != null) {
+        // 2. Vincular a esta colección específica
+        final resVinculo = await _servicio.gestionarImagenEnColeccion(
+          coleccionId: _coleccion.id,
+          imagenId: resSubida.datos!.id,
+          agregar: true,
+        );
+        
+        if (mounted) {
+          setState(() {
+            _procesando = false;
+            if (resVinculo.exito) {
+              _imagenes.insert(0, resSubida.datos!);
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resVinculo.mensaje, style: GoogleFonts.outfit()),
+              backgroundColor: resVinculo.exito ? const Color(0xFF248EA6) : Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        setState(() => _procesando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(resSubida.mensaje, style: GoogleFonts.outfit()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _elegirDePostsComunidad() async {
+    if (_coleccion.comunidadId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Esta opción solo está disponible en comunidades 🐾', style: GoogleFonts.outfit())),
+      );
+      return;
+    }
+
+    // Mostrar diálogo de selección
+    final imagenId = await showDialog<int>(
+      context: context,
+      builder: (ctx) => _DialogoSelectorImagenPost(comunidadId: _coleccion.comunidadId!),
+    );
+
+    if (imagenId != null && mounted) {
+      setState(() => _procesando = true);
+      final res = await _servicio.gestionarImagenEnColeccion(
+        coleccionId: _coleccion.id,
+        imagenId: imagenId,
+        agregar: true,
+      );
+      
+      if (mounted) {
+        setState(() => _procesando = false);
+        if (res.exito) {
+          _offset = 0; // Reiniciar para ver la nueva imagen
+          _cargarImagenes();
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.mensaje, style: GoogleFonts.outfit()),
+            backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _mostrarSelectorOrigenImagen() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text('AÑADIR A COLECCIÓN', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF248EA6)),
+              title: Text('Subir de mi galería local', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _subirDesdeGaleria();
+              },
+            ),
+            if (_coleccion.comunidadId != null)
+              ListTile(
+                leading: const Icon(Icons.feed_rounded, color: Color(0xFFC35E34)),
+                title: Text('Elegir de posts de la comunidad', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _elegirDePostsComunidad();
+                },
+              ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _mostrarMenuImagen(BuildContext context, ImagenGaleria imagen) {
     if (!_puedeEditar) return; // Sin permiso: no mostrar menú
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (_) => SafeArea(
         child: Column(
@@ -163,14 +294,14 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
             Container(
               width: 48,
               height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.remove_circle_outline_rounded, color: Colors.orangeAccent),
               title: Text(
                 'Quitar de esta colección',
-                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -187,14 +318,20 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: const Color(0xFFFEF5F1),
+      floatingActionButton: _puedeEditar ? FloatingActionButton(
+        onPressed: _mostrarSelectorOrigenImagen,
+        backgroundColor: const Color(0xFFC35E34),
+        child: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
+      ) : null,
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               _coleccion.nombreColeccion.toUpperCase(),
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440)),
             ),
             if (_coleccion.descripcion != null && _coleccion.descripcion!.isNotEmpty)
               Text(
@@ -203,19 +340,21 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
               ),
           ],
         ),
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: const Color(0xFFFEF5F1),
         elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           Icon(
             _coleccion.esPrivada ? Icons.lock_rounded : Icons.public_rounded,
-            color: _coleccion.esPrivada ? const Color(0xFFD95F43) : const Color(0xFF248EA6),
+            color: _coleccion.esPrivada ? const Color(0xFFC35E34) : const Color(0xFF248EA6),
           ),
           const SizedBox(width: 8),
           // Menú de opciones: solo visible si el usuario tiene permiso
           if (_puedeEditar)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
-              color: const Color(0xFF2A2A2A),
+              icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF4A4440)),
+              color: Colors.white,
+              surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               onSelected: (value) {
                 if (value == 'eliminar') _confirmarEliminarColeccion();
@@ -240,22 +379,22 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
         ],
       ),
       body: _cargando && _imagenes.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF248EA6)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
           : _imagenes.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.photo_library_outlined, color: Colors.white24, size: 64),
+                      Icon(Icons.photo_library_outlined, color: Colors.grey.withOpacity(0.2), size: 64),
                       const SizedBox(height: 16),
                       Text(
                         'Esta colección está vacía',
-                        style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16),
+                        style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 16),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Añade imágenes desde la galería de inicio',
-                        style: GoogleFonts.outfit(color: Colors.white24, fontSize: 13),
+                        style: GoogleFonts.outfit(color: Colors.grey.shade300, fontSize: 13),
                       ),
                     ],
                   ),
@@ -276,7 +415,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                           return const Center(
                             child: Padding(
                               padding: EdgeInsets.all(16),
-                              child: CircularProgressIndicator(color: Color(0xFF248EA6), strokeWidth: 2),
+                              child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2),
                             ),
                           );
                         }
@@ -288,15 +427,15 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: imagen.urlArchivo,
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) => Container(color: const Color(0xFF2A2A2A)),
-                                  errorWidget: (_, __, ___) => Container(
-                                    color: const Color(0xFF1E1E1E),
-                                    child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                                  child: CachedNetworkImage(
+                                    imageUrl: imagen.urlArchivo,
+                                    fit: BoxFit.cover,
+                                    placeholder: (_, __) => Container(color: Colors.white),
+                                    errorWidget: (_, __, ___) => Container(
+                                      color: Colors.white,
+                                      child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                                    ),
                                   ),
-                                ),
                               ),
                               // Indicador de menú solo si puede editar
                               if (_puedeEditar)
@@ -325,11 +464,116 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                       Container(
                         color: Colors.black54,
                         child: const Center(
-                          child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+                          child: CircularProgressIndicator(color: Color(0xFFC35E34)),
                         ),
                       ),
                   ],
                 ),
+    );
+  }
+}
+
+// --- DIÁLOGO PARA SELECCIONAR IMAGEN DE UN POST ---
+class _DialogoSelectorImagenPost extends StatefulWidget {
+  final int comunidadId;
+  const _DialogoSelectorImagenPost({required this.comunidadId});
+
+  @override
+  State<_DialogoSelectorImagenPost> createState() => _DialogoSelectorImagenPostState();
+}
+
+class _DialogoSelectorImagenPostState extends State<_DialogoSelectorImagenPost> {
+  final _servicioComunidades = ServicioComunidades();
+  List<Publicacion> _posts = [];
+  bool _cargando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarPosts();
+  }
+
+  Future<void> _cargarPosts() async {
+    final res = await _servicioComunidades.obtenerPublicaciones(widget.comunidadId);
+    if (mounted) {
+      setState(() {
+        // Filtrar solo posts que tengan al menos una imagen con ID
+        _posts = (res.datos ?? []).where((p) => p.imagenesIds.isNotEmpty || p.imagenId != null).toList();
+        _cargando = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Text('Elegir de Posts', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
+      content: SizedBox(
+        width: 400,
+        height: 500,
+        child: _cargando
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+            : _posts.isEmpty
+                ? Center(child: Text('No hay posts con imágenes en esta comunidad 🐾', textAlign: TextAlign.center, style: GoogleFonts.outfit(color: Colors.grey)))
+                : ListView.builder(
+                    itemCount: _posts.length,
+                    itemBuilder: (ctx, index) {
+                      final post = _posts[index];
+                      // Recopilar todas las imágenes del post
+                      final List<Map<String, dynamic>> imagenes = [];
+                      if (post.imagenId != null && post.urlImagen != null) {
+                        imagenes.add({'id': post.imagenId, 'url': post.urlImagen});
+                      }
+                      for (int i = 0; i < post.imagenesIds.length; i++) {
+                        if (i < post.urlsImagenes.length) {
+                          imagenes.add({'id': post.imagenesIds[i], 'url': post.urlsImagenes[i]});
+                        }
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(post.titulo.isEmpty ? 'Post de @${post.autorNombre}' : post.titulo, 
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade700)),
+                          ),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 4,
+                              mainAxisSpacing: 4,
+                            ),
+                            itemCount: imagenes.length,
+                            itemBuilder: (context, i) {
+                              return GestureDetector(
+                                onTap: () => Navigator.pop(context, imagenes[i]['id']),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedNetworkImage(
+                                    imageUrl: imagenes[i]['url'],
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const Divider(height: 24),
+                        ],
+                      );
+                    },
+                  ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.grey)),
+        ),
+      ],
     );
   }
 }

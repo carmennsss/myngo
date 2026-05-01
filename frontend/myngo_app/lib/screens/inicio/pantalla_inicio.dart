@@ -386,7 +386,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                       Expanded(
                         flex: 5,
                         child: Container(
-                          padding: EdgeInsets.zero,
+                          padding: EdgeInsets.zero, // Eliminado el padding que causaba el hueco blanco
                           child: (widget.navigationShell != null)
                                     ? widget.navigationShell!
                                     : const Center(child: Text('Error de Navegación 🐾', style: TextStyle(color: Colors.white))),
@@ -398,26 +398,28 @@ class PantallaInicioState extends State<PantallaInicio> {
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOutCubic,
-                    left: _isSidebarOpen ? 320.0 : 0.0,
-                    top: 24.0,
+                    left: _isSidebarOpen ? 308.0 : -12.0, // Centrado sobre el borde
+                    top: 24.0, 
                     child: GestureDetector(
                       onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
                       child: Tooltip(
                         message: _isSidebarOpen ? 'Contraer menú' : 'Expandir menú',
-                        child: Container(
-                          height: 64.0,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          height: 24.0,
                           width: 24.0,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE2B8A0),
-                            borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+                            color: Colors.white,
+                            shape: BoxShape.circle,
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(2, 0))
+                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, spreadRadius: 1)
                             ],
+                            border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 1),
                           ),
                           child: Icon(
                             _isSidebarOpen ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
                             color: const Color(0xFFC35E34),
-                            size: 24,
+                            size: 18,
                           ),
                         ),
                       ),

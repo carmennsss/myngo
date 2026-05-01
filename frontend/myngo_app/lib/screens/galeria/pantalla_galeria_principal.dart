@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../widgets/galeria/masonry_grid_galeria.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_usuarios.dart';
@@ -68,7 +69,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: const Color(0xFFFEF5F1),
       appBar: AppBar(
         title: Text(
           widget.titulo.toUpperCase(),
@@ -78,11 +79,16 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
             fontSize: 18,
           ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFFEF5F1),
         elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
+        titleTextStyle: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF248EA6),
+          indicatorColor: const Color(0xFFC35E34),
+          labelColor: const Color(0xFFC35E34),
+          unselectedLabelColor: Colors.grey,
           labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
           tabs: const [
             Tab(text: 'GALERÍA'),
@@ -92,10 +98,8 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         actions: [
           if (_puedeCrearColeccion)
             IconButton(
-              icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF248EA6)),
-              onPressed: () {
-                // TODO: Subir foto directamente a la galería
-              },
+              icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFFC35E34)),
+              onPressed: () => _subirImagen(),
             ),
         ],
       ),
@@ -114,7 +118,8 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
       ),
       floatingActionButton: _puedeCrearColeccion
           ? FloatingActionButton(
-              backgroundColor: const Color(0xFF248EA6),
+              backgroundColor: const Color(0xFFC35E34),
+              elevation: 4,
               child: const Icon(Icons.create_new_folder_outlined, color: Colors.white),
               onPressed: () => _mostrarDialogoCrearColeccion(),
             )
@@ -124,7 +129,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
 
   Widget _buildColeccionesTab() {
     if (_cargandoColecciones && _colecciones.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF248EA6)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
     }
 
     if (_colecciones.isEmpty) {
@@ -164,23 +169,26 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
       },
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white10),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               coleccion.esPrivada ? Icons.lock_outline : Icons.folder_rounded,
-              color: const Color(0xFFF28B50),
+              color: const Color(0xFFC35E34),
               size: 48,
             ),
             const SizedBox(height: 12),
             Text(
               coleccion.nombreColeccion,
               style: GoogleFonts.outfit(
-                color: Colors.white,
+                color: const Color(0xFF4A4440),
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),
@@ -189,7 +197,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
             Text(
               '${coleccion.numeroImagenes} recursos',
               style: GoogleFonts.outfit(
-                color: Colors.white38,
+                color: Colors.grey.shade500,
                 fontSize: 12,
               ),
             ),
@@ -207,25 +215,27 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          title: Text('Nueva Colección', style: GoogleFonts.outfit(color: Colors.white)),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('Nueva Colección', style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: _nombreCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Color(0xFF4A4440)),
                 decoration: InputDecoration(
                   labelText: 'Nombre de la carpeta',
-                  labelStyle: const TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white12)),
+                  labelStyle: const TextStyle(color: Colors.grey),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
+                  focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFC35E34))),
                 ),
               ),
               const SizedBox(height: 16),
               SwitchListTile(
-                title: Text('¿Privada?', style: GoogleFonts.outfit(color: Colors.white70)),
+                title: Text('¿Privada?', style: GoogleFonts.outfit(color: Colors.grey.shade700)),
                 value: _privada,
-                activeColor: const Color(0xFF248EA6),
+                activeColor: const Color(0xFFC35E34),
                 onChanged: (v) => setDialogState(() => _privada = v),
               ),
             ],
@@ -233,10 +243,15 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.white38)),
+              child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.grey)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC35E34),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
               onPressed: () async {
                 if (_nombreCtrl.text.isNotEmpty) {
                   final resp = await _servicioGaleria.crearColeccion(
@@ -256,5 +271,36 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         ),
       ),
     );
+  }
+
+  Future<void> _subirImagen() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Subiendo imagen... 🐾'), behavior: SnackBarBehavior.floating),
+      );
+      
+      final res = await _servicioGaleria.subirImagenGaleria(
+        image, 
+        comunidadId: widget.comunidadId,
+        esPublica: true
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.mensaje), 
+            backgroundColor: res.exito ? Colors.green : Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        if (res.exito) {
+          _tabController.animateTo(0); // Volver a la pestaña de galería
+          // Se podría forzar un refresh del MasonryGridGaleria si fuera necesario
+        }
+      }
+    }
   }
 }

@@ -14,7 +14,8 @@ class ComunidadSerializer(serializers.ModelSerializer):
         model = Comunidad
         fields = [
             'id', 'nombre', 'descripcion', 'creador', 'creador_nombre',
-            'url_portada', 'es_publica', 'es_verificada', 'rating_medio', 
+            'url_portada', 'url_avatar', 'url_fondo', 'fondo_posts_config', 'fuente_comunidad', 
+            'es_publica', 'es_verificada', 'rating_medio', 
             'min_rating_acceso', 'color_tema', 'fecha_creacion', 'es_miembro', 'es_pendiente',
             'conteo_pendiente_admin', 'mi_rol', 'miembros_count',
             'tienda_habilitada'
@@ -106,13 +107,18 @@ class ComunidadSerializer(serializers.ModelSerializer):
         The ImageField.url property returns the full URL from the configured storage backend.
         """
         data = super().to_representation(instance)
-        if instance.url_portada:
-            try:
-                data['url_portada'] = instance.url_portada.url
-            except Exception:
-                data['url_portada'] = ''
-        else:
-            data['url_portada'] = ''
+        
+        # Procesar URLs de imágenes
+        for field in ['url_portada', 'url_avatar', 'url_fondo']:
+            img_field = getattr(instance, field, None)
+            if img_field:
+                try:
+                    data[field] = img_field.url
+                except Exception:
+                    data[field] = ''
+            else:
+                data[field] = ''
+                
         return data
 
 
