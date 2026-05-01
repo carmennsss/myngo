@@ -348,44 +348,73 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
       _estadoGatos = EstadoMonstruo.calculando;
       _notificarCambioGato();
 
-      final respuesta = await _servicioUsuarios.iniciarSesion(
-        _controladorEmail.text,
-        _controladorPassword.text,
-      );
+      try {
+        final respuesta = await _servicioUsuarios.iniciarSesion(
+          _controladorEmail.text,
+          _controladorPassword.text,
+        );
 
-      _estaCargando.value = false;
-
-      if (!mounted) return;
-
-      if (respuesta.exito) {
-        final prefs = await SharedPreferences.getInstance();
-        if (_recordarme) {
-          await prefs.setString('recordar_email', _controladorEmail.text);
-          await prefs.setString('recordar_pass', _controladorPassword.text);
-        } else {
-          await prefs.remove('recordar_email');
-          await prefs.remove('recordar_pass');
-        }
+        _estaCargando.value = false;
 
         if (!mounted) return;
-        _estadoGatos = EstadoMonstruo.feliz;
-        _notificarCambioGato();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(respuesta.mensaje),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
-        context.go('/inicio');
-      } else {
+
+        if (respuesta.exito) {
+          final prefs = await SharedPreferences.getInstance();
+          if (_recordarme) {
+            await prefs.setString('recordar_email', _controladorEmail.text);
+            await prefs.setString('recordar_pass', _controladorPassword.text);
+          } else {
+            await prefs.remove('recordar_email');
+            await prefs.remove('recordar_pass');
+          }
+
+          if (!mounted) return;
+          _estadoGatos = EstadoMonstruo.feliz;
+          _notificarCambioGato();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(respuesta.mensaje),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          );
+          context.go('/inicio');
+        } else {
+          setState(() {
+            _estadoGatos = EstadoMonstruo.triste;
+          });
+          _notificarCambioGato();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(respuesta.mensaje),
+              backgroundColor: const Color(0xFFD95F43),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          );
+          
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _estadoGatos = EstadoMonstruo.inactivo;
+              });
+              _notificarCambioGato();
+            }
+          });
+        }
+      } catch (e) {
+        _estaCargando.value = false;
+        if (!mounted) return;
+        
         setState(() {
           _estadoGatos = EstadoMonstruo.triste;
         });
+        _notificarCambioGato();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(respuesta.mensaje),
+            content: const Text('Error de conexión. Inténtalo de nuevo.'),
             backgroundColor: const Color(0xFFD95F43),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -397,6 +426,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             setState(() {
               _estadoGatos = EstadoMonstruo.inactivo;
             });
+            _notificarCambioGato();
           }
         });
       }
@@ -408,6 +438,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           setState(() {
             _estadoGatos = EstadoMonstruo.inactivo;
           });
+          _notificarCambioGato();
         }
       });
     }

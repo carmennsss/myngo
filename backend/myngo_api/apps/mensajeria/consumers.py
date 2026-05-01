@@ -187,7 +187,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         mensajes = MensajeChat.objects.filter(
             sala_id=self.room_id,
             es_leido=False
-        ).exclude(emisor=self.user)
+        ).exclude(emisor_id=self.user.id)
         
         count = mensajes.count()
         if count > 0:
@@ -293,6 +293,18 @@ class PresenceConsumer(AsyncWebsocketConsumer):
         
         if message_type == 'heartbeat':
             await self.actualizar_heartbeat()
+            # Limpiar fantasmas en cada heartbeat y notificar al grupo
+            fantasmas_ids = await self.limpiar_fantasmas()
+            for f_id in fantasmas_ids:
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        'type': 'status_change',
+                        'user_id': f_id,
+                        'status': 'DESCONECTADO',
+                        'last_seen': timezone.now().isoformat()
+                    }
+                )
         elif message_type == 'change_status':
             new_status = data.get('status')
             if new_status in ['ACTIVO', 'OCUPADO']:
@@ -348,6 +360,19 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             return perfil.estado
         except Exception:
             return 'DESCONECTADO'
+
+    @database_sync_to_async
+    def limpiar_fantasmas(self):
+        """Busca usuarios inactivos por más de 2 min, los desconecta y retorna sus IDs."""
+        try:
+            umbral = timezone.now() - timezone.timedelta(minutes=2)
+            fantasmas = Perfil.objects.filter(esta_online=True, last_seen__lt=umbral)
+            fantasmas_ids = list(fantasmas.values_list('usuario_id', flat=True))
+            if fantasmas_ids:
+                fantasmas.update(esta_online=False, estado='DESCONECTADO')
+            return fantasmas_ids
+        except Exception:
+            return []
 
     @database_sync_to_async
     def get_online_user_ids(self):
