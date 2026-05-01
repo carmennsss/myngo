@@ -266,11 +266,43 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        if data.get('type') == 'heartbeat':
-            pass
+        message_type = data.get('type')
+        
+        if message_type == 'heartbeat':
+            await self.actualizar_heartbeat()
+        elif message_type == 'change_status':
+            new_status = data.get('status')
+            if new_status in ['ACTIVO', 'OCUPADO']:
+                estado_actual = await self.actualizar_estado(new_status)
+                # Notificar a todos el cambio (incluido al remitente para confirmación)
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        'type': 'status_change',
+                        'user_id': self.user.id,
+                        'status': estado_actual
+                    }
+                )
 
     async def status_change(self, event):
         await self.send(text_data=json.dumps(event))
+
+    @database_sync_to_async
+    def actualizar_estado(self, new_status):
+        try:
+            perfil = Perfil.objects.get(usuario=self.user)
+            perfil.estado = new_status
+            perfil.save()
+            return perfil.estado
+        except Exception:
+            return 'DESCONECTADO'
+
+    @database_sync_to_async
+    def actualizar_heartbeat(self):
+        try:
+            Perfil.objects.filter(usuario=self.user).update(last_seen=timezone.now(), esta_online=True)
+        except Exception:
+            pass
 
     @database_sync_to_async
     def establecer_usuario_online(self, is_online):
@@ -278,6 +310,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             # Obtenemos el perfil fresco de la BD
             perfil = Perfil.objects.get(usuario=self.user)
             perfil.esta_online = is_online
+            perfil.last_seen = timezone.now()
             
             if is_online:
                 # Si se conecta y NO está ocupado, pasa a ACTIVO
@@ -296,6 +329,13 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_online_user_ids(self):
         """Retorna la lista de IDs de usuarios actualmente online según la BD."""
+        # Limpieza perezosa de fantasmas (usuarios sin señales en más de 2 minutos)
+        try:
+            umbral = timezone.now() - timezone.timedelta(minutes=2)
+            Perfil.objects.filter(esta_online=True, last_seen__lt=umbral).update(esta_online=False, estado='DESCONECTADO')
+        except Exception:
+            pass
+            
         return list(Perfil.objects.filter(esta_online=True).values_list('usuario_id', flat=True))
 
 

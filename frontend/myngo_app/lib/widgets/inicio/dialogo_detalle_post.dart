@@ -119,7 +119,8 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                 avatarUrl: widget.post.autorFoto,
                                 marcoUrl: widget.post.autorMarco,
                                 fondoUrl: widget.post.autorFondo ?? widget.post.autorEstiloPost?['url_fondo'],
-                                puntos: 0,
+                                estado: widget.post.autorEstado ?? 'DESCONECTADO',
+                                userId: widget.post.autorId,
                                 onTap: () {
                                   Navigator.pop(context);
                                   context.go('/inicio/perfiles/${widget.post.autorId}');

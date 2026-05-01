@@ -12,9 +12,9 @@ import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../services/servicio_galeria.dart';
 import '../../widgets/selector_estrellas.dart';
+import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/menu_opciones_contenido.dart';
 import '../../widgets/comunes/detalle_publicacion_sheet.dart';
-import '../inicio/pantalla_inicio.dart';
 import '../galeria/pantalla_galeria_principal.dart';
 import '../../models/publicacion.dart';
 import 'package:image_picker/image_picker.dart';
@@ -547,21 +547,75 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                               Positioned(
                                 bottom: 15,
                                 right: 15,
-                                child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: colorCard, width: 4),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
+                                child: Builder(
+                                  builder: (context) {
+                                    String displayEstado = usuario.estado ?? 'DESCONECTADO';
+                                    try {
+                                      final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                      if (inicioState != null && inicioState.miId == usuario.id) {
+                                        displayEstado = inicioState.miEstado;
+                                      }
+                                    } catch (_) {}
+                                    
+                                    return MouseRegion(
+                                      cursor: usuario.id == _currentUserId ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                                      child: GestureDetector(
+                                        onTapDown: usuario.id == _currentUserId ? (details) {
+                                          final position = details.globalPosition;
+                                          showMenu<String>(
+                                            context: context,
+                                            position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                                            color: Colors.white,
+                                            elevation: 10,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                            items: [
+                                              PopupMenuItem(
+                                                value: 'ACTIVO',
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                                    const SizedBox(width: 8),
+                                                    Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuItem(
+                                                value: 'OCUPADO',
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                                    const SizedBox(width: 8),
+                                                    Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ).then((nuevoEstado) {
+                                            if (nuevoEstado != null) {
+                                              final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                              inicioState?.cambiarEstado(nuevoEstado);
+                                            }
+                                          });
+                                        } : null,
+                                        child: Container(
+                                          width: 24,
+                                          height: 24,
+                                          decoration: BoxDecoration(
+                                            color: _getColorEstado(displayEstado),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: colorCard, width: 4),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.2),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
                               ),
                             ],
@@ -626,28 +680,94 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
                             ),
                             const SizedBox(height: 4),
                             // Etiqueta de estado
-                            Row(
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
-                                    shape: BoxShape.circle,
+                            Builder(
+                              builder: (context) {
+                                String displayEstado = usuario.estado ?? 'DESCONECTADO';
+                                try {
+                                  final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                  if (inicioState != null && inicioState.miId == usuario.id) {
+                                    displayEstado = inicioState.miEstado;
+                                  }
+                                } catch (_) {}
+                                
+                                return MouseRegion(
+                                  cursor: usuario.id == _currentUserId ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                                  child: GestureDetector(
+                                    onTapDown: usuario.id == _currentUserId ? (details) {
+                                      final position = details.globalPosition;
+                                      showMenu<String>(
+                                        context: context,
+                                        position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                                        color: Colors.white,
+                                        elevation: 10,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        items: [
+                                          PopupMenuItem(
+                                            value: 'ACTIVO',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                                const SizedBox(width: 8),
+                                                Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'OCUPADO',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                                const SizedBox(width: 8),
+                                                Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ).then((nuevoEstado) {
+                                        if (nuevoEstado != null) {
+                                          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                          inicioState?.cambiarEstado(nuevoEstado);
+                                        }
+                                      });
+                                    } : null,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _getColorEstado(displayEstado).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: _getColorEstado(displayEstado),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            displayEstado == 'ACTIVO' 
+                                                ? 'Activo' 
+                                                : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w900,
+                                              color: _getColorEstado(displayEstado),
+                                            ),
+                                          ),
+                                          if (usuario.id == _currentUserId) ...[
+                                            const SizedBox(width: 4),
+                                            Icon(Icons.keyboard_arrow_down_rounded, color: _getColorEstado(displayEstado).withOpacity(0.5), size: 16),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  usuario.estado == 'ACTIVO' 
-                                      ? 'Activo' 
-                                      : (usuario.estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _getColorEstado(usuario.estado ?? 'DESCONECTADO').withOpacity(0.8),
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -1535,7 +1655,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil> with Sing
       case 'ACTIVO':
         return Colors.greenAccent;
       case 'OCUPADO':
-        return Colors.amber;
+        return Colors.redAccent;
       case 'DESCONECTADO':
       default:
         return Colors.grey.shade400;

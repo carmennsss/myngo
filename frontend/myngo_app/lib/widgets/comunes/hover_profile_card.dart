@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/usuario.dart';
+import '../../screens/inicio/pantalla_inicio.dart';
 
 class HoverProfileCard extends StatefulWidget {
   final Widget child;
@@ -11,6 +12,7 @@ class HoverProfileCard extends StatefulWidget {
   final String? fondoUrl;
   final int puntos;
   final String estado;
+  final int? userId;
   final VoidCallback onTap;
 
   const HoverProfileCard({
@@ -22,6 +24,7 @@ class HoverProfileCard extends StatefulWidget {
     this.fondoUrl,
     this.puntos = 0,
     this.estado = 'DESCONECTADO',
+    this.userId,
     required this.onTap,
   });
 
@@ -149,18 +152,32 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                                           : null,
                                     ),
                                   ),
-                                  Positioned(
-                                    bottom: 4,
-                                    right: 4,
-                                    child: Container(
-                                      width: 16,
-                                      height: 16,
-                                      decoration: BoxDecoration(
-                                        color: _getColorEstado(widget.estado),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 3),
-                                      ),
-                                    ),
+                                  Builder(
+                                    builder: (context) {
+                                      String displayEstado = widget.estado;
+                                      try {
+                                        final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                        if (inicioState != null && widget.userId != null && inicioState.miId == widget.userId) {
+                                          displayEstado = inicioState.miEstado;
+                                        } else if (inicioState != null && widget.nombre == inicioState.miNombre) {
+                                          displayEstado = inicioState.miEstado;
+                                        }
+                                      } catch (_) {}
+
+                                      return Positioned(
+                                        bottom: 4,
+                                        right: 4,
+                                        child: Container(
+                                          width: 16,
+                                          height: 16,
+                                          decoration: BoxDecoration(
+                                            color: _getColorEstado(displayEstado),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 3),
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   ),
                                 ],
                               ),
@@ -168,21 +185,36 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                             const SizedBox(width: 12),
                             Padding(
                               padding: const EdgeInsets.only(bottom: 10),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: _getColorEstado(widget.estado).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: _getColorEstado(widget.estado).withOpacity(0.2)),
-                                ),
-                                child: Text(
-                                  widget.estado == 'ACTIVO' ? 'Online' : (widget.estado == 'OCUPADO' ? 'Ocupado' : 'Offline'),
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                    color: _getColorEstado(widget.estado).withOpacity(0.8),
-                                  ),
-                                ),
+                              child: Builder(
+                                builder: (context) {
+                                  // Sincronizar con el estado live si es el usuario actual
+                                  String displayEstado = widget.estado;
+                                  try {
+                                    final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                                    if (inicioState != null && widget.userId != null && inicioState.miId == widget.userId) {
+                                      displayEstado = inicioState.miEstado;
+                                    } else if (inicioState != null && widget.nombre == inicioState.miNombre) {
+                                      displayEstado = inicioState.miEstado;
+                                    }
+                                  } catch (_) {}
+
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _getColorEstado(displayEstado).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: _getColorEstado(displayEstado).withOpacity(0.2)),
+                                    ),
+                                    child: Text(
+                                      displayEstado == 'ACTIVO' ? 'Activo' : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        color: _getColorEstado(displayEstado).withOpacity(0.8),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],
@@ -286,7 +318,7 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
       case 'ACTIVO':
         return Colors.greenAccent;
       case 'OCUPADO':
-        return Colors.amber;
+        return Colors.redAccent;
       case 'DESCONECTADO':
       default:
         return Colors.grey.shade400;

@@ -44,7 +44,7 @@ class ComentarioItem extends StatelessWidget {
             avatarUrl: comentario.autorFoto,
             marcoUrl: comentario.autorMarco,
             fondoUrl: comentario.autorFondo,
-            puntos: 0,
+            userId: comentario.autorId,
             onTap: () {
               if (Navigator.canPop(context)) {
                 Navigator.pop(context);

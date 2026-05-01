@@ -139,6 +139,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   marcoUrl: widget.post.autorMarco,
                   puntos: 0,
                   estado: widget.post.autorEstado ?? 'DESCONECTADO',
+                  userId: widget.post.autorId,
                   onTap: () {
                     if (widget.onProfileSelected != null) {
                       widget.onProfileSelected!(Usuario(
@@ -303,7 +304,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       case 'ACTIVO':
         return Colors.greenAccent;
       case 'OCUPADO':
-        return Colors.amber;
+        return Colors.redAccent;
       case 'DESCONECTADO':
       default:
         return Colors.grey.shade400;

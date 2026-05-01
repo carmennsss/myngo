@@ -21,6 +21,7 @@ class CabeceraPro extends StatelessWidget {
   final int mensajesSinLeer;
   final ValueChanged<int> onNavSelected;
   final Function(Usuario)? onProfileSelected;
+  final Function(String)? onStatusChanged;
 
   const CabeceraPro({
     super.key,
@@ -36,6 +37,7 @@ class CabeceraPro extends StatelessWidget {
     this.mensajesSinLeer = 0,
     required this.onNavSelected,
     this.onProfileSelected,
+    this.onStatusChanged,
   });
 
   @override
@@ -122,6 +124,7 @@ class CabeceraPro extends StatelessWidget {
             miId: miId,
             estado: estado,
             onProfileSelected: onProfileSelected,
+            onStatusChanged: onStatusChanged,
             puntos: puntos,
             isMobile: isMobile,
           ),
@@ -187,6 +190,7 @@ class _UserProfileHeader extends StatelessWidget {
   final int? puntos;
   final String estado;
   final Function(Usuario)? onProfileSelected;
+  final Function(String)? onStatusChanged;
   final bool isMobile;
 
   const _UserProfileHeader({
@@ -196,6 +200,7 @@ class _UserProfileHeader extends StatelessWidget {
     required this.estaLogueado, 
     this.miId, 
     this.onProfileSelected, 
+    this.onStatusChanged,
     this.puntos,
     this.estado = 'DESCONECTADO',
     this.isMobile = false,
@@ -309,9 +314,68 @@ class _UserProfileHeader extends StatelessWidget {
                     children: [
                       Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
                       const SizedBox(width: 6),
-                      Text(
-                        estado == 'ACTIVO' ? 'Activo' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-                        style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.w600),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTapDown: (details) {
+                            final position = details.globalPosition;
+                            showMenu<String>(
+                              context: context,
+                              position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+                              color: Colors.white,
+                              elevation: 10,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              items: [
+                                PopupMenuItem(
+                                  value: 'ACTIVO',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
+                                      const SizedBox(width: 8),
+                                      Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'OCUPADO',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.circle, color: Colors.redAccent, size: 12),
+                                      const SizedBox(width: 8),
+                                      Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ).then((nuevoEstado) {
+                              if (nuevoEstado != null && onStatusChanged != null) {
+                                onStatusChanged!(nuevoEstado);
+                              }
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  estado == 'ACTIVO' ? 'Activo' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white, 
+                                    fontSize: 10, 
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 12),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -341,7 +405,7 @@ class _UserProfileHeader extends StatelessWidget {
       case 'ACTIVO':
         return Colors.greenAccent;
       case 'OCUPADO':
-        return Colors.amber;
+        return Colors.redAccent;
       case 'DESCONECTADO':
       default:
         return Colors.grey.shade400;
