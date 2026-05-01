@@ -58,9 +58,9 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     if (_cargando && _offset > 0) return;
     setState(() => _cargando = true);
     final res = await _servicio.obtenerGaleria(
-      coleccionId: _coleccion.id,
-      limit: 30,
-      offset: _offset,
+      idColeccion: _coleccion.id,
+      limite: 30,
+      desplazamiento: _offset,
     );
     if (mounted) {
       setState(() {
@@ -78,8 +78,8 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
   Future<void> _quitarImagen(ImagenGaleria imagen) async {
     setState(() => _procesando = true);
     final res = await _servicio.gestionarImagenEnColeccion(
-      coleccionId: _coleccion.id,
-      imagenId: imagen.id,
+      idColeccion: _coleccion.id,
+      idImagen: imagen.id,
       agregar: false,
     );
     if (mounted) {
@@ -136,7 +136,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     if (confirm != true || !mounted) return;
 
     setState(() => _procesando = true);
-    final res = await _servicio.eliminarColeccion(coleccionId: _coleccion.id);
+    final res = await _servicio.eliminarColeccion(idColeccion: _coleccion.id);
     if (mounted) {
       setState(() => _procesando = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -160,7 +160,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     // 1. Subir a la galería general de la comunidad (o perfil)
     final resSubida = await _servicio.subirImagenGaleria(
       image,
-      comunidadId: _coleccion.comunidadId,
+      idComunidad: _coleccion.comunidadId,
       esPublica: !_coleccion.esPrivada,
     );
 
@@ -168,8 +168,8 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
       if (resSubida.exito && resSubida.datos != null) {
         // 2. Vincular a esta colección específica
         final resVinculo = await _servicio.gestionarImagenEnColeccion(
-          coleccionId: _coleccion.id,
-          imagenId: resSubida.datos!.id,
+          idColeccion: _coleccion.id,
+          idImagen: resSubida.datos!.id,
           agregar: true,
         );
         
@@ -218,8 +218,8 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     if (imagenId != null && mounted) {
       setState(() => _procesando = true);
       final res = await _servicio.gestionarImagenEnColeccion(
-        coleccionId: _coleccion.id,
-        imagenId: imagenId,
+        idColeccion: _coleccion.id,
+        idImagen: imagenId,
         agregar: true,
       );
       
@@ -494,7 +494,7 @@ class _DialogoSelectorImagenPostState extends State<_DialogoSelectorImagenPost> 
   }
 
   Future<void> _cargarPosts() async {
-    final res = await _servicioComunidades.obtenerPublicaciones(widget.comunidadId);
+    final res = await _servicioComunidades.obtenerPublicacionesComunidad(widget.comunidadId);
     if (mounted) {
       setState(() {
         // Filtrar solo posts que tengan al menos una imagen con ID

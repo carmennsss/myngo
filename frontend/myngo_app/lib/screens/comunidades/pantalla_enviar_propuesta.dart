@@ -61,11 +61,11 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
 
     setState(() => _enviando = true);
     
-    final res = await ServicioMejoras().enviarPeticionMejora(
-      comunidadId: widget.comunidad.id,
-      tipo: _tipoSeleccionado,
-      filePath: _imagenSeleccionada!.path,
-      bytes: _webImageBytes,
+    final res = await ServicioMejoras().enviarPropuestaMejora(
+      idComunidad: widget.comunidad.id,
+      tipoArticulo: _tipoSeleccionado,
+      rutaArchivo: _imagenSeleccionada!.path,
+      bytesWeb: _webImageBytes,
       precioSugerido: int.tryParse(_precioController.text) ?? 0,
     );
 

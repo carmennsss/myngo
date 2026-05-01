@@ -46,7 +46,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
   Future<void> _cargarPublicacion() async {
     if (widget.publicacionId == null) return;
     setState(() { _cargando = true; _error = null; });
-    final res = await _servicioComunidades.obtenerPublicacion(widget.publicacionId!);
+    final res = await _servicioComunidades.obtenerDetallePublicacion(widget.publicacionId!);
     if (mounted) {
       setState(() {
         _cargando = false;

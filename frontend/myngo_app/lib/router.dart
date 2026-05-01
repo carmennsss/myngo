@@ -117,7 +117,7 @@ class _PostLoader extends StatelessWidget {
       return PantallaDetallePost(post: extra!, onBack: onBack);
     }
     return FutureBuilder(
-      future: ServicioComunidades().obtenerPublicacion(postId),
+      future: ServicioComunidades().obtenerDetallePublicacion(postId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(

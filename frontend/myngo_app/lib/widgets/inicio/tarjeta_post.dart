@@ -63,7 +63,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       widget.post.likesCount = _likesCount;
     });
 
-    final res = await _servicioInteraccion.toggleLike(widget.post.id);
+    final res = await _servicioInteraccion.alternarMeGusta(widget.post.id);
     if (!res.exito && mounted) {
       setState(() {
         _dioLike = !_dioLike;
@@ -83,7 +83,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       widget.post.usuarioGuardoPost = _estaGuardado;
     });
 
-    final res = await _servicioInteraccion.toggleGuardado(widget.post.id);
+    final res = await _servicioInteraccion.alternarGuardado(widget.post.id);
     if (!res.exito && mounted) {
       setState(() {
         _estaGuardado = !_estaGuardado;

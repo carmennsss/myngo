@@ -52,11 +52,11 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     });
 
     final respuesta = await _servicioGaleria.obtenerGaleria(
-      comunidadId: widget.comunidadId,
-      usuarioId: widget.usuarioId,
-      coleccionId: widget.coleccionId,
-      limit: _limit,
-      offset: _offset,
+      idComunidad: widget.comunidadId,
+      idUsuario: widget.usuarioId,
+      idColeccion: widget.coleccionId,
+      limite: _limit,
+      desplazamiento: _offset,
     );
 
     if (respuesta.exito && respuesta.datos != null && mounted) {
@@ -89,7 +89,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
       
       final res = await _servicioGaleria.subirImagenGaleria(
         pickedFile,
-        comunidadId: widget.comunidadId,
+        idComunidad: widget.comunidadId,
       );
 
       if (res.exito && mounted) {
@@ -97,8 +97,8 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         final nuevaImagen = res.datos!;
         if (widget.coleccionId != null) {
           await _servicioGaleria.gestionarImagenEnColeccion(
-            coleccionId: widget.coleccionId!, 
-            imagenId: nuevaImagen.id, 
+            idColeccion: widget.coleccionId!, 
+            idImagen: nuevaImagen.id, 
             agregar: true
           );
         }
@@ -280,8 +280,8 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
 
     if (seleccionada != null && widget.coleccionId != null) {
       final res = await _servicioGaleria.gestionarImagenEnColeccion(
-        coleccionId: widget.coleccionId!, 
-        imagenId: seleccionada.id, 
+        idColeccion: widget.coleccionId!, 
+        idImagen: seleccionada.id, 
         agregar: true
       );
 
@@ -346,7 +346,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                     final res = await _servicioGaleria.crearColeccion(
                       nombre: nombreCtrl.text,
                       esPrivada: esPrivada,
-                      comunidadId: widget.comunidadId,
+                      idComunidad: widget.comunidadId,
                     );
                     if (mounted) {
                       Navigator.pop(context);
