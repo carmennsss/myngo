@@ -22,7 +22,6 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   List<dynamic> _misMejoras = [];
   String? _errorMensaje;
   
-  // Variables para la previsualización
   String? _previewAvatar;
   String? _previewMarco;
   String? _previewFondo;
@@ -121,44 +120,83 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // --- SECCIÓN DE PREVISUALIZACIÓN ---
+          // --- SECCIÓN DE PREVISUALIZACIÓN COMPACTA ---
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
             ),
             child: Column(
               children: [
-                Text(
-                  'VISTA PREVIA',
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ProfilePreview(
-                  fondoUrl: _previewFondo,
-                  avatarUrl: _previewAvatar,
-                  marcoUrl: _previewMarco,
-                  nombreUsuario: _nombreUsuario,
-                  puntos: _puntos,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.remove_red_eye_rounded, size: 12, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text(
+                      'VISTA PREVIA',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
-                PostPreview(
-                  estilo: _previewEstilo,
-                  avatarUrl: _previewAvatar,
-                  marcoUrl: _previewMarco,
-                  nombreUsuario: _nombreUsuario,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bool esAncho = constraints.maxWidth > 600;
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Transform.scale(
+                            scale: esAncho ? 1.0 : 0.85,
+                            child: ProfilePreview(
+                              fondoUrl: _previewFondo,
+                              avatarUrl: _previewAvatar,
+                              marcoUrl: _previewMarco,
+                              nombreUsuario: _nombreUsuario,
+                              puntos: _puntos,
+                            ),
+                          ),
+                        ),
+                        if (esAncho) const SizedBox(width: 20),
+                        if (esAncho)
+                          Expanded(
+                            child: PostPreview(
+                              estilo: _previewEstilo,
+                              avatarUrl: _previewAvatar,
+                              marcoUrl: _previewMarco,
+                              nombreUsuario: _nombreUsuario,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                // En móvil, si no es ancho, mostramos el post preview debajo pero también pequeño
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth > 600) return const SizedBox.shrink();
+                    return Column(
+                      children: [
+                        const SizedBox(height: 4),
+                        Transform.scale(
+                          scale: 0.85,
+                          child: PostPreview(
+                            estilo: _previewEstilo,
+                            avatarUrl: _previewAvatar,
+                            marcoUrl: _previewMarco,
+                            nombreUsuario: _nombreUsuario,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

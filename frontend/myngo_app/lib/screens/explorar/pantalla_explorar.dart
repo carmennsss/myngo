@@ -100,7 +100,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
               SliverToBoxAdapter(
                 child: Container(
                   color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
+                  padding: const EdgeInsets.fromLTRB(28, 8, 28, 8), // Más compacto
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -110,7 +110,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                           Text(
                             'EXPLORAR MUNDOS',
                             style: GoogleFonts.outfit(
-                              fontSize: 24,
+                              fontSize: 18, // Reducido de 24
                               fontWeight: FontWeight.w900,
                               color: const Color(0xFF4A4440),
                               letterSpacing: 0.5,
@@ -138,7 +138,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                           _buildPestana('PERFILES', 1),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
 
                       // Barra de Búsqueda
                       TextField(

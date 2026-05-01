@@ -28,7 +28,8 @@ class PreviewHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 comunidad.nombre,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.getFont(
+                  comunidad.fuenteComunidad ?? 'Outfit',
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   color: colorTextoPrincipal,
@@ -36,7 +37,10 @@ class PreviewHeader extends StatelessWidget {
                 ),
               ),
             ),
-            _ChipPrivacidad(esPublica: comunidad.esPublica),
+            _ChipPrivacidad(
+              esPublica: comunidad.esPublica,
+              fuente: comunidad.fuenteComunidad,
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -59,7 +63,8 @@ class PreviewHeader extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     'Por ${comunidad.creadorNombre}',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.getFont(
+                      comunidad.fuenteComunidad ?? 'Outfit',
                       color: colorTextoPrincipal,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -84,7 +89,8 @@ class PreviewHeader extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${comunidad.miembrosCount} Miembros',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.getFont(
+                      comunidad.fuenteComunidad ?? 'Outfit',
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                       color: colorTextoPrincipal,
@@ -100,7 +106,8 @@ class PreviewHeader extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   comunidad.ratingMedio.toStringAsFixed(1),
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.getFont(
+                    comunidad.fuenteComunidad ?? 'Outfit',
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
                     color: colorTextoPrincipal,
@@ -117,8 +124,9 @@ class PreviewHeader extends StatelessWidget {
 
 class _ChipPrivacidad extends StatelessWidget {
   final bool esPublica;
+  final String? fuente;
 
-  const _ChipPrivacidad({required this.esPublica});
+  const _ChipPrivacidad({required this.esPublica, this.fuente});
 
   @override
   Widget build(BuildContext context) {
@@ -145,14 +153,15 @@ class _ChipPrivacidad extends StatelessWidget {
             color: esPublica ? const Color(0xFF248EA6) : const Color(0xFFF28B50),
           ),
           const SizedBox(width: 6),
-          Text(
-            esPublica ? 'Pública' : 'Privada',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+            Text(
+              esPublica ? 'Pública' : 'Privada',
+              style: GoogleFonts.getFont(
+                fuente ?? 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
             ),
-          ),
         ],
       ),
     );

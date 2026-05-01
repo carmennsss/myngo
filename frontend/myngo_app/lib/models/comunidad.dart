@@ -8,6 +8,10 @@ class Comunidad {
   final int? creadorId;
   final String creadorNombre;
   final String urlPortada;
+  final String? urlAvatar;
+  final String? urlFondo;
+  final Map<String, dynamic>? fondoPostsConfig;
+  final String? fuenteComunidad;
   final bool esPublica;
   final bool esVerificada;
   bool esMiembro;
@@ -28,6 +32,10 @@ class Comunidad {
     this.creadorId,
     required this.creadorNombre,
     required this.urlPortada,
+    this.urlAvatar,
+    this.urlFondo,
+    this.fondoPostsConfig,
+    this.fuenteComunidad,
     required this.esPublica,
     required this.esVerificada,
     required this.esMiembro,
@@ -56,6 +64,10 @@ class Comunidad {
         creadorId: int.tryParse(json['creador']?.toString() ?? ''),
         creadorNombre: json['creador_nombre']?.toString() ?? 'Sistema',
         urlPortada: json['url_portada']?.toString() ?? '',
+        urlAvatar: json['url_avatar']?.toString(),
+        urlFondo: json['url_fondo']?.toString(),
+        fondoPostsConfig: json['fondo_posts_config'] as Map<String, dynamic>?,
+        fuenteComunidad: json['fuente_comunidad']?.toString(),
         esPublica: json['es_publica'] != false,
         esVerificada: json['es_verificada'] == true,
         esMiembro: json['es_miembro'] == true,
@@ -79,6 +91,10 @@ class Comunidad {
         descripcion: '',
         creadorNombre: 'Sistema',
         urlPortada: '',
+        urlAvatar: null,
+        urlFondo: null,
+        fondoPostsConfig: null,
+        fuenteComunidad: null,
         esPublica: true,
         esVerificada: false,
         esMiembro: false,
@@ -100,6 +116,11 @@ class Comunidad {
       'nombre': nombre,
       'descripcion': descripcion,
       'url_portada': urlPortada,
+      // Los campos de imágenes (urlAvatar, urlFondo) y config (fondoPostsConfig, fuente)
+      // se envían vía multipart/form-data o PATCH separado en el servicio,
+      // pero podemos incluir la fuente y JSON aquí si es necesario:
+      if (fondoPostsConfig != null) 'fondo_posts_config': fondoPostsConfig,
+      if (fuenteComunidad != null) 'fuente_comunidad': fuenteComunidad,
       'es_publica': esPublica,
       'min_rating_acceso': minRatingAcceso,
       'color_tema': '#${colorTema.value.toRadixString(16).substring(2).toUpperCase()}',
