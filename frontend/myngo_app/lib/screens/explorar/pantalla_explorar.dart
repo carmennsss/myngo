@@ -221,14 +221,17 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
       );
     }
     
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 600;
+
     return SliverPadding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 280,
-          childAspectRatio: 0.82,
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 20,
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: isMobile ? width : 280,
+          childAspectRatio: isMobile ? 1.4 : 0.82,
+          crossAxisSpacing: isMobile ? 12 : 20,
+          mainAxisSpacing: isMobile ? 12 : 20,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) => TarjetaComunidad(

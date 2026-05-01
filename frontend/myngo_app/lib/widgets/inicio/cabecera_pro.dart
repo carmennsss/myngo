@@ -325,8 +325,11 @@ class _UserProfileHeader extends StatelessWidget {
               const SizedBox(width: 8),
               const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 20),
             ],
-            if (isMobile)
-              const SizedBox(width: 4), // Solo un poco de espacio extra si es móvil para que no se pegue al borde del contenedor
+            if (isMobile) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 4),
+            ],
           ],
         ),
       ),
