@@ -186,7 +186,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           bottom: 16,
           right: 16,
           child: FloatingActionButton(
-            heroTag: 'fab_dual_masonry_${widget.coleccionId ?? widget.comunidadId ?? 'gen'}',
+            heroTag: 'fab_dual_masonry_${widget.coleccionId ?? widget.comunidadId ?? widget.usuarioId ?? 'gen'}_${identityHashCode(this)}',
             backgroundColor: _subiendo ? Colors.grey : const Color(0xFF248EA6),
             onPressed: _subiendo ? null : () => _mostrarMenuOpciones(context),
             child: _subiendo 
@@ -312,9 +312,10 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         builder: (context, setModalState) => Container(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
           decoration: const BoxDecoration(color: Color(0xFF1E1E1E), borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Text('Nueva Colección', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 24),
               TextField(
@@ -365,8 +366,9 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTile(ImagenGaleria item, double aspect) {
     return GestureDetector(

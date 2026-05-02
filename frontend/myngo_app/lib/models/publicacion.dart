@@ -11,8 +11,8 @@ class Publicacion {
   final int comunidadId;
   final String comunidadNombre;
   final int? creadorComunidadId;
-  final String titulo;
-  final String contenidoTexto;
+  String titulo;
+  String contenidoTexto;
 
   /// URL de la imagen principal (si existe).
   final String? urlImagen;

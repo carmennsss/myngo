@@ -320,6 +320,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     return Scaffold(
       backgroundColor: const Color(0xFFFEF5F1),
       floatingActionButton: _puedeEditar ? FloatingActionButton(
+        heroTag: 'fab_detalle_col_${_coleccion.id}',
         onPressed: _mostrarSelectorOrigenImagen,
         backgroundColor: const Color(0xFFC35E34),
         child: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),

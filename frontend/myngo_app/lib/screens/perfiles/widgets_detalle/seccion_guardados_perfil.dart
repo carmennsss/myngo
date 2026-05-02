@@ -115,6 +115,7 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
       colecciones: widget.colecciones,
       estaCargando: widget.estaCargandoColecciones,
       onRefresh: widget.onRefreshColecciones,
+      esPropietario: true,
     );
   }
 

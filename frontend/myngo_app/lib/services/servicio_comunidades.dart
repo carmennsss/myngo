@@ -110,6 +110,28 @@ class ServicioComunidades {
     }
   }
 
+  /// Obtiene la lista de miembros de una comunidad con sus roles.
+  Future<RespuestaApi<List<Map<String, dynamic>>>> obtenerMiembrosComunidad(int idComunidad) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlComunidades$idComunidad/miembros/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Miembros cargados',
+          datos: List<Map<String, dynamic>>.from(datos),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar miembros');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Solicita el acceso o se une directamente a una comunidad.
   Future<RespuestaApi<Map<String, dynamic>>> unirseAComunidad(int idComunidad) async {
     try {

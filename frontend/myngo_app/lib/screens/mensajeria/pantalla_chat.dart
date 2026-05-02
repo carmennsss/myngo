@@ -4,26 +4,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../utils/configuracion.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../utils/configuracion.dart';
 import '../inicio/pantalla_inicio.dart';
 
 import 'package:provider/provider.dart';
-import '../../providers/chat_provider.dart';
+import '../../services/servicio_mensajeria.dart';
 import '../../services/servicio_usuarios.dart';
+import '../../services/servicio_comunidades.dart';
 import '../../models/usuario.dart';
+import '../../models/comunidad.dart';
+import '../../models/respuesta_api.dart';
+import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
+
+import '../../providers/chat_provider.dart';
 
 class PantallaChat extends StatefulWidget {
   final int salaId;
   final String nombreSala;
   final int? otroUsuarioId;
+  final int? comunidadId;
 
   const PantallaChat({
     super.key,
     required this.salaId,
     required this.nombreSala,
     this.otroUsuarioId,
+    this.comunidadId,
   });
 
   @override
@@ -140,7 +149,7 @@ class _PantallaChatState extends State<PantallaChat> {
 
   Future<void> _cargarDatosOtroUsuario() async {
     try {
-      final res = await ServicioUsuarios().obtenerPerfil(widget.otroUsuarioId!);
+      final res = await ServicioUsuarios().obtenerDatosUsuario(widget.otroUsuarioId!);
       if (res.exito && mounted) {
         setState(() {
           _otroUsuario = res.datos;
@@ -286,12 +295,13 @@ class _PantallaChatState extends State<PantallaChat> {
 
   @override
   void dispose() {
-    // Limpiar sala activa al salir
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        context.read<ChatProvider>().setSalaActiva(null);
-      }
-    });
+    // Limpiar sala activa al salir. No usamos context.read en dispose si es asíncrono.
+    // Pero podemos intentar marcarlo si el provider está disponible o simplemente confiar en el setSalaActiva del siguiente chat.
+    // Una mejor forma es usar una referencia capturada si es necesario, pero aquí el problema era el addPostFrameCallback.
+    try {
+      context.read<ChatProvider>().setSalaActiva(null);
+    } catch (_) {}
+    
     _servicioChat.dispose();
     _mensajeController.dispose();
     _scrollController.dispose();
@@ -304,14 +314,16 @@ class _PantallaChatState extends State<PantallaChat> {
       backgroundColor: const Color(0xFFFBF9F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+        foregroundColor: const Color(0xFF4A4440),
+        elevation: 0.5,
+        shadowColor: Colors.black12,
+        surfaceTintColor: Colors.white,
         scrolledUnderElevation: 0,
         centerTitle: false,
         title: InkWell(
           onTap: () {
-            if (_otroUsuario != null) {
-              context.push('/perfil/${_otroUsuario!.id}', extra: _otroUsuario);
+            if (_otroUsuario != null && mounted) {
+              GoRouter.of(context).push('/inicio/perfiles/${_otroUsuario!.id}', extra: _otroUsuario);
             }
           },
           child: Row(
@@ -336,7 +348,7 @@ class _PantallaChatState extends State<PantallaChat> {
                     Text(
                       widget.nombreSala,
                       style: GoogleFonts.outfit(
-                        color: const Color(0xFF4A4440),
+                        color: const Color(0xFF2D2D2D),
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -344,40 +356,43 @@ class _PantallaChatState extends State<PantallaChat> {
                     ),
                     Builder(builder: (ctx) {
                       if (widget.otroUsuarioId != null) {
-                        final estaOnline = context.select<ChatProvider, bool>(
-                            (prov) => prov.isUsuarioOnline(widget.otroUsuarioId!));
-                        return Row(
-                          children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: estaOnline ? Colors.green : Colors.grey,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              estaOnline ? 'En línea' : 'Desconectado',
-                              style: GoogleFonts.outfit(
-                                color: estaOnline ? Colors.green : Colors.grey,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                        return Consumer<ChatProvider>(
+                          builder: (context, prov, _) {
+                            final estaOnline = prov.isUsuarioOnline(widget.otroUsuarioId!);
+                            return Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: estaOnline ? Colors.green : Colors.grey.shade400,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 1),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  estaOnline ? 'En línea' : 'Desconectado',
+                                  style: GoogleFonts.outfit(
+                                    color: estaOnline ? Colors.green : Colors.grey,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        );
+                      } else {
+                        return Text(
+                          _chatConectado ? 'Chat activo 🐾' : 'Conectando...',
+                          style: GoogleFonts.outfit(
+                            color: _chatConectado ? const Color(0xFF248EA6) : Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         );
                       }
-                      return Text(
-                        _chatConectado ? 'Chat activo 🐾' : 'Conectando...',
-                        style: GoogleFonts.outfit(
-                          color: _chatConectado
-                              ? const Color(0xFF248EA6)
-                              : Colors.grey,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      );
                     }),
                   ],
                 ),
@@ -388,8 +403,23 @@ class _PantallaChatState extends State<PantallaChat> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: Color(0xFF4A4440), size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (!mounted) return;
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/mensajes');
+            }
+          },
         ),
+        actions: [
+          if (widget.comunidadId != null)
+            IconButton(
+              icon: const Icon(Icons.people_rounded, color: Color(0xFF4A4440)),
+              onPressed: () => _mostrarMiembros(context),
+            ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -513,18 +543,6 @@ class _PantallaChatState extends State<PantallaChat> {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey.shade700)),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: (status == 'ACTIVO' || status == 'OCUPADO')
-                            ? Colors.green
-                            : Colors.grey.shade400,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -644,6 +662,58 @@ class _PantallaChatState extends State<PantallaChat> {
               child: IconButton(
                 icon: const Icon(Icons.send_rounded, color: Colors.white),
                 onPressed: _enviarMensaje,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarMiembros(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Color(0xFFFBF9F8),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Miembros del Chat 🐾',
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF4A4440),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: FutureBuilder<RespuestaApi<Comunidad>>(
+                future: ServicioComunidades().obtenerComunidad(widget.comunidadId!),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
+                    return ListaMiembrosComunidad(comunidad: snapshot.data!.datos!);
+                  }
+                  return const Center(child: Text('No se pudieron cargar los miembros'));
+                },
               ),
             ),
           ],

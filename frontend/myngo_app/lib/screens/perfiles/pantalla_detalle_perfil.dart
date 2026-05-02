@@ -434,7 +434,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               SeccionColeccionesPerfil(
                 colecciones: _misColecciones,
                 estaCargando: _cargandoColecciones,
-                onRefresh: _cargarColecciones,
+                onRefresh: () => _cargarColecciones(force: true),
                 esPropietario: false,
               ),
           ],
