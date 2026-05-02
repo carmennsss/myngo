@@ -43,7 +43,7 @@ class SalaChatMiembro(models.Model):
         db_table = 'salas_chat_miembros'
         managed = False
 
-    salachat = models.ForeignKey(SalaChat, on_delete=models.CASCADE, db_column='salas_chat_id')
+    salachat = models.ForeignKey(SalaChat, on_delete=models.CASCADE, db_column='salachat_id')
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, db_column='usuario_id')
 
 

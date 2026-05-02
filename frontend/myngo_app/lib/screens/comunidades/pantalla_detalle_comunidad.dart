@@ -134,12 +134,17 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     await _cargarDatosSeccion(_indiceSeccion);
     await _cargarColecciones();
 
-    if (_comunidad == null) return;
-    final res = await _servicio.obtenerRolUsuarioEnComunidad(
-          _comunidad!.id, _miId!);
+    if (_comunidad == null || _miId == null) return;
+    
+    try {
+      final res = await _servicio.obtenerRolUsuarioEnComunidad(
+            _comunidad!.id, _miId!);
       if (res.exito && res.datos != null && mounted) {
         setState(() => _miRol = res.datos!);
       }
+    } catch (e) {
+      debugPrint('[PantallaDetalleComunidad] Error obteniendo rol: $e');
+    }
   }
 
   Future<void> _obtenerMiId() async {
@@ -509,8 +514,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           ? Opacity(
               opacity: _esAppClara(context) ? 0.4 : 0.2,
               child: CachedNetworkImage(
-                imageUrl: urlFondo.startsWith('http') ? urlFondo : '${Configuracion.baseUrl}$urlFondo', 
-                fit: BoxFit.cover
+                imageUrl: urlFondo.startsWith('http') 
+                    ? urlFondo 
+                    : Uri.encodeFull('${Configuracion.baseUrl}${urlFondo.startsWith('/') ? '' : '/'}$urlFondo'), 
+                fit: BoxFit.cover,
+                errorWidget: (context, url, error) => const SizedBox(),
               ),
             )
           : null,

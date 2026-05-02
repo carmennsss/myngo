@@ -119,7 +119,7 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
               child: CachedNetworkImage(
                 imageUrl: widget.comunidad.urlPortada.startsWith('http') 
                     ? widget.comunidad.urlPortada 
-                    : '${Configuracion.baseUrl}${widget.comunidad.urlPortada}',
+                    : Uri.encodeFull('${Configuracion.baseUrl}${widget.comunidad.urlPortada.startsWith('/') ? '' : '/'}${widget.comunidad.urlPortada}'),
                 fit: BoxFit.cover,
                 errorWidget: (context, url, error) =>
                     Container(color: widget.comunidad.colorTema),
@@ -298,14 +298,14 @@ class _CommunityAvatar extends StatelessWidget {
         image: (avatarUrl != null && avatarUrl.isNotEmpty)
             ? DecorationImage(
                 image: CachedNetworkImageProvider(
-                  avatarUrl.startsWith('http') ? avatarUrl : '${Configuracion.baseUrl}$avatarUrl',
+                  avatarUrl.startsWith('http') ? avatarUrl : Uri.encodeFull('${Configuracion.baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}$avatarUrl'),
                 ),
                 fit: BoxFit.cover,
               )
             : (portadaUrl.isNotEmpty
                 ? DecorationImage(
                     image: CachedNetworkImageProvider(
-                      portadaUrl.startsWith('http') ? portadaUrl : '${Configuracion.baseUrl}$portadaUrl',
+                      portadaUrl.startsWith('http') ? portadaUrl : Uri.encodeFull('${Configuracion.baseUrl}${portadaUrl.startsWith('/') ? '' : '/'}$portadaUrl'),
                     ),
                     fit: BoxFit.cover,
                   )

@@ -8,11 +8,15 @@ import '../providers/post_provider.dart';
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
+  final String? initialTexto;
+  final String? initialEtiquetas;
   final Future<bool> Function(String texto, List<XFile>? imagenes, String etiquetas) onPublicar;
 
   const DialogoCrearPost({
     super.key,
     required this.titulo,
+    this.initialTexto,
+    this.initialEtiquetas,
     required this.onPublicar,
   });
 
@@ -21,10 +25,17 @@ class DialogoCrearPost extends StatefulWidget {
 }
 
 class _DialogoCrearPostState extends State<DialogoCrearPost> {
-  final _controladorTexto = TextEditingController();
-  final _controladorEtiquetas = TextEditingController();
+  late final TextEditingController _controladorTexto;
+  late final TextEditingController _controladorEtiquetas;
   List<XFile> _imagenesSeleccionadas = [];
   bool _estaCargando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controladorTexto = TextEditingController(text: widget.initialTexto);
+    _controladorEtiquetas = TextEditingController(text: widget.initialEtiquetas);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +184,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                 ),
                 child: _estaCargando 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text('Publicar', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                  : Text(widget.initialTexto != null ? 'Guardar Cambios' : 'Publicar', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

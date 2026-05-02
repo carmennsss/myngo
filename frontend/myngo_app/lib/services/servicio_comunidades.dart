@@ -341,6 +341,37 @@ class ServicioComunidades {
     }
   }
 
+  /// Actualiza una publicación existente.
+  Future<RespuestaApi<Publicacion>> actualizarPublicacion({
+    required int idPublicacion,
+    String? titulo,
+    String? texto,
+    String? etiquetas,
+  }) async {
+    try {
+      final respuesta = await http.patch(
+        Uri.parse('${_urlContenido}publicaciones/$idPublicacion/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({
+          if (titulo != null) 'titulo': titulo,
+          if (texto != null) 'contenido_texto': texto,
+          if (etiquetas != null) 'etiquetas': etiquetas,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Publicación actualizada',
+          datos: Publicacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar (${respuesta.statusCode})');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Recupera las publicaciones registradas en una comunidad específica.
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesComunidad(int idComunidad, {String orden = '-fecha_creacion'}) async {
     try {

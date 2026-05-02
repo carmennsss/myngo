@@ -11,6 +11,8 @@ import '../inicio/pantalla_inicio.dart';
 
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../services/servicio_usuarios.dart';
+import '../../models/usuario.dart';
 
 class PantallaChat extends StatefulWidget {
   final int salaId;
@@ -37,6 +39,7 @@ class _PantallaChatState extends State<PantallaChat> {
   Map<int, String> _presenciaUsuarios = {};
   int _usuariosOnline = 0;
   int? _miId;
+  Usuario? _otroUsuario;
   bool _cargandoHistorial = true;
   bool _cargandoMas = false;
   String? _errorHistorial;
@@ -77,6 +80,11 @@ class _PantallaChatState extends State<PantallaChat> {
   Future<void> _inicializar() async {
     final prefs = await SharedPreferences.getInstance();
     _miId = prefs.getInt('usuario_id');
+    
+    if (widget.otroUsuarioId != null) {
+      _cargarDatosOtroUsuario();
+    }
+    
     await _cargarHistorial();
     _conectarWebSockets();
     // Marcar mensajes como leídos al abrir el chat
@@ -128,6 +136,17 @@ class _PantallaChatState extends State<PantallaChat> {
         _cargandoHistorial = false;
       });
     }
+  }
+
+  Future<void> _cargarDatosOtroUsuario() async {
+    try {
+      final res = await ServicioUsuarios().obtenerPerfil(widget.otroUsuarioId!);
+      if (res.exito && mounted) {
+        setState(() {
+          _otroUsuario = res.datos;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _cargarMasHistorial() async {
@@ -289,69 +308,82 @@ class _PantallaChatState extends State<PantallaChat> {
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.nombreSala,
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF4A4440),
-                fontWeight: FontWeight.bold,
-                fontSize: 17,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-            Builder(builder: (ctx) {
-              if (widget.otroUsuarioId != null) {
-                final estaOnline = context.select<ChatProvider, bool>(
-                    (prov) => prov.isUsuarioOnline(widget.otroUsuarioId!));
-                return Row(
+        title: InkWell(
+          onTap: () {
+            if (_otroUsuario != null) {
+              context.push('/perfil/${_otroUsuario!.id}', extra: _otroUsuario);
+            }
+          },
+          child: Row(
+            children: [
+              if (widget.otroUsuarioId != null) ...[
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFFFBE9E0),
+                  backgroundImage: _otroUsuario?.urlAvatar != null 
+                    ? NetworkImage(_otroUsuario!.urlAvatar!) 
+                    : null,
+                  child: _otroUsuario?.urlAvatar == null 
+                    ? const Icon(Icons.person, size: 20, color: Color(0xFFC35E34)) 
+                    : null,
+                ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: estaOnline ? Colors.green : Colors.grey,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
                     Text(
-                      estaOnline ? 'En línea' : 'Desconectado',
+                      widget.nombreSala,
                       style: GoogleFonts.outfit(
-                        color: estaOnline ? Colors.green : Colors.grey,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF4A4440),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    Builder(builder: (ctx) {
+                      if (widget.otroUsuarioId != null) {
+                        final estaOnline = context.select<ChatProvider, bool>(
+                            (prov) => prov.isUsuarioOnline(widget.otroUsuarioId!));
+                        return Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: estaOnline ? Colors.green : Colors.grey,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              estaOnline ? 'En línea' : 'Desconectado',
+                              style: GoogleFonts.outfit(
+                                color: estaOnline ? Colors.green : Colors.grey,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      return Text(
+                        _chatConectado ? 'Chat activo 🐾' : 'Conectando...',
+                        style: GoogleFonts.outfit(
+                          color: _chatConectado
+                              ? const Color(0xFF248EA6)
+                              : Colors.grey,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }),
                   ],
-                );
-              }
-              return Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _chatConectado ? Colors.green : Colors.grey,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _chatConectado ? 'Chat conectado' : 'Conectando...',
-                    style: GoogleFonts.outfit(
-                      color: _chatConectado
-                          ? const Color(0xFF248EA6)
-                          : Colors.grey,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ],
+                ),
+              ),
+            ],
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,

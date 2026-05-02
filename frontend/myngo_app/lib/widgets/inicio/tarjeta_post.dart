@@ -10,7 +10,10 @@ import '../comunes/menu_opciones_contenido.dart';
 import 'dialogo_detalle_post.dart';
 import '../comunes/grid_imagenes_post.dart';
 import '../comunes/hover_profile_card.dart';
+import '../comunes/bottom_sheet_colecciones.dart';
+import '../dialogo_crear_post.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../../services/servicio_comunidades.dart';
 
 class TarjetaPost extends StatefulWidget {
   final Publicacion post;
@@ -52,7 +55,15 @@ class _TarjetaPostState extends State<TarjetaPost> {
     showDialog(
       context: context,
       builder: (context) => DialogoDetallePublicacion(post: widget.post),
-    );
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _dioLike = widget.post.usuarioDioLike;
+          _likesCount = widget.post.likesCount;
+          _estaGuardado = widget.post.usuarioGuardoPost;
+        });
+      }
+    });
   }
 
   Future<void> _toggleLike() async {
@@ -78,30 +89,48 @@ class _TarjetaPostState extends State<TarjetaPost> {
   }
 
   Future<void> _toggleGuardado() async {
-    setState(() {
-      _estaGuardado = !_estaGuardado;
-      widget.post.usuarioGuardoPost = _estaGuardado;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => BottomSheetColecciones(
+        postId: widget.post.id,
+        estaGuardadoPost: _estaGuardado,
+        imagenId: widget.post.imagenId,
+        imagenUrl: widget.post.urlImagen,
+      ),
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _estaGuardado = widget.post.usuarioGuardoPost;
+        });
+      }
     });
+  }
 
-    final res = await _servicioInteraccion.alternarGuardado(widget.post.id);
-    if (!res.exito && mounted) {
-      setState(() {
-        _estaGuardado = !_estaGuardado;
-        widget.post.usuarioGuardoPost = _estaGuardado;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_estaGuardado ? '¡Post guardado! 🐾' : 'Eliminado de tus miau-guardados'),
-          backgroundColor: const Color(0xFF248EA6),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+  void _mostrarDialogoEdicion() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DialogoCrearPost(
+        titulo: 'Editar Miau-post 🐾',
+        initialTexto: widget.post.contenidoTexto,
+        onPublicar: (texto, imagenes, etiquetas) async {
+          final res = await ServicioComunidades().actualizarPublicacion(
+            idPublicacion: widget.post.id,
+            texto: texto,
+          );
+          if (res.exito) {
+            setState(() {
+              widget.post.contenidoTexto = texto;
+            });
+            return true;
+          }
+          return false;
+        },
+      ),
+    );
   }
 
   @override
@@ -241,6 +270,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             autorId: widget.post.autorId,
                             comunidadId: widget.post.comunidadId,
                             onEliminado: widget.onEliminado,
+                            onEditado: _mostrarDialogoEdicion,
                             tituloPreview: widget.post.titulo,
                             iconColor: textColor.withOpacity(0.7),
                           ),
