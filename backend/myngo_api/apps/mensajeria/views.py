@@ -227,12 +227,9 @@ def marcar_leidos(request, sala_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
-<<<<<<< Updated upstream
-    mensajes_nuevos = sala.mensajes.filter(es_leido=False).exclude(emisor=request.user)
-=======
     # Mensajes no leídos de otros en esta sala
     mensajes_nuevos = sala.mensajes.filter(es_leido=False).exclude(emisor_id=request.user.id)
->>>>>>> Stashed changes
+
     ids_leidos = list(mensajes_nuevos.values_list('id', flat=True))
 
     if ids_leidos:
