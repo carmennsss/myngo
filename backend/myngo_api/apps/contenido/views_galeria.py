@@ -10,7 +10,7 @@ from comunidades.models import Comunidad, MiembrosComunidad
 from notificaciones.models import Notificacion
 from usuarios.models import Seguimiento
 
-from .models import Coleccion, ImagenGaleria, MeGusta, PostGuardado, Publicacion, Reporte
+from .models import Coleccion, Comentario, ImagenGaleria, MeGusta, PostGuardado, Publicacion, Reporte
 from .permissions import IsAuthorOrAdmin
 from .serializers import ColeccionSerializer, ImagenGaleriaSerializer, PublicacionSerializer
 
@@ -169,10 +169,11 @@ class InicioGaleria(generics.ListAPIView):
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas')
         
-        # Filtro base: solo posts con imagen válida
-        qs = Publicacion.objects.filter(
-            imagen__isnull=False, imagen__url_s3__gt='', es_valido_ia=True
-        )
+        # Filtro base: posts con imagen (legacy FK) o con imagenes M2M, o sin imagen pero de perfil público
+        qs = Publicacion.objects.filter(es_valido_ia=True).filter(
+            Q(imagen__isnull=False) |
+            Q(imagenes__isnull=False)
+        ).distinct()
 
         if usuario:
             # 1. Filtros sociales
@@ -183,7 +184,7 @@ class InicioGaleria(generics.ListAPIView):
                 Q(comunidad_id__in=mis_comunidades_ids) |          # Mis comunidades
                 Q(autor_id__in=mis_seguidos_ids) |                # Gente que sigo
                 Q(comunidad__es_publica=True) |                   # Comunidades públicas
-                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True))) | # Perfiles públicos (en posts públicos)
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True) |  # Posts de perfiles públicos (sin comunidad)
                 Q(autor=usuario)                                  # Mis propios posts
             ).distinct()
 
@@ -198,10 +199,10 @@ class InicioGaleria(generics.ListAPIView):
                 anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
             )
         else:
-            # Modo público: solo comunidades públicas y perfiles públicos
+            # Modo público: solo comunidades públicas y posts de perfiles públicos sin comunidad
             qs = qs.filter(
                 Q(comunidad__es_publica=True) | 
-                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True)
             ).distinct()
             
             likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
@@ -216,7 +217,11 @@ class InicioGaleria(generics.ListAPIView):
         qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil').prefetch_related('imagenes')
             
         if etiquetas:
-            qs = qs.filter(imagen__etiquetas__icontains=etiquetas)
+            # Busca en etiquetas de la imagen FK o de las imágenes M2M
+            qs = qs.filter(
+                Q(imagen__etiquetas__icontains=etiquetas) |
+                Q(imagenes__etiquetas__icontains=etiquetas)
+            ).distinct()
             
         return qs.order_by('-fecha_creacion')
 

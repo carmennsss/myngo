@@ -4,6 +4,7 @@ import '../../../models/catalogo_mejoras.dart';
 import '../../../models/usuario.dart';
 import '../../../services/servicio_mejoras.dart';
 import '../../../utils/mejoras_notifier.dart';
+import '../../../utils/estilo_post_helper.dart';
 
 /// Widget que muestra una pestaña del catálogo de mejoras filtrada por tipo.
 class ListaMejorasTab extends StatefulWidget {
@@ -262,43 +263,50 @@ class _MejoraCard extends StatelessWidget {
   }
 
   Widget _buildImagePreview(bool estaActivo) {
-    return ColorFiltered(
-      colorFilter: ColorFilter.matrix(
-          (estaActivo && !estaEquipada)
-              ? [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
-              : [
-                  0.2126,
-                  0.7152,
-                  0.0722,
-                  0,
-                  0,
-                  0.2126,
-                  0.7152,
-                  0.0722,
-                  0,
-                  0,
-                  0.2126,
-                  0.7152,
-                  0.0722,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  1,
-                  0
-                ]),
-      child: Opacity(
-        opacity: estaActivo ? 1.0 : 0.6,
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          child: Container(
-            color: const Color(0xFFFBE9E0),
-            child: mejora.urlRecurso.isNotEmpty
-                ? Image.network(mejora.urlRecurso, fit: BoxFit.cover)
-                : const Icon(Icons.image_not_supported_rounded, size: 36),
+    Widget contenidoRecurso;
+    
+    if (mejora.tipo == 'ESTILO_POST' || mejora.tipo == 'ESTILO POST') {
+      contenidoRecurso = Container(
+        decoration: EstiloPostHelper.buildDecoracion(
+          mejora.datosExtra, 
+          borderRadius: BorderRadius.zero,
+          borderWidth: 4,
+        ),
+        child: Center(
+          child: Icon(
+            Icons.palette_rounded, 
+            color: EstiloPostHelper.esFondoClaro(mejora.datosExtra) 
+                ? Colors.black.withOpacity(0.1) 
+                : Colors.white.withOpacity(0.2), 
+            size: 40,
           ),
         ),
+      );
+    } else {
+      contenidoRecurso = mejora.urlRecurso.isNotEmpty
+          ? Image.network(mejora.urlRecurso, fit: BoxFit.cover)
+          : const Icon(Icons.image_not_supported_rounded, size: 36);
+    }
+
+    // Si está activo (y no equipado): color normal. Si está inactivo: escala de grises.
+    final Widget imagen = ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: Container(
+        color: const Color(0xFFFBE9E0),
+        child: contenidoRecurso,
+      ),
+    );
+
+    if (estaActivo && !estaEquipada) {
+      return imagen;
+    }
+
+    return ColorFiltered(
+      // Escala de grises: mezcla saturación 0 con el color gris
+      colorFilter: const ColorFilter.mode(Color(0xFF888888), BlendMode.saturation),
+      child: Opacity(
+        opacity: estaActivo ? 1.0 : 0.55,
+        child: imagen,
       ),
     );
   }

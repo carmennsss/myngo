@@ -112,35 +112,97 @@ class InfoPerfil extends StatelessWidget {
     } catch (_) {}
 
     final color = _getColorEstado(displayEstado);
+    final bool esPropio = currentUserId == usuario.id;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
+    return Builder(
+      builder: (statusContext) {
+        return GestureDetector(
+          onTapDown: esPropio
+              ? (details) {
+                  final RenderBox box = statusContext.findRenderObject() as RenderBox;
+                  final RenderBox overlay = Overlay.of(statusContext).context.findRenderObject() as RenderBox;
+                  final RelativeRect position = RelativeRect.fromRect(
+                    Rect.fromPoints(
+                      box.localToGlobal(Offset.zero, ancestor: overlay),
+                      box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
+                    ),
+                    Offset.zero & overlay.size,
+                  );
+
+                  showMenu<String>(
+                    context: statusContext,
+                    position: position,
+                    color: Colors.white,
+                    elevation: 10,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    items: [
+                      _buildStatusMenuItem('ACTIVO', 'Activo', Colors.greenAccent),
+                      _buildStatusMenuItem('OCUPADO', 'Ocupado', Colors.redAccent),
+                    ],
+                  ).then((nuevoEstado) {
+                    if (nuevoEstado != null) {
+                      final inicioState =
+                          statusContext.findAncestorStateOfType<PantallaInicioState>();
+                      inicioState?.cambiarEstado(nuevoEstado);
+                    }
+                  });
+                }
+              : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  displayEstado == 'ACTIVO'
+                      ? 'Activo'
+                      : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                  ),
+                ),
+                if (esPropio) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.keyboard_arrow_down_rounded, color: color, size: 16),
+                ],
+              ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  PopupMenuItem<String> _buildStatusMenuItem(
+      String value, String label, Color color) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(Icons.circle, color: color, size: 12),
           const SizedBox(width: 8),
-          Text(
-            displayEstado == 'ACTIVO'
-                ? 'Activo'
-                : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
-          ),
+          Text(label,
+              style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF4A4440))),
         ],
       ),
     );
@@ -175,25 +237,34 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildBioSection(Color colorTextoP, Color colorTextoS) {
+    final bool esPropio = currentUserId == usuario.id;
+    
     return GestureDetector(
-      onTap: currentUserId == usuario.id ? onEditarBio : null,
+      onTap: esPropio ? onEditarBio : null,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            biografiaLocal ?? 'Sin biografía',
+            (biografiaLocal == null || biografiaLocal!.isEmpty) ? 'Sin biografía' : biografiaLocal!,
             style: GoogleFonts.inter(
               fontSize: 16,
               height: 1.5,
               color: colorTextoP.withOpacity(0.9),
             ),
           ),
-          if (currentUserId == usuario.id)
+          if (esPropio)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Toca para editar',
-                style: GoogleFonts.inter(fontSize: 11, color: colorTextoS),
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 16, color: colorTextoS),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Toca para editar biografía',
+                    style: GoogleFonts.inter(fontSize: 11, color: colorTextoS, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
             ),
         ],

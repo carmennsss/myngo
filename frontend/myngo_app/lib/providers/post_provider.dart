@@ -37,7 +37,7 @@ class PostProvider with ChangeNotifier {
   }
 
   Future<bool> crearPost({
-    required int comunidadId,
+    int? comunidadId,
     required String texto,
     dynamic imagenes,
     String? etiquetas,
