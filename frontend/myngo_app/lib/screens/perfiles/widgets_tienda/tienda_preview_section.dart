@@ -3,6 +3,7 @@ import '../../../models/usuario.dart';
 import '../../../models/comunidad.dart';
 import '../../../widgets/comunes/post_preview.dart';
 import '../../../widgets/comunes/profile_preview.dart';
+import '../../../utils/configuracion.dart';
 
 /// Widget que muestra la previsualización dinámica de las mejoras seleccionadas.
 /// Cuando [comunidad] no es null, muestra la cabecera de la comunidad (avatar + fondo)
@@ -100,9 +101,20 @@ class TiendaPreviewSection extends StatelessWidget {
   /// Previsualización específica para la tienda de una comunidad:
   /// muestra el avatar y el fondo de la comunidad, no del usuario.
   Widget _buildComunidadPreview() {
+    String? fondo = previewFondo ?? comunidad!.urlFondo ?? comunidad!.urlPortada;
+    String? avatar = previewAvatar ?? comunidad!.urlAvatar ?? comunidad!.urlPortada;
+
+    // Asegurar que las URLs sean absolutas para comunidades
+    if (fondo != null && !fondo.startsWith('http')) {
+      fondo = '${Configuracion.baseUrl.endsWith('/') ? Configuracion.baseUrl : '${Configuracion.baseUrl}/'}${fondo.startsWith('/') ? fondo.substring(1) : fondo}';
+    }
+    if (avatar != null && !avatar.startsWith('http')) {
+      avatar = '${Configuracion.baseUrl.endsWith('/') ? Configuracion.baseUrl : '${Configuracion.baseUrl}/'}${avatar.startsWith('/') ? avatar.substring(1) : avatar}';
+    }
+
     return ProfilePreview(
-      fondoUrl: previewFondo ?? comunidad!.urlFondo ?? comunidad!.urlPortada,
-      avatarUrl: previewAvatar ?? comunidad!.urlAvatar ?? comunidad!.urlPortada,
+      fondoUrl: fondo != null ? Uri.encodeFull(fondo) : null,
+      avatarUrl: avatar != null ? Uri.encodeFull(avatar) : null,
       marcoUrl: previewMarco,
       nombreUsuario: comunidad!.nombre,
       puntos: 0, // Las comunidades no tienen puntos personales

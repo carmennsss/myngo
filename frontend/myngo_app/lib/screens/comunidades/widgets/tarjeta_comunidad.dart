@@ -54,7 +54,7 @@ class TarjetaComunidad extends StatelessWidget {
                       ? Image.network(
                           comunidad.urlPortada.startsWith('http') 
                               ? comunidad.urlPortada 
-                              : '${Configuracion.baseUrl}${comunidad.urlPortada}',
+                              : Uri.encodeFull('${Configuracion.baseUrl}${comunidad.urlPortada.startsWith('/') ? '' : '/'}${comunidad.urlPortada}'),
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => _GradientePlaceholder(paleta: paleta),
                         )
