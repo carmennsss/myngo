@@ -538,6 +538,9 @@ class _PantallaChatState extends State<PantallaChat> {
                           return _buildChatBubble(msg, esMio, status, leido);
                         },
                       ),
+                    ),
+                  ],
+                ),
           ),
           _buildInputArea(),
         ],
