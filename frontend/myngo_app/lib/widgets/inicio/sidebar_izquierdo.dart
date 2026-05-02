@@ -16,6 +16,7 @@ class SidebarIzquierdo extends StatelessWidget {
   final Function(Comunidad) onComunidadSelected;
   final Function(Usuario) onUsuarioSelected;
   final Function(int, int) onReorder;
+  final bool embeddedInDrawer;
 
   const SidebarIzquierdo({
     super.key,
@@ -28,6 +29,7 @@ class SidebarIzquierdo extends StatelessWidget {
     required this.onComunidadSelected,
     required this.onUsuarioSelected,
     required this.onReorder,
+    this.embeddedInDrawer = false,
   });
 
   String _obtenerRango(int puntos) {
@@ -39,6 +41,75 @@ class SidebarIzquierdo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _TarjetaSidebar(
+          titulo: 'Mis Michi-Grupos',
+          contenido: (cargando || comunidades == null) 
+           ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+           : comunidades!.isEmpty 
+             ? Text('Únete a una comunidad 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+             : Wrap(
+               spacing: 12,
+               runSpacing: 12,
+               children: [
+                 ...comunidades!.take(7).map((c) => _ComunidadAvatarCompacto(
+                   comunidad: c, 
+                   onTap: () => onComunidadSelected(c)
+                 )),
+                 if (comunidades!.length > 7)
+                   _BotonVerMas(
+                     total: comunidades!.length,
+                     onTap: () => _mostrarDialogoComunidades(context, comunidades!, onComunidadSelected, onReorder),
+                   ),
+               ],
+             ),
+        ),
+        const SizedBox(height: 12),
+        _TarjetaSidebar(
+          titulo: 'Ranking Semanal',
+          contenido: (cargandoRanking || rankingUsuarios == null)
+            ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+            : rankingUsuarios!.isEmpty
+              ? Text('Aún no hay ranking 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+              : Column(
+                  children: rankingUsuarios!.take(3).toList().asMap().entries.map((entry) {
+                    int index = entry.key;
+                    Usuario u = entry.value;
+                    return _RankingItem(
+                      puesto: index + 1, 
+                      usuario: u,
+                      onTap: () => onUsuarioSelected(u),
+                    );
+                  }).toList(),
+                ),
+        ),
+        const SizedBox(height: 12),
+        if (estaLogueado)
+        _TarjetaSidebar(
+          titulo: 'Mis Puntos y Rango',
+          contenido: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_obtenerRango(misPuntos ?? 0), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
+              const SizedBox(height: 6),
+              Text('${misPuntos ?? 0} / 5000 Puntos', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (embeddedInDrawer) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: content,
+      );
+    }
+
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro)
@@ -75,67 +146,7 @@ class SidebarIzquierdo extends StatelessWidget {
               behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TarjetaSidebar(
-                      titulo: 'Mis Michi-Grupos',
-                      contenido: (cargando || comunidades == null) 
-                       ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
-                       : comunidades!.isEmpty 
-                         ? Text('Únete a una comunidad 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-                         : Wrap(
-                           spacing: 12,
-                           runSpacing: 12,
-                           children: [
-                             ...comunidades!.take(7).map((c) => _ComunidadAvatarCompacto(
-                               comunidad: c, 
-                               onTap: () => onComunidadSelected(c)
-                             )),
-                             if (comunidades!.length > 7)
-                               _BotonVerMas(
-                                 total: comunidades!.length,
-                                 onTap: () => _mostrarDialogoComunidades(context, comunidades!, onComunidadSelected, onReorder),
-                               ),
-                           ],
-                         ),
-                    ),
-                    const SizedBox(height: 12),
-                    _TarjetaSidebar(
-                      titulo: 'Ranking Semanal',
-                      contenido: (cargandoRanking || rankingUsuarios == null)
-                        ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
-                        : rankingUsuarios!.isEmpty
-                          ? Text('Aún no hay ranking 🐾', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-                          : Column(
-                              children: rankingUsuarios!.take(3).toList().asMap().entries.map((entry) {
-                                int index = entry.key;
-                                Usuario u = entry.value;
-                                return _RankingItem(
-                                  puesto: index + 1, 
-                                  usuario: u,
-                                  onTap: () => onUsuarioSelected(u),
-                                );
-                              }).toList(),
-                            ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (estaLogueado)
-                    _TarjetaSidebar(
-                      titulo: 'Mis Puntos y Rango',
-                      contenido: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(_obtenerRango(misPuntos ?? 0), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
-                          const SizedBox(height: 8),
-                          LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
-                          const SizedBox(height: 6),
-                          Text('${misPuntos ?? 0} / 5000 Puntos', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: content,
               ),
             ),
           ),
@@ -319,7 +330,7 @@ class _ComunidadAvatarCompacto extends StatelessWidget {
             ],
           ),
           child: CircleAvatar(
-            backgroundColor: comunidad.colorTema.withOpacity(0.1),
+                  backgroundColor: Colors.white,
             backgroundImage: comunidad.urlPortada.isNotEmpty 
               ? CachedNetworkImageProvider(comunidad.urlPortada) 
               : null,
@@ -516,7 +527,7 @@ void _mostrarDialogoComunidades(
                                         ),
                                         child: CircleAvatar(
                                           radius: 26,
-                                          backgroundColor: c.colorTema.withOpacity(0.1),
+                                          backgroundColor: Colors.white,
                                           backgroundImage: (c.urlPortada != null && c.urlPortada!.isNotEmpty) 
                                             ? CachedNetworkImageProvider(c.urlPortada!) 
                                             : null,
@@ -607,7 +618,7 @@ class _RankingItem extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                  backgroundColor: Colors.white,
                   backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
                       ? CachedNetworkImageProvider(usuario.urlAvatar!)
                       : null,

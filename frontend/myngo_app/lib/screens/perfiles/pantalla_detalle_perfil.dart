@@ -301,7 +301,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               marcoLocal: _marcoLocal,
               currentUserId: _currentUserId,
               onEditarAvatar: _editarAvatar,
-              onEditarPerfil: _irATienda,
+              onEditarPerfil: _irAInventario,
               onBack: widget.onBack ?? () => Navigator.pop(context),
               esIntegrada: widget.esIntegrada,
             ),
@@ -378,21 +378,70 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   // --- MÉTODOS DE ACCIÓN ---
 
   void _mostrarSelectorVoto() {
-    if (_haVotadoHoy || _currentUserId == widget.usuario.id) return;
+    if (_currentUserId == widget.usuario.id) return;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => SelectorEstrellas(
-        onRatingChanged: (puntos) async {
-          final res = await ServicioMejoras().votar(
-            idReceptorUsuario: widget.usuario.id,
-            cantidadEstrellas: puntos,
-          );
-          if (res.exito) {
-            _cargarEstadoVoto();
-            _recargarUsuarioActualizado();
-          }
-        },
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _haVotadoHoy ? '¿Qué quieres hacer con tu voto?' : '¡Vota a este Michi!',
+              style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _haVotadoHoy ? 'Puedes cambiar tu puntuación o eliminar el voto.' : 'Dalle amor con tus estrellas 🐾',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            SelectorEstrellas(
+              onRatingChanged: (puntos) async {
+                final res = await ServicioMejoras().votar(
+                  idReceptorUsuario: widget.usuario.id,
+                  cantidadEstrellas: puntos,
+                );
+                if (res.exito) {
+                  _cargarEstadoVoto();
+                  _recargarUsuarioActualizado();
+                  if (mounted) Navigator.pop(context);
+                }
+              },
+            ),
+            if (_haVotadoHoy) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: () async {
+                  final res = await ServicioMejoras().eliminarVoto(idReceptorUsuario: widget.usuario.id);
+                  if (res.exito) {
+                    setState(() {
+                      _haVotadoHoy = false;
+                    });
+                    _cargarEstadoVoto();
+                    _recargarUsuarioActualizado();
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                label: Text('Eliminar mi voto', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              ),
+            ],
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }
@@ -484,8 +533,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     );
   }
 
-  void _irATienda() {
-    context.push('/tienda');
+  void _irAInventario() {
+    context.push('/inventario');
   }
 }
 

@@ -143,7 +143,7 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                                     decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                                     child: CircleAvatar(
                                       radius: 28,
-                                      backgroundColor: const Color(0xFFFBE9E0),
+                                      backgroundColor: Colors.white,
                                       backgroundImage: (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
                                           ? CachedNetworkImageProvider(widget.avatarUrl!)
                                           : null,

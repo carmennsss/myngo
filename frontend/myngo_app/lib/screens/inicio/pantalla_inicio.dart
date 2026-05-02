@@ -296,11 +296,6 @@ class PantallaInicioState extends State<PantallaInicio> {
 
 
   @override
-  void actualizarPuntos(int nuevosPuntos) {
-    if (mounted) setState(() => _puntos = nuevosPuntos);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
     
@@ -403,63 +398,79 @@ class PantallaInicioState extends State<PantallaInicio> {
     final colorPrincipal = const Color(0xFFC35E34);
     
     return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFC35E34), Color(0xFFE89A6A)]),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.pets, color: Colors.white, size: 48),
-                  const SizedBox(height: 10),
-                  Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                ],
+      child: Container(
+        color: const Color(0xFFFEF5F1), // Fondo a juego con la app
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              margin: EdgeInsets.zero,
+              padding: EdgeInsets.zero,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFC35E34), Color(0xFFE89A6A)]
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.pets, color: Colors.white, size: 40),
+                    const SizedBox(height: 8),
+                    Text('MYNGO', 
+                      style: GoogleFonts.outfit(
+                        color: Colors.white, 
+                        fontSize: 24, 
+                        fontWeight: FontWeight.w900, 
+                        letterSpacing: 2
+                      )
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          ListTile(
-            leading: Icon(Icons.home_rounded, color: currentIndex == 0 ? colorPrincipal : Colors.grey),
-            title: Text('Inicio', style: GoogleFonts.outfit(fontWeight: currentIndex == 0 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 0 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(0); },
-          ),
-          ListTile(
-            leading: Icon(Icons.explore_rounded, color: currentIndex == 1 ? colorPrincipal : Colors.grey),
-            title: Text('Explorar', style: GoogleFonts.outfit(fontWeight: currentIndex == 1 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 1 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(1); },
-          ),
-          ListTile(
-            leading: Icon(Icons.storefront_rounded, color: currentIndex == 4 ? colorPrincipal : Colors.grey),
-            title: Text('Tienda', style: GoogleFonts.outfit(fontWeight: currentIndex == 4 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 4 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(4); },
-          ),
-          ListTile(
-            leading: Consumer<ChatProvider>(
-              builder: (context, chat, child) => Badge(
-                label: chat.totalNoLeidos > 0 ? Text('${chat.totalNoLeidos}') : null,
-                isLabelVisible: chat.totalNoLeidos > 0,
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(Icons.home_rounded, color: currentIndex == 0 ? colorPrincipal : Colors.grey),
+              title: Text('Inicio', style: GoogleFonts.outfit(fontWeight: currentIndex == 0 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 0 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(0); },
+            ),
+            ListTile(
+              leading: Icon(Icons.explore_rounded, color: currentIndex == 1 ? colorPrincipal : Colors.grey),
+              title: Text('Explorar', style: GoogleFonts.outfit(fontWeight: currentIndex == 1 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 1 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(1); },
+            ),
+            ListTile(
+              leading: Icon(Icons.storefront_rounded, color: currentIndex == 4 ? colorPrincipal : Colors.grey),
+              title: Text('Tienda', style: GoogleFonts.outfit(fontWeight: currentIndex == 4 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 4 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(4); },
+            ),
+            ListTile(
+              leading: Consumer<ChatProvider>(
+                builder: (context, chat, child) => Badge(
+                  label: chat.totalNoLeidos > 0 ? Text('${chat.totalNoLeidos}') : null,
+                  isLabelVisible: chat.totalNoLeidos > 0,
+                  backgroundColor: const Color(0xFFD95F43),
+                  child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+                ),
+              ),
+              title: Text('Chats', style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(3); },
+            ),
+            ListTile(
+              leading: Badge(
+                label: _notificacionesSinLeer > 0 ? Text('$_notificacionesSinLeer') : null,
+                isLabelVisible: _notificacionesSinLeer > 0,
                 backgroundColor: const Color(0xFFD95F43),
-                child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+                child: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
               ),
+              title: Text('Notificaciones', style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(2); },
             ),
-            title: Text('Chats', style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(3); },
-          ),
-          ListTile(
-            leading: Badge(
-              label: _notificacionesSinLeer > 0 ? Text('$_notificacionesSinLeer') : null,
-              isLabelVisible: _notificacionesSinLeer > 0,
-              backgroundColor: const Color(0xFFD95F43),
-              child: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
-            ),
-            title: Text('Notificaciones', style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(2); },
-          ),
-          const Divider(),
-          Expanded(
-            child: SidebarIzquierdo(
+            const Divider(height: 32, indent: 20, endIndent: 20),
+            SidebarIzquierdo(
               estaLogueado: _estaLogueado == true,
               cargando: _cargandoComunidades == true,
               comunidades: _misComunidades,
@@ -475,9 +486,11 @@ class PantallaInicioState extends State<PantallaInicio> {
               },
               onReorder: _reordenarComunidades,
               misPuntos: _puntos,
+              embeddedInDrawer: true,
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

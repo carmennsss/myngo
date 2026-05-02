@@ -146,7 +146,7 @@ class PublicacionCreate(generics.CreateAPIView):
             Response: Datos de la publicación creada o mensaje de error.
         """
         from django.db import transaction
-        archivos = request.FILES.getlist('url_archivo_s3')
+        archivos = request.FILES.getlist('url_archivo_s3[]') or request.FILES.getlist('url_archivo_s3')
         titulo = request.data.get('titulo', '') or ''
         contenido_texto = request.data.get('contenido_texto', '') or ''
         texto = f"{titulo} {contenido_texto}".strip()

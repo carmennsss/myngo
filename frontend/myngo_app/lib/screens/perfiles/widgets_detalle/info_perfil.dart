@@ -304,10 +304,10 @@ class InfoPerfil extends StatelessWidget {
           _CircularAction(icon: Icons.chat_bubble_outline, onPressed: onChat),
           const SizedBox(width: 12),
           _ActionButton(
-            label: haVotadoHoy ? tiempoParaReinicio : 'Votar',
-            color: haVotadoHoy ? Colors.grey.shade600 : const Color(0xFF248EA6),
+            label: haVotadoHoy ? 'Editar Voto' : 'Votar',
+            color: haVotadoHoy ? const Color(0xFF248EA6).withOpacity(0.7) : const Color(0xFF248EA6),
             isLoading: false,
-            onPressed: haVotadoHoy ? () {} : onMostrarVoto,
+            onPressed: onMostrarVoto,
           ),
           const SizedBox(width: 12),
         ],

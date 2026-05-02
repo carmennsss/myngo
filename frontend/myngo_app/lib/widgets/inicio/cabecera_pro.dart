@@ -308,7 +308,7 @@ class _UserProfileHeader extends StatelessWidget {
                     height: 30,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white,
                       image: (avatarUrl != null && avatarUrl!.isNotEmpty)
                           ? DecorationImage(image: CachedNetworkImageProvider(avatarUrl!), fit: BoxFit.cover)
                           : null,

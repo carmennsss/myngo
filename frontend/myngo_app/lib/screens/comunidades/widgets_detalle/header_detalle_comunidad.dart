@@ -288,6 +288,7 @@ class _CommunityAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
+        color: Colors.white,
         boxShadow: const [
           BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2)
         ],
