@@ -157,6 +157,7 @@ class SeccionChatComunidad extends StatelessWidget {
             '/mensajes/sala/${salaGeneral.id}',
             extra: {
               'nombre': 'Chat General ✨ ${comunidad.nombre}',
+              'comunidad_id': comunidad.id,
               'sala': {'id': salaGeneral.id, '_otro_usuario_id': null}
             },
           );
@@ -206,6 +207,7 @@ class _SalaChatTile extends StatelessWidget {
           '/mensajes/sala/${sala.id}',
           extra: {
             'nombre': sala.nombre,
+            'comunidad_id': comunidad.id,
             'sala': {'id': sala.id, '_otro_usuario_id': null}
           },
         );

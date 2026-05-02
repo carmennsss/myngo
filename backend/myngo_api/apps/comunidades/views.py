@@ -308,7 +308,7 @@ class ListarMiembrosComunidad(APIView):
                 'usuario_nombre': comunidad.creador.nombre_usuario,
                 'usuario_avatar': comunidad.creador.url_avatar.url if comunidad.creador.url_avatar else None,
                 'rol': 'Creador',
-                'fecha_union': comunidad.fecha_creacion,
+                'fecha_union': comunidad.fecha_creacion.isoformat() if comunidad.fecha_creacion else None,
             })
 
         # 2. Añadir al resto de miembros
@@ -330,7 +330,7 @@ class ListarMiembrosComunidad(APIView):
                 'usuario_nombre': m.usuario.nombre_usuario,
                 'usuario_avatar': m.usuario.url_avatar.url if m.usuario.url_avatar else None,
                 'rol': m.rol,
-                'fecha_union': m.fecha_union,
+                'fecha_union': m.fecha_union.isoformat() if m.fecha_union else None,
             })
 
         return Response(miembros_data)
