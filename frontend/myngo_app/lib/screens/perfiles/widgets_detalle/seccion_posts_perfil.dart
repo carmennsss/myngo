@@ -47,6 +47,8 @@ class SeccionPostsPerfil extends StatelessWidget {
       crossAxisCount: 2,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
       itemCount: publicaciones!.length,
       itemBuilder: (context, index) {
         final post = publicaciones![index];

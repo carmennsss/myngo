@@ -230,18 +230,19 @@ class _PantallaChatState extends State<PantallaChat> {
     _servicioChat.conectarPresencia((data) {
       if (!mounted) return;
       setState(() {
-        if (data['type'] == 'online_users_snapshot') {
+        if (data['type'] == 'presence_connection_established') {
           // ── FIX BUG PRESENCIA ──────────────────────────────────────
-          // El servidor envía el estado actual de todos al conectarse.
-          // Así el receptor ve al emisor como online desde el principio.
-          final List<dynamic> ids = data['user_ids'] ?? [];
+          // El backend envía la lista de IDs online al conectarse.
+          final List<dynamic> ids = data['online_users'] ?? [];
           for (final id in ids) {
-            _presenciaUsuarios[id as int] = 'online';
+            _presenciaUsuarios[id as int] = 'ACTIVO';
           }
         } else if (data['type'] == 'status_change') {
           _presenciaUsuarios[data['user_id'] as int] = data['status'] as String;
         }
-        _usuariosOnline = _presenciaUsuarios.values.where((s) => s == 'online').length;
+        _usuariosOnline = _presenciaUsuarios.values
+            .where((s) => s == 'ACTIVO' || s == 'OCUPADO')
+            .length;
       });
     });
   }
@@ -408,7 +409,7 @@ class _PantallaChatState extends State<PantallaChat> {
                           }
                           final esMio = msg['user_id'] == _miId;
                           final status =
-                              _presenciaUsuarios[msg['user_id']] ?? 'offline';
+                              _presenciaUsuarios[msg['user_id']] ?? 'DESCONECTADO';
                           final leido = _mensajesLeidos
                               .contains(msg['message_id'] as int?);
                           return _buildChatBubble(msg, esMio, status, leido);
@@ -473,7 +474,7 @@ class _PantallaChatState extends State<PantallaChat> {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: status == 'online'
+                        color: (status == 'ACTIVO' || status == 'OCUPADO')
                             ? Colors.green
                             : Colors.grey.shade400,
                         shape: BoxShape.circle,

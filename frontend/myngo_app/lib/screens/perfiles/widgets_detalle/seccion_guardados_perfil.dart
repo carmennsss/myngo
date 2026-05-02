@@ -32,11 +32,12 @@ class SeccionGuardadosPerfil extends StatelessWidget {
           child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     }
 
-    return Column(
-      children: [
-        _buildFilters(),
-        Expanded(
-          child: publicaciones!.isEmpty
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          _buildFilters(),
+          publicaciones!.isEmpty
               ? const EstadoVacioCargando(
                   icon: Icons.bookmark_border_rounded,
                   message: 'No tienes publicaciones guardadas en esta sección.',
@@ -46,14 +47,16 @@ class SeccionGuardadosPerfil extends StatelessWidget {
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
                   itemCount: publicaciones!.length,
                   itemBuilder: (context, index) {
                     final post = publicaciones![index];
                     return _TarjetaPostGuardado(post: post, onUpdate: onRefresh);
                   },
                 ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

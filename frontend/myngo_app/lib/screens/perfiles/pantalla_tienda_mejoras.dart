@@ -182,6 +182,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           previewMarco: _previewMarco,
           previewFondo: _previewFondo,
           previewEstiloPost: _previewEstiloPost,
+          comunidad: widget.comunidad,
         ),
       ),
     );
@@ -203,6 +204,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                 previewMarco: _previewMarco,
                 previewFondo: _previewFondo,
                 previewEstiloPost: _previewEstiloPost,
+                comunidad: widget.comunidad,
               ),
               Expanded(child: shopSection),
             ],

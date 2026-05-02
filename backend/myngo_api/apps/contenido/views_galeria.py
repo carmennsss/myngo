@@ -160,37 +160,64 @@ class InicioGaleria(generics.ListAPIView):
 
     def get_queryset(self):
         """Genera el feed de imágenes para exploración.
+        Incluye contenido de comunidades del usuario, seguidos y perfiles públicos.
 
         Returns:
-            QuerySet: Publicaciones con imagen filtradas por comunidad o etiquetas.
+            QuerySet: Publicaciones con imagen filtradas.
         """
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas')
+        
+        # Filtro base: solo posts con imagen válida
         qs = Publicacion.objects.filter(
             imagen__isnull=False, imagen__url_s3__gt='', es_valido_ia=True
         )
-        if usuario:
-            comunidades_usuario = MiembrosComunidad.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
-            publicaciones = qs.filter(comunidad_id__in=comunidades_usuario)
-        else:
-            publicaciones = qs.filter(comunidad__es_publica=True)
 
-        publicaciones = (
-            publicaciones.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')
-            .prefetch_related('imagenes')
-            .annotate(
-                anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True),
-            )
-        )
         if usuario:
-            publicaciones = publicaciones.annotate(
+            # 1. Filtros sociales
+            mis_comunidades_ids = MiembrosComunidad.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
+            mis_seguidos_ids = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO').values_list('seguido_usuario_id', flat=True)
+            
+            qs = qs.filter(
+                Q(comunidad_id__in=mis_comunidades_ids) |          # Mis comunidades
+                Q(autor_id__in=mis_seguidos_ids) |                # Gente que sigo
+                Q(comunidad__es_publica=True) |                   # Comunidades públicas
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True) | # Perfiles públicos
+                Q(autor=usuario)                                  # Mis propios posts
+            ).distinct()
+
+            # 2. Anotaciones optimizadas con Subqueries
+            likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=Count.output_field), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=Count.output_field), Value(0)),
                 anotado_usuario_dio_like=Exists(MeGusta.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
-                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
+                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
             )
+        else:
+            # Modo público: solo comunidades públicas y perfiles públicos
+            qs = qs.filter(
+                Q(comunidad__es_publica=True) | 
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+            ).distinct()
+            
+            likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=Count.output_field), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=Count.output_field), Value(0))
+            )
+
+        # Carga básica de relaciones
+        qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil').prefetch_related('imagenes')
+            
         if etiquetas:
-            publicaciones = publicaciones.filter(imagen__etiquetas__icontains=etiquetas)
-        return publicaciones.distinct().order_by('-fecha_creacion')
+            qs = qs.filter(imagen__etiquetas__icontains=etiquetas)
+            
+        return qs.order_by('-fecha_creacion')
 
 
 class ColeccionViewSet:

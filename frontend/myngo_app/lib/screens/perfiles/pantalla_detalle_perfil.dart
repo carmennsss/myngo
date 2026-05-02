@@ -99,6 +99,28 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   @override
+  void didUpdateWidget(covariant PantallaDetallePerfil oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si el usuario cambió (ej: clic en otro perfil desde el ranking)
+    // reseteamos el estado y recargamos todo para el nuevo usuario.
+    if (oldWidget.usuario.id != widget.usuario.id) {
+      _biografiaLocal = widget.usuario.biografia;
+      _avatarLocal = widget.usuario.urlAvatar;
+      _fondoLocal = widget.usuario.fondo;
+      _marcoLocal = widget.usuario.marco;
+      _ratingLocal = widget.usuario.ratingActual;
+      _estadoSeguimiento = widget.usuario.estadoSeguimiento;
+      _publicaciones = null;
+      _publicacionesGuardadas = null;
+      _cargandoPublicaciones = true;
+      _rolEnComunidad = null;
+      _haVotadoHoy = false;
+      _timerReinicio?.cancel();
+      _inicializarDatos();
+    }
+  }
+
+  @override
   void dispose() {
     mejoraEquipadaNotifier.removeListener(_onMejoraEquipada);
     _timerReinicio?.cancel();
@@ -287,6 +309,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
             ),
           ),
           SliverFillRemaining(
+            hasScrollBody: false,
             child: TabBarView(
               controller: _tabController,
               children: [
