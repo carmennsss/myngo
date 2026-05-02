@@ -163,7 +163,7 @@ class InicioGaleria(generics.ListAPIView):
     def get_queryset(self):
         """Genera el feed de imágenes para la galería de inicio.
 
-        Lógica simplificada:
+        Lógica:
         1. Obtener mis comunidades (donde soy miembro).
         2. Obtener mis amigos (usuarios que sigo con estado ACEPTADO).
         3. Mostrar posts que tengan foto Y cumplan al menos una:
@@ -180,9 +180,7 @@ class InicioGaleria(generics.ListAPIView):
         etiquetas = self.request.query_params.get('etiquetas')
 
         # Base: solo posts válidos por IA que tengan al menos una foto
-        qs = Publicacion.objects.filter(
-            es_valido_ia=True
-        ).filter(
+        qs = Publicacion.objects.filter(es_valido_ia=True).filter(
             Q(imagen__isnull=False) | Q(imagenes__isnull=False)
         )
 
@@ -213,12 +211,13 @@ class InicioGaleria(generics.ListAPIView):
             )
 
             # 3. Filtro social: mostrar si cumple alguna condición
+            # IMPORTANTE: Los Q() deben estar bien balanceados para perfiles Y comunidades
             qs = qs.filter(
-                Q(autor=usuario) |                          # Mis propios posts
-                Q(autor_id__in=mis_amigos_ids) |            # Posts de mis amigos
-                Q(comunidad_id__in=mis_comunidades_ids) |   # Posts de mis comunidades
-                Q(autor__perfil__es_publico=True) |         # Posts de perfiles públicos
-                Q(comunidad__es_publica=True)               # Posts de comunidades públicas
+                Q(autor=usuario) |                                  # Mis propios posts
+                Q(autor_id__in=mis_amigos_ids) |                    # Posts de mis amigos
+                Q(comunidad_id__in=mis_comunidades_ids) |           # Posts de mis comunidades
+                (Q(autor__perfil__es_publico=True) & Q(comunidad__isnull=True)) |  # Posts de perfiles públicos (no en comunidad)
+                (Q(comunidad__es_publica=True) & Q(comunidad__isnull=False))       # Posts de comunidades públicas
             )
 
             # Anotaciones con estado de interacción del usuario actual
@@ -233,9 +232,10 @@ class InicioGaleria(generics.ListAPIView):
                 ),
             )
         else:
-            # Sin autenticar: solo perfiles públicos y comunidades públicas
+            # Sin autenticar: perfiles públicos (sin comunidad) y comunidades públicas
             qs = qs.filter(
-                Q(autor__perfil__es_publico=True) | Q(comunidad__es_publica=True)
+                (Q(autor__perfil__es_publico=True) & Q(comunidad__isnull=True)) |
+                (Q(comunidad__es_publica=True) & Q(comunidad__isnull=False))
             )
 
             qs = qs.annotate(

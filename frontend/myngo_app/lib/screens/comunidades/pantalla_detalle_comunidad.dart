@@ -90,14 +90,28 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   Future<void> _cargarComunidadInicial() async {
     if (!mounted) return;
     setState(() => _estaCargandoComunidad = true);
-    final res = await _servicio.obtenerComunidad(widget.id!);
-    if (mounted) {
-      setState(() {
-        _comunidad = res.datos;
-        _estaCargandoComunidad = false;
-      });
-      if (_comunidad != null) {
-        _inicializarDatos();
+    try {
+      final res = await _servicio.obtenerComunidad(widget.id!);
+      if (mounted) {
+        if (res.exito && res.datos != null) {
+          setState(() {
+            _comunidad = res.datos;
+            _estaCargandoComunidad = false;
+          });
+          await _inicializarDatos();
+        } else {
+          setState(() {
+            _comunidad = null;
+            _estaCargandoComunidad = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _comunidad = null;
+          _estaCargandoComunidad = false;
+        });
       }
     }
   }
