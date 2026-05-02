@@ -319,67 +319,16 @@ class PantallaInicioState extends State<PantallaInicio> {
                         curve: Curves.easeInOutCubic,
                         width: _isSidebarOpen ? 320.0 : 0.0,
                         height: double.infinity,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro) para contrastar el navbar
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const NeverScrollableScrollPhysics(),
-                          child: SizedBox(
-                            width: 320.0,
-                            child: Stack(
-                              children: [
-                                // Patrón para el fondo de TODA la barra
-                                Positioned.fill(
-                                  child: Opacity(
-                                    opacity: 0.15,
-                                    child: GridView.builder(
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 3,
-                                        mainAxisSpacing: 30.0,
-                                        crossAxisSpacing: 30.0,
-                                      ),
-                                      itemBuilder: (context, index) => Transform.rotate(
-                                        angle: index % 2 == 0 ? 0.3 : -0.2,
-                                        child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // El SidebarIzquierdo real y deslizable
-                                Positioned.fill(
-                                  child: Theme(
-                                  data: Theme.of(context).copyWith(
-                                    scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
-                                      thumbVisibility: WidgetStateProperty.all(false),
-                                      trackVisibility: WidgetStateProperty.all(false),
-                                    ),
-                                  ),
-                                  child: ScrollConfiguration(
-                                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                                    child: SingleChildScrollView(
-                                      primary: false,
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                                      child: SidebarIzquierdo(
-                                        estaLogueado: _estaLogueado == true,
-                                        cargando: _cargandoComunidades == true,
-                                        comunidades: _misComunidades,
-                                        rankingUsuarios: _rankingUsuarios,
-                                        cargandoRanking: _cargandoRanking == true,
-                                        onComunidadSelected: _seleccionarComunidad,
-                                        onUsuarioSelected: _seleccionarUsuario,
-                                        onReorder: _reordenarComunidades,
-                                        misPuntos: _puntos,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        child: SidebarIzquierdo(
+                          estaLogueado: _estaLogueado == true,
+                          cargando: _cargandoComunidades == true,
+                          comunidades: _misComunidades,
+                          rankingUsuarios: _rankingUsuarios,
+                          cargandoRanking: _cargandoRanking == true,
+                          onComunidadSelected: _seleccionarComunidad,
+                          onUsuarioSelected: _seleccionarUsuario,
+                          onReorder: _reordenarComunidades,
+                          misPuntos: _puntos,
                         ),
                       ),
                       Expanded(
@@ -492,65 +441,25 @@ class PantallaInicioState extends State<PantallaInicio> {
             onTap: () { Navigator.pop(context); _alPulsarNav(2); },
           ),
           const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'MIS COMUNIDADES',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.grey.shade500,
-                  letterSpacing: 1.2,
-                ),
-              ),
+          Expanded(
+            child: SidebarIzquierdo(
+              estaLogueado: _estaLogueado == true,
+              cargando: _cargandoComunidades == true,
+              comunidades: _misComunidades,
+              rankingUsuarios: _rankingUsuarios,
+              cargandoRanking: _cargandoRanking == true,
+              onComunidadSelected: (c) {
+                Navigator.pop(context);
+                _seleccionarComunidad(c);
+              },
+              onUsuarioSelected: (u) {
+                Navigator.pop(context);
+                _seleccionarUsuario(u);
+              },
+              onReorder: _reordenarComunidades,
+              misPuntos: _puntos,
             ),
           ),
-          if (_cargandoComunidades)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-          else if (_misComunidades != null && _misComunidades!.isNotEmpty)
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: _misComunidades!.length,
-                itemBuilder: (context, index) {
-                  final comunidad = _misComunidades![index];
-                  return ListTile(
-                    leading: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: CachedNetworkImageProvider(comunidad.urlPortada),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      comunidad.nombre,
-                      style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _seleccionarComunidad(comunidad);
-                    },
-                  );
-                },
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Aún no te has unido a ninguna comunidad 🐾',
-                style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
-              ),
-            ),
         ],
       ),
     );
@@ -596,6 +505,15 @@ class _ToastMensajeState extends State<_ToastMensaje>
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut));
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _ctrl.forward();
+    
+    // Auto-desvanecer después de 5 segundos
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        _ctrl.reverse().then((_) {
+          if (mounted) widget.onDismiss();
+        });
+      }
+    });
   }
 
   @override

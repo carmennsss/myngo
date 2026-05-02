@@ -23,6 +23,9 @@ import 'widgets_detalle/header_detalle_perfil.dart';
 import 'widgets_detalle/info_perfil.dart';
 import 'widgets_detalle/seccion_posts_perfil.dart';
 import 'widgets_detalle/seccion_guardados_perfil.dart';
+import 'widgets_detalle/seccion_colecciones_perfil.dart';
+import '../../services/servicio_galeria.dart';
+import '../../models/coleccion.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 ///
@@ -64,6 +67,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   int? _filtroComunidadId;
   List<Map<String, dynamic>> _comunidadesFiltro = [];
 
+  List<Coleccion>? _misColecciones;
+  bool _cargandoColecciones = false;
+
   String? _biografiaLocal;
   String? _avatarLocal;
   String? _fondoLocal;
@@ -93,7 +99,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     _tabController!.addListener(() {
       if (_tabController!.index != _tabActual) {
         setState(() => _tabActual = _tabController!.index);
-        if (_tabActual == 1) _cargarGuardados();
+        if (_tabActual == 1) {
+          if (_publicacionesGuardadas == null) _cargarGuardados();
+          if (_misColecciones == null) _cargarColecciones();
+        }
       }
     });
   }
@@ -112,6 +121,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       _estadoSeguimiento = widget.usuario.estadoSeguimiento;
       _publicaciones = null;
       _publicacionesGuardadas = null;
+      _misColecciones = null;
       _cargandoPublicaciones = true;
       _rolEnComunidad = null;
       _haVotadoHoy = false;
@@ -181,7 +191,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     }
   }
 
-  Future<void> _cargarGuardados({int? comunidadId}) async {
+  Future<void> _cargarGuardados({int? comunidadId, bool force = false}) async {
+    if (!force && _publicacionesGuardadas != null && comunidadId == _filtroComunidadId) return;
     setState(() => _cargandoGuardados = true);
     final res = await ServicioPerfiles()
         .obtenerPublicacionesGuardadas(comunidadId: comunidadId);
@@ -192,6 +203,18 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           _extraerComunidadesFiltro(_publicacionesGuardadas!);
         }
         _cargandoGuardados = false;
+      });
+    }
+  }
+
+  Future<void> _cargarColecciones({bool force = false}) async {
+    if (!force && _misColecciones != null) return;
+    setState(() => _cargandoColecciones = true);
+    final res = await ServicioGaleria().obtenerColecciones(idUsuario: widget.usuario.id);
+    if (mounted) {
+      setState(() {
+        _misColecciones = res.exito ? res.datos : [];
+        _cargandoColecciones = false;
       });
     }
   }
@@ -267,71 +290,85 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                       fontWeight: FontWeight.bold, color: Colors.white)),
             )
           : null,
-      body: CustomScrollView(
-        slivers: [
-          HeaderDetallePerfil(
-            usuario: widget.usuario,
-            avatarLocal: _avatarLocal,
-            fondoLocal: _fondoLocal,
-            marcoLocal: _marcoLocal,
-            currentUserId: _currentUserId,
-            onEditarAvatar: _editarAvatar,
-            onBack: widget.onBack ?? () => Navigator.pop(context),
-            esIntegrada: widget.esIntegrada,
-          ),
-          SliverToBoxAdapter(
-            child: InfoPerfil(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            HeaderDetallePerfil(
               usuario: widget.usuario,
+              avatarLocal: _avatarLocal,
+              fondoLocal: _fondoLocal,
+              marcoLocal: _marcoLocal,
               currentUserId: _currentUserId,
-              biografiaLocal: _biografiaLocal,
-              estadoSeguimiento: _estadoSeguimiento,
-              isLoading: _isLoading,
-              rolEnComunidad: _rolEnComunidad,
-              ratingLocal: _ratingLocal,
-              haVotadoHoy: _haVotadoHoy,
-              tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
-              onManejarSeguimiento: _manejarSeguimiento,
-              onMostrarVoto: _mostrarSelectorVoto,
-              onEditarBio: _mostrarDialogoEditarBio,
-              onChat: _iniciarChat,
+              onEditarAvatar: _editarAvatar,
+              onBack: widget.onBack ?? () => Navigator.pop(context),
+              esIntegrada: widget.esIntegrada,
             ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SliverTabsDelegate(
-              tabBar: TabBar(
-                controller: _tabController,
-                tabs: const [Tab(text: 'Posts'), Tab(text: 'Guardados')],
-                labelStyle:
-                    GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
-                indicatorColor: const Color(0xFFF28B50),
+            SliverToBoxAdapter(
+              child: InfoPerfil(
+                usuario: widget.usuario,
+                currentUserId: _currentUserId,
+                biografiaLocal: _biografiaLocal,
+                estadoSeguimiento: _estadoSeguimiento,
+                isLoading: _isLoading,
+                rolEnComunidad: _rolEnComunidad,
+                ratingLocal: _ratingLocal,
+                haVotadoHoy: _haVotadoHoy,
+                tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
+                onManejarSeguimiento: _manejarSeguimiento,
+                onMostrarVoto: _mostrarSelectorVoto,
+                onEditarBio: _mostrarDialogoEditarBio,
+                onChat: _iniciarChat,
               ),
             ),
-          ),
-          SliverFillRemaining(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                SeccionPostsPerfil(
-                  publicaciones: _publicaciones,
-                  estaCargando: _cargandoPublicaciones,
-                  onRefresh: _cargarPublicaciones,
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabsDelegate(
+                tabBar: TabBar(
+                  controller: _tabController,
+                  tabs: [
+                    const Tab(text: 'Posts'),
+                    Tab(text: _currentUserId == widget.usuario.id ? 'Favoritos' : 'Colecciones'),
+                  ],
+                  labelStyle: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                  indicatorColor: const Color(0xFFF28B50),
                 ),
-                SeccionGuardadosPerfil(
-                  publicaciones: _publicacionesGuardadas,
-                  estaCargando: _cargandoGuardados,
-                  comunidadesFiltro: _comunidadesFiltro,
-                  filtroComunidadId: _filtroComunidadId,
-                  onFiltroChanged: (id) {
-                    setState(() => _filtroComunidadId = id);
-                    _cargarGuardados(comunidadId: id);
-                  },
-                  onRefresh: _cargarGuardados,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            SeccionPostsPerfil(
+              publicaciones: _publicaciones,
+              estaCargando: _cargandoPublicaciones,
+              onRefresh: _cargarPublicaciones,
+            ),
+            if (_currentUserId == widget.usuario.id)
+              SeccionGuardadosPerfil(
+                publicaciones: _publicacionesGuardadas,
+                colecciones: _misColecciones,
+                estaCargando: _cargandoGuardados,
+                estaCargandoColecciones: _cargandoColecciones,
+                comunidadesFiltro: _comunidadesFiltro,
+                filtroComunidadId: _filtroComunidadId,
+                onFiltroChanged: (id) {
+                  setState(() => _filtroComunidadId = id);
+                  _cargarGuardados(comunidadId: id);
+                },
+                onRefresh: () => _cargarGuardados(force: true),
+                onRefreshColecciones: () => _cargarColecciones(force: true),
+              )
+            else
+              SeccionColeccionesPerfil(
+                colecciones: _misColecciones,
+                estaCargando: _cargandoColecciones,
+                onRefresh: _cargarColecciones,
+                esPropietario: false,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -358,8 +395,55 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     );
   }
 
-  void _mostrarDialogoEditarBio() async {
-    // Implementación similar a la anterior pero simplificada
+  void _mostrarDialogoEditarBio() {
+    final controller = TextEditingController(text: _biografiaLocal);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Editar Biografía',
+            style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          style: GoogleFonts.inter(color: Colors.white70),
+          decoration: InputDecoration(
+            hintText: 'Cuéntanos algo sobre ti...',
+            hintStyle: TextStyle(color: Colors.grey.shade600),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancelar', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final nuevaBio = controller.text;
+              final res = await ServicioPerfiles().editarBiografia(
+                textoBiografia: nuevaBio,
+                perfilId: widget.usuario.perfilId,
+              );
+              if (res.exito) {
+                setState(() => _biografiaLocal = nuevaBio);
+                if (mounted) Navigator.pop(ctx);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF248EA6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Guardar',
+                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _editarAvatar() async {
@@ -390,7 +474,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
         titulo: 'Nuevo Miau-Post',
         onPublicar: (txt, imgs, tags) async {
           final ok = await Provider.of<PostProvider>(context, listen: false)
-              .crearPost(comunidadId: widget.comunidadIdContexto ?? 0, texto: txt, imagenes: imgs, etiquetas: tags);
+              .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: imgs, etiquetas: tags);
           if (ok) _cargarPublicaciones();
           return ok;
         },

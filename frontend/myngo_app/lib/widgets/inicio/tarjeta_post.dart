@@ -137,6 +137,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   nombre: widget.post.autorNombre,
                   avatarUrl: widget.post.autorFoto,
                   marcoUrl: widget.post.autorMarco,
+                  fondoUrl: widget.post.autorFondo,
                   puntos: 0,
                   estado: widget.post.autorEstado ?? 'DESCONECTADO',
                   userId: widget.post.autorId,

@@ -227,24 +227,6 @@ class _PantallaChatState extends State<PantallaChat> {
       if (mounted) setState(() => _chatConectado = true);
     });
 
-    _servicioChat.conectarPresencia((data) {
-      if (!mounted) return;
-      setState(() {
-        if (data['type'] == 'presence_connection_established') {
-          // ── FIX BUG PRESENCIA ──────────────────────────────────────
-          // El backend envía la lista de IDs online al conectarse.
-          final List<dynamic> ids = data['online_users'] ?? [];
-          for (final id in ids) {
-            _presenciaUsuarios[id as int] = 'ACTIVO';
-          }
-        } else if (data['type'] == 'status_change') {
-          _presenciaUsuarios[data['user_id'] as int] = data['status'] as String;
-        }
-        _usuariosOnline = _presenciaUsuarios.values
-            .where((s) => s == 'ACTIVO' || s == 'OCUPADO')
-            .length;
-      });
-    });
   }
 
   void _enviarMensaje() {
@@ -320,17 +302,15 @@ class _PantallaChatState extends State<PantallaChat> {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: (_usuariosOnline > 0 || _chatConectado) ? Colors.green : Colors.grey,
+                    color: _chatConectado ? Colors.green : Colors.grey,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  _usuariosOnline > 0
-                      ? '$_usuariosOnline conectado${_usuariosOnline > 1 ? 's' : ''} ahora'
-                      : (_chatConectado ? 'Conectado' : 'Conectando...'),
+                  _chatConectado ? 'Chat activo' : 'Conectando...',
                   style: GoogleFonts.outfit(
-                    color: (_usuariosOnline > 0 || _chatConectado)
+                    color: _chatConectado
                         ? const Color(0xFFC35E34)
                         : Colors.grey,
                     fontSize: 12,

@@ -42,7 +42,7 @@ class ServicioMensajeria {
   Future<Map<String, dynamic>?> crearSalaPrivada(int idOtroUsuario) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlApi/mensajeria/salas/crear_privada/'),
+        Uri.parse('$_urlApi/mensajeria/salas/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({'otro_usuario_id': idOtroUsuario}),
       ).timeout(const Duration(seconds: 15));
@@ -73,7 +73,7 @@ class ServicioMensajeria {
   Future<Map<String, dynamic>> obtenerConteoMensajesNoLeidos() async {
     try {
       final respuesta = await http.get(
-        Uri.parse('$_urlApi/mensajeria/mensajes/no_leidos/'),
+        Uri.parse('$_urlApi/mensajeria/no-leidos/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
 
@@ -167,6 +167,9 @@ class ServicioMensajeria {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       if (token == null) return;
+
+      // Cerrar conexión previa si existe
+      _canalNotificaciones?.sink.close();
 
       final url = Uri.parse("$_urlWs/chat-notificaciones/?token=$token");
       _canalNotificaciones = WebSocketChannel.connect(url);

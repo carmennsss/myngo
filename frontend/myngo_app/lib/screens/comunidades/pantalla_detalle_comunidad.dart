@@ -30,9 +30,6 @@ import 'widgets_detalle/preview_comunidad.dart';
 import 'widgets_detalle/dialogos_comunidad.dart';
 
 /// Pantalla principal de detalle de una comunidad.
-///
-/// Gestiona la visualización de posts, tienda, galería, chats y miembros,
-/// adaptándose según si el usuario es miembro o no (modo preview).
 class PantallaDetalleComunidad extends StatefulWidget {
   final Comunidad comunidad;
   final bool esIntegrada;
@@ -70,6 +67,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   List<SalaChat>? _salasChat;
   List<Coleccion>? _colecciones;
   Key _galeriaKey = UniqueKey();
+  
+  // Cache del fondo para evitar recrearlo y causar parpadeos o lentitud
+  Widget? _cachedBackground;
 
   @override
   void initState() {
@@ -86,6 +86,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       _publicaciones = null;
       _salasChat = null;
       _colecciones = null;
+      _cachedBackground = null;
       _inicializarDatos();
     }
   }
@@ -172,20 +173,17 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
-  // --- HELPERS DE COLOR Y ESTILO ---
-  Color _colorPagina(BuildContext context) =>
-      Theme.of(context).scaffoldBackgroundColor;
-  bool _esAppClara(BuildContext context) =>
-      _colorPagina(context).computeLuminance() > 0.5;
-  Color _colorTextoPrincipal(BuildContext context) =>
-      _esAppClara(context) ? const Color(0xFF1E1E1E) : Colors.white;
-  Color _colorTextoSecundario(BuildContext context) =>
-      _esAppClara(context) ? Colors.grey.shade700 : Colors.grey.shade400;
+  Color _colorPagina(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
+  bool _esAppClara(BuildContext context) => _colorPagina(context).computeLuminance() > 0.5;
+  Color _colorTextoPrincipal(BuildContext context) => _esAppClara(context) ? const Color(0xFF1E1E1E) : Colors.white;
+  Color _colorTextoSecundario(BuildContext context) => _esAppClara(context) ? Colors.grey.shade700 : Colors.grey.shade400;
 
   @override
   Widget build(BuildContext context) {
     final esCreador = _miId != null && _miId == widget.comunidad.creadorId;
     final esMiembro = widget.comunidad.esMiembro || esCreador;
+    
+    _cachedBackground ??= _buildBackgroundFeed();
 
     if (!esMiembro) {
       return PreviewComunidad(
@@ -202,7 +200,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         }),
         onJoin: _gestionarMembresia,
         onBack: widget.onBack ?? () => Navigator.pop(context),
-        backgroundFeed: _buildBackgroundFeed(),
+        backgroundFeed: _cachedBackground!,
         esAppClara: _esAppClara(context),
         colorTextoPrincipal: _colorTextoPrincipal(context),
         colorTextoSecundario: _colorTextoSecundario(context),
@@ -211,7 +209,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
     final dashboard = Stack(
       children: [
-        Positioned.fill(child: _buildBackgroundFeed()),
+        Positioned.fill(child: _cachedBackground!),
         NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
@@ -373,8 +371,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
     return const SizedBox();
   }
-
-  // --- DIALOGOS Y OTROS WIDGETS AUXILIARES (KEPT FOR SIMPLICITY) ---
 
   void _mostrarDialogoNuevoPost(BuildContext context) {
     showModalBottomSheet(

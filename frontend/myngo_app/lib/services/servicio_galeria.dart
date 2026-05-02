@@ -103,6 +103,28 @@ class ServicioGaleria {
     }
   }
 
+  /// Actualiza los metadatos de una colección (ej. cambiar privacidad o nombre).
+  Future<RespuestaApi<Coleccion>> editarColeccion(int idColeccion, Map<String, dynamic> datos) async {
+    try {
+      final respuesta = await http.patch(
+        Uri.parse('$_urlContenido/colecciones/$idColeccion/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode(datos),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Colección actualizada',
+          datos: Coleccion.fromJson(jsonDecode(respuesta.body)),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar colección');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Crea una nueva colección multimedia personalizada.
   Future<RespuestaApi<Coleccion>> crearColeccion({
     required String nombre,

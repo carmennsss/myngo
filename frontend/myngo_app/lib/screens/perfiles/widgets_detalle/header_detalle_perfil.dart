@@ -49,7 +49,7 @@ class HeaderDetallePerfil extends StatelessWidget {
         : '?';
 
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 450,
       pinned: true,
       stretch: true,
       backgroundColor: colorCard,
@@ -69,16 +69,16 @@ class HeaderDetallePerfil extends StatelessWidget {
             )
           : null,
       flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.pin,
+        collapseMode: CollapseMode.parallax,
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // ── Fondo / banner ──────────────────────────────────────────
+            // Fondo
             if (fondoLocal != null && fondoLocal!.isNotEmpty)
               Image.network(
                 fondoLocal!,
                 fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
+                alignment: Alignment.center,
                 errorBuilder: (_, __, ___) => Container(color: colorGradTop),
               )
             else
@@ -92,113 +92,91 @@ class HeaderDetallePerfil extends StatelessWidget {
                 ),
               ),
 
-            // Degradado inferior para dar profundidad al avatar
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 100,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, colorCard.withOpacity(0.6)],
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Avatar + marco ───────────────────────────────────────────
-            Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    GestureDetector(
-                      onTap: currentUserId == usuario.id ? onEditarAvatar : null,
-                      child: SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            if (marcoLocal != null && marcoLocal!.isNotEmpty)
-                              Positioned.fill(
-                                child: IgnorePointer(
-                                  child: Image.network(marcoLocal!,
-                                      fit: BoxFit.contain),
+            // Avatar centrado
+            Center(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: currentUserId == usuario.id ? onEditarAvatar : null,
+                    child: SizedBox(
+                      width: 160,
+                      height: 160,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (marcoLocal != null && marcoLocal!.isNotEmpty)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: Image.network(marcoLocal!,
+                                    fit: BoxFit.contain),
+                              ),
+                            ),
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: (marcoLocal == null || marcoLocal!.isEmpty)
+                                  ? Border.all(
+                                      color: const Color(0xFF248EA6), width: 3)
+                                  : null,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
                                 ),
-                              ),
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: (marcoLocal == null || marcoLocal!.isEmpty)
-                                    ? Border.all(
-                                        color: const Color(0xFF248EA6), width: 3)
-                                    : null,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.5),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                                image: (avatarLocal != null &&
-                                        avatarLocal!.isNotEmpty)
-                                    ? DecorationImage(
-                                        image: NetworkImage(avatarLocal!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
-                              child: (avatarLocal == null || avatarLocal!.isEmpty)
-                                  ? Center(
-                                      child: Text(
-                                        inicial,
-                                        style: const TextStyle(
-                                          fontSize: 48,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF248EA6),
-                                        ),
-                                      ),
+                              ],
+                              image: (avatarLocal != null &&
+                                      avatarLocal!.isNotEmpty)
+                                  ? DecorationImage(
+                                      image: NetworkImage(avatarLocal!),
+                                      fit: BoxFit.cover,
                                     )
                                   : null,
                             ),
-                            _StatusIndicator(
-                              usuario: usuario,
-                              currentUserId: currentUserId,
-                              colorCard: colorCard,
-                              getColorEstado: _getColorEstado,
-                            ),
-                          ],
+                            child: (avatarLocal == null || avatarLocal!.isEmpty)
+                                ? Center(
+                                    child: Text(
+                                      inicial,
+                                      style: const TextStyle(
+                                        fontSize: 54,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF248EA6),
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          _StatusIndicator(
+                            usuario: usuario,
+                            currentUserId: currentUserId,
+                            colorCard: colorCard,
+                            getColorEstado: _getColorEstado,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (currentUserId == usuario.id)
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: onEditarAvatar,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF28B50),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.camera_alt_rounded,
+                              size: 18, color: Colors.white),
                         ),
                       ),
                     ),
-                    if (currentUserId == usuario.id)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: onEditarAvatar,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF28B50),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.camera_alt_rounded,
-                                size: 14, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
           ],

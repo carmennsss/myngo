@@ -216,10 +216,8 @@ final GoRouter appRouter = GoRouter(
               path: '/explorar',
               builder: (context, state) {
                 return PantallaExplorar(
-                  onComunidadSelected: (c) {
-                    final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                    inicioState?.seleccionarComunidad(c);
-                  },
+                  onComunidadSelected: (c) =>
+                      context.go('/explorar/comunidades/${c.id}', extra: c),
                   onComunidadCreada: () {
                     final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
                     inicioState?.cargarComunidades();

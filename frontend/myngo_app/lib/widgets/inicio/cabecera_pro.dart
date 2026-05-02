@@ -47,14 +47,25 @@ class CabeceraPro extends StatelessWidget {
     final isSmallMobile = screenWidth < 500;
 
     return Container(
-      height: 60,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-      decoration: const BoxDecoration(
+      height: 70,
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFC35E34), Color(0xFFE89A6A)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: [
+            const Color(0xFFC35E34),
+            const Color(0xFFD95F43).withOpacity(0.95),
+            const Color(0xFFE89A6A).withOpacity(0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -65,7 +76,7 @@ class CabeceraPro extends StatelessWidget {
                 Scaffold.of(context).openDrawer();
               },
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
           ],
           MouseRegion(
             cursor: SystemMouseCursors.click,
@@ -73,10 +84,26 @@ class CabeceraPro extends StatelessWidget {
               onTap: () => onNavSelected(0),
               child: Row(
                 children: [
-                  Icon(Icons.pets, color: Colors.white, size: isMobile ? 24 : 28),
+                  Image.asset(
+                    'assets/images/logo_myngo.png',
+                    height: isMobile ? 50 : 64,
+                    width: isMobile ? 50 : 64,
+                    fit: BoxFit.contain,
+                  ),
                   if (!isSmallMobile) ...[
-                    SizedBox(width: isMobile ? 8 : 12),
-                    Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: isMobile ? 20 : 26, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                    const SizedBox(width: 14),
+                    Text(
+                      'MYNGO',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: isMobile ? 22 : 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2.0,
+                        shadows: [
+                          Shadow(color: Colors.black26, offset: const Offset(0, 2), blurRadius: 4),
+                        ],
+                      ),
+                    ),
                   ],
                 ],
               ),

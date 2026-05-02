@@ -410,7 +410,7 @@ class ServicioComunidades {
 
   /// Crea una nueva publicación permitiendo el envío de múltiples archivos multimedia.
   Future<RespuestaApi<Publicacion>> crearPublicacion({
-    required int idComunidad,
+    int? idComunidad,
     required String texto,
     List<XFile>? imagenes,
     String? etiquetas,
@@ -421,7 +421,9 @@ class ServicioComunidades {
       
       if (token != null) solicitud.headers['Authorization'] = 'Token $token';
 
-      solicitud.fields['comunidad'] = idComunidad.toString();
+      if (idComunidad != null && idComunidad != 0) {
+        solicitud.fields['comunidad'] = idComunidad.toString();
+      }
       solicitud.fields['contenido_texto'] = texto;
       if (etiquetas != null && etiquetas.trim().isNotEmpty) {
         solicitud.fields['etiquetas'] = etiquetas.trim();

@@ -76,37 +76,44 @@ class PreviewComunidad extends StatelessWidget {
                 ),
               ];
             },
-            body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  indiceSeccion == 0
-                      ? SeccionPostsComunidad(
-                          publicaciones: publicaciones,
-                          estaCargando: estaCargandoDatos,
-                          onRefresh: () async {}, // No refresh in preview
+            body: CustomScrollView(
+              slivers: [
+                if (indiceSeccion == 0)
+                  SeccionPostsComunidad(
+                    publicaciones: publicaciones,
+                    estaCargando: estaCargandoDatos,
+                    onRefresh: () async {},
+                    esAppClara: esAppClara,
+                    comoSliver: true,
+                  )
+                else
+                  SliverToBoxAdapter(child: _buildPreviewGallery(context)),
+                SliverPadding(
+                  padding: const EdgeInsets.all(24.0),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        PreviewAboutSection(
+                          comunidad: comunidad,
                           esAppClara: esAppClara,
-                        )
-                      : _buildPreviewGallery(context),
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: PreviewAboutSection(
-                      comunidad: comunidad,
-                      esAppClara: esAppClara,
-                      colorTextoPrincipal: colorTextoPrincipal,
-                      colorTextoSecundario: colorTextoSecundario,
-                      bgColor: comunidad.colorTema,
+                          colorTextoPrincipal: colorTextoPrincipal,
+                          colorTextoSecundario: colorTextoSecundario,
+                          bgColor: comunidad.colorTema,
+                        ),
+                        const SizedBox(height: 16),
+                        CommunityJoinButton(
+                          comunidad: comunidad,
+                          miId: miId,
+                          estaCargandoPeticion: estaCargandoPeticion,
+                          onLogin: () => Navigator.pushNamed(context, '/login'),
+                          onJoin: onJoin,
+                          isPreview: true,
+                        ),
+                      ],
                     ),
                   ),
-                  CommunityJoinButton(
-                    comunidad: comunidad,
-                    miId: miId,
-                    estaCargandoPeticion: estaCargandoPeticion,
-                    onLogin: () => Navigator.pushNamed(context, '/login'),
-                    onJoin: onJoin,
-                    isPreview: true,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
