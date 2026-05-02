@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../models/comunidad.dart';
 import '../../../services/servicio_comunidades.dart';
@@ -158,6 +159,13 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                                   color: _getColorRol(rol),
                                   letterSpacing: 0.5,
                                 ),
+                              ),
+                            ),
+                            Text(
+                              'Miembro desde ${DateFormat('dd/MM/yyyy').format(DateTime.parse(m['fecha_union'] ?? DateTime.now().toIso8601String()))}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
                               ),
                             ),
                           ],

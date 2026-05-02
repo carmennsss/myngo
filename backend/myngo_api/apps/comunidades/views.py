@@ -306,7 +306,7 @@ class ListarMiembrosComunidad(APIView):
                 'usuario_id': comunidad.creador.id,
                 'perfil_id': getattr(comunidad.creador.perfil, 'id', 0) if hasattr(comunidad.creador, 'perfil') else 0,
                 'usuario_nombre': comunidad.creador.nombre_usuario,
-                'usuario_avatar': comunidad.creador.url_avatar.url if comunidad.creador.url_avatar else None,
+                'usuario_avatar': comunidad.creador.url_avatar,
                 'rol': 'Creador',
                 'fecha_union': comunidad.fecha_creacion.isoformat() if comunidad.fecha_creacion else None,
             })
@@ -328,7 +328,7 @@ class ListarMiembrosComunidad(APIView):
                 'usuario_id': m.usuario.id,
                 'perfil_id': getattr(m.usuario.perfil, 'id', 0) if hasattr(m.usuario, 'perfil') else 0,
                 'usuario_nombre': m.usuario.nombre_usuario,
-                'usuario_avatar': m.usuario.url_avatar.url if m.usuario.url_avatar else None,
+                'usuario_avatar': m.usuario.url_avatar,
                 'rol': m.rol,
                 'fecha_union': m.fecha_union.isoformat() if m.fecha_union else None,
             })
