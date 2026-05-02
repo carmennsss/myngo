@@ -26,6 +26,7 @@ import 'widgets_detalle/header_detalle_comunidad.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'widgets_detalle/seccion_galeria_comunidad.dart';
 import 'widgets_detalle/seccion_chat_comunidad.dart';
+import 'widgets_detalle/lista_miembros_comunidad.dart';
 import 'widgets_detalle/preview_comunidad.dart';
 import 'widgets_detalle/dialogos_comunidad.dart';
 
@@ -358,7 +359,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           colorTextoSecundario: _colorTextoSecundario(context),
         );
       case 4:
-        return const PantallaPerfiles();
+        return ListaMiembrosComunidad(comunidad: _comunidad!);
       default:
         return const SizedBox();
     }

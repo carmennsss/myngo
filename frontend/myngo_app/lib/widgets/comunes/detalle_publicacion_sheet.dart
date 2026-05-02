@@ -10,6 +10,8 @@ import 'grid_imagenes_post.dart';
 import 'hover_profile_card.dart';
 import 'acciones_y_comentarios_post.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../dialogo_crear_post.dart';
+import '../../services/servicio_comunidades.dart';
 
 
 /// Bottom sheet estilo Instagram que muestra el detalle completo de un post.
@@ -79,6 +81,30 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
         }
       }
     }
+  }
+
+  void _mostrarDialogoEdicion() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (ctx) => DialogoCrearPost(
+        titulo: 'Editar Miau-post 🐾',
+        initialTexto: widget.publicacion.contenidoTexto,
+        onPublicar: (texto, imagenes, etiquetas) async {
+          final res = await ServicioComunidades().actualizarPublicacion(
+            idPublicacion: widget.publicacion.id,
+            texto: texto,
+          );
+          if (res.exito && mounted) {
+            setState(() {
+              widget.publicacion.contenidoTexto = texto;
+            });
+            return true;
+          }
+          return false;
+        },
+      ),
+    );
   }
 
   @override
@@ -195,6 +221,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                       Navigator.pop(context);
                       if (onEliminado != null) onEliminado!();
                     },
+                    onEditado: _mostrarDialogoEdicion,
                   ),
                 ],
               ),

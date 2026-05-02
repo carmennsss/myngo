@@ -15,6 +15,8 @@ from usuarios.models import Seguimiento
 
 from .models import Comunidad, MiembrosComunidad
 from .serializers import ComunidadSerializer, MiembroComunidadSerializer
+from mensajeria.models import SalaChat
+import uuid
 
 
 class ComunidadListCreate(generics.ListCreateAPIView):
@@ -74,6 +76,17 @@ class ComunidadListCreate(generics.ListCreateAPIView):
             comunidad=comunidad,
             rol='Administrador',
         )
+        
+        # Crear sala de chat general automáticamente
+        sala_general = SalaChat.objects.create(
+            nombre=f'General {comunidad.nombre} ✨',
+            comunidad=comunidad,
+            es_grupal=True,
+            es_publica=True,
+            invite_token=str(uuid.uuid4())
+        )
+        # Añadir al creador como miembro de la sala
+        sala_general.miembros.add(self.request.user)
 
 
 class MisComunidadesList(generics.ListAPIView):

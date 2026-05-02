@@ -281,7 +281,24 @@ class _TarjetaPostState extends State<TarjetaPost> {
                         Text(widget.post.titulo, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
                       if (widget.post.contenidoTexto.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(widget.post.contenidoTexto, style: GoogleFonts.outfit(color: subTextColor, fontSize: 15), maxLines: 4, overflow: TextOverflow.ellipsis),
+                        Text(
+                          widget.post.contenidoTexto,
+                          style: GoogleFonts.outfit(color: subTextColor, fontSize: 15),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (widget.post.contenidoTexto.length > 100)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              'Leer más...',
+                              style: GoogleFonts.outfit(
+                                color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                       ],
                       if (widget.post.urlsImagenes.isNotEmpty || (widget.post.urlImagen != null && widget.post.urlImagen!.isNotEmpty))
                         Padding(

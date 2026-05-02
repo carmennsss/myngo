@@ -61,6 +61,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   bool _isSidebarOpen = true;
   List<Usuario>? _rankingUsuarios;
   bool _cargandoRanking = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -297,28 +298,33 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
+    final location = GoRouterState.of(context).uri.toString();
+    final bool esSalaChat = location.contains('/mensajes/sala/');
     
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: isMobile && _estaLogueado ? _construirDrawerMobile() : null,
       body: Column(
         children: [
-          CabeceraPro(
-            estaLogueado: _estaLogueado,
-            nombreUsuario: _miNombre,
-            avatarUrl: _miAvatar,
-            marcoUrl: _miMarco,
-            miId: _miId,
-            estado: _miEstado,
-            indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
-            puntos: _puntos,
-            notificacionesSinLeer: _notificacionesSinLeer,
-            mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
-            onNavSelected: _alPulsarNav,
-            onProfileSelected: _seleccionarUsuario,
-            onStatusChanged: cambiarEstado,
-          ),
+          if (_estaLogueado)
+            CabeceraPro(
+              estaLogueado: _estaLogueado,
+              nombreUsuario: _miNombre,
+              avatarUrl: _miAvatar,
+              marcoUrl: _miMarco,
+              miId: _miId,
+              estado: _miEstado,
+              indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
+              puntos: _puntos,
+              notificacionesSinLeer: _notificacionesSinLeer,
+              mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
+              onNavSelected: _alPulsarNav,
+              onProfileSelected: _seleccionarUsuario,
+              onStatusChanged: cambiarEstado,
+            ),
           Expanded(
             child: Stack(
               children: [

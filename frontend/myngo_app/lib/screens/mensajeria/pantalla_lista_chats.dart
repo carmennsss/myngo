@@ -180,6 +180,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_lista_chats',
         onPressed: () {
           // TODO: Implementar búsqueda de usuarios para iniciar chat nuevo
           ScaffoldMessenger.of(context).showSnackBar(
@@ -279,7 +280,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           child: InkWell(
             onTap: () async {
               await context.push('/mensajes/sala/${sala['id']}', extra: {'nombre': nombre, 'sala': sala});
-              _cargar();
+              if (mounted) _cargar();
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
@@ -295,7 +296,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                 children: [
                   // Avatar
                   Hero(
-                    tag: 'avatar_${sala['id']}',
+                    tag: 'avatar_sala_${sala['id'] ?? index}',
                     child: Container(
                       width: 64,
                       height: 64,
@@ -333,12 +334,15 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              nombre,
-                              style: GoogleFonts.outfit(
-                                fontWeight: noLeidos > 0 ? FontWeight.w800 : FontWeight.w600,
-                                fontSize: 17,
-                                color: const Color(0xFF2D2D2D),
+                            Expanded(
+                              child: Text(
+                                nombre,
+                                style: GoogleFonts.outfit(
+                                  fontWeight: noLeidos > 0 ? FontWeight.w800 : FontWeight.w600,
+                                  fontSize: 17,
+                                  color: const Color(0xFF2D2D2D),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Text(
