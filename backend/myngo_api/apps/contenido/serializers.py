@@ -23,6 +23,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
     (likes, guardados) para el usuario autenticado.
     """
 
+    autor_perfil_id = serializers.ReadOnlyField(source='autor.perfil.id')
     autor_nombre = serializers.SerializerMethodField()
     autor_foto = serializers.SerializerMethodField()
     autor_marco = serializers.SerializerMethodField()
@@ -47,7 +48,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
         """Configuración del modelo y campos del serializador."""
         model = Publicacion
         fields = [
-            'id', 'autor', 'autor_nombre', 'autor_foto', 'autor_marco', 'autor_fondo',
+            'id', 'autor', 'autor_perfil_id', 'autor_nombre', 'autor_foto', 'autor_marco', 'autor_fondo',
             'autor_estado', 'autor_estilo_post', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
             'url_imagen', 'urls_imagenes', 'imagenes_ids', 'relacion_aspecto',

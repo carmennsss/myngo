@@ -8,6 +8,7 @@ class SalaChat {
   final int comunidadId;
   final bool esGrupal;
   final DateTime fechaCreacion;
+  final int? otroUsuarioId;
 
   SalaChat({
     required this.id,
@@ -15,6 +16,7 @@ class SalaChat {
     required this.comunidadId,
     required this.esGrupal,
     required this.fechaCreacion,
+    this.otroUsuarioId,
   });
 
   /// Crea una instancia de [SalaChat] a partir de un mapa JSON.
@@ -27,6 +29,24 @@ class SalaChat {
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.parse(json['fecha_creacion'])
           : DateTime.now(),
+      otroUsuarioId: _extraerOtroUsuarioId(json),
     );
+  }
+
+  static int? _extraerOtroUsuarioId(Map<String, dynamic> json) {
+    if (json['es_grupal'] == true) return null;
+    final miembros = json['miembros'];
+    if (miembros != null && miembros is List) {
+      // Intenta encontrar el que no es el id local, pero no tenemos el id local aquí fácilmente.
+      // Así que lo dejamos para que el servicio lo asigne, o miramos 'miembros_detalle'.
+      if (json['miembros_detalle'] != null && json['miembros_detalle'] is List) {
+        final detalles = json['miembros_detalle'] as List;
+        if (detalles.length == 2) {
+          // No sabemos cuál es el nuestro sin el provider, así que esto se resolverá
+          // en el servicio de mensajería.
+        }
+      }
+    }
+    return json['_otro_usuario_id']; // Lo inyectaremos en el parseo superior
   }
 }

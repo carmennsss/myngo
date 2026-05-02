@@ -118,7 +118,10 @@ class PublicacionList(generics.ListAPIView):
                     return Publicacion.objects.none()
             return qs.filter(autor=perfil.usuario, comunidad__isnull=True).order_by('-fecha_creacion')
 
-        return qs.filter(comunidad__es_publica=True).order_by('-fecha_creacion')
+        return qs.filter(
+            Q(comunidad__es_publica=True) |
+            Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+        ).distinct().order_by('-fecha_creacion')
 
 
 class PublicacionCreate(generics.CreateAPIView):

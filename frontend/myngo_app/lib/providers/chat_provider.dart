@@ -8,9 +8,32 @@ class ChatProvider extends ChangeNotifier {
   int _totalNoLeidos = 0;
   Map<int, int> _noLeidosPorSala = {};
   int? _salaActivaId;
+  Set<int> _usuariosOnline = {};
 
   int get totalNoLeidos => _totalNoLeidos;
   int? get salaActivaId => _salaActivaId;
+
+  bool isUsuarioOnline(int userId) => _usuariosOnline.contains(userId);
+
+  void setUsuariosOnline(List<int> ids) {
+    _usuariosOnline = Set.from(ids);
+    notifyListeners();
+  }
+
+  void actualizarPresenciaUsuario(int userId, bool online) {
+    if (online) {
+      _usuariosOnline.add(userId);
+    } else {
+      _usuariosOnline.remove(userId);
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _servicioChat.dispose();
+    super.dispose();
+  }
 
   int noLeidosEnSala(int salaId) => _noLeidosPorSala[salaId] ?? 0;
 

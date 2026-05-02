@@ -237,7 +237,7 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildBioSection(Color colorTextoP, Color colorTextoS) {
-    final bool esPropio = currentUserId == usuario.id;
+    final bool esPropio = currentUserId != null && currentUserId == usuario.id;
     
     return GestureDetector(
       onTap: esPropio ? onEditarBio : null,
@@ -286,21 +286,29 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    if (currentUserId == null) {
+      return const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+    }
     final bool esPropio = currentUserId == usuario.id;
 
     return Row(
       children: [
         if (!esPropio) ...[
-          Expanded(
-            child: _ActionButton(
-              label: _getFollowText(),
-              color: _getFollowColor(),
-              isLoading: isLoading,
-              onPressed: onManejarSeguimiento,
-            ),
+          _ActionButton(
+            label: _getFollowText(),
+            color: _getFollowColor(),
+            isLoading: isLoading,
+            onPressed: onManejarSeguimiento,
           ),
           const SizedBox(width: 12),
           _CircularAction(icon: Icons.chat_bubble_outline, onPressed: onChat),
+          const SizedBox(width: 12),
+          _ActionButton(
+            label: haVotadoHoy ? tiempoParaReinicio : 'Votar',
+            color: haVotadoHoy ? Colors.grey.shade600 : const Color(0xFF248EA6),
+            isLoading: false,
+            onPressed: haVotadoHoy ? () {} : onMostrarVoto,
+          ),
           const SizedBox(width: 12),
         ],
         _RateButton(
@@ -346,7 +354,7 @@ class _ActionButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: isLoading

@@ -71,8 +71,7 @@ class SeguirPerfil(APIView):
     en perfiles privados. Si ya existe seguimiento, lo elimina (unfollow).
     """
 
-    permission_classes = [AllowAny]
-    authentication_classes = []
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, nombre_usuario):
         """Crea una relación de seguimiento o envía una solicitud según la privacidad.
@@ -86,10 +85,7 @@ class SeguirPerfil(APIView):
         Returns:
             Response: Mensaje descriptivo de la acción realizada y el nuevo estado.
         """
-        if request.user and request.user.is_authenticated:
-            usuario = request.user
-        else:
-            usuario = Usuario.objects.filter(pk=1).first() or Usuario.objects.first()
+        usuario = request.user
 
         try:
             perfil = Perfil.objects.get(usuario__nombre_usuario=nombre_usuario)

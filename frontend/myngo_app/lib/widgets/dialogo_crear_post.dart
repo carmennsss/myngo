@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:provider/provider.dart';
+import '../providers/post_provider.dart';
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
@@ -153,6 +155,13 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                       Navigator.pop(context);
                     } else {
                       setState(() => _estaCargando = false);
+                      final error = Provider.of<PostProvider>(context, listen: false).errorMessage ?? 'Error al publicar';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(error),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
                     }
                   }
                 },

@@ -11,6 +11,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../providers/chat_provider.dart';
+import '../../utils/mejoras_notifier.dart';
 import 'package:provider/provider.dart';
 import '../comunidades/pantalla_comunidades.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
@@ -65,6 +66,15 @@ class PantallaInicioState extends State<PantallaInicio> {
   void initState() {
     super.initState();
     _inicializarDatos();
+    mejoraEquipadaNotifier.addListener(_inicializarDatos);
+  }
+
+  @override
+  void dispose() {
+    mejoraEquipadaNotifier.removeListener(_inicializarDatos);
+    _servicioChat.dispose();
+    _servicioNotifChat.dispose();
+    super.dispose();
   }
 
   Future<void> _inicializarDatos() async {
@@ -101,7 +111,10 @@ class PantallaInicioState extends State<PantallaInicio> {
               setState(() => _miEstado = newStatus);
             }
             
-            // 2. Actualizar el estado en la lista del ranking si el usuario está ahí
+            // 2. Actualizar ChatProvider para que las pantallas de chat se enteren
+            context.read<ChatProvider>().actualizarPresenciaUsuario(userId, newStatus == 'ACTIVO');
+            
+            // 3. Actualizar el estado en la lista del ranking si el usuario está ahí
             if (_rankingUsuarios != null) {
               final index = _rankingUsuarios!.indexWhere((u) => u.id == userId);
               if (index != -1) {
@@ -122,6 +135,12 @@ class PantallaInicioState extends State<PantallaInicio> {
                 }
               }
             });
+            // Sincronizar lista de usuarios online inicial en ChatProvider
+            if (datos['online_users'] != null) {
+              context.read<ChatProvider>().setUsuariosOnline(
+                (datos['online_users'] as List).map((id) => (id as num).toInt()).toList()
+              );
+            }
           }
         });
 
@@ -277,10 +296,8 @@ class PantallaInicioState extends State<PantallaInicio> {
 
 
   @override
-  void dispose() {
-    _servicioChat.dispose();
-    _servicioNotifChat.dispose();
-    super.dispose();
+  void actualizarPuntos(int nuevosPuntos) {
+    if (mounted) setState(() => _puntos = nuevosPuntos);
   }
 
   @override

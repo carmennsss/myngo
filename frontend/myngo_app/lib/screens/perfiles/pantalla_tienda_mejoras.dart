@@ -58,7 +58,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     super.initState();
     _inicializarTienda();
     _subTabController =
-        TabController(length: widget.comunidad == null ? 4 : 3, vsync: this);
+        TabController(length: 4, vsync: this);
     _subTabController.addListener(_handleTabChange);
   }
 
@@ -175,7 +175,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                         _buildTab('Avatar'),
                         _buildTab('Marco'),
                         _buildTab('Fondo'),
-                        if (widget.comunidad == null) _buildTab('Estilo Post'),
+                        _buildTab('Estilo Post'),
                       ],
                     ),
         ),
@@ -239,7 +239,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
         borderRadius: BorderRadius.circular(16),
       ),
       child: TabBar(
-        isScrollable: widget.comunidad == null,
+        isScrollable: true,
         indicator: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -250,7 +250,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           const Tab(text: 'Avatares'),
           const Tab(text: 'Marcos'),
           const Tab(text: 'Fondos'),
-          if (widget.comunidad == null) const Tab(text: 'Estilos Post'),
+          const Tab(text: 'Estilos Post'),
         ],
       ),
     );

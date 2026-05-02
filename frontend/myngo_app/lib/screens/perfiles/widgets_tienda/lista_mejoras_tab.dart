@@ -265,7 +265,8 @@ class _MejoraCard extends StatelessWidget {
   Widget _buildImagePreview(bool estaActivo) {
     Widget contenidoRecurso;
     
-    if (mejora.tipo == 'ESTILO_POST' || mejora.tipo == 'ESTILO POST') {
+    final tipoUpper = mejora.tipo.toUpperCase();
+    if (tipoUpper == 'ESTILO_POST' || tipoUpper == 'ESTILO POST') {
       contenidoRecurso = Container(
         decoration: EstiloPostHelper.buildDecoracion(
           mejora.datosExtra, 
@@ -297,7 +298,7 @@ class _MejoraCard extends StatelessWidget {
       ),
     );
 
-    if (estaActivo && !estaEquipada) {
+    if (estaActivo) {
       return imagen;
     }
 
@@ -305,7 +306,7 @@ class _MejoraCard extends StatelessWidget {
       // Escala de grises: mezcla saturación 0 con el color gris
       colorFilter: const ColorFilter.mode(Color(0xFF888888), BlendMode.saturation),
       child: Opacity(
-        opacity: estaActivo ? 1.0 : 0.55,
+        opacity: 0.55,
         child: imagen,
       ),
     );

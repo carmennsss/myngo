@@ -113,9 +113,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   Future<void> _cargarColecciones() async {
     final res = await _servicioGaleria.obtenerColecciones(
         idComunidad: widget.comunidad.id);
-    if (res.exito && res.datos != null && mounted) {
-      setState(() => _colecciones = res.datos!);
-    }
+    // Siempre asignamos para no dejar estado null indefinidamente
+    if (mounted) setState(() => _colecciones = res.datos ?? []);
   }
 
   Future<void> _cargarDatosSeccion(int index) async {
@@ -129,13 +128,23 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     try {
       if (index == 0) {
         final res = await _servicio.obtenerPublicacionesComunidad(widget.comunidad.id);
-        if (res.exito && mounted) setState(() => _publicaciones = res.datos);
+        // Siempre asignamos (lista vacía si falla) para no dejar el spinner colgado
+        if (mounted) setState(() => _publicaciones = res.datos ?? []);
       } else if (index == 2) {
         setState(() => _galeriaKey = UniqueKey());
         await _cargarColecciones();
       } else if (index == 3) {
         final res = await _servicio.obtenerSalasChat(widget.comunidad.id);
-        if (res.exito && mounted) setState(() => _salasChat = res.datos);
+        if (mounted) setState(() => _salasChat = res.datos ?? []);
+      }
+    } catch (e) {
+      // Si algo falla inesperadamente, mostramos estado vacío en lugar de spinner infinito
+      debugPrint('[PantallaDetalleComunidad] Error cargando sección $index: $e');
+      if (mounted) {
+        setState(() {
+          if (index == 0) _publicaciones = [];
+          if (index == 3) _salasChat = [];
+        });
       }
     } finally {
       if (mounted) setState(() => _estaCargandoDatos = false);

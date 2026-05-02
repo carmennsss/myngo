@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/usuario.dart';
 import '../../models/publicacion.dart';
@@ -300,6 +301,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               marcoLocal: _marcoLocal,
               currentUserId: _currentUserId,
               onEditarAvatar: _editarAvatar,
+              onEditarPerfil: _irATienda,
               onBack: widget.onBack ?? () => Navigator.pop(context),
               esIntegrada: widget.esIntegrada,
             ),
@@ -461,7 +463,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           context,
           MaterialPageRoute(
               builder: (ctx) => PantallaChat(
-                  salaId: sala['id'], nombreSala: widget.usuario.nombreUsuario)));
+                  salaId: sala['id'], nombreSala: widget.usuario.nombreUsuario, otroUsuarioId: widget.usuario.id)));
     }
   }
 
@@ -480,6 +482,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
         },
       ),
     );
+  }
+
+  void _irATienda() {
+    context.push('/tienda');
   }
 }
 
