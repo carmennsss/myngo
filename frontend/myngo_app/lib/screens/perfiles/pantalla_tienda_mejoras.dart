@@ -83,10 +83,20 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     if (mounted && res.exito) {
       setState(() {
         _usuarioActual = res.datos;
-        _previewAvatar = _usuarioActual?.urlAvatar;
-        _previewMarco = _usuarioActual?.marco;
-        _previewFondo = _usuarioActual?.fondo;
-        _previewEstiloPost = _usuarioActual?.estiloPost;
+        
+        if (widget.comunidad != null) {
+          // Si es tienda de comunidad, previsualizamos la comunidad por defecto
+          _previewAvatar = widget.comunidad!.urlAvatar;
+          _previewFondo = widget.comunidad!.urlFondo ?? widget.comunidad!.urlPortada;
+          _previewMarco = null; // Las comunidades no suelen tener marco por defecto
+          _previewEstiloPost = widget.comunidad!.fondoPostsConfig;
+        } else {
+          // Si es tienda personal, previsualizamos nuestro perfil
+          _previewAvatar = _usuarioActual?.urlAvatar;
+          _previewMarco = _usuarioActual?.marco;
+          _previewFondo = _usuarioActual?.fondo;
+          _previewEstiloPost = _usuarioActual?.estiloPost;
+        }
       });
     }
   }

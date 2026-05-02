@@ -1,12 +1,14 @@
 """Vistas de galería de imágenes y colecciones."""
 
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value, IntegerField
+from django.db.models.functions import Coalesce
 from rest_framework import generics, pagination, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from comunidades.models import Comunidad, MiembrosComunidad
 from notificaciones.models import Notificacion
+from usuarios.models import Seguimiento
 
 from .models import Coleccion, ImagenGaleria, MeGusta, PostGuardado, Publicacion, Reporte
 from .permissions import IsAuthorOrAdmin
@@ -151,7 +153,7 @@ class ImagenGaleriaDetail(generics.RetrieveUpdateDestroyAPIView):
 class InicioGaleria(generics.ListAPIView):
     """Feed de imágenes para la pantalla de exploración de galería.
 
-    Filtra según las comunidades del usuario autenticado, con soporte de etiquetas.
+    Incluye contenido de comunidades del usuario, seguidos y perfiles públicos.
     """
 
     serializer_class = PublicacionSerializer
@@ -160,7 +162,6 @@ class InicioGaleria(generics.ListAPIView):
 
     def get_queryset(self):
         """Genera el feed de imágenes para exploración.
-        Incluye contenido de comunidades del usuario, seguidos y perfiles públicos.
 
         Returns:
             QuerySet: Publicaciones con imagen filtradas.
@@ -182,7 +183,7 @@ class InicioGaleria(generics.ListAPIView):
                 Q(comunidad_id__in=mis_comunidades_ids) |          # Mis comunidades
                 Q(autor_id__in=mis_seguidos_ids) |                # Gente que sigo
                 Q(comunidad__es_publica=True) |                   # Comunidades públicas
-                Q(autor__perfil__es_publico=True, comunidad__isnull=True) | # Perfiles públicos
+                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True))) | # Perfiles públicos (en posts públicos)
                 Q(autor=usuario)                                  # Mis propios posts
             ).distinct()
 
@@ -191,8 +192,8 @@ class InicioGaleria(generics.ListAPIView):
             coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
             
             qs = qs.annotate(
-                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=Count.output_field), Value(0)),
-                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=Count.output_field), Value(0)),
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=IntegerField()), Value(0)),
                 anotado_usuario_dio_like=Exists(MeGusta.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
                 anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
             )
@@ -200,15 +201,15 @@ class InicioGaleria(generics.ListAPIView):
             # Modo público: solo comunidades públicas y perfiles públicos
             qs = qs.filter(
                 Q(comunidad__es_publica=True) | 
-                Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
             ).distinct()
             
             likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
             coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
             
             qs = qs.annotate(
-                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=Count.output_field), Value(0)),
-                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=Count.output_field), Value(0))
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=IntegerField()), Value(0))
             )
 
         # Carga básica de relaciones
