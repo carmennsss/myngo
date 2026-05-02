@@ -244,6 +244,16 @@ class ServicioMensajeria {
     }
   }
 
+  /// Notifica si el usuario está escribiendo o ha dejado de hacerlo.
+  void enviarEventoTyping(int idSala, bool estaEscribiendo) {
+    if (_estaConectadoChat && _canalChat != null) {
+      _canalChat!.sink.add(jsonEncode({
+        'type': 'typing',
+        'is_typing': estaEscribiendo,
+      }));
+    }
+  }
+
   /// Envía un paquete de mantenimiento para evitar el cierre por inactividad.
   void enviarLatido() {
     if (_estaConectadoPresencia && _canalPresencia != null) {

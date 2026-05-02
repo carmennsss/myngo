@@ -51,9 +51,21 @@ class SalaChatListCreate(generics.ListCreateAPIView):
             es_leido=False
         ).exclude(emisor=self.request.user).values('sala').annotate(cnt=Count('id')).values('cnt')
 
-        return SalaChat.objects.filter(
-            Q(miembros=self.request.user) | Q(es_publica=True)
-        ).distinct().annotate(
+        queryset = SalaChat.objects.all()
+        comunidad_id = self.request.query_params.get('comunidad_id')
+
+        if comunidad_id:
+            # Si se pide una comunidad específica, solo mostrar salas de esa comunidad
+            queryset = queryset.filter(comunidad_id=comunidad_id)
+        else:
+            # Si no hay comunidad (pestaña mensajes global), mostrar SOLO mis chats privados (DMs)
+            # Filtramos para que comunidad sea NULL
+            queryset = queryset.filter(
+                miembros=self.request.user,
+                comunidad__isnull=True
+            )
+
+        return queryset.distinct().annotate(
             fecha_ultimo_mensaje=Max('mensajes__fecha_envio'),
             count_no_leidos=Subquery(no_leidos_subquery)
         ).prefetch_related(

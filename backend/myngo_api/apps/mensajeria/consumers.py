@@ -130,6 +130,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     }
                 )
 
+        elif message_type == 'typing':
+            # Notificar que el usuario está escribiendo
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_typing',
+                    'user_id': self.user.id,
+                    'username': self.user.nombre_usuario,
+                    'is_typing': data.get('is_typing', True)
+                }
+            )
+
         elif message_type == 'add_member':
             target_user_id = data.get('user_id')
             if target_user_id:
@@ -167,6 +179,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def messages_read(self, event):
         """Notifica que los mensajes han sido leídos."""
         await self.send(text_data=json.dumps(event))
+
+    async def user_typing(self, event):
+        """Notifica que un usuario está escribiendo."""
+        # No enviamos la notificación al propio usuario que escribe
+        if event.get('user_id') != self.user.id:
+            await self.send(text_data=json.dumps(event))
 
     # ── Métodos de BD ─────────────────────────────────────────────────
 

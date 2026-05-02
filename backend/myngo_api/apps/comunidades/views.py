@@ -40,7 +40,7 @@ class ComunidadListCreate(generics.ListCreateAPIView):
         from django.db.models import Count, Exists, OuterRef, Subquery
         usuario = self.request.user
         queryset = Comunidad.objects.annotate(
-            anotado_miembros_count=Count('miembros_comunidades', distinct=True)
+            anotado_miembros_count=Count('miembros_comunidades', distinct=True) + 1
         )
         if usuario and usuario.is_authenticated:
             queryset = queryset.annotate(
@@ -110,7 +110,7 @@ class MisComunidadesList(generics.ListAPIView):
             )
             .distinct()
             .annotate(
-                anotado_miembros_count=Count('miembros_comunidades', distinct=True),
+                anotado_miembros_count=Count('miembros_comunidades', distinct=True) + 1,
                 anotado_es_miembro=Exists(
                     MiembrosComunidad.objects.filter(
                         usuario=usuario, comunidad=OuterRef('pk')
@@ -275,6 +275,65 @@ class ResponderPeticionUnion(APIView):
             peticion.save()
 
         return Response({'mensaje': 'Respuesta enviada'}, status=status.HTTP_200_OK)
+
+
+class ListarMiembrosComunidad(APIView):
+    """Retorna la lista de miembros de una comunidad, incluyendo al creador."""
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, pk):
+        """Obtiene todos los miembros (creador + registrados) de la comunidad.
+
+        Args:
+            request: Petición GET.
+            pk (int): ID de la comunidad.
+
+        Returns:
+            Response: Lista de miembros con roles y datos básicos.
+        """
+        try:
+            comunidad = Comunidad.objects.get(pk=pk)
+        except Comunidad.DoesNotExist:
+            return Response({'error': 'Comunidad no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+        miembros_data = []
+
+        # 1. Añadir al creador siempre al principio
+        if comunidad.creador:
+            miembros_data.append({
+                'id': -1, # ID ficticio para el creador
+                'usuario_id': comunidad.creador.id,
+                'perfil_id': getattr(comunidad.creador.perfil, 'id', 0) if hasattr(comunidad.creador, 'perfil') else 0,
+                'usuario_nombre': comunidad.creador.nombre_usuario,
+                'usuario_avatar': comunidad.creador.url_avatar.url if comunidad.creador.url_avatar else None,
+                'rol': 'Creador',
+                'fecha_union': comunidad.fecha_creacion,
+            })
+
+        # 2. Añadir al resto de miembros
+        miembros = (
+            MiembrosComunidad.objects.filter(comunidad=comunidad)
+            .select_related('usuario', 'usuario__perfil')
+            .order_by('rol', '-fecha_union')
+        )
+        
+        for m in miembros:
+            # Evitar duplicar al creador si por error está en la tabla de miembros
+            if comunidad.creador and m.usuario.id == comunidad.creador.id:
+                continue
+                
+            miembros_data.append({
+                'id': m.id,
+                'usuario_id': m.usuario.id,
+                'perfil_id': getattr(m.usuario.perfil, 'id', 0) if hasattr(m.usuario, 'perfil') else 0,
+                'usuario_nombre': m.usuario.nombre_usuario,
+                'usuario_avatar': m.usuario.url_avatar.url if m.usuario.url_avatar else None,
+                'rol': m.rol,
+                'fecha_union': m.fecha_union,
+            })
+
+        return Response(miembros_data)
 
 
 class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):
