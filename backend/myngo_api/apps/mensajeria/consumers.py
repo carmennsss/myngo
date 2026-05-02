@@ -54,15 +54,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
 
-        # Notificar a los demás que se ha unido
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'user_joined',
-                'user_id': self.user.id,
-                'username': self.user.nombre_usuario or f"Usuario_{self.user.id}"
-            }
-        )
+        # Notificar a los demás que se ha unido (solo en comunidades)
+        is_community = await self.is_community_room(self.room_id)
+        if is_community:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_joined',
+                    'user_id': self.user.id,
+                    'username': self.user.nombre_usuario or f"Usuario_{self.user.id}"
+                }
+            )
 
     async def disconnect(self, close_code):
         """Abandona el grupo de la sala al desconectarse."""
@@ -192,6 +194,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def is_member(self, user, room_id):
         """Verifica si el usuario pertenece a la sala de chat."""
         return SalaChat.objects.filter(id=room_id, miembros=user).exists()
+
+    @database_sync_to_async
+    def is_community_room(self, room_id):
+        """Verifica si la sala pertenece a una comunidad."""
+        try:
+            return SalaChat.objects.get(id=room_id).comunidad is not None
+        except SalaChat.DoesNotExist:
+            return False
 
     @database_sync_to_async
     def save_message(self, user, room_id, content):

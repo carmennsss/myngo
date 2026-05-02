@@ -8,24 +8,23 @@ class ChatProvider extends ChangeNotifier {
   int _totalNoLeidos = 0;
   Map<int, int> _noLeidosPorSala = {};
   int? _salaActivaId;
-  Set<int> _usuariosOnline = {};
+  Map<int, String> _estadosUsuarios = {};
 
   int get totalNoLeidos => _totalNoLeidos;
   int? get salaActivaId => _salaActivaId;
 
-  bool isUsuarioOnline(int userId) => _usuariosOnline.contains(userId);
+  String getEstadoUsuario(int userId) => _estadosUsuarios[userId] ?? 'DESCONECTADO';
+  bool isUsuarioOnline(int userId) => getEstadoUsuario(userId) != 'DESCONECTADO';
 
   void setUsuariosOnline(List<int> ids) {
-    _usuariosOnline = Set.from(ids);
+    for (final id in ids) {
+      _estadosUsuarios[id] = 'ACTIVO';
+    }
     notifyListeners();
   }
 
-  void actualizarPresenciaUsuario(int userId, bool online) {
-    if (online) {
-      _usuariosOnline.add(userId);
-    } else {
-      _usuariosOnline.remove(userId);
-    }
+  void actualizarEstadoUsuario(int userId, String status) {
+    _estadosUsuarios[userId] = status;
     notifyListeners();
   }
 

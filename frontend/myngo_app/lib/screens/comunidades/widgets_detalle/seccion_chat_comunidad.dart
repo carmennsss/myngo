@@ -153,7 +153,7 @@ class SeccionChatComunidad extends StatelessWidget {
             );
             return;
           }
-          context.go(
+          context.push(
             '/mensajes/sala/${salaGeneral.id}',
             extra: {
               'nombre': 'Chat General ✨ ${comunidad.nombre}',
@@ -203,7 +203,7 @@ class _SalaChatTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right_rounded,
           size: 20, color: Colors.grey),
       onTap: () {
-        context.go(
+        context.push(
           '/mensajes/sala/${sala.id}',
           extra: {
             'nombre': sala.nombre,

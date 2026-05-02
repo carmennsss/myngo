@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../models/usuario.dart';
+import '../../../providers/chat_provider.dart';
 import '../../inicio/pantalla_inicio.dart';
 
 /// Widget que muestra la información textual y acciones de un perfil.
@@ -102,89 +104,94 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildStatusLabel(BuildContext context) {
-    String displayEstado = usuario.estado ?? 'DESCONECTADO';
-    try {
-      final inicioState =
-          context.findAncestorStateOfType<PantallaInicioState>();
-      if (inicioState != null && inicioState.miId == usuario.id) {
-        displayEstado = inicioState.miEstado;
-      }
-    } catch (_) {}
+    return Consumer<ChatProvider>(
+      builder: (context, chatProv, _) {
+        String displayEstado = chatProv.getEstadoUsuario(usuario.id);
+        
+        // Prioridad: Si es mi propio perfil, usar el estado de PantallaInicio para cambios locales inmediatos
+        try {
+          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+          if (inicioState != null && inicioState.miId == usuario.id) {
+            displayEstado = inicioState.miEstado;
+          }
+        } catch (_) {}
 
-    final color = _getColorEstado(displayEstado);
-    final bool esPropio = currentUserId == usuario.id;
+        final color = _getColorEstado(displayEstado);
+        final bool esPropio = currentUserId == usuario.id;
 
-    return Builder(
-      builder: (statusContext) {
-        return GestureDetector(
-          onTapDown: esPropio
-              ? (details) {
-                  final RenderBox box = statusContext.findRenderObject() as RenderBox;
-                  final RenderBox overlay = Overlay.of(statusContext).context.findRenderObject() as RenderBox;
-                  final RelativeRect position = RelativeRect.fromRect(
-                    Rect.fromPoints(
-                      box.localToGlobal(Offset.zero, ancestor: overlay),
-                      box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
-                    ),
-                    Offset.zero & overlay.size,
-                  );
+        return Builder(
+          builder: (statusContext) {
+            return GestureDetector(
+              onTapDown: esPropio
+                  ? (details) {
+                      final RenderBox box = statusContext.findRenderObject() as RenderBox;
+                      final RenderBox overlay = Overlay.of(statusContext).context.findRenderObject() as RenderBox;
+                      final RelativeRect position = RelativeRect.fromRect(
+                        Rect.fromPoints(
+                          box.localToGlobal(Offset.zero, ancestor: overlay),
+                          box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
+                        ),
+                        Offset.zero & overlay.size,
+                      );
 
-                  showMenu<String>(
-                    context: statusContext,
-                    position: position,
-                    color: Colors.white,
-                    elevation: 10,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                    items: [
-                      _buildStatusMenuItem('ACTIVO', 'Activo', Colors.greenAccent),
-                      _buildStatusMenuItem('OCUPADO', 'Ocupado', Colors.redAccent),
-                    ],
-                  ).then((nuevoEstado) {
-                    if (nuevoEstado != null) {
-                      final inicioState =
-                          statusContext.findAncestorStateOfType<PantallaInicioState>();
-                      inicioState?.cambiarEstado(nuevoEstado);
+                      showMenu<String>(
+                        context: statusContext,
+                        position: position,
+                        color: Colors.white,
+                        elevation: 10,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        items: [
+                          _buildStatusMenuItem('ACTIVO', 'Activo', Colors.greenAccent),
+                          _buildStatusMenuItem('OCUPADO', 'Ocupado', Colors.redAccent),
+                        ],
+                      ).then((nuevoEstado) {
+                        if (nuevoEstado != null) {
+                          final inicioState =
+                              statusContext.findAncestorStateOfType<PantallaInicioState>();
+                          inicioState?.cambiarEstado(nuevoEstado);
+                        }
+                      });
                     }
-                  });
-                }
-              : null,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.3)),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  displayEstado == 'ACTIVO'
-                      ? 'Activo'
-                      : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    color: color,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      displayEstado == 'ACTIVO'
+                          ? 'Activo'
+                          : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                      ),
+                    ),
+                    if (esPropio) ...[
+                      const SizedBox(width: 4),
+                      Icon(Icons.keyboard_arrow_down_rounded, color: color, size: 16),
+                    ],
+                  ],
                 ),
-                if (esPropio) ...[
-                  const SizedBox(width: 4),
-                  Icon(Icons.keyboard_arrow_down_rounded, color: color, size: 16),
-                ],
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

@@ -179,22 +179,6 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'fab_lista_chats',
-        onPressed: () {
-          // TODO: Implementar búsqueda de usuarios para iniciar chat nuevo
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Busca a alguien en Explorar para chatear 🐾')),
-          );
-        },
-        backgroundColor: const Color(0xFFC35E34),
-        elevation: 4,
-        icon: const Icon(Icons.edit_note_rounded, color: Colors.white),
-        label: Text(
-          'Nuevo Chat',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-      ),
     );
   }
 

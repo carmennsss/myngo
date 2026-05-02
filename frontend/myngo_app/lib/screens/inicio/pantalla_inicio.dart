@@ -112,8 +112,8 @@ class PantallaInicioState extends State<PantallaInicio> {
               setState(() => _miEstado = newStatus);
             }
             
-            // 2. Actualizar ChatProvider para que las pantallas de chat se enteren
-            context.read<ChatProvider>().actualizarPresenciaUsuario(userId, newStatus == 'ACTIVO');
+            // 2. Actualizar ChatProvider para que las pantallas de chat y perfil se enteren
+            context.read<ChatProvider>().actualizarEstadoUsuario(userId, newStatus);
             
             // 3. Actualizar el estado en la lista del ranking si el usuario está ahí
             if (_rankingUsuarios != null) {
