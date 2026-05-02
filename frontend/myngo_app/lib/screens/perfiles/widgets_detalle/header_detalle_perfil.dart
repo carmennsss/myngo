@@ -11,6 +11,7 @@ class HeaderDetallePerfil extends StatelessWidget {
   final String? marcoLocal;
   final int? currentUserId;
   final VoidCallback? onEditarAvatar;
+  final VoidCallback? onEditarPerfil;
   final VoidCallback? onBack;
   final bool esIntegrada;
 
@@ -23,6 +24,7 @@ class HeaderDetallePerfil extends StatelessWidget {
     this.currentUserId,
     this.onEditarAvatar,
     this.onBack,
+    this.onEditarPerfil,
     this.esIntegrada = false,
   });
 
@@ -68,6 +70,25 @@ class HeaderDetallePerfil extends StatelessWidget {
               onPressed: onBack,
             )
           : null,
+      actions: [
+        if (currentUserId == usuario.id)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.edit_note_rounded,
+                    color: Colors.white, size: 22),
+              ),
+              onPressed: onEditarPerfil,
+              tooltip: 'Personalizar Perfil',
+            ),
+          ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
         background: Stack(
@@ -117,6 +138,7 @@ class HeaderDetallePerfil extends StatelessWidget {
                             height: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
+                              color: Colors.white,
                               border: (marcoLocal == null || marcoLocal!.isEmpty)
                                   ? Border.all(
                                       color: const Color(0xFF248EA6), width: 3)

@@ -15,11 +15,13 @@ import '../../providers/chat_provider.dart';
 class PantallaChat extends StatefulWidget {
   final int salaId;
   final String nombreSala;
+  final int? otroUsuarioId;
 
   const PantallaChat({
     super.key,
     required this.salaId,
     required this.nombreSala,
+    this.otroUsuarioId,
   });
 
   @override
@@ -296,29 +298,56 @@ class _PantallaChatState extends State<PantallaChat> {
               ),
               overflow: TextOverflow.ellipsis,
             ),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _chatConectado ? Colors.green : Colors.grey,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _chatConectado ? 'Chat activo' : 'Conectando...',
-                  style: GoogleFonts.outfit(
-                    color: _chatConectado
-                        ? const Color(0xFFC35E34)
-                        : Colors.grey,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+                Builder(builder: (ctx) {
+                  if (widget.otroUsuarioId != null) {
+                    final estaOnline = context.select<ChatProvider, bool>(
+                        (prov) => prov.isUsuarioOnline(widget.otroUsuarioId!));
+                    return Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: estaOnline ? Colors.green : Colors.grey,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          estaOnline ? 'En línea' : 'Desconectado',
+                          style: GoogleFonts.outfit(
+                            color: estaOnline ? Colors.green : Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _chatConectado ? Colors.green : Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _chatConectado ? 'Chat conectado' : 'Conectando...',
+                        style: GoogleFonts.outfit(
+                          color: _chatConectado
+                              ? const Color(0xFFC35E34)
+                              : Colors.grey,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
           ],
         ),
         leading: IconButton(

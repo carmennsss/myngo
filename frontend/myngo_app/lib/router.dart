@@ -293,9 +293,12 @@ final GoRouter appRouter = GoRouter(
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
                     final extra = state.extra as Map<String, dynamic>?;
                     final nombre = extra?['nombre'] as String? ?? 'Chat';
+                    final salaMap = extra?['sala'] as Map<String, dynamic>?;
+                    final otroId = salaMap?['_otro_usuario_id'] as int?;
                     return PantallaChat(
                       salaId: id,
                       nombreSala: nombre,
+                      otroUsuarioId: otroId,
                     );
                   },
                 ),

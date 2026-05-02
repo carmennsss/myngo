@@ -29,7 +29,7 @@ class SeccionPostsComunidad extends StatelessWidget {
             padding: EdgeInsets.all(40.0),
             child: CircularProgressIndicator(color: Color(0xFFF28B50)),
           ));
-      return comoSliver ? SliverFillRemaining(child: loading) : loading;
+      return comoSliver ? SliverToBoxAdapter(child: SizedBox(height: 200, child: loading)) : loading;
     }
 
     if (publicaciones!.isEmpty) {
@@ -37,7 +37,7 @@ class SeccionPostsComunidad extends StatelessWidget {
         icon: Icons.feed_outlined,
         message: 'Aún no hay publicaciones',
       );
-      return comoSliver ? SliverFillRemaining(child: empty) : empty;
+      return comoSliver ? SliverToBoxAdapter(child: SizedBox(height: 200, child: empty)) : empty;
     }
 
     if (comoSliver) {

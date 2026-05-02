@@ -67,8 +67,8 @@ class Usuario {
     try {
       return Usuario(
         id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
-        perfilId: int.tryParse(json['perfil_id']?.toString() ?? '0') ?? 0,
-        nombreUsuario: json['nombre_usuario']?.toString() ?? 'Desconocido',
+        perfilId: int.tryParse(json['perfil_id']?.toString() ?? json['autor_perfil_id']?.toString() ?? '0') ?? 0,
+        nombreUsuario: json['nombre_usuario']?.toString() ?? json['autor_nombre']?.toString() ?? 'Desconocido',
         email: json['email']?.toString() ?? '',
         contrasena: json['contrasena']?.toString(),
         esVerificado: json['es_verificado'] == true,
@@ -80,9 +80,9 @@ class Usuario {
                 DateTime.now()
             : DateTime.now(),
         biografia: json['biografia']?.toString(),
-        urlAvatar: json['url_avatar']?.toString(),
-        fondo: json['fondo']?.toString(),
-        marco: json['marco']?.toString(),
+        urlAvatar: json['url_avatar']?.toString() ?? json['autor_foto']?.toString(),
+        fondo: json['fondo']?.toString() ?? json['autor_fondo']?.toString(),
+        marco: json['marco']?.toString() ?? json['autor_marco']?.toString(),
         puntos: int.tryParse(json['puntos']?.toString() ?? '0'),
         numeroSeguidores:
             int.tryParse(json['numero_seguidores']?.toString() ?? '0') ?? 0,

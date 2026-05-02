@@ -38,14 +38,16 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   Future<void> _cargar() async {
     if (!mounted) return;
     setState(() => _cargando = true);
+    
     final prefs = await SharedPreferences.getInstance();
-    _miId = prefs.getInt('usuario_id');
+    final id = prefs.getInt('usuario_id');
     
     // Obtener salas (el backend ya está optimizado con prefetch)
     final salas = await ServicioMensajeria().obtenerSalasChat();
     
     if (mounted) {
       setState(() {
+        _miId = id;
         _salas = salas;
         _salasFiltradas = salas;
         _cargando = false;
@@ -85,6 +87,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         (m) => m['id'] != _miId,
         orElse: () => miembros.first,
       );
+      sala['_otro_usuario_id'] = otro['id'];
       return {
         'nombre': '@${otro['nombre_usuario'] ?? sala['nombre']}',
         'avatar': otro['url_avatar'],

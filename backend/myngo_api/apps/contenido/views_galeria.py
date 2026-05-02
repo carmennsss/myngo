@@ -169,23 +169,38 @@ class InicioGaleria(generics.ListAPIView):
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas')
         
-        # Filtro base: posts con imagen (legacy FK) o con imagenes M2M, o sin imagen pero de perfil público
         qs = Publicacion.objects.filter(es_valido_ia=True).filter(
             Q(imagen__isnull=False) |
             Q(imagenes__isnull=False)
         ).distinct()
 
         if usuario:
-            # 1. Filtros sociales
-            mis_comunidades_ids = MiembrosComunidad.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
-            mis_seguidos_ids = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO').values_list('seguido_usuario_id', flat=True)
+            # IDs de usuarios seguidos (perfiles)
+            seguidos_ids = Seguimiento.objects.filter(
+                seguidor=usuario, 
+                seguido_usuario__isnull=False, 
+                estado='ACEPTADO'
+            ).values_list('seguido_usuario_id', flat=True)
             
+            # IDs de comunidades (miembro o seguidor)
+            mis_comunidades_ids = MiembrosComunidad.objects.filter(
+                usuario=usuario
+            ).values_list('comunidad_id', flat=True)
+            
+            seguidas_comunidades_ids = Seguimiento.objects.filter(
+                seguidor=usuario, 
+                seguida_comunidad__isnull=False, 
+                estado='ACEPTADO'
+            ).values_list('seguida_comunidad_id', flat=True)
+
+            # Construir filtros sociales
             qs = qs.filter(
-                Q(comunidad_id__in=mis_comunidades_ids) |          # Mis comunidades
-                Q(autor_id__in=mis_seguidos_ids) |                # Gente que sigo
-                Q(comunidad__es_publica=True) |                   # Comunidades públicas
-                Q(autor__perfil__es_publico=True, comunidad__isnull=True) |  # Posts de perfiles públicos (sin comunidad)
-                Q(autor=usuario)                                  # Mis propios posts
+                Q(autor=usuario) |                               # Mis propios posts
+                Q(autor_id__in=seguidos_ids) |                   # Gente que sigo
+                Q(comunidad_id__in=mis_comunidades_ids) |        # Mis comunidades
+                Q(comunidad_id__in=seguidas_comunidades_ids) |   # Comunidades seguidas
+                Q(comunidad__es_publica=True) |                  # Comunidades públicas
+                Q(autor__perfil__es_publico=True, comunidad__isnull=True) # Perfiles públicos (sin comunidad)
             ).distinct()
 
             # 2. Anotaciones optimizadas con Subqueries
