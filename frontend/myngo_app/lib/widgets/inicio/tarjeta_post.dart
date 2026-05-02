@@ -162,7 +162,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   },
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                    backgroundColor: Colors.white,
                     backgroundImage: widget.post.autorFoto != null
                         ? CachedNetworkImageProvider(widget.post.autorFoto!)
                         : null,

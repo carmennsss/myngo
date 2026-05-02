@@ -431,16 +431,17 @@ class ServicioComunidades {
 
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var img in imagenes) {
+          final fieldName = 'url_archivo_s3[]';
           if (kIsWeb) {
             final bytes = await img.readAsBytes();
             solicitud.files.add(http.MultipartFile.fromBytes(
-              'url_archivo_s3',
+              fieldName,
               bytes,
               filename: img.name,
               contentType: MediaType('image', 'jpeg'),
             ));
           } else {
-            solicitud.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
+            solicitud.files.add(await http.MultipartFile.fromPath(fieldName, img.path));
           }
         }
       }

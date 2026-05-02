@@ -135,6 +135,7 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
             margin: const EdgeInsets.symmetric(vertical: 8),
             child: ListTile(
               leading: CircleAvatar(
+                backgroundColor: Colors.white,
                 backgroundImage: usuario.urlAvatar != null ? NetworkImage(usuario.urlAvatar!) : null,
                 child: usuario.urlAvatar == null ? const Icon(Icons.person) : null,
               ),

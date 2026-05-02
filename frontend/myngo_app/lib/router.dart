@@ -11,6 +11,7 @@ import 'screens/inicio/pantalla_inicio.dart';
 import 'screens/comunidades/pantalla_detalle_comunidad.dart';
 import 'screens/comunidades/pantalla_detalle_post.dart';
 import 'screens/perfiles/pantalla_detalle_perfil.dart';
+import 'screens/perfiles/pantalla_personalizar_perfil.dart';
 
 // Components inside the Shell
 import 'widgets/inicio/feed_publicaciones.dart';
@@ -55,69 +56,32 @@ class _ProtectedRouteState extends State<ProtectedRoute> {
 }
 
 // Data loaders for Deep Linking
-class _ComunidadLoader extends StatelessWidget {
+class _ComunidadLoader extends StatefulWidget {
   final int id;
   final Comunidad? extra;
   final VoidCallback onBack;
   const _ComunidadLoader(this.id, this.extra, {required this.onBack});
 
   @override
-  Widget build(BuildContext context) {
-    if (extra != null) {
-      return PantallaDetalleComunidad(comunidad: extra!, esIntegrada: true, onBack: onBack);
-    }
-    return FutureBuilder(
-      future: ServicioComunidades().obtenerComunidad(id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
-        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetalleComunidad(comunidad: snapshot.data!.datos!, esIntegrada: true, onBack: onBack);
-        }
-        return const Center(child: Text('Comunidad no encontrada 😿'));
-      },
-    );
-  }
+  State<_ComunidadLoader> createState() => _ComunidadLoaderState();
 }
 
-class _PerfilLoader extends StatelessWidget {
-  final int id;
-  final Usuario? extra;
-  final VoidCallback onBack;
-  const _PerfilLoader(this.id, this.extra, {required this.onBack});
+class _ComunidadLoaderState extends State<_ComunidadLoader> {
+  late Future<RespuestaBackend<Comunidad>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ServicioComunidades().obtenerComunidad(widget.id);
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (extra != null) {
-      return PantallaDetallePerfil(usuario: extra!, esIntegrada: true, onBack: onBack);
+    if (widget.extra != null) {
+      return PantallaDetalleComunidad(comunidad: widget.extra!, esIntegrada: true, onBack: widget.onBack);
     }
-    return FutureBuilder(
-      future: ServicioUsuarios().obtenerDatosUsuario(id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
-        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetallePerfil(usuario: snapshot.data!.datos!, esIntegrada: true, onBack: onBack);
-        }
-        return const Center(child: Text('Usuario no encontrado 😿'));
-      },
-    );
-  }
-}
-
-class _PostLoader extends StatelessWidget {
-  final int postId;
-  final int comunidadId;
-  final Publicacion? extra;
-  final VoidCallback? onBack;
-
-  const _PostLoader({required this.postId, required this.comunidadId, this.extra, this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    if (extra != null) {
-      return PantallaDetallePost(post: extra!, onBack: onBack);
-    }
-    return FutureBuilder(
-      future: ServicioComunidades().obtenerDetallePublicacion(postId),
+    return FutureBuilder<RespuestaBackend<Comunidad>>(
+      future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -126,12 +90,132 @@ class _PostLoader extends StatelessWidget {
           );
         }
         if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetallePost(post: snapshot.data!.datos!, onBack: onBack);
+          return PantallaDetalleComunidad(comunidad: snapshot.data!.datos!, esIntegrada: true, onBack: widget.onBack);
+        }
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Comunidad no encontrada 😿', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                ElevatedButton(onPressed: widget.onBack, child: const Text('Volver'))
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PerfilLoader extends StatefulWidget {
+  final int id;
+  final Usuario? extra;
+  final VoidCallback onBack;
+  const _PerfilLoader(this.id, this.extra, {required this.onBack});
+
+  @override
+  State<_PerfilLoader> createState() => _PerfilLoaderState();
+}
+
+class _PerfilLoaderState extends State<_PerfilLoader> {
+  late Future<RespuestaBackend<Usuario>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ServicioUsuarios().obtenerDatosUsuario(widget.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.extra != null) {
+      return PantallaDetallePerfil(usuario: widget.extra!, esIntegrada: true, onBack: widget.onBack);
+    }
+    return FutureBuilder<RespuestaBackend<Usuario>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFFEF5F1),
+            body: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+          );
+        }
+        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
+          return PantallaDetallePerfil(usuario: snapshot.data!.datos!, esIntegrada: true, onBack: widget.onBack);
+        }
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Usuario no encontrado 😿', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                ElevatedButton(onPressed: widget.onBack, child: const Text('Volver'))
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PostLoader extends StatefulWidget {
+  final int postId;
+  final int comunidadId;
+  final Publicacion? extra;
+  final VoidCallback? onBack;
+
+  const _PostLoader({required this.postId, required this.comunidadId, this.extra, this.onBack});
+
+  @override
+  State<_PostLoader> createState() => _PostLoaderState();
+}
+
+class _PostLoaderState extends State<_PostLoader> {
+  late Future<RespuestaBackend<Publicacion>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ServicioComunidades().obtenerDetallePublicacion(widget.postId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.extra != null) {
+      return PantallaDetallePost(post: widget.extra!, onBack: widget.onBack);
+    }
+    return FutureBuilder<RespuestaBackend<Publicacion>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFFEF5F1),
+            body: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+          );
+        }
+        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
+          return PantallaDetallePost(post: snapshot.data!.datos!, onBack: widget.onBack);
         }
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           appBar: AppBar(title: const Text('Error')),
-          body: const Center(child: Text('Publicación no encontrada 😿')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Publicación no encontrada 😿', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                if (widget.onBack != null)
+                  ElevatedButton(onPressed: widget.onBack, child: const Text('Volver'))
+              ],
+            ),
+          ),
         );
       },
     );
@@ -160,6 +244,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/recuperar_contrasena',
       builder: (context, state) => const PantallaRecuperarContrasena(),
+    ),
+    GoRoute(
+      path: '/inventario',
+      builder: (context, state) => const ProtectedRoute(
+        title: 'Mi Inventario',
+        child: PantallaPersonalizarPerfil(),
+      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

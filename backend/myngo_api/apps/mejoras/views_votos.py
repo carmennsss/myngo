@@ -151,6 +151,53 @@ class VotoAPIView(APIView):
             "nueva_media": receptor.rating_actual,
         }, status=status.HTTP_200_OK)
 
+    def delete(self, request):
+        """Elimina un voto registrado hoy para un receptor.
+
+        Args:
+            request: Petición con query params 'receptor_usuario' o 'receptor_comunidad'.
+
+        Returns:
+            Response: Confirmación de eliminación y nueva media.
+        """
+        if request.user and request.user.is_authenticated:
+            votante = request.user
+        else:
+            votante = Usuario.objects.filter(pk=1).first() or Usuario.objects.first()
+
+        receptor_usuario_id = request.query_params.get('receptor_usuario')
+        receptor_comunidad_id = request.query_params.get('receptor_comunidad')
+
+        hoy = timezone.now().date()
+        filter_kwargs = {'votante': votante, 'fecha_voto__date': hoy}
+
+        if receptor_usuario_id:
+            try:
+                receptor = Usuario.objects.get(pk=receptor_usuario_id)
+                filter_kwargs['receptor_usuario'] = receptor
+            except Usuario.DoesNotExist:
+                return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        elif receptor_comunidad_id:
+            try:
+                receptor = Comunidad.objects.get(pk=receptor_comunidad_id)
+                filter_kwargs['receptor_comunidad'] = receptor
+            except Comunidad.DoesNotExist:
+                return Response({'error': 'Comunidad no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'error': 'Falta receptor.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        voto = Voto.objects.filter(**filter_kwargs).first()
+        if not voto:
+            return Response({'error': 'No has votado hoy a este receptor.'}, status=status.HTTP_404_NOT_FOUND)
+
+        voto.delete()
+        receptor.refresh_from_db()
+
+        return Response({
+            "mensaje": "Voto eliminado correctamente.",
+            "nueva_media": receptor.rating_actual
+        }, status=status.HTTP_200_OK)
+
 
 class RankingUsuariosView(generics.ListAPIView):
     """Lista los 10 usuarios con mejor reputación (mínimo 10 votos recibidos)."""

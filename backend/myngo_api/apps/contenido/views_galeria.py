@@ -200,7 +200,7 @@ class InicioGaleria(generics.ListAPIView):
                 Q(comunidad_id__in=mis_comunidades_ids) |        # Mis comunidades
                 Q(comunidad_id__in=seguidas_comunidades_ids) |   # Comunidades seguidas
                 Q(comunidad__es_publica=True) |                  # Comunidades públicas
-                Q(autor__perfil__es_publico=True, comunidad__isnull=True) # Perfiles públicos (sin comunidad)
+                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True))) # Perfiles públicos
             ).distinct()
 
             # 2. Anotaciones optimizadas con Subqueries
@@ -217,7 +217,7 @@ class InicioGaleria(generics.ListAPIView):
             # Modo público: solo comunidades públicas y posts de perfiles públicos sin comunidad
             qs = qs.filter(
                 Q(comunidad__es_publica=True) | 
-                Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
             ).distinct()
             
             likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
