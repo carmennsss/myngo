@@ -82,7 +82,7 @@ class MiembrosComunidad(models.Model):
         db_table = 'miembros_comunidades'
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    comunidad = models.ForeignKey(Comunidad, on_delete=models.CASCADE)
+    comunidad = models.ForeignKey(Comunidad, on_delete=models.CASCADE, related_name='miembros_comunidades')
     rol = models.CharField(max_length=20, choices=ROLES, default='Miembro')
     fecha_union = models.DateTimeField(auto_now_add=True)
 
