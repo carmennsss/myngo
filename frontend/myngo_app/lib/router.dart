@@ -247,10 +247,12 @@ final GoRouter appRouter = GoRouter(
                     final nombre = extra?['nombre'] as String? ?? 'Chat';
                     final salaMap = extra?['sala'] as Map<String, dynamic>?;
                     final otroId = salaMap?['_otro_usuario_id'] as int?;
+                    final comunidadId = extra?['comunidad_id'] as int?;
                     return PantallaChat(
                       salaId: id,
                       nombreSala: nombre,
                       otroUsuarioId: otroId,
+                      comunidadId: comunidadId,
                     );
                   },
                 ),
