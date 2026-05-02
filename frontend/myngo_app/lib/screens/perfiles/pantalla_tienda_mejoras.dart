@@ -134,7 +134,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           ? await ServicioMejoras().obtenerMejorasComunidad(widget.comunidad!.id)
           : await ServicioMejoras().obtenerMejorasGlobales();
 
-      final resMisMejoras = await ServicioMejoras().obtenerInventarioUsuario();
+      final resMisMejoras = await ServicioMejoras().obtenerMisMejoras();
 
       if (mounted) {
         setState(() {

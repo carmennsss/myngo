@@ -56,12 +56,12 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
 
   void _irAPerfil(BuildContext context) async {
     if (_navegandoAPerfil) return;
-    setState(() => _navegandoAPerfil = true);
+    super.setState(() => _navegandoAPerfil = true);
     
     final res = await ServicioUsuarios().obtenerDatosUsuario(widget.publicacion.autorId);
     
     if (mounted) {
-      setState(() => _navegandoAPerfil = false);
+      super.setState(() => _navegandoAPerfil = false);
       if (res.exito && res.datos != null) {
         Navigator.pop(context); // Cerrar bottom sheet
         if (widget.onProfileSelected != null) {

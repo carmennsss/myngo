@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'services/servicio_comunidades.dart';
-import 'services/servicio_usuarios.dart';
+import 'package:myngo_app/services/servicio_comunidades.dart';
+import 'package:myngo_app/services/servicio_usuarios.dart';
 
-import 'screens/login/pantalla_login.dart';
-import 'screens/registro/pantalla_registro.dart';
-import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
-import 'screens/inicio/pantalla_inicio.dart';
-import 'screens/comunidades/pantalla_detalle_comunidad.dart';
-import 'screens/comunidades/pantalla_detalle_post.dart';
-import 'screens/perfiles/pantalla_detalle_perfil.dart';
-import 'screens/perfiles/pantalla_personalizar_perfil.dart';
+import 'package:myngo_app/screens/login/pantalla_login.dart';
+import 'package:myngo_app/screens/registro/pantalla_registro.dart';
+import 'package:myngo_app/screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
+import 'package:myngo_app/screens/inicio/pantalla_inicio.dart';
+import 'package:myngo_app/screens/comunidades/pantalla_detalle_comunidad.dart';
+import 'package:myngo_app/screens/comunidades/pantalla_detalle_post.dart';
+import 'package:myngo_app/screens/perfiles/pantalla_detalle_perfil.dart';
+import 'package:myngo_app/screens/perfiles/pantalla_personalizar_perfil.dart';
 
 // Components inside the Shell
-import 'widgets/inicio/feed_publicaciones.dart';
-import 'screens/explorar/pantalla_explorar.dart';
-import 'screens/notificaciones/pantalla_notificaciones.dart';
-import 'screens/perfiles/pantalla_tienda_mejoras.dart';
-import 'screens/mensajeria/pantalla_lista_chats.dart';
-import 'screens/mensajeria/pantalla_chat.dart';
-import 'widgets/comunes/vista_requerir_login.dart';
-import 'models/comunidad.dart';
-import 'models/usuario.dart';
-import 'models/publicacion.dart';
+import 'package:myngo_app/widgets/inicio/feed_publicaciones.dart';
+import 'package:myngo_app/screens/explorar/pantalla_explorar.dart';
+import 'package:myngo_app/screens/notificaciones/pantalla_notificaciones.dart';
+import 'package:myngo_app/screens/perfiles/pantalla_tienda_mejoras.dart';
+import 'package:myngo_app/screens/mensajeria/pantalla_lista_chats.dart';
+import 'package:myngo_app/screens/mensajeria/pantalla_chat.dart';
+import 'package:myngo_app/widgets/comunes/vista_requerir_login.dart';
+import 'package:myngo_app/models/comunidad.dart';
+import 'package:myngo_app/models/usuario.dart';
+import 'package:myngo_app/models/publicacion.dart';
 
 class ProtectedRoute extends StatefulWidget {
   final Widget child;
@@ -52,173 +52,6 @@ class _ProtectedRouteState extends State<ProtectedRoute> {
     }
     if (!_isLogged!) return VistaRequerirLogin(titulo: widget.title);
     return widget.child;
-  }
-}
-
-// Data loaders for Deep Linking
-class _ComunidadLoader extends StatefulWidget {
-  final int id;
-  final Comunidad? extra;
-  final VoidCallback onBack;
-  const _ComunidadLoader(this.id, this.extra, {required this.onBack});
-
-  @override
-  State<_ComunidadLoader> createState() => _ComunidadLoaderState();
-}
-
-class _ComunidadLoaderState extends State<_ComunidadLoader> {
-  late Future<RespuestaBackend<Comunidad>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = ServicioComunidades().obtenerComunidad(widget.id);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.extra != null) {
-      return PantallaDetalleComunidad(comunidad: widget.extra!, esIntegrada: true, onBack: widget.onBack);
-    }
-    return FutureBuilder<RespuestaBackend<Comunidad>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFFEF5F1),
-            body: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
-          );
-        }
-        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetalleComunidad(comunidad: snapshot.data!.datos!, esIntegrada: true, onBack: widget.onBack);
-        }
-        return Scaffold(
-          backgroundColor: const Color(0xFFFEF5F1),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Comunidad no encontrada 😿', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                ElevatedButton(onPressed: widget.onBack, child: const Text('Volver'))
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PerfilLoader extends StatefulWidget {
-  final int id;
-  final Usuario? extra;
-  final VoidCallback onBack;
-  const _PerfilLoader(this.id, this.extra, {required this.onBack});
-
-  @override
-  State<_PerfilLoader> createState() => _PerfilLoaderState();
-}
-
-class _PerfilLoaderState extends State<_PerfilLoader> {
-  late Future<RespuestaBackend<Usuario>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = ServicioUsuarios().obtenerDatosUsuario(widget.id);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.extra != null) {
-      return PantallaDetallePerfil(usuario: widget.extra!, esIntegrada: true, onBack: widget.onBack);
-    }
-    return FutureBuilder<RespuestaBackend<Usuario>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFFEF5F1),
-            body: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
-          );
-        }
-        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetallePerfil(usuario: snapshot.data!.datos!, esIntegrada: true, onBack: widget.onBack);
-        }
-        return Scaffold(
-          backgroundColor: const Color(0xFFFEF5F1),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Usuario no encontrado 😿', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                ElevatedButton(onPressed: widget.onBack, child: const Text('Volver'))
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PostLoader extends StatefulWidget {
-  final int postId;
-  final int comunidadId;
-  final Publicacion? extra;
-  final VoidCallback? onBack;
-
-  const _PostLoader({required this.postId, required this.comunidadId, this.extra, this.onBack});
-
-  @override
-  State<_PostLoader> createState() => _PostLoaderState();
-}
-
-class _PostLoaderState extends State<_PostLoader> {
-  late Future<RespuestaBackend<Publicacion>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = ServicioComunidades().obtenerDetallePublicacion(widget.postId);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.extra != null) {
-      return PantallaDetallePost(post: widget.extra!, onBack: widget.onBack);
-    }
-    return FutureBuilder<RespuestaBackend<Publicacion>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFFEF5F1),
-            body: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
-          );
-        }
-        if (snapshot.hasData && snapshot.data!.exito && snapshot.data!.datos != null) {
-          return PantallaDetallePost(post: snapshot.data!.datos!, onBack: widget.onBack);
-        }
-        return Scaffold(
-          backgroundColor: const Color(0xFFFEF5F1),
-          appBar: AppBar(title: const Text('Error')),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Publicación no encontrada 😿', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                if (widget.onBack != null)
-                  ElevatedButton(onPressed: widget.onBack, child: const Text('Volver'))
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 }
 
@@ -273,19 +106,27 @@ final GoRouter appRouter = GoRouter(
                   path: 'comunidades/:id',
                   builder: (context, state) {
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                    return _ComunidadLoader(id, state.extra as Comunidad?, onBack: () => context.go('/inicio'));
+                    return PantallaDetalleComunidad(
+                      key: ValueKey('init-com-$id'),
+                      id: id,
+                      comunidad: state.extra as Comunidad?,
+                      esIntegrada: true,
+                      onBack: () => context.go('/inicio'),
+                    );
                   },
                 ),
                 GoRoute(
                   path: 'comunidades/:id/post/:postId',
                   builder: (context, state) {
-                    final comunidadId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
                     final postId = int.tryParse(state.pathParameters['postId'] ?? '') ?? 0;
-                    return _PostLoader(
-                      postId: postId,
-                      comunidadId: comunidadId,
-                      extra: state.extra as Publicacion?,
-                      onBack: () => context.go('/inicio/comunidades/$comunidadId'),
+                    return PantallaDetallePost(
+                      key: ValueKey('init-post-$postId'),
+                      id: postId,
+                      post: state.extra as Publicacion?,
+                      onBack: () {
+                        final id = state.pathParameters['id'];
+                        context.go('/inicio/comunidades/$id');
+                      },
                     );
                   },
                 ),
@@ -293,7 +134,13 @@ final GoRouter appRouter = GoRouter(
                   path: 'perfiles/:id',
                   builder: (context, state) {
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                    return _PerfilLoader(id, state.extra as Usuario?, onBack: () => context.go('/inicio'));
+                    return PantallaDetallePerfil(
+                      key: ValueKey('init-perf-$id'),
+                      id: id,
+                      usuario: state.extra as Usuario?,
+                      esIntegrada: true,
+                      onBack: () => context.go('/inicio'),
+                    );
                   },
                 ),
               ],
@@ -320,19 +167,27 @@ final GoRouter appRouter = GoRouter(
                   path: 'comunidades/:id',
                   builder: (context, state) {
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                    return _ComunidadLoader(id, state.extra as Comunidad?, onBack: () => context.go('/explorar'));
+                    return PantallaDetalleComunidad(
+                      key: ValueKey('expl-com-$id'),
+                      id: id,
+                      comunidad: state.extra as Comunidad?,
+                      esIntegrada: true,
+                      onBack: () => context.go('/explorar'),
+                    );
                   },
                 ),
                 GoRoute(
                   path: 'comunidades/:id/post/:postId',
                   builder: (context, state) {
-                    final comunidadId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
                     final postId = int.tryParse(state.pathParameters['postId'] ?? '') ?? 0;
-                    return _PostLoader(
-                      postId: postId,
-                      comunidadId: comunidadId,
-                      extra: state.extra as Publicacion?,
-                      onBack: () => context.go('/explorar/comunidades/$comunidadId'),
+                    return PantallaDetallePost(
+                      key: ValueKey('expl-post-$postId'),
+                      id: postId,
+                      post: state.extra as Publicacion?,
+                      onBack: () {
+                        final id = state.pathParameters['id'];
+                        context.go('/explorar/comunidades/$id');
+                      },
                     );
                   },
                 ),
@@ -340,7 +195,13 @@ final GoRouter appRouter = GoRouter(
                   path: 'perfiles/:id',
                   builder: (context, state) {
                     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-                    return _PerfilLoader(id, state.extra as Usuario?, onBack: () => context.go('/explorar'));
+                    return PantallaDetallePerfil(
+                      key: ValueKey('expl-perf-$id'),
+                      id: id,
+                      usuario: state.extra as Usuario?,
+                      esIntegrada: true,
+                      onBack: () => context.go('/explorar'),
+                    );
                   },
                 ),
               ],

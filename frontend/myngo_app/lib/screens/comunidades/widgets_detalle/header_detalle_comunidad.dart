@@ -5,6 +5,7 @@ import '../../../models/comunidad.dart';
 import '../../../services/servicio_comunidades.dart';
 import '../pantalla_admin_comunidad.dart';
 import '../pantalla_personalizacion_comunidad.dart';
+import '../../../utils/configuracion.dart';
 
 /// Widget que muestra la cabecera visual de una comunidad (portada, avatar y rol).
 class HeaderDetalleComunidad extends StatefulWidget {
@@ -116,7 +117,9 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
           if (widget.comunidad.urlPortada.isNotEmpty)
             Positioned.fill(
               child: CachedNetworkImage(
-                imageUrl: widget.comunidad.urlPortada,
+                imageUrl: widget.comunidad.urlPortada.startsWith('http') 
+                    ? widget.comunidad.urlPortada 
+                    : '${Configuracion.baseUrl}${widget.comunidad.urlPortada}',
                 fit: BoxFit.cover,
                 errorWidget: (context, url, error) =>
                     Container(color: widget.comunidad.colorTema),
@@ -294,12 +297,16 @@ class _CommunityAvatar extends StatelessWidget {
         ],
         image: (avatarUrl != null && avatarUrl.isNotEmpty)
             ? DecorationImage(
-                image: CachedNetworkImageProvider(avatarUrl),
+                image: CachedNetworkImageProvider(
+                  avatarUrl.startsWith('http') ? avatarUrl : '${Configuracion.baseUrl}$avatarUrl',
+                ),
                 fit: BoxFit.cover,
               )
             : (portadaUrl.isNotEmpty
                 ? DecorationImage(
-                    image: CachedNetworkImageProvider(portadaUrl),
+                    image: CachedNetworkImageProvider(
+                      portadaUrl.startsWith('http') ? portadaUrl : '${Configuracion.baseUrl}$portadaUrl',
+                    ),
                     fit: BoxFit.cover,
                   )
                 : null),

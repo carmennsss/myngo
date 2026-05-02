@@ -28,13 +28,13 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
   }
 
   Future<void> _cargarDatos({String? filtro}) async {
-    setState(() => _estaCargando = true);
+    super.setState(() => _estaCargando = true);
     
     final respuesta = await _servicioUsuarios.listarUsuarios();
     if (respuesta.exito && mounted) {
       _usuariosOriginales = respuesta.datos ?? [];
       
-      setState(() {
+      super.setState(() {
         if (filtro != null && filtro.isNotEmpty) {
           _usuariosFiltrados = _usuariosOriginales.where((u) => 
              u.nombreUsuario.toLowerCase().contains(filtro.toLowerCase()) ||

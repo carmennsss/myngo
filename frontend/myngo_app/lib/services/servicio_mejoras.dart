@@ -252,7 +252,7 @@ class ServicioMejoras {
   }
 
   /// Recupera el inventario completo de artículos adquiridos por el usuario actual.
-  Future<RespuestaApi<List<dynamic>>> obtenerInventarioUsuario() async {
+  Future<RespuestaApi<List<dynamic>>> obtenerMisMejoras() async {
     try {
       final respuesta = await http.get(
         Uri.parse('$_urlMejoras/tienda/mis-mejoras/'),

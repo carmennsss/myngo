@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/comunes/boton_tactil.dart';
-import '../../screens/perfiles/pantalla_detalle_perfil.dart';
+import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
 
 /// Cabecera superior de la pantalla de inicio con logo, navegación y perfil de usuario.
 class CabeceraPro extends StatelessWidget {

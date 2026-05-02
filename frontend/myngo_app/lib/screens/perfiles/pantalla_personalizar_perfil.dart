@@ -42,7 +42,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       _errorMensaje = null;
     });
 
-    final respuesta = await _servicioMejoras.obtenerInventarioUsuario();
+    final respuesta = await _servicioMejoras.obtenerMisMejoras();
     final datosUser = await ServicioUsuarios().obtenerDatosPropios();
     
     if (mounted) {
@@ -185,7 +185,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                       _buildPreviewHeader(),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 180, // Altura fija y moderada
+                        height: 160, // Reducido para mejor responsividad en móvil
                         child: PageView(
                           children: [
                             Padding(
