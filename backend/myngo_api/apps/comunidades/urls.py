@@ -7,6 +7,7 @@ from .views import (
     ComunidadDetail,
     ComunidadListCreate,
     GestionarRolMiembro,
+    ListarMiembrosComunidad,
     MisComunidadesList,
     ObtenerRolUsuarioEnComunidad,
     ResponderPeticionUnion,
@@ -21,6 +22,7 @@ urlpatterns = [
 
     # Detalles e Interacción
     path('<int:pk>/', ComunidadDetail.as_view(), name='comunidad-detail'),
+    path('<int:pk>/miembros/', ListarMiembrosComunidad.as_view(), name='listar-miembros'),
     path('<int:pk>/unirse/', UnirseComunidad.as_view(), name='unirse-comunidad'),
     path('responder-peticion/<int:pk>/', ResponderPeticionUnion.as_view(), name='responder-peticion'),
 

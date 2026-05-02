@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/configuracion.dart';
@@ -60,11 +61,16 @@ class _PantallaChatState extends State<PantallaChat> {
   /// IDs de mensajes que ya han sido leídos por el receptor.
   final Set<int> _mensajesLeidos = {};
 
+  Timer? _typingTimer;
+  bool _yoEstoyEscribiendo = false;
+  final Map<int, String> _usuariosEscribiendo = {};
+
   @override
   void initState() {
     super.initState();
     _inicializar();
     _scrollController.addListener(_onScroll);
+    _mensajeController.addListener(_onTypingChanged);
 
     // Notificar al provider que estamos en esta sala
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,6 +79,21 @@ class _PantallaChatState extends State<PantallaChat> {
         provider.setSalaActiva(widget.salaId);
         // El recibo de lectura ya se envía en _inicializar() -> _marcarLeidos()
         // pero podemos reforzarlo via WebSocket si ya está conectado.
+      }
+    });
+  }
+
+  void _onTypingChanged() {
+    if (_mensajeController.text.isNotEmpty && !_yoEstoyEscribiendo) {
+      _yoEstoyEscribiendo = true;
+      _servicioChat.enviarEventoTyping(widget.salaId, true);
+    }
+
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+      if (_yoEstoyEscribiendo) {
+        _yoEstoyEscribiendo = false;
+        _servicioChat.enviarEventoTyping(widget.salaId, false);
       }
     });
   }
@@ -237,6 +258,16 @@ class _PantallaChatState extends State<PantallaChat> {
               'type': 'system',
               'content': '${data['username']} ha salido',
             });
+          } else if (data['type'] == 'user_typing') {
+            final int uId = data['user_id'];
+            final String uName = data['username'] ?? 'Alguien';
+            final bool isTyping = data['is_typing'] ?? false;
+
+            if (isTyping) {
+              _usuariosEscribiendo[uId] = uName;
+            } else {
+              _usuariosEscribiendo.remove(uId);
+            }
           } else if (data['type'] == 'messages_read') {
             // El receptor ha leído los mensajes → marcar como leídos en UI
             final List<dynamic> ids = data['leidos_ids'] ?? [];
@@ -424,7 +455,25 @@ class _PantallaChatState extends State<PantallaChat> {
       body: Column(
         children: [
           Expanded(
-            child: _cargandoHistorial
+            child: Column(
+              children: [
+                if (_usuariosEscribiendo.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+                    width: double.infinity,
+                    color: Colors.white.withOpacity(0.8),
+                    child: Text(
+                      '${_usuariosEscribiendo.values.join(", ")} ${_usuariosEscribiendo.length > 1 ? "están" : "está"} escribiendo... 🐾',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        color: const Color(0xFF248EA6),
+                        fontWeight: FontWeight.bold,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: _cargandoHistorial
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFFC35E34)))
                 : _errorHistorial != null
@@ -569,6 +618,18 @@ class _PantallaChatState extends State<PantallaChat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (widget.otroUsuarioId == null && !esMio)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: Text(
+                          msg['username'] ?? 'Usuario',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: const Color(0xFFC35E34),
+                          ),
+                        ),
+                      ),
                     Text(
                       msg['content'] ?? '',
                       style: GoogleFonts.outfit(
