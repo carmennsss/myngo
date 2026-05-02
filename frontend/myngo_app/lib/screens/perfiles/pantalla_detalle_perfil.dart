@@ -309,7 +309,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
             ),
           ),
           SliverFillRemaining(
-            hasScrollBody: false,
             child: TabBarView(
               controller: _tabController,
               children: [

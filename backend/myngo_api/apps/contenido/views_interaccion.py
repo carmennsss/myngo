@@ -77,7 +77,7 @@ class InicioFeed(generics.ListAPIView):
                 Q(comunidad_id__in=mis_comunidades_ids)
                 | Q(autor_id__in=mis_seguidos_ids)
                 | Q(comunidad__es_publica=True)
-                | Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+                | (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
                 | Q(autor=usuario)
             ).distinct()
             likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
@@ -90,7 +90,7 @@ class InicioFeed(generics.ListAPIView):
             )
         else:
             qs = qs.filter(
-                Q(comunidad__es_publica=True) | Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+                Q(comunidad__es_publica=True) | (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
             ).distinct()
             from django.db import models as db_models
             likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
