@@ -62,6 +62,12 @@ class InicioFeed(generics.ListAPIView):
     def get_queryset(self):
         """Construye el feed personalizado según las relaciones del usuario.
 
+        Lógica:
+        1. Mis comunidades (donde soy miembro).
+        2. Mis amigos (usuarios que sigo con estado ACEPTADO).
+        3. Mostrar posts que sean de mis amigos, mis comunidades,
+           míos, de perfiles públicos o de comunidades públicas.
+
         Returns:
             QuerySet: Publicaciones ordenadas por fecha de creación.
         """
@@ -70,18 +76,41 @@ class InicioFeed(generics.ListAPIView):
         etiquetas = self.request.query_params.get('etiquetas')
         qs = Publicacion.objects.filter(es_valido_ia=True)
 
+        # Subqueries reutilizables
+        likes_sub = MeGusta.objects.filter(
+            publicacion=OuterRef('pk')
+        ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+
+        coments_sub = Comentario.objects.filter(
+            publicacion=OuterRef('pk')
+        ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+
         if usuario:
-            mis_comunidades_ids = MiembrosComunidad.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
-            mis_seguidos_ids = Seguimiento.objects.filter(seguidor=usuario, estado='ACEPTADO').values_list('seguido_usuario_id', flat=True)
+            # 1. Mis comunidades
+            mis_comunidades_ids = list(
+                MiembrosComunidad.objects.filter(
+                    usuario=usuario
+                ).values_list('comunidad_id', flat=True)
+            )
+
+            # 2. Mis amigos (seguimiento aceptado)
+            mis_amigos_ids = list(
+                Seguimiento.objects.filter(
+                    seguidor=usuario,
+                    seguido_usuario__isnull=False,
+                    estado='ACEPTADO'
+                ).values_list('seguido_usuario_id', flat=True)
+            )
+
+            # 3. Filtro social
             qs = qs.filter(
-                Q(comunidad_id__in=mis_comunidades_ids)
-                | Q(autor_id__in=mis_seguidos_ids)
-                | Q(comunidad__es_publica=True)
-                | (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
-                | Q(autor=usuario)
+                Q(autor=usuario) |                          # Mis posts
+                Q(autor_id__in=mis_amigos_ids) |            # Posts de mis amigos
+                Q(comunidad_id__in=mis_comunidades_ids) |   # Posts de mis comunidades
+                Q(autor__perfil__es_publico=True) |         # Posts de perfiles públicos
+                Q(comunidad__es_publica=True)               # Posts de comunidades públicas
             ).distinct()
-            likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
-            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+
             qs = qs.annotate(
                 anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=db_models.IntegerField()), Value(0)),
                 anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=db_models.IntegerField()), Value(0)),
@@ -89,18 +118,17 @@ class InicioFeed(generics.ListAPIView):
                 anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
             )
         else:
+            # Sin autenticar: perfiles públicos y comunidades públicas
             qs = qs.filter(
-                Q(comunidad__es_publica=True) | (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
+                Q(autor__perfil__es_publico=True) | Q(comunidad__es_publica=True)
             ).distinct()
-            from django.db import models as db_models
-            likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
-            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+
             qs = qs.annotate(
                 anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=db_models.IntegerField()), Value(0)),
                 anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=db_models.IntegerField()), Value(0)),
             )
 
-        qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')
+        qs = qs.select_related('autor', 'autor__perfil', 'comunidad', 'imagen')
         if etiquetas:
             qs = qs.filter(contenido_texto__icontains=etiquetas)
         return qs.order_by('-fecha_creacion')

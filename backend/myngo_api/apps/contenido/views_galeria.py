@@ -161,83 +161,103 @@ class InicioGaleria(generics.ListAPIView):
     pagination_class = PaginacionGaleria
 
     def get_queryset(self):
-        """Genera el feed de imágenes para exploración.
+        """Genera el feed de imágenes para la galería de inicio.
+
+        Lógica simplificada:
+        1. Obtener mis comunidades (donde soy miembro).
+        2. Obtener mis amigos (usuarios que sigo con estado ACEPTADO).
+        3. Mostrar posts que tengan foto Y cumplan al menos una:
+           - Son de mis amigos
+           - Son de mis comunidades
+           - Son míos
+           - Son de un perfil público
+           - Son de una comunidad pública
 
         Returns:
-            QuerySet: Publicaciones con imagen filtradas.
+            QuerySet: Publicaciones con imagen filtradas y anotadas.
         """
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas')
-        
-        qs = Publicacion.objects.filter(es_valido_ia=True).filter(
-            Q(imagen__isnull=False) |
-            Q(imagenes__isnull=False)
-        ).distinct()
+
+        # Base: solo posts válidos por IA que tengan al menos una foto
+        qs = Publicacion.objects.filter(
+            es_valido_ia=True
+        ).filter(
+            Q(imagen__isnull=False) | Q(imagenes__isnull=False)
+        )
+
+        # Subqueries de anotaciones (reutilizables)
+        likes_sub = MeGusta.objects.filter(
+            publicacion=OuterRef('pk')
+        ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+
+        coments_sub = Comentario.objects.filter(
+            publicacion=OuterRef('pk')
+        ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
 
         if usuario:
-            # IDs de usuarios seguidos (perfiles)
-            seguidos_ids = Seguimiento.objects.filter(
-                seguidor=usuario, 
-                seguido_usuario__isnull=False, 
-                estado='ACEPTADO'
-            ).values_list('seguido_usuario_id', flat=True)
-            
-            # IDs de comunidades (miembro o seguidor)
-            mis_comunidades_ids = MiembrosComunidad.objects.filter(
-                usuario=usuario
-            ).values_list('comunidad_id', flat=True)
-            
-            seguidas_comunidades_ids = Seguimiento.objects.filter(
-                seguidor=usuario, 
-                seguida_comunidad__isnull=False, 
-                estado='ACEPTADO'
-            ).values_list('seguida_comunidad_id', flat=True)
+            # 1. Mis comunidades = comunidades de las que soy miembro
+            mis_comunidades_ids = list(
+                MiembrosComunidad.objects.filter(
+                    usuario=usuario
+                ).values_list('comunidad_id', flat=True)
+            )
 
-            # Construir filtros sociales
+            # 2. Mis amigos = usuarios que sigo con solicitud aceptada
+            mis_amigos_ids = list(
+                Seguimiento.objects.filter(
+                    seguidor=usuario,
+                    seguido_usuario__isnull=False,
+                    estado='ACEPTADO'
+                ).values_list('seguido_usuario_id', flat=True)
+            )
+
+            # 3. Filtro social: mostrar si cumple alguna condición
             qs = qs.filter(
-                Q(autor=usuario) |                               # Mis propios posts
-                Q(autor_id__in=seguidos_ids) |                   # Gente que sigo
-                Q(comunidad_id__in=mis_comunidades_ids) |        # Mis comunidades
-                Q(comunidad_id__in=seguidas_comunidades_ids) |   # Comunidades seguidas
-                Q(comunidad__es_publica=True) |                  # Comunidades públicas
-                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True))) # Perfiles públicos
-            ).distinct()
+                Q(autor=usuario) |                          # Mis propios posts
+                Q(autor_id__in=mis_amigos_ids) |            # Posts de mis amigos
+                Q(comunidad_id__in=mis_comunidades_ids) |   # Posts de mis comunidades
+                Q(autor__perfil__es_publico=True) |         # Posts de perfiles públicos
+                Q(comunidad__es_publica=True)               # Posts de comunidades públicas
+            )
 
-            # 2. Anotaciones optimizadas con Subqueries
-            likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
-            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
-            
+            # Anotaciones con estado de interacción del usuario actual
             qs = qs.annotate(
                 anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=IntegerField()), Value(0)),
                 anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=IntegerField()), Value(0)),
-                anotado_usuario_dio_like=Exists(MeGusta.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
-                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario))
+                anotado_usuario_dio_like=Exists(
+                    MeGusta.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
+                ),
+                anotado_usuario_guardo_post=Exists(
+                    PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
+                ),
             )
         else:
-            # Modo público: solo comunidades públicas y posts de perfiles públicos sin comunidad
+            # Sin autenticar: solo perfiles públicos y comunidades públicas
             qs = qs.filter(
-                Q(comunidad__es_publica=True) | 
-                (Q(autor__perfil__es_publico=True) & (Q(comunidad__isnull=True) | Q(comunidad__es_publica=True)))
-            ).distinct()
-            
-            likes_sub = MeGusta.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
-            coments_sub = Comentario.objects.filter(publicacion=OuterRef('pk')).values('publicacion').annotate(cnt=Count('id')).values('cnt')
-            
-            qs = qs.annotate(
-                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=IntegerField()), Value(0)),
-                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=IntegerField()), Value(0))
+                Q(autor__perfil__es_publico=True) | Q(comunidad__es_publica=True)
             )
 
-        # Carga básica de relaciones
-        qs = qs.select_related('autor', 'comunidad', 'imagen', 'autor__perfil').prefetch_related('imagenes')
-            
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=IntegerField()), Value(0)),
+            )
+
+        # Eliminar duplicados (por el M2M de imagenes)
+        qs = qs.distinct()
+
+        # Carga optimizada de relaciones
+        qs = qs.select_related(
+            'autor', 'autor__perfil', 'comunidad', 'imagen'
+        ).prefetch_related('imagenes')
+
+        # Filtro opcional por etiquetas
         if etiquetas:
-            # Busca en etiquetas de la imagen FK o de las imágenes M2M
             qs = qs.filter(
                 Q(imagen__etiquetas__icontains=etiquetas) |
                 Q(imagenes__etiquetas__icontains=etiquetas)
             ).distinct()
-            
+
         return qs.order_by('-fecha_creacion')
 
 

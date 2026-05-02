@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Scaffold;
+import 'package:flutter/material.dart' as material show Scaffold;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -33,7 +34,8 @@ import '../../models/coleccion.dart';
 /// Implementa un diseño premium con cabecera dinámica, sistema de votación
 /// y pestañas para publicaciones propias y guardadas.
 class PantallaDetallePerfil extends StatefulWidget {
-  final Usuario usuario;
+  final int? id;
+  final Usuario? usuario;
   final int? comunidadIdContexto;
   final bool esIntegrada;
   final VoidCallback? onBack;
@@ -41,12 +43,13 @@ class PantallaDetallePerfil extends StatefulWidget {
 
   const PantallaDetallePerfil({
     super.key,
-    required this.usuario,
+    this.id,
+    this.usuario,
     this.comunidadIdContexto,
     this.esIntegrada = false,
     this.onBack,
     this.onPerfilActualizado,
-  });
+  }) : assert(id != null || usuario != null, 'Debe proporcionarse id o usuario');
 
   @override
   State<PantallaDetallePerfil> createState() => _PantallaDetallePerfilState();
@@ -55,10 +58,10 @@ class PantallaDetallePerfil extends StatefulWidget {
 class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     with SingleTickerProviderStateMixin {
   TabController? _tabController;
-  int _tabActual = 0;
-
+  Usuario? _usuario;
   int? _currentUserId;
   bool _isLoading = false;
+  bool _cargandoPerfil = false;
   String? _estadoSeguimiento;
   List<Publicacion>? _publicaciones;
   bool _cargandoPublicaciones = true;
@@ -78,23 +81,23 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   double _ratingLocal = 0.0;
 
   bool _haVotadoHoy = false;
+  int _miVotoHoy = 0;
   int _totalVotosRecibidos = 0;
   int _segundosParaReinicio = 0;
   Timer? _timerReinicio;
   String? _rolEnComunidad;
+  int _tabActual = 0;
 
   @override
   void initState() {
     super.initState();
-    _biografiaLocal = widget.usuario.biografia;
-    _avatarLocal = widget.usuario.urlAvatar;
-    _fondoLocal = widget.usuario.fondo;
-    _marcoLocal = widget.usuario.marco;
-    _ratingLocal = widget.usuario.ratingActual;
-    _estadoSeguimiento = widget.usuario.estadoSeguimiento;
-
-    _inicializarDatos();
-    mejoraEquipadaNotifier.addListener(_onMejoraEquipada);
+    _usuario = widget.usuario;
+    if (_usuario == null && widget.id != null) {
+      _cargarPerfilInicial();
+    } else if (_usuario != null) {
+      _sincronizarEstadoLocal();
+      _inicializarDatos();
+    }
 
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(() {
@@ -106,26 +109,62 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
         }
       }
     });
+    
+    mejoraEquipadaNotifier.addListener(_onMejoraEquipada);
+  }
+
+  void _sincronizarEstadoLocal() {
+    if (_usuario == null) return;
+    _biografiaLocal = _usuario!.biografia;
+    _avatarLocal = _usuario!.urlAvatar;
+    _fondoLocal = _usuario!.fondo;
+    _marcoLocal = _usuario!.marco;
+    _ratingLocal = _usuario!.ratingActual;
+    _estadoSeguimiento = _usuario!.estadoSeguimiento;
+  }
+
+  Future<void> _cargarPerfilInicial() async {
+    if (!mounted) return;
+    setState(() => _cargandoPerfil = true);
+    final res = await ServicioUsuarios().obtenerDatosUsuario(widget.id!);
+    if (mounted) {
+      setState(() {
+        _usuario = res.datos;
+        _cargandoPerfil = false;
+      });
+      if (_usuario != null) {
+        _sincronizarEstadoLocal();
+        _inicializarDatos();
+      }
+    }
   }
 
   @override
-  void didUpdateWidget(covariant PantallaDetallePerfil oldWidget) {
+  void didUpdateWidget(PantallaDetallePerfil oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si el usuario cambió (ej: clic en otro perfil desde el ranking)
-    // reseteamos el estado y recargamos todo para el nuevo usuario.
-    if (oldWidget.usuario.id != widget.usuario.id) {
-      _biografiaLocal = widget.usuario.biografia;
-      _avatarLocal = widget.usuario.urlAvatar;
-      _fondoLocal = widget.usuario.fondo;
-      _marcoLocal = widget.usuario.marco;
-      _ratingLocal = widget.usuario.ratingActual;
-      _estadoSeguimiento = widget.usuario.estadoSeguimiento;
+    final oldId = oldWidget.id ?? oldWidget.usuario?.id;
+    final newId = widget.id ?? widget.usuario?.id;
+    if (oldId != newId) {
+      _usuario = widget.usuario;
+      if (_usuario == null && widget.id != null) {
+        _cargarPerfilInicial();
+      } else if (_usuario != null) {
+        _sincronizarEstadoLocal();
+        _inicializarDatos();
+      }
+      _biografiaLocal = widget.usuario?.biografia;
+      _avatarLocal = widget.usuario?.urlAvatar;
+      _fondoLocal = widget.usuario?.fondo;
+      _marcoLocal = widget.usuario?.marco;
+      _ratingLocal = widget.usuario?.ratingActual ?? 0.0;
+      _estadoSeguimiento = widget.usuario?.estadoSeguimiento;
       _publicaciones = null;
       _publicacionesGuardadas = null;
       _misColecciones = null;
       _cargandoPublicaciones = true;
       _rolEnComunidad = null;
       _haVotadoHoy = false;
+      _miVotoHoy = 0;
       _timerReinicio?.cancel();
       _inicializarDatos();
     }
@@ -151,14 +190,15 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   void _onMejoraEquipada() {
-    if (_currentUserId == widget.usuario.id) {
+    if (_usuario != null && _currentUserId == _usuario!.id) {
       _recargarUsuarioActualizado();
       _cargarPublicaciones();
     }
   }
 
   Future<void> _recargarUsuarioActualizado() async {
-    final res = await ServicioUsuarios().obtenerDatosUsuario(widget.usuario.id);
+    if (_usuario == null) return;
+    final res = await ServicioUsuarios().obtenerDatosUsuario(_usuario!.id);
     if (mounted && res.exito && res.datos != null) {
       final u = res.datos!;
       setState(() {
@@ -173,17 +213,19 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _cargarRolContextual() async {
+    if (_usuario == null) return;
     if (widget.comunidadIdContexto != null) {
       final res = await ServicioComunidades().obtenerRolUsuarioEnComunidad(
-          widget.comunidadIdContexto!, widget.usuario.id);
+          widget.comunidadIdContexto!, _usuario!.id);
       if (res.exito && mounted) setState(() => _rolEnComunidad = res.datos);
     }
   }
 
   Future<void> _cargarPublicaciones() async {
+    if (_usuario == null) return;
     setState(() => _cargandoPublicaciones = true);
     final res = await ServicioPerfiles()
-        .obtenerPublicacionesPerfil(widget.usuario.perfilId);
+        .obtenerPublicacionesPerfil(_usuario!.perfilId);
     if (mounted) {
       setState(() {
         _publicaciones = res.exito ? res.datos : [];
@@ -210,8 +252,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   Future<void> _cargarColecciones({bool force = false}) async {
     if (!force && _misColecciones != null) return;
+    if (_usuario == null) return;
     setState(() => _cargandoColecciones = true);
-    final res = await ServicioGaleria().obtenerColecciones(idUsuario: widget.usuario.id);
+    final res = await ServicioGaleria().obtenerColecciones(idUsuario: _usuario!.id);
     if (mounted) {
       setState(() {
         _misColecciones = res.exito ? res.datos : [];
@@ -231,15 +274,16 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _cargarEstadoVoto() async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null || _usuario == null) return;
     final res = await ServicioMejoras()
-        .obtenerEstadoVoto(idReceptorUsuario: widget.usuario.id);
+        .obtenerEstadoVoto(idReceptorUsuario: _usuario!.id);
     if (mounted && res.exito) {
       final d = res.datos!;
       setState(() {
-        _haVotadoHoy = d['ha_votado_hoy'];
-        _totalVotosRecibidos = d['total_votos'];
-        _segundosParaReinicio = d['segundos_hasta_medianoche'];
+        _haVotadoHoy = d['ha_votado_hoy'] ?? false;
+        _miVotoHoy = d['estrellas'] ?? 0;
+        _totalVotosRecibidos = d['total_votos'] ?? 0;
+        _segundosParaReinicio = d['segundos_hasta_medianoche'] ?? 0;
       });
       _iniciarContador();
     }
@@ -265,10 +309,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _manejarSeguimiento() async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null || _usuario == null) return;
     setState(() => _isLoading = true);
     final res = await ServicioPerfiles()
-        .enviarSolicitudSeguimiento(widget.usuario.nombreUsuario);
+        .enviarSolicitudSeguimiento(_usuario!.nombreUsuario);
     if (mounted) {
       if (res.exito) setState(() => _estadoSeguimiento = res.datos);
       setState(() => _isLoading = false);
@@ -279,9 +323,33 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    if (_cargandoPerfil || _usuario == null) {
+      final loading = material.Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(color: Color(0xFFF28B50)),
+              if (_cargandoPerfil) ...[
+                const SizedBox(height: 16),
+                Text('Cargando perfil...', style: GoogleFonts.inter(color: Colors.grey)),
+              ] else if (_usuario == null && !_cargandoPerfil) ...[
+                const SizedBox(height: 16),
+                Text('Usuario no encontrado 😿', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: const Text('Volver'))
+              ]
+            ],
+          ),
+        ),
+      );
+      return widget.esIntegrada ? loading : loading;
+    }
+
+    return material.Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      floatingActionButton: _currentUserId == widget.usuario.id
+      floatingActionButton: _currentUserId == _usuario!.id
           ? FloatingActionButton.extended(
               onPressed: _mostrarDialogoCrearPost,
               backgroundColor: const Color(0xFFF28B50),
@@ -295,7 +363,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             HeaderDetallePerfil(
-              usuario: widget.usuario,
+              usuario: _usuario!,
               avatarLocal: _avatarLocal,
               fondoLocal: _fondoLocal,
               marcoLocal: _marcoLocal,
@@ -307,7 +375,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
             ),
             SliverToBoxAdapter(
               child: InfoPerfil(
-                usuario: widget.usuario,
+                usuario: _usuario!,
                 currentUserId: _currentUserId,
                 biografiaLocal: _biografiaLocal,
                 estadoSeguimiento: _estadoSeguimiento,
@@ -329,7 +397,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                   controller: _tabController,
                   tabs: [
                     const Tab(text: 'Posts'),
-                    Tab(text: _currentUserId == widget.usuario.id ? 'Favoritos' : 'Colecciones'),
+                    Tab(text: _currentUserId == _usuario!.id ? 'Favoritos' : 'Colecciones'),
                   ],
                   labelStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.bold, fontSize: 16),
@@ -347,7 +415,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               estaCargando: _cargandoPublicaciones,
               onRefresh: _cargarPublicaciones,
             ),
-            if (_currentUserId == widget.usuario.id)
+            if (_currentUserId == _usuario!.id)
               SeccionGuardadosPerfil(
                 publicaciones: _publicacionesGuardadas,
                 colecciones: _misColecciones,
@@ -378,7 +446,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   // --- MÉTODOS DE ACCIÓN ---
 
   void _mostrarSelectorVoto() {
-    if (_currentUserId == widget.usuario.id) return;
+    if (_usuario == null || _currentUserId == _usuario!.id) return;
 
     showModalBottomSheet(
       context: context,
@@ -409,9 +477,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
             ),
             const SizedBox(height: 24),
             SelectorEstrellas(
+              initialRating: _miVotoHoy,
               onRatingChanged: (puntos) async {
                 final res = await ServicioMejoras().votar(
-                  idReceptorUsuario: widget.usuario.id,
+                  idReceptorUsuario: _usuario!.id,
                   cantidadEstrellas: puntos,
                 );
                 if (res.exito) {
@@ -425,10 +494,11 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               const SizedBox(height: 16),
               TextButton.icon(
                 onPressed: () async {
-                  final res = await ServicioMejoras().eliminarVoto(idReceptorUsuario: widget.usuario.id);
+                  final res = await ServicioMejoras().eliminarVoto(idReceptorUsuario: _usuario!.id);
                   if (res.exito) {
                     setState(() {
                       _haVotadoHoy = false;
+                      _miVotoHoy = 0;
                     });
                     _cargarEstadoVoto();
                     _recargarUsuarioActualizado();
@@ -478,7 +548,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               final nuevaBio = controller.text;
               final res = await ServicioPerfiles().editarBiografia(
                 textoBiografia: nuevaBio,
-                perfilId: widget.usuario.perfilId,
+                perfilId: _usuario!.perfilId,
               );
               if (res.exito) {
                 setState(() => _biografiaLocal = nuevaBio);
@@ -500,19 +570,21 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   void _editarAvatar() async {
     final img = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (img == null) return;
+    if (_usuario == null) return;
     final res = await ServicioPerfiles()
-        .editarAvatarPerfil(imagen: img, perfilId: widget.usuario.perfilId);
+        .editarAvatarPerfil(imagen: img, perfilId: _usuario!.perfilId);
     if (res.exito) _recargarUsuarioActualizado();
   }
 
   void _iniciarChat() async {
-    final sala = await ServicioMensajeria().crearSalaPrivada(widget.usuario.id);
+    if (_usuario == null) return;
+    final sala = await ServicioMensajeria().crearSalaPrivada(_usuario!.id);
     if (sala != null && mounted) {
       Navigator.push(
           context,
           MaterialPageRoute(
               builder: (ctx) => PantallaChat(
-                  salaId: sala['id'], nombreSala: widget.usuario.nombreUsuario, otroUsuarioId: widget.usuario.id)));
+                  salaId: sala['id'], nombreSala: _usuario!.nombreUsuario, otroUsuarioId: _usuario!.id)));
     }
   }
 

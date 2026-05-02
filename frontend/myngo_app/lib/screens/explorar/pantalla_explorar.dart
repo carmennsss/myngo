@@ -237,17 +237,19 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
           (context, index) => TarjetaComunidad(
             comunidad: _comunidades[index],
             alPresionar: () {
-              if (widget.onComunidadSelected != null) {
-                widget.onComunidadSelected!(_comunidades[index]);
-              } else {
-                Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
-                  comunidad: _comunidades[index],
-                  onMembershipChanged: () {
-                    _cargarDatos();
-                    widget.onComunidadCreada?.call();
-                  },
-                )));
-              }
+              Future.delayed(Duration.zero, () {
+                if (widget.onComunidadSelected != null) {
+                  widget.onComunidadSelected!(_comunidades[index]);
+                } else {
+                  Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
+                    comunidad: _comunidades[index],
+                    onMembershipChanged: () {
+                      _cargarDatos();
+                      widget.onComunidadCreada?.call();
+                    },
+                  )));
+                }
+              });
             },
           ),
           childCount: _comunidades.length,
@@ -305,15 +307,17 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                 title: Text(usuario.nombreUsuario, style: GoogleFonts.outfit(fontWeight: FontWeight.w900)),
                 subtitle: Text(usuario.email, style: GoogleFonts.outfit(fontSize: 12)),
                 onTap: () {
-                  final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                  if (inicioState != null) {
-                    inicioState.seleccionarUsuario(usuario);
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: usuario)),
-                    );
-                  }
+                  Future.delayed(Duration.zero, () {
+                    final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+                    if (inicioState != null) {
+                      inicioState.seleccionarUsuario(usuario);
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: usuario)),
+                      );
+                    }
+                  });
                 },
               ),
             );
