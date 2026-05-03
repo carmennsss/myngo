@@ -90,6 +90,7 @@ class Publicacion(models.Model):
     imagenes = models.ManyToManyField(
         ImagenGaleria,
         through='PublicacionImagen',
+        through_fields=('publicacion', 'imagen'),
         related_name='publicaciones_asociadas',
         blank=True,
     )
