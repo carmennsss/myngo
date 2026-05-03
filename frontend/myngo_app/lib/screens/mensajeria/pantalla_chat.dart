@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart' hide Category;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -219,17 +223,20 @@ class _PantallaChatState extends State<PantallaChat> {
   Map<String, dynamic> _parsearMensaje(dynamic m) {
     return {
       'type': 'chat_message',
-      'message_id': m['id'],
-      'content': m['content'] ?? '',
-      'user_id': m['emisor'],
-      'username': m['emisor_nombre'],
-      'timestamp': m['fecha_envio'],
+      'message_id': m['id'] ?? m['message_id'],
+      'content': m['content'] ?? m['contenido'] ?? '',
+      'url_archivo_s3': m['url_archivo_s3'],
+      'user_id': m['emisor'] ?? m['user_id'],
+      'username': m['emisor_nombre'] ?? m['username'],
+      'timestamp': m['fecha_envio'] ?? m['timestamp'],
       'leido_por_ids': List<int>.from(m['leido_por_ids'] ?? []),
       'referencia_a': m['referencia_a'],
       'referencia_a_detalle': m['referencia_a_detalle'],
       'es_editado': m['es_editado'] ?? false,
       'borrado_para_todos': m['borrado_para_todos'] ?? false,
-      'hasError': (m['content'] == null && m['url_archivo_s3'] == null),
+      'hasError': (m['content'] == null && m['url_archivo_s3'] == null && m['contenido'] == null),
+      'isOptimistic': m['isOptimistic'] ?? false,
+      'client_id': m['client_id'],
     };
   }
 
@@ -248,8 +255,7 @@ class _PantallaChatState extends State<PantallaChat> {
             }
 
             // Añadir el mensaje real del servidor
-            final msg = Map<String, dynamic>.from(data);
-            msg['leido'] = data['leido'] ?? false;
+            final msg = _parsearMensaje(data);
             _mensajes.insert(0, msg);
 
             // Si el mensaje no es mío, marcar como leído inmediatamente
@@ -318,98 +324,59 @@ class _PantallaChatState extends State<PantallaChat> {
 
   void _enviarMensaje() async {
     final texto = _mensajeController.text.trim();
-    if (texto.isNotEmpty) {
-      if (_mensajeIdEdicion != null) {
-        // Modo edición
-        final exito = await _servicioChat.editarMensaje(_mensajeIdEdicion!, texto);
-        if (exito) {
-          setState(() {
-            _mensajeIdEdicion = null;
-            _mensajeController.clear();
-          });
-        }
-        return;
+    if (texto.isEmpty) return;
+
+    if (_mensajeIdEdicion != null) {
+      final exito = await _servicioChat.editarMensaje(_mensajeIdEdicion!, texto);
+      if (exito) {
+        setState(() {
+          final idx = _mensajes.indexWhere((m) => m['message_id'] == _mensajeIdEdicion);
+          if (idx != -1) {
+            _mensajes[idx]['content'] = texto;
+            _mensajes[idx]['es_editado'] = true;
+          }
+          _mensajeIdEdicion = null;
+          _mensajeController.clear();
+        });
       }
-
-      // Modo envío normal o respuesta
-      final clientId = DateTime.now().microsecondsSinceEpoch.toString();
-      final mensajeOptimista = {
-        'type': 'chat_message',
-        'content': texto,
-        'user_id': _miId,
-        'username': 'Tú',
-        'timestamp': DateTime.now().toIso8601String(),
-        'isOptimistic': true,
-        'client_id': clientId,
-        'leido_por_ids': [],
-        'referencia_a': _mensajeParaResponder?['message_id'],
-        'referencia_a_detalle': _mensajeParaResponder != null ? {
-          'id': _mensajeParaResponder!['message_id'],
-          'emisor_nombre': _mensajeParaResponder!['username'],
-          'contenido': _mensajeParaResponder!['content'],
-        } : null,
-      };
-
-      setState(() {
-        _mensajes.insert(0, mensajeOptimista);
-        _mensajeController.clear();
-        final refId = _mensajeParaResponder?['message_id'];
-        _mensajeParaResponder = null;
-        _servicioChat.enviarMensajeChat(texto, idCliente: clientId, referenciaA: refId as int?);
-      });
-
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-      }
+      return;
     }
-  }
 
-  void _responderMensaje(Map<String, dynamic> msg) {
-    setState(() {
-      _mensajeParaResponder = msg;
-      _mensajeIdEdicion = null;
-      _focusNode.requestFocus();
-    });
-  }
+    final idCliente = DateTime.now().millisecondsSinceEpoch.toString();
+    
+    // Mensaje optimista
+    final msgOptimista = {
+      'type': 'chat_message',
+      'message_id': -1,
+      'client_id': idCliente,
+      'content': texto,
+      'user_id': _miId,
+      'username': 'Tú',
+      'timestamp': DateTime.now().toIso8601String(),
+      'leido_por_ids': [],
+      'referencia_a': _mensajeParaResponder?['message_id'],
+      'referencia_a_detalle': _mensajeParaResponder != null ? {
+        'emisor_nombre': _mensajeParaResponder!['username'],
+        'contenido': _mensajeParaResponder!['content'],
+      } : null,
+      'isOptimistic': true,
+    };
 
-  void _editarMensaje(Map<String, dynamic> msg) {
     setState(() {
-      _mensajeIdEdicion = msg['message_id'];
+      _mensajes.insert(0, msgOptimista);
       _mensajeParaResponder = null;
-      _mensajeController.text = msg['content'] ?? '';
-      _focusNode.requestFocus();
+      _mensajeController.clear();
+      if (_mostrarEmojis) _mostrarEmojis = false;
     });
-  }
 
-  void _confirmarBorrado(Map<String, dynamic> msg) {
-    final esMio = msg['user_id'] == _miId;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Borrar mensaje?'),
-        content: const Text('Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _servicioChat.borrarMensaje(msg['message_id']);
-              setState(() {
-                _mensajes.removeWhere((m) => m['message_id'] == msg['message_id']);
-              });
-            },
-            child: const Text('Borrar para mí'),
-          ),
-          if (esMio)
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _servicioChat.borrarMensaje(msg['message_id'], paraTodos: true);
-              },
-              child: const Text('Borrar para todos', style: TextStyle(color: Colors.red)),
-            ),
-        ],
-      ),
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    }
+
+    _servicioChat.enviarMensajeChat(
+      texto, 
+      idCliente: idCliente, 
+      referenciaA: msgOptimista['referencia_a'] as int?
     );
   }
 
@@ -669,6 +636,20 @@ class _PantallaChatState extends State<PantallaChat> {
 
     return GestureDetector(
       onLongPress: () {
+        debugPrint("Long press detectado en mensaje: ${msg['message_id']}");
+        if (!borrado) {
+          HapticFeedback.heavyImpact();
+          _mostrarMenuMensaje(msg);
+        }
+      },
+      onSecondaryTap: () {
+        debugPrint("Click derecho detectado en mensaje: ${msg['message_id']}");
+        if (!borrado) {
+          _mostrarMenuMensaje(msg);
+        }
+      },
+      // Añadimos un tap simple para móviles por si el long press falla por configuración del OS
+      onDoubleTap: () {
         if (!borrado) _mostrarMenuMensaje(msg);
       },
       child: Align(
@@ -743,14 +724,19 @@ class _PantallaChatState extends State<PantallaChat> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            borrado ? 'Mensaje borrado' : (msg['content'] ?? ''),
-                            style: GoogleFonts.outfit(
-                              color: esMio ? Colors.white : const Color(0xFF4A4440),
-                              fontSize: 15,
-                              fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
+                          if (msg['url_archivo_s3'] != null && msg['url_archivo_s3'].toString().isNotEmpty && !borrado) ...[
+                            _buildMediaMensaje(msg['url_archivo_s3']),
+                            const SizedBox(height: 8),
+                          ],
+                          if ((msg['content'] ?? '').isNotEmpty || borrado)
+                            Text(
+                              borrado ? 'Mensaje borrado' : (msg['content'] ?? ''),
+                              style: GoogleFonts.outfit(
+                                color: esMio ? Colors.white : const Color(0xFF4A4440),
+                                fontSize: 15,
+                                fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
+                              ),
                             ),
-                          ),
                           if (msg['es_editado'] == true && !borrado)
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
@@ -845,21 +831,113 @@ class _PantallaChatState extends State<PantallaChat> {
       ),
     );
   }
+  void _responderMensaje(Map<String, dynamic> msg) {
+    setState(() {
+      _mensajeParaResponder = msg;
+      _mensajeIdEdicion = null;
+    });
+    _focusNode.requestFocus();
+  }
 
-  void _mostrarInfoLectura(Map<String, dynamic> msg) {
-    // Aquí podrías mostrar un diálogo con la lista de quiénes han leído el mensaje.
-    // Por simplicidad, mostramos un snackbar o un diálogo simple.
+  void _editarMensaje(Map<String, dynamic> msg) {
+    setState(() {
+      _mensajeIdEdicion = msg['message_id'];
+      _mensajeParaResponder = null;
+      _mensajeController.text = msg['content'] ?? '';
+    });
+    _focusNode.requestFocus();
+  }
+
+  void _confirmarBorrado(Map<String, dynamic> msg) {
+    final esMio = msg['user_id'] == _miId;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Visto por'),
-        content: Text('Este mensaje ha sido leído por ${msg['leido_por_ids']?.length ?? 0} personas.'),
+        title: Text('¿Borrar mensaje?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(esMio 
+          ? '¿Quieres borrar este mensaje para ti o para todos?' 
+          : 'Este mensaje se borrará solo para ti.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _borrarMensaje(msg, false);
+            },
+            child: Text('Para mí', style: GoogleFonts.outfit(color: const Color(0xFFC35E34))),
+          ),
+          if (esMio)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _borrarMensaje(msg, true);
+              },
+              child: Text('Para todos', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _borrarMensaje(Map<String, dynamic> msg, bool paraTodos) async {
+    final exito = await _servicioChat.borrarMensaje(msg['message_id'], paraTodos: paraTodos);
+    if (exito) {
+      setState(() {
+        if (paraTodos) {
+          // El WebSocket debería notificar el borrado global, 
+          // pero podemos actualizar localmente para inmediatez.
+          final idx = _mensajes.indexWhere((m) => m['message_id'] == msg['message_id']);
+          if (idx != -1) _mensajes[idx]['borrado_para_todos'] = true;
+        } else {
+          _mensajes.removeWhere((m) => m['message_id'] == msg['message_id']);
+        }
+      });
+    }
+  }
+
+  void _mostrarInfoLectura(Map<String, dynamic> msg) async {
+    final List<int> leidoPorIds = List<int>.from(msg['leido_por_ids'] ?? []);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Visto por', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: leidoPorIds.isEmpty 
+          ? const Text('Nadie lo ha visto aún 🐾')
+          : SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: leidoPorIds.length,
+                itemBuilder: (context, index) {
+                  return FutureBuilder<RespuestaApi<Usuario>>(
+                    future: ServicioUsuarios().obtenerDatosUsuario(leidoPorIds[index]),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const LinearProgressIndicator();
+                      final u = snapshot.data!.datos;
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: u?.urlAvatar != null ? NetworkImage(u!.urlAvatar!) : null,
+                          child: u?.urlAvatar == null ? const Icon(Icons.person) : null,
+                        ),
+                        title: Text(u?.nombreUsuario ?? 'Cargando...'),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar')),
         ],
       ),
     );
   }
+
 
   Widget _buildInputArea() {
     return Column(
@@ -1084,6 +1162,74 @@ class _PantallaChatState extends State<PantallaChat> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMediaMensaje(String url) {
+    final isVideo = url.toLowerCase().contains(RegExp(r'\.(mp4|mov|avi|quicktime|m4v)'));
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 200),
+        child: isVideo
+          ? _VideoChatWidget(url: url)
+          : CachedNetworkImage(
+              imageUrl: url,
+              placeholder: (context, url) => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+              errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.white54),
+            ),
+      ),
+    );
+  }
+}
+
+class _VideoChatWidget extends StatefulWidget {
+  final String url;
+  const _VideoChatWidget({required this.url});
+
+  @override
+  State<_VideoChatWidget> createState() => _VideoChatWidgetState();
+}
+
+class _VideoChatWidgetState extends State<_VideoChatWidget> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+      ..initialize().then((_) {
+        if (mounted) setState(() => _initialized = true);
+      }).catchError((e) {
+        if (mounted) setState(() => _hasError = true);
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) return const SizedBox(height: 100, child: Center(child: Icon(Icons.error_outline, color: Colors.white54)));
+    if (!_initialized) return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
+    return AspectRatio(
+      aspectRatio: _controller.value.aspectRatio,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          VideoPlayer(_controller),
+          IconButton(
+            icon: Icon(_controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle, size: 40, color: Colors.white70),
+            onPressed: () => setState(() => _controller.value.isPlaying ? _controller.pause() : _controller.play()),
+          ),
+        ],
       ),
     );
   }

@@ -57,12 +57,8 @@ class SalaChatListCreate(generics.ListCreateAPIView):
             # Si se pide una comunidad específica, solo mostrar salas de esa comunidad
             queryset = queryset.filter(comunidad_id=comunidad_id)
         else:
-            # Si no hay comunidad (pestaña mensajes global), mostrar SOLO mis chats privados (DMs)
-            # Filtramos para que comunidad sea NULL
-            queryset = queryset.filter(
-                miembros=self.request.user,
-                comunidad__isnull=True
-            )
+            # Mostrar todos los chats donde el usuario es miembro
+            queryset = queryset.filter(miembros=self.request.user)
 
         return queryset.distinct().annotate(
             fecha_ultimo_mensaje=Max('mensajes__fecha_envio'),
@@ -275,6 +271,8 @@ def marcar_leidos(request, sala_id):
                 'leido_por': request.user.id,
             }
         )
+
+    return Response({'marcados': len(ids_leidos)})
 
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticated])
