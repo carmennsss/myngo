@@ -80,7 +80,7 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         usuarios, se devuelve la instancia existente.
 
         Args:
-            request: Datos con 'nombre', 'es_grupal' y 'otro_usuario_id'.
+            request: Datos con 'nombre', 'es_grupal', 'es_publica', 'comunidad_id' y 'miembros_ids'.
             *args: Argumentos adicionales.
             **kwargs: Argumentos de palabra clave.
 
@@ -89,7 +89,10 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         """
         nombre = request.data.get('nombre', f'Sala_{request.user.nombre_usuario}')
         es_grupal = request.data.get('es_grupal', False)
+        es_publica = request.data.get('es_publica', False)
+        comunidad_id = request.data.get('comunidad_id')
         otro_usuario_id = request.data.get('otro_usuario_id')
+        miembros_ids = request.data.get('miembros_ids', [])
 
         # Si es privada y ya existe una sala entre estos dos usuarios, devolver la existente
         if not es_grupal and otro_usuario_id:
@@ -97,7 +100,8 @@ class SalaChatListCreate(generics.ListCreateAPIView):
                 otro = Usuario.objects.get(pk=otro_usuario_id)
                 sala_existente = SalaChat.objects.filter(
                     es_grupal=False,
-                    miembros=request.user
+                    miembros=request.user,
+                    comunidad_id=comunidad_id
                 ).filter(miembros=otro).first()
 
                 if sala_existente:
@@ -112,15 +116,28 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         sala = SalaChat.objects.create(
             nombre=nombre,
             es_grupal=es_grupal,
+            es_publica=es_publica,
+            comunidad_id=comunidad_id,
             invite_token=str(uuid.uuid4()),
         )
         sala.miembros.add(request.user)
 
+        # Añadir otro usuario (si se proporcionó uno solo)
         if otro_usuario_id:
             try:
                 sala.miembros.add(Usuario.objects.get(pk=otro_usuario_id))
             except Usuario.DoesNotExist:
                 pass
+        
+        # Añadir lista de miembros
+        if miembros_ids:
+            for m_id in miembros_ids:
+                if m_id == request.user.id:
+                    continue
+                try:
+                    sala.miembros.add(Usuario.objects.get(pk=m_id))
+                except Usuario.DoesNotExist:
+                    pass
 
         return Response(
             SalaChatSerializer(sala, context={'request': request}).data,

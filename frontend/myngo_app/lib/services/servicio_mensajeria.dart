@@ -38,13 +38,27 @@ class ServicioMensajeria {
 
   // --- MÉTODOS REST ---
 
-  /// Crea una nueva sala de chat privada con otro usuario.
-  Future<Map<String, dynamic>?> crearSalaPrivada(int idOtroUsuario) async {
+  /// Crea una nueva sala de chat (privada, grupal o de comunidad).
+  Future<Map<String, dynamic>?> crearSala({
+    String? nombre,
+    bool esGrupal = false,
+    bool esPublica = false,
+    int? idOtroUsuario,
+    List<int>? miembrosIds,
+    int? comunidadId,
+  }) async {
     try {
       final respuesta = await http.post(
         Uri.parse('$_urlApi/mensajeria/salas/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode({'otro_usuario_id': idOtroUsuario}),
+        body: jsonEncode({
+          if (nombre != null) 'nombre': nombre,
+          'es_grupal': esGrupal,
+          'es_publica': esPublica,
+          if (idOtroUsuario != null) 'otro_usuario_id': idOtroUsuario,
+          if (miembrosIds != null) 'miembros_ids': miembrosIds,
+          if (comunidadId != null) 'comunidad_id': comunidadId,
+        }),
       ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {

@@ -228,11 +228,11 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
             ),
 
             // ── Imagen / Rejilla (si existe) ──
-            if (publicacion.urlsImagenes.isNotEmpty || tieneImagen)
+            if (publicacion.media.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: GridImagenesPost(
-                  urls: publicacion.urlsImagenes.isNotEmpty ? publicacion.urlsImagenes : [publicacion.urlImagen!],
+                  media: publicacion.media,
                 ),
               ),
 

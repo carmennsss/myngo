@@ -24,6 +24,9 @@ class Publicacion {
 
   final List<int> imagenesIds;
 
+  /// Lista de objetos con 'url' y 'tipo' ('I' o 'V') para cada archivo.
+  final List<Map<String, String>> media;
+
   final double relacionAspecto;
 
   /// Indica si el contenido ha pasado el filtro de seguridad de la IA.
@@ -64,6 +67,7 @@ class Publicacion {
     this.imagenId,
     this.urlsImagenes = const [],
     this.imagenesIds = const [],
+    this.media = const [],
     required this.relacionAspecto,
     this.esValidoIa = true,
     this.autorFoto,
@@ -114,6 +118,10 @@ class Publicacion {
                 ?.map((e) => toInt(e))
                 .toList() ??
             [],
+        media: (json['media'] as List<dynamic>?)
+                ?.map((e) => Map<String, String>.from(e))
+                .toList() ??
+            [],
         relacionAspecto:
             double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ??
                 1.0,
@@ -160,6 +168,7 @@ class Publicacion {
     int? imagenId,
     List<String>? urlsImagenes,
     List<int>? imagenesIds,
+    List<Map<String, String>>? media,
     double? relacionAspecto,
     bool? esValidoIa,
     String? autorFoto,
@@ -184,6 +193,7 @@ class Publicacion {
       imagenId: imagenId ?? this.imagenId,
       urlsImagenes: urlsImagenes ?? this.urlsImagenes,
       imagenesIds: imagenesIds ?? this.imagenesIds,
+      media: media ?? this.media,
       relacionAspecto: relacionAspecto ?? this.relacionAspecto,
       esValidoIa: esValidoIa ?? this.esValidoIa,
       autorFoto: autorFoto ?? this.autorFoto,

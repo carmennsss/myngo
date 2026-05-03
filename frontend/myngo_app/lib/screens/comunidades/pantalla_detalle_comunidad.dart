@@ -20,6 +20,10 @@ import '../perfiles/pantalla_tienda_mejoras.dart';
 import '../inicio/pantalla_inicio.dart';
 import 'pantalla_admin_comunidad.dart';
 import 'pantalla_enviar_propuesta.dart';
+import '../../services/servicio_mensajeria.dart';
+import '../../widgets/mensajeria/dialogo_crear_sala.dart';
+import '../../models/usuario.dart';
+
 
 // Widgets extraídos
 import 'widgets_detalle/header_detalle_comunidad.dart';
@@ -353,7 +357,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           comunidad: _comunidad!,
           salasChat: _salasChat,
           estaCargando: _estaCargandoDatos,
-          onCrearSala: () {},
+          onCrearSala: () => _mostrarDialogoCrearSalaComunidad(context),
           esAppClara: _esAppClara(context),
           colorTextoPrincipal: _colorTextoPrincipal(context),
           colorTextoSecundario: _colorTextoSecundario(context),
@@ -448,7 +452,64 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         ),
       );
     }
+    if (_indiceSeccion == 3) {
+      return Positioned(
+        bottom: 24,
+        right: 24,
+        child: FloatingActionButton.extended(
+          onPressed: () => _mostrarDialogoCrearSalaComunidad(context),
+          label: Text('Nueva Sala',
+              style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold, color: Colors.white)),
+          icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
+          backgroundColor: _comunidad!.colorTema,
+        ),
+      );
+    }
     return const SizedBox();
+  }
+
+  void _mostrarDialogoCrearSalaComunidad(BuildContext context) async {
+    // Obtener miembros de la comunidad
+    final res = await _servicio.obtenerMiembrosComunidad(_comunidad!.id);
+    if (!res.exito || !mounted) return;
+
+    // Convertir datos de miembros a objetos Usuario para el diálogo
+    final potenciales = (res.datos as List)
+        .where((m) => m['usuario_id'] != _miId)
+        .map((m) => Usuario.fromJson({
+          'id': m['usuario_id'],
+          'nombre_usuario': m['usuario_nombre'],
+          'url_avatar': m['usuario_avatar'],
+          'perfil_id': m['perfil_id'],
+        }))
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DialogoCrearSala(
+        titulo: 'Nueva Sala en ${_comunidad!.nombre} 🐾',
+        potencialesParticipantes: potenciales,
+        alCrear: (nombre, esPublica, miembrosIds) async {
+          Navigator.pop(context); // Cerrar diálogo
+          
+          final servMensajeria = ServicioMensajeria();
+          final nuevaSala = await servMensajeria.crearSala(
+            nombre: nombre,
+            esGrupal: true,
+            esPublica: esPublica,
+            miembrosIds: miembrosIds,
+            comunidadId: _comunidad!.id,
+          );
+
+          if (nuevaSala != null && mounted) {
+            _cargarDatosSeccion(3); // Recargar salas
+          }
+        },
+      ),
+    );
   }
 
   void _mostrarDialogoNuevoPost(BuildContext context) {

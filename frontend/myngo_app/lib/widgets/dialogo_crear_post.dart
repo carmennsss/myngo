@@ -10,7 +10,7 @@ class DialogoCrearPost extends StatefulWidget {
   final String titulo;
   final String? initialTexto;
   final String? initialEtiquetas;
-  final Future<bool> Function(String texto, List<XFile>? imagenes, String etiquetas) onPublicar;
+  final Future<bool> Function(String texto, List<XFile>? archivos, String etiquetas) onPublicar;
 
   const DialogoCrearPost({
     super.key,
@@ -27,7 +27,7 @@ class DialogoCrearPost extends StatefulWidget {
 class _DialogoCrearPostState extends State<DialogoCrearPost> {
   late final TextEditingController _controladorTexto;
   late final TextEditingController _controladorEtiquetas;
-  List<XFile> _imagenesSeleccionadas = [];
+  List<XFile> _archivosSeleccionados = [];
   bool _estaCargando = false;
 
   @override
@@ -35,6 +35,33 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
     super.initState();
     _controladorTexto = TextEditingController(text: widget.initialTexto);
     _controladorEtiquetas = TextEditingController(text: widget.initialEtiquetas);
+  }
+
+  Future<void> _validarYAgregarArchivo(XFile archivo) async {
+    final bytes = await archivo.length();
+    final mb = bytes / (1024 * 1024);
+    
+    if (mb > 100) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('El archivo ${archivo.name} es demasiado grande (${mb.toStringAsFixed(1)} MB). El límite es 100 MB.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      if (_archivosSeleccionados.length < 4) {
+        _archivosSeleccionados.add(archivo);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Máximo 4 archivos por post')),
+        );
+      }
+    });
   }
 
   @override
@@ -66,27 +93,32 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
             ),
           ),
           const SizedBox(height: 16),
-          if (_imagenesSeleccionadas.isNotEmpty)
+          if (_archivosSeleccionados.isNotEmpty)
             Column(
               children: [
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _imagenesSeleccionadas.map((img) {
+                  children: _archivosSeleccionados.map((file) {
+                    final esVideo = file.name.toLowerCase().endsWith('.mp4') || 
+                                   file.name.toLowerCase().endsWith('.mov') ||
+                                   file.name.toLowerCase().endsWith('.avi');
                     return Stack(
                       children: [
                         Container(
                           height: 100,
                           width: 100,
                           decoration: BoxDecoration(
+                            color: Colors.black26,
                             borderRadius: BorderRadius.circular(12),
-                            image: DecorationImage(
+                            image: esVideo ? null : DecorationImage(
                               image: kIsWeb 
-                                  ? NetworkImage(img.path) as ImageProvider
-                                  : FileImage(File(img.path)),
+                                  ? NetworkImage(file.path) as ImageProvider
+                                  : FileImage(File(file.path)),
                               fit: BoxFit.cover,
                             ),
                           ),
+                          child: esVideo ? const Center(child: Icon(Icons.videocam_rounded, color: Colors.white, size: 40)) : null,
                         ),
                         Positioned(
                           right: 0,
@@ -94,7 +126,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                           child: InkWell(
                             onTap: () {
                               setState(() {
-                                _imagenesSeleccionadas.remove(img);
+                                _archivosSeleccionados.remove(file);
                               });
                             },
                             child: Container(
@@ -131,26 +163,25 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
             children: [
               IconButton(
                 onPressed: () async {
-                  if (_imagenesSeleccionadas.length >= 4) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Máximo 4 imágenes')),
-                    );
-                    return;
-                  }
                   final imgs = await ImagePicker().pickMultiImage();
                   if (imgs.isNotEmpty) {
-                    setState(() {
-                      _imagenesSeleccionadas.addAll(imgs);
-                      if (_imagenesSeleccionadas.length > 4) {
-                        _imagenesSeleccionadas = _imagenesSeleccionadas.sublist(0, 4);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Se ha limitado a 4 imágenes')),
-                        );
-                      }
-                    });
+                    for (var img in imgs) {
+                      await _validarYAgregarArchivo(img);
+                    }
                   }
                 },
+                tooltip: 'Subir imágenes',
                 icon: const Icon(Icons.image_search_rounded, color: Color(0xFFF29C50)),
+              ),
+              IconButton(
+                onPressed: () async {
+                  final video = await ImagePicker().pickVideo(source: ImageSource.gallery);
+                  if (video != null) {
+                    await _validarYAgregarArchivo(video);
+                  }
+                },
+                tooltip: 'Subir vídeo',
+                icon: const Icon(Icons.videocam_outlined, color: Color(0xFFF29C50)),
               ),
               const Spacer(),
               ElevatedButton(
@@ -158,7 +189,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                   setState(() => _estaCargando = true);
                   final exitoso = await widget.onPublicar(
                     _controladorTexto.text,
-                    _imagenesSeleccionadas,
+                    _archivosSeleccionados,
                     _controladorEtiquetas.text,
                   );
                   if (mounted) {

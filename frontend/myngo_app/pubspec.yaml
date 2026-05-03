@@ -49,6 +49,9 @@ dependencies:
   go_router: ^17.2.0
   web_socket_channel: ^3.0.3
   flutter_local_notifications: ^17.2.2
+  emoji_picker_flutter: ^4.4.0
+  video_player: ^2.8.2
+  chewie: ^1.7.5
 
 dev_dependencies:
   flutter_test:
