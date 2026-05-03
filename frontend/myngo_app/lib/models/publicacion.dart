@@ -120,19 +120,34 @@ class Publicacion {
             [],
         media: (json['media'] as List<dynamic>?)?.map((e) {
               final map = e as Map<String, dynamic>;
+              final url = map['url']?.toString() ?? '';
+              String tipo = map['tipo']?.toString() ?? 'I';
+              // Fallback para posts antiguos o mal tipados
+              final lowerUrl = url.toLowerCase();
+              if (tipo == 'I' && (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.quicktime'))) {
+                tipo = 'V';
+              }
               return {
-                'url': map['url']?.toString() ?? '',
-                'tipo': map['tipo']?.toString() ?? 'I',
+                'url': url,
+                'tipo': tipo,
               };
             }).toList() ??
             (json['urls_imagenes'] as List<dynamic>?)
-                ?.map((e) => {'url': e.toString(), 'tipo': 'I'})
+                ?.map((e) {
+                  final url = e.toString();
+                  String tipo = 'I';
+                  final lowerUrl = url.toLowerCase();
+                  if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.quicktime')) {
+                    tipo = 'V';
+                  }
+                  return {'url': url, 'tipo': tipo};
+                })
                 .toList() ??
             ((json['url_imagen'] != null || json['url_archivo_s3'] != null)
                 ? [
                     {
                       'url': (json['url_archivo_s3'] ?? json['url_imagen']).toString(),
-                      'tipo': 'I'
+                      'tipo': (json['url_archivo_s3'] ?? json['url_imagen']).toString().toLowerCase().contains(RegExp(r'\.(mp4|mov|avi|quicktime)')) ? 'V' : 'I'
                     }
                   ]
                 : []),

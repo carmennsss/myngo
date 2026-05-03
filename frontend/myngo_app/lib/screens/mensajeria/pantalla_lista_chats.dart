@@ -45,7 +45,19 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     setState(() => _cargando = true);
     
     final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
     final id = prefs.getInt('usuario_id');
+
+    if (token == null) {
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+          _salas = [];
+          _salasFiltradas = [];
+        });
+      }
+      return;
+    }
     
     // Obtener salas (el backend ya está optimizado con prefetch)
     final salas = await _servicioMensajeria.obtenerSalasChat();

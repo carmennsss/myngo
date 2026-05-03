@@ -24,7 +24,7 @@ class MensajeChatSerializer(serializers.ModelSerializer):
         model = MensajeChat
         fields = [
             'id', 'sala', 'emisor', 'emisor_nombre', 'emisor_foto',
-            'content', 'fecha_envio', 'leido_por_ids',
+            'content', 'url_archivo_s3', 'fecha_envio', 'leido_por_ids',
             'referencia_a', 'referencia_a_detalle', 'es_editado', 
             'fecha_edicion', 'borrado_para_todos', 'borrado_para_mi'
         ]
