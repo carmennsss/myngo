@@ -116,7 +116,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       builder: (context) => DialogoCrearPost(
         titulo: 'Editar Miau-post 🐾',
         initialTexto: widget.post.contenidoTexto,
-        onPublicar: (texto, imagenes, etiquetas) async {
+        onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final res = await ServicioComunidades().actualizarPublicacion(
             idPublicacion: widget.post.id,
             texto: texto,
@@ -192,10 +192,10 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   child: CircleAvatar(
                     radius: 20,
                     backgroundColor: Colors.white,
-                    backgroundImage: widget.post.autorFoto != null
+                    backgroundImage: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
                         ? CachedNetworkImageProvider(widget.post.autorFoto!)
                         : null,
-                    child: widget.post.autorFoto == null
+                    child: (widget.post.autorFoto == null || widget.post.autorFoto!.isEmpty)
                         ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
                             style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16))
                         : null,

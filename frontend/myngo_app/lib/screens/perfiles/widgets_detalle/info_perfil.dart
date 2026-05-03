@@ -290,41 +290,46 @@ class InfoPerfil extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Widget _buildActionButtons(BuildContext context) {
-    if (currentUserId == null) {
-      return const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
-    }
+  }  Widget _buildActionButtons(BuildContext context) {
+    if (currentUserId == null) return const SizedBox.shrink();
     final bool esPropio = currentUserId == usuario.id;
+    if (esPropio) return const SizedBox.shrink();
 
-    return Row(
-      children: [
-        if (!esPropio) ...[
-          _ActionButton(
-            label: _getFollowText(),
-            color: _getFollowColor(),
-            isLoading: isLoading,
-            onPressed: onManejarSeguimiento,
+    return SizedBox(
+      height: 44,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: _ActionButton(
+              label: _getFollowText(),
+              color: _getFollowColor(),
+              isLoading: isLoading,
+              onPressed: onManejarSeguimiento,
+            ),
           ),
-          const SizedBox(width: 12),
-          _CircularAction(icon: Icons.chat_bubble_outline, onPressed: onChat),
-          const SizedBox(width: 12),
-          _ActionButton(
-            label: haVotadoHoy ? 'Editar Voto' : 'Votar',
-            color: haVotadoHoy ? const Color(0xFF248EA6).withOpacity(0.7) : const Color(0xFF248EA6),
-            isLoading: false,
+          const SizedBox(width: 8),
+          _CircularAction(icon: Icons.chat_bubble_outline_rounded, onPressed: onChat),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: _ActionButton(
+              label: haVotadoHoy ? 'Editar Voto' : 'Votar',
+              color: haVotadoHoy
+                  ? const Color(0xFF248EA6).withOpacity(0.6)
+                  : const Color(0xFF248EA6),
+              isLoading: false,
+              onPressed: onMostrarVoto,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _RateBadge(
+            rating: ratingLocal,
+            haVotado: haVotadoHoy,
             onPressed: onMostrarVoto,
           ),
-          const SizedBox(width: 12),
         ],
-        _RateButton(
-          rating: ratingLocal,
-          haVotado: haVotadoHoy,
-          tiempoRestante: tiempoParaReinicio,
-          onPressed: onMostrarVoto,
-        ),
-      ],
+      ),
     );
   }
 
@@ -356,25 +361,29 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return InkWell(
+      onTap: isLoading ? null : onPressed,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.white,
+                ),
+              ),
       ),
-      child: isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white))
-          : Text(
-              label,
-              style: GoogleFonts.inter(
-                  fontWeight: FontWeight.bold, color: Colors.white),
-            ),
     );
   }
 }
@@ -387,74 +396,68 @@ class _CircularAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white12),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 20),
-        onPressed: onPressed,
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }
 }
 
-class _RateButton extends StatelessWidget {
+class _RateBadge extends StatelessWidget {
   final double rating;
   final bool haVotado;
-  final String tiempoRestante;
   final VoidCallback onPressed;
 
-  const _RateButton({
+  const _RateBadge({
     required this.rating,
     required this.haVotado,
-    required this.tiempoRestante,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onPressed,
+      borderRadius: BorderRadius.circular(22),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: haVotado
-              ? Colors.grey.withOpacity(0.1)
-              : const Color(0xFF248EA6).withOpacity(0.15),
-          borderRadius: BorderRadius.circular(12),
+              ? Colors.white.withOpacity(0.05)
+              : const Color(0xFF248EA6).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-              color: haVotado
-                  ? Colors.grey.withOpacity(0.3)
-                  : const Color(0xFF248EA6).withOpacity(0.4),
-              width: 1.5),
+            color: haVotado
+                ? Colors.white12
+                : const Color(0xFF248EA6).withOpacity(0.3),
+          ),
         ),
-        child: Column(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.star_rounded,
-                    color: haVotado ? Colors.grey : const Color(0xFF248EA6),
-                    size: 20),
-                const SizedBox(width: 6),
-                Text(
-                  rating.toStringAsFixed(1),
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    color: haVotado ? Colors.grey : Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            if (haVotado)
-              Text(
-                tiempoRestante,
-                style: GoogleFonts.inter(fontSize: 9, color: Colors.grey),
+            Icon(Icons.star_rounded,
+                color: haVotado ? Colors.grey : const Color(0xFF248EA6),
+                size: 18),
+            const SizedBox(width: 4),
+            Text(
+              rating.toStringAsFixed(1),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                color: haVotado ? Colors.grey : Colors.white,
               ),
+            ),
           ],
         ),
       ),

@@ -57,8 +57,8 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
   Future<void> _cargarColecciones() async {
     setState(() => _cargandoColecciones = true);
     final respuesta = await _servicioGaleria.obtenerColecciones(
-      comunidadId: widget.comunidadId,
-      usuarioId: widget.usuarioId,
+      idComunidad: widget.comunidadId,
+      idUsuario: widget.usuarioId,
     );
     if (respuesta.exito && respuesta.datos != null) {
       setState(() => _colecciones = respuesta.datos!);
@@ -261,7 +261,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
                   final resp = await _servicioGaleria.crearColeccion(
                     nombre: _nombreCtrl.text,
                     esPrivada: _privada,
-                    comunidadId: widget.comunidadId,
+                    idComunidad: widget.comunidadId,
                   );
                   if (resp.exito) {
                     Navigator.pop(context);
@@ -290,7 +290,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
       
       final res = await _servicioGaleria.subirImagenGaleria(
         pickedFile, 
-        comunidadId: widget.comunidadId,
+        idComunidad: widget.comunidadId,
         esPublica: true
       );
       

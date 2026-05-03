@@ -27,123 +27,125 @@ class VotoAPIView(APIView):
     def get(self, request):
         """Consulta el estado del voto del usuario actual hacia un receptor específico.
 
-        Args:
-            request: Petición con query params 'receptor_usuario' o 'receptor_comunidad'.
-
-        Returns:
-            Response: Estado del voto, puntuación, total de votos y tiempo hasta reseteo.
+        Implementa un cooldown de 24 horas desde el último voto emitido por el usuario
+        hacia este receptor específico.
         """
-        if request.user.is_authenticated:
-            votante = request.user
-        else:
-            votante = Usuario.objects.filter(pk=1).first() or Usuario.objects.first()
-
+        votante = request.user if request.user.is_authenticated else None
+        
         receptor_usuario_id = request.query_params.get('receptor_usuario')
         receptor_comunidad_id = request.query_params.get('receptor_comunidad')
 
-        hoy = timezone.now().date()
-        filter_kwargs = {'votante': votante, 'fecha_voto__date': hoy}
         count_filter = {}
-
         if receptor_usuario_id:
             try:
                 receptor = Usuario.objects.get(pk=receptor_usuario_id)
-                filter_kwargs['receptor_usuario'] = receptor
                 count_filter['receptor_usuario'] = receptor
             except Usuario.DoesNotExist:
                 return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         elif receptor_comunidad_id:
             try:
                 receptor = Comunidad.objects.get(pk=receptor_comunidad_id)
-                filter_kwargs['receptor_comunidad'] = receptor
                 count_filter['receptor_comunidad'] = receptor
             except Comunidad.DoesNotExist:
                 return Response({'error': 'Comunidad no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({'error': 'Falta receptor.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        voto_hoy = Voto.objects.filter(**filter_kwargs).first()
         total_votos = Voto.objects.filter(**count_filter).count()
+        
+        # Si no hay votante autenticado, no hay cooldown personal
+        if not votante:
+            return Response({
+                "ha_votado_hoy": False,
+                "puntuacion_actual": None,
+                "total_votos": total_votos,
+                "segundos_hasta_reset": 0
+            })
 
+        # Buscar el voto más reciente de este usuario a este receptor
+        ultimo_voto = Voto.objects.filter(votante=votante, **count_filter).order_by('-fecha_voto').first()
+        
         ahora = timezone.now()
-        mañana = datetime.combine(ahora.date() + timezone.timedelta(days=1), time.min)
-        mañana = timezone.make_aware(mañana, ahora.tzinfo)
-        segundos_restantes = int((mañana - ahora).total_seconds())
+        ha_votado = False
+        segundos_restantes = 0
+        puntuacion = None
+
+        if ultimo_voto:
+            diferencia = ahora - ultimo_voto.fecha_voto
+            if diferencia.total_seconds() < 86400: # 24 horas
+                ha_votado = True
+                puntuacion = ultimo_voto.estrellas
+                segundos_restantes = int(86400 - diferencia.total_seconds())
 
         return Response({
-            "ha_votado_hoy": voto_hoy is not None,
-            "puntuacion_actual": voto_hoy.estrellas if voto_hoy else None,
+            "ha_votado_hoy": ha_votado,
+            "puntuacion_actual": puntuacion,
             "total_votos": total_votos,
-            "segundos_hasta_medianoche": segundos_restantes
+            "segundos_hasta_medianoche": segundos_restantes # Mantengo el nombre por compatibilidad con frontend
         })
 
     def post(self, request):
-        """Registra o actualiza un voto de estrellas.
-
-        Args:
-            request: Datos con 'receptor_usuario' o 'receptor_comunidad' y 'estrellas'.
-
-        Returns:
-            Response: Confirmación del voto y nueva media del receptor.
-        """
-        if request.user and request.user.is_authenticated:
-            votante = request.user
-        else:
-            votante = Usuario.objects.filter(pk=1).first() or Usuario.objects.first()
-
+        """Registra o actualiza un voto de estrellas con cooldown de 24h."""
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Debes iniciar sesión para votar.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        votante = request.user
         receptor_usuario_id = request.data.get('receptor_usuario')
         receptor_comunidad_id = request.data.get('receptor_comunidad')
         estrellas = request.data.get('estrellas')
 
-        if not estrellas or not (0 <= int(estrellas) <= 5):
+        if estrellas is None or not (0 <= int(estrellas) <= 5):
             return Response(
                 {'error': 'La puntuación debe estar entre 0 y 5.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        hoy = timezone.now().date()
-        search_kwargs = {'votante': votante, 'fecha_voto__date': hoy}
-        create_kwargs = {'votante': votante, 'estrellas': estrellas}
-
+        search_kwargs = {'votante': votante}
         if receptor_usuario_id:
             try:
                 receptor = Usuario.objects.get(pk=receptor_usuario_id)
                 search_kwargs['receptor_usuario'] = receptor
-                create_kwargs['receptor_usuario'] = receptor
             except Usuario.DoesNotExist:
                 return Response({'error': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         elif receptor_comunidad_id:
             try:
                 receptor = Comunidad.objects.get(pk=receptor_comunidad_id)
                 search_kwargs['receptor_comunidad'] = receptor
-                create_kwargs['receptor_comunidad'] = receptor
             except Comunidad.DoesNotExist:
                 return Response({'error': 'Comunidad no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response(
-                {'error': 'Debes especificar un receptor (usuario o comunidad).'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'Falta receptor.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        voto = Voto.objects.filter(**search_kwargs).first()
-
-        if not voto:
-            votos_hoy_count = Voto.objects.filter(votante=votante, fecha_voto__date=hoy).count()
-            if votos_hoy_count >= 50:
-                return Response({
-                    "error": "Has alcanzado el límite de 50 votos diarios. ¡Vuelve mañana! 🐾"
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-        if voto:
-            voto.estrellas = estrellas
-            voto.save()
+        # Buscar si existe un voto activo (últimas 24h)
+        ahora = timezone.now()
+        voto_activo = Voto.objects.filter(**search_kwargs).order_by('-fecha_voto').first()
+        
+        if voto_activo and (ahora - voto_activo.fecha_voto).total_seconds() < 86400:
+            # Actualizar voto existente dentro de su ventana de 24h
+            voto_activo.estrellas = estrellas
+            voto_activo.save()
             mensaje = "Voto actualizado correctamente."
         else:
-            voto = Voto.objects.create(**create_kwargs)
+            # Límite global de 50 votos nuevos por día (opcional, manteniendo lógica previa)
+            votos_recientes = Voto.objects.filter(
+                votante=votante, 
+                fecha_voto__gte=ahora - timezone.timedelta(days=1)
+            ).count()
+            
+            if votos_recientes >= 50:
+                return Response({
+                    "error": "Has alcanzado el límite de 50 votos en 24 horas. 🐾"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Crear nuevo voto (inicia un nuevo ciclo de 24h)
+            search_kwargs['estrellas'] = estrellas
+            Voto.objects.create(**search_kwargs)
             mensaje = "Voto registrado correctamente."
 
         receptor.refresh_from_db()
-
         return Response({
             "mensaje": mensaje,
             "receptor": receptor.id,

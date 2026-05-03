@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/comunidad.dart';
 import '../../../models/publicacion.dart';
 import '../../../models/coleccion.dart';
@@ -46,87 +47,18 @@ class PreviewComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (comunidad.esPublica) {
-      return Stack(
-        children: [
-          Positioned.fill(child: backgroundFeed),
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverAppBar(
-                  expandedHeight: 180,
-                  pinned: false,
-                  stretch: true,
-                  backgroundColor: Colors.transparent,
-                  surfaceTintColor: Colors.transparent,
-                  automaticallyImplyLeading: false,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: HeaderDetalleComunidad(
-                      comunidad: comunidad,
-                      miId: miId,
-                      onCerrar: onBack,
-                    ),
-                  ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _PersistentTabDelegate(
-                    child: _buildPreviewTabs(context),
-                  ),
-                ),
-              ];
-            },
-            body: CustomScrollView(
-              slivers: [
-                if (indiceSeccion == 0)
-                  SeccionPostsComunidad(
-                    publicaciones: publicaciones,
-                    estaCargando: estaCargandoDatos,
-                    onRefresh: () async {},
-                    esAppClara: esAppClara,
-                    comoSliver: true,
-                  )
-                else
-                  SliverToBoxAdapter(child: _buildPreviewGallery(context)),
-                SliverPadding(
-                  padding: const EdgeInsets.all(24.0),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      children: [
-                        PreviewAboutSection(
-                          comunidad: comunidad,
-                          esAppClara: esAppClara,
-                          colorTextoPrincipal: colorTextoPrincipal,
-                          colorTextoSecundario: colorTextoSecundario,
-                          bgColor: comunidad.colorTema,
-                        ),
-                        const SizedBox(height: 16),
-                        CommunityJoinButton(
-                          comunidad: comunidad,
-                          miId: miId,
-                          estaCargandoPeticion: estaCargandoPeticion,
-                          onLogin: () => Navigator.pushNamed(context, '/login'),
-                          onJoin: onJoin,
-                          isPreview: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Comunidades privadas
-    return CustomScrollView(
+    final urlFondo = comunidad.urlFondo;
+    
+    final content = CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        // Cabecera Principal (Expandible)
         SliverAppBar(
           expandedHeight: 180,
-          pinned: true,
+          pinned: false,
           backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          automaticallyImplyLeading: false,
           flexibleSpace: FlexibleSpaceBar(
             background: HeaderDetalleComunidad(
               comunidad: comunidad,
@@ -135,18 +67,38 @@ class PreviewComunidad extends StatelessWidget {
             ),
           ),
         ),
-        SliverToBoxAdapter(
+
+        // Selector de Pestañas (Sticky)
+        SliverAppBar(
+          pinned: true,
+          toolbarHeight: 60,
+          automaticallyImplyLeading: false,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          surfaceTintColor: Colors.transparent,
+          flexibleSpace: _buildPreviewTabs(context),
+        ),
+
+        // Contenido según pestaña
+        if (indiceSeccion == 0)
+          SeccionPostsComunidad(
+            key: ValueKey('posts_${publicaciones?.length}'),
+            publicaciones: publicaciones,
+            estaCargando: estaCargandoDatos,
+            onRefresh: () async {},
+            esAppClara: esAppClara,
+            comoSliver: true,
+          )
+        else
+          SliverToBoxAdapter(child: _buildPreviewGallery(context)),
+
+        // Pie de página con botón de unión
+        SliverFillRemaining(
+          hasScrollBody: false,
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
             child: Column(
               children: [
-                PreviewHeader(
-                  comunidad: comunidad,
-                  esAppClara: esAppClara,
-                  colorTextoPrincipal: colorTextoPrincipal,
-                  colorTextoSecundario: colorTextoSecundario,
-                ),
-                const Divider(height: 48),
+                const Spacer(),
                 PreviewAboutSection(
                   comunidad: comunidad,
                   esAppClara: esAppClara,
@@ -154,19 +106,69 @@ class PreviewComunidad extends StatelessWidget {
                   colorTextoSecundario: colorTextoSecundario,
                   bgColor: comunidad.colorTema,
                 ),
-                CommunityJoinButton(
-                  comunidad: comunidad,
-                  miId: miId,
-                  estaCargandoPeticion: estaCargandoPeticion,
-                  onLogin: () => Navigator.pushNamed(context, '/login'),
-                  onJoin: onJoin,
-                  isPreview: true,
+                const SizedBox(height: 30),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '¿Te gusta lo que ves?',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: colorTextoPrincipal,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Únete para participar en las conversaciones y compartir tu contenido.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colorTextoSecundario,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      CommunityJoinButton(
+                        comunidad: comunidad,
+                        miId: miId,
+                        estaCargandoPeticion: estaCargandoPeticion,
+                        onLogin: () => Navigator.pushNamed(context, '/login'),
+                        onJoin: onJoin,
+                        isPreview: true,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ),
       ],
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: esAppClara ? Colors.white : const Color(0xFF121212),
+        image: (urlFondo != null && urlFondo.isNotEmpty)
+            ? DecorationImage(
+                image: CachedNetworkImageProvider(urlFondo),
+                fit: BoxFit.cover,
+                opacity: 0.15,
+              )
+            : null,
+      ),
+      child: content,
     );
   }
 
@@ -192,11 +194,12 @@ class PreviewComunidad extends StatelessWidget {
 
   Widget _buildTabItem(int index, String label, IconData icon) {
     final activo = indiceSeccion == index;
-    return InkWell(
+    return GestureDetector(
       onTap: () => onTabChanged(index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
+          color: activo ? comunidad.colorTema.withOpacity(0.05) : Colors.transparent,
           border: Border(
             bottom: BorderSide(
               color: activo ? comunidad.colorTema : Colors.transparent,
@@ -223,27 +226,6 @@ class PreviewComunidad extends StatelessWidget {
   }
 
   Widget _buildPreviewGallery(BuildContext context) {
-    // Implementación simplificada o reutilización parcial de SeccionGaleria
     return const Center(child: Text('Galería Pública'));
   }
-}
-
-class _PersistentTabDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  _PersistentTabDelegate({required this.child});
-
-  @override
-  double get minExtent => 60;
-  @override
-  double get maxExtent => 60;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
-      true;
 }

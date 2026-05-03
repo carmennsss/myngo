@@ -595,7 +595,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
         titulo: 'Nuevo Miau-Post',
-        onPublicar: (txt, imgs, tags) async {
+        onPublicar: (txt, imgs, tags, {void Function(int, int)? alProgresar}) async {
           final ok = await Provider.of<PostProvider>(context, listen: false)
               .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: imgs, etiquetas: tags);
           if (ok) _cargarPublicaciones();

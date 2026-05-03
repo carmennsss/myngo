@@ -39,11 +39,11 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
   }
 
   Future<void> _actualizarItem(CatalogoMejoras item, {bool? estaActivo, int? precio}) async {
-    final res = await _servicio.actualizarItemCatalogo(
+    final res = await _servicio.actualizarArticuloCatalogo(
       widget.comunidad.id, 
       item.id, 
       estaActivo: estaActivo, 
-      precio: precio
+      precioFinal: precio
     );
     if (mounted) {
       if (res.exito) {

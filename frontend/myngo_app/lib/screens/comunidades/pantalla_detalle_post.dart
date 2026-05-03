@@ -178,10 +178,10 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                                       child: CircleAvatar(
                                         radius: 22,
                                         backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                                        backgroundImage: _post!.autorFoto != null
+                                        backgroundImage: (_post!.autorFoto != null && _post!.autorFoto!.isNotEmpty)
                                             ? CachedNetworkImageProvider(_post!.autorFoto!)
                                             : null,
-                                        child: _post!.autorFoto == null 
+                                        child: (_post!.autorFoto == null || _post!.autorFoto!.isEmpty)
                                             ? Text(_post!.autorNombre.isNotEmpty ? _post!.autorNombre[0].toUpperCase() : '?',
                                                 style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 18))
                                             : null,

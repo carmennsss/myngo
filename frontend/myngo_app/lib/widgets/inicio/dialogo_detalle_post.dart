@@ -111,7 +111,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             builder: (context) => DialogoCrearPost(
                               titulo: 'Editar Miau-post 🐾',
                               initialTexto: widget.post.contenidoTexto,
-                              onPublicar: (texto, imagenes, etiquetas) async {
+                              onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
                                 final res = await ServicioComunidades().actualizarPublicacion(
                                   idPublicacion: widget.post.id,
                                   texto: texto,
