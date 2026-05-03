@@ -13,30 +13,41 @@ from contenido.models import ImagenGaleria
 from .models import Perfil, Seguimiento, Usuario
 from .serializers import PerfilSerializer, UsuarioSerializer
 
+from rest_framework.pagination import PageNumberPagination
 
-class DatosUsuarios(APIView):
+class DatosUsuarios(generics.ListAPIView):
     """Retorna datos de un usuario específico o de todos los usuarios del sistema.
 
     Esta vista permite obtener información detallada de un usuario mediante su ID
     o listar todos los usuarios registrados con información de seguidores y seguidos.
     """
 
+    serializer_class = UsuarioSerializer
     permission_classes = [AllowAny]
+    pagination_class = PageNumberPagination
+
+    def get_queryset(self):
+        """Retorna el conjunto de usuarios anotados."""
+        usuarios = Usuario.objects.select_related('perfil').annotate(
+            anotado_seguidores=Count('seguidores', filter=models.Q(seguidores__estado='ACEPTADO')),
+            anotado_seguidos=Count('siguiendo', filter=models.Q(siguiendo__estado='ACEPTADO')),
+        )
+        if self.request.user and self.request.user.is_authenticated:
+            usuarios = usuarios.exclude(id=self.request.user.id).annotate(
+                anotado_estado_seguimiento=Subquery(
+                    Seguimiento.objects.filter(
+                        seguidor=self.request.user, seguido_usuario=OuterRef('pk')
+                    ).values('estado')[:1]
+                )
+            )
+        return usuarios.order_by('id')
 
     def get(self, request, usuario_id=None):
-        """Obtiene los datos de un usuario por ID, o lista todos los usuarios.
-
-        Args:
-            request: Petición GET.
-            usuario_id (int, optional): ID del usuario a consultar. Por defecto es None.
-
-        Returns:
-            Response: Datos del usuario o lista de usuarios con metadatos sociales.
-        """
+        """Obtiene los datos de un usuario por ID, o lista todos los usuarios con paginación."""
         if usuario_id:
             usuario = Usuario.objects.filter(id=usuario_id).first()
             if usuario:
-                serializer = UsuarioSerializer(usuario, context={'request': request})
+                serializer = self.get_serializer(usuario, context={'request': request})
                 return Response({
                     'exito': True,
                     'mensaje': f'Los datos del usuario {usuario_id}',
@@ -47,22 +58,14 @@ class DatosUsuarios(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        usuarios = Usuario.objects.select_related('perfil').annotate(
-            anotado_seguidores=Count('seguidores', filter=models.Q(seguidores__estado='ACEPTADO')),
-            anotado_seguidos=Count('siguiendo', filter=models.Q(siguiendo__estado='ACEPTADO')),
-        )
-        if request.user and request.user.is_authenticated:
-            usuarios = usuarios.exclude(id=request.user.id).annotate(
-                anotado_estado_seguimiento=Subquery(
-                    Seguimiento.objects.filter(
-                        seguidor=request.user, seguido_usuario=OuterRef('pk')
-                    ).values('estado')[:1]
-                )
-            )
-        if usuarios:
-            serializer = UsuarioSerializer(usuarios, many=True, context={'request': request})
-            return Response({'exito': True, 'mensaje': 'Todos los usuarios del sistema', 'datos': serializer.data})
-        return Response({'exito': False, 'mensaje': 'No hay usuarios en el sistema'}, status=status.HTTP_204_NO_CONTENT)
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'exito': True, 'mensaje': 'Todos los usuarios del sistema', 'datos': serializer.data})
 
     def put(self, request):
         """Actualiza los datos de un usuario por su ID.

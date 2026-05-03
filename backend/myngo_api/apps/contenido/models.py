@@ -89,12 +89,27 @@ class Publicacion(models.Model):
     )
     imagenes = models.ManyToManyField(
         ImagenGaleria,
+        through='PublicacionImagen',
+        through_fields=('publicacion', 'imagengaleria'),
         related_name='publicaciones_asociadas',
         blank=True,
     )
     relacion_aspecto = models.FloatField(default=1.0)
     es_valido_ia = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+
+class PublicacionImagen(models.Model):
+    """Modelo intermedio para asociar imágenes a posts con un orden específico."""
+    
+    class Meta:
+        db_table = 'publicacion_imagenes'
+        ordering = ['orden']
+        unique_together = ('publicacion', 'imagengaleria')
+
+    publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE)
+    imagengaleria = models.ForeignKey(ImagenGaleria, on_delete=models.CASCADE)
+    orden = models.PositiveIntegerField(default=0)
 
 
 class Coleccion(models.Model):

@@ -415,6 +415,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               publicaciones: _publicaciones,
               estaCargando: _cargandoPublicaciones,
               onRefresh: _cargarPublicaciones,
+              onLoadMore: (pagina) async {
+                final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
+                return res.datos ?? [];
+              },
             ),
             if (_currentUserId == _usuario!.id)
               SeccionGuardadosPerfil(
@@ -430,6 +434,13 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                 },
                 onRefresh: () => _cargarGuardados(force: true),
                 onRefreshColecciones: () => _cargarColecciones(force: true),
+                onLoadMore: (pagina) async {
+                  final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
+                    comunidadId: _filtroComunidadId,
+                    pagina: pagina,
+                  );
+                  return res.datos ?? [];
+                },
               )
             else
               SeccionColeccionesPerfil(

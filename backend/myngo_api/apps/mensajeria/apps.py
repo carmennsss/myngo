@@ -8,3 +8,6 @@ class MensajeriaConfig(AppConfig):
 
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'mensajeria'
+
+    def ready(self):
+        import mensajeria.signals

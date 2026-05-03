@@ -33,15 +33,29 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   List<Usuario> _usuarios = [];
   
   bool _estaCargando = true;
-  bool _cargandoMas = false;
-  bool _hayMas = true;
-  final int _tamanoPagina = 20;
+  bool _estaCargandoMas = false;
+  bool _hayMasComunidades = true;
+  bool _hayMasUsuarios = true;
+  int _paginaActualComunidades = 1;
+  int _paginaActualUsuarios = 1;
 
   @override
   void initState() {
     super.initState();
     _cargarDatos();
     _scrollController.addListener(_alHacerScroll);
+  }
+
+  void _alHacerScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
+      if (!_estaCargando && !_estaCargandoMas) {
+        if (_indicePestana == 0 && _hayMasComunidades) {
+          _cargarMasComunidades();
+        } else if (_indicePestana == 1 && _hayMasUsuarios) {
+          _cargarMasUsuarios();
+        }
+      }
+    }
   }
   
   @override
@@ -66,24 +80,23 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     });
     
     if (_indicePestana == 0) {
-      final respuesta = await _servicioComunidades.listarComunidades(
-        busqueda: filtro,
-        limit: _tamanoPagina,
-        offset: 0,
-      );
+      _paginaActualComunidades = 1;
+      final respuesta = await _servicioComunidades.listarComunidades(busqueda: filtro, pagina: _paginaActualComunidades);
       if (mounted) {
         setState(() {
           _comunidades = respuesta.datos ?? [];
-          _hayMas = _comunidades.length >= _tamanoPagina;
+          _hayMasComunidades = (respuesta.datos?.length ?? 0) >= 20;
           _estaCargando = false;
         });
       }
     } else {
-      final respuesta = await _servicioUsuarios.listarUsuarios(
-        busqueda: filtro,
-        limit: _tamanoPagina,
-        offset: 0,
-      );
+      _paginaActualUsuarios = 1;
+      final respuesta = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
+      if (respuesta.exito && mounted) {
+        _usuariosOriginales = respuesta.datos ?? [];
+        _hayMasUsuarios = (respuesta.datos?.length ?? 0) >= 20;
+      }
+      
       if (mounted) {
         setState(() {
           _usuarios = respuesta.datos ?? [];
@@ -94,38 +107,59 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     }
   }
 
-  Future<void> _cargarMas() async {
-    if (_cargandoMas) return;
-    setState(() => _cargandoMas = true);
+  Future<void> _cargarMasComunidades() async {
+    if (_estaCargandoMas || !_hayMasComunidades) return;
+    setState(() => _estaCargandoMas = true);
     
-    if (_indicePestana == 0) {
-      final respuesta = await _servicioComunidades.listarComunidades(
-        busqueda: _controladorBusqueda.text,
-        limit: _tamanoPagina,
-        offset: _comunidades.length,
-      );
-      if (mounted) {
-        setState(() {
-          final nuevos = respuesta.datos ?? [];
+    _paginaActualComunidades++;
+    final res = await _servicioComunidades.listarComunidades(
+      busqueda: _controladorBusqueda.text.isNotEmpty ? _controladorBusqueda.text : null,
+      pagina: _paginaActualComunidades
+    );
+    
+    if (mounted) {
+      setState(() {
+        _estaCargandoMas = false;
+        if (res.exito && res.datos != null) {
+          final nuevos = res.datos!;
           _comunidades.addAll(nuevos);
-          _hayMas = nuevos.length >= _tamanoPagina;
-          _cargandoMas = false;
-        });
-      }
-    } else {
-      final respuesta = await _servicioUsuarios.listarUsuarios(
-        busqueda: _controladorBusqueda.text,
-        limit: _tamanoPagina,
-        offset: _usuarios.length,
-      );
-      if (mounted) {
-        setState(() {
-          final nuevos = respuesta.datos ?? [];
-          _usuarios.addAll(nuevos);
-          _hayMas = nuevos.length >= _tamanoPagina;
-          _cargandoMas = false;
-        });
-      }
+          _hayMasComunidades = nuevos.length >= 20;
+        } else {
+          _hayMasComunidades = false;
+        }
+      });
+    }
+  }
+
+  Future<void> _cargarMasUsuarios() async {
+    if (_estaCargandoMas || !_hayMasUsuarios) return;
+    setState(() => _estaCargandoMas = true);
+    
+    _paginaActualUsuarios++;
+    final res = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
+    
+    if (mounted) {
+      setState(() {
+        _estaCargandoMas = false;
+        if (res.exito && res.datos != null) {
+          final nuevos = res.datos!;
+          _usuariosOriginales.addAll(nuevos);
+          _hayMasUsuarios = nuevos.length >= 20;
+          
+          // Re-aplicar filtro si hay búsqueda activa
+          final filtro = _controladorBusqueda.text;
+          if (filtro.isNotEmpty) {
+             _usuariosFiltrados = _usuariosOriginales.where((u) => 
+                u.nombreUsuario.toLowerCase().contains(filtro.toLowerCase()) ||
+                u.email.toLowerCase().contains(filtro.toLowerCase())
+             ).toList();
+          } else {
+            _usuariosFiltrados = List.from(_usuariosOriginales);
+          }
+        } else {
+          _hayMasUsuarios = false;
+        }
+      });
     }
   }
 
@@ -209,16 +243,15 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                 _buildSliverGridComunidades()
               else
                 _buildSliverGridPerfiles(),
-
-              if (_cargandoMas)
+              
+              if (_estaCargandoMas)
                 const SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.all(20.0),
+                    padding: EdgeInsets.symmetric(vertical: 24),
                     child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
                   ),
                 ),
-              
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
         ),

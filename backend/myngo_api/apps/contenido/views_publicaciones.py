@@ -120,6 +120,27 @@ class PublicacionList(generics.ListAPIView):
                     return Publicacion.objects.none()
             return qs.filter(autor=perfil.usuario, comunidad__isnull=True).order_by('-fecha_creacion')
 
+        # Filtro por etiquetas (tags)
+        tags_query = self.request.query_params.get('tags')
+        if tags_query:
+            tags = [t.strip() for t in tags_query.split(',') if t.strip()]
+            search_mode = self.request.query_params.get('tag_mode', 'OR').upper()
+            
+            if search_mode == 'AND':
+                for tag in tags:
+                    qs = qs.filter(
+                        Q(titulo__icontains=tag) | 
+                        Q(contenido_texto__icontains=tag) | 
+                        Q(imagenes__etiquetas__icontains=tag)
+                    )
+            else: # OR por defecto
+                q_or = Q()
+                for tag in tags:
+                    q_or |= Q(titulo__icontains=tag)
+                    q_or |= Q(contenido_texto__icontains=tag)
+                    q_or |= Q(imagenes__etiquetas__icontains=tag)
+                qs = qs.filter(q_or)
+
         return qs.filter(
             Q(comunidad__es_publica=True) |
             Q(autor__perfil__es_publico=True, comunidad__isnull=True)
@@ -158,16 +179,14 @@ class PublicacionCreate(generics.CreateAPIView):
                 serializer = self.get_serializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
                 publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
-                imagenes_creadas = []
-                for archivo in archivos[:4]:
+                from .models import PublicacionImagen
+                for i, archivo in enumerate(archivos[:4]):
                     # Validación de tamaño (100 MB = 100 * 1024 * 1024 bytes)
                     if archivo.size > 100 * 1024 * 1024:
                         raise Exception(f"El archivo {archivo.name} supera el límite de 100MB.")
 
                     # Detección de tipo
-                    tipo = 'I'
-                    if archivo.content_type and archivo.content_type.startswith('video/'):
-                        tipo = 'V'
+                    tipo = 'V' if (archivo.content_type and archivo.content_type.startswith('video/')) else 'I'
 
                     img_instancia = ImagenGaleria.objects.create(
                         propietario=request.user,
@@ -177,11 +196,19 @@ class PublicacionCreate(generics.CreateAPIView):
                         etiquetas=request.data.get('etiquetas', ''),
                         tipo_archivo=tipo,
                     )
-                    imagenes_creadas.append(img_instancia)
-                if imagenes_creadas:
-                    publicacion.imagen = imagenes_creadas[0]
-                    publicacion.imagenes.set(imagenes_creadas)
-                    publicacion.save()
+                    
+                    # Crear la relación con orden
+                    PublicacionImagen.objects.create(
+                        publicacion=publicacion,
+                        imagengaleria=img_instancia,
+                        orden=i
+                    )
+                    
+                    # Si es la primera, guardarla también como imagen principal
+                    if i == 0:
+                        publicacion.imagen = img_instancia
+                        publicacion.save()
+
                 return Response(
                     PublicacionSerializer(publicacion, context={'request': request}).data,
                     status=status.HTTP_201_CREATED,

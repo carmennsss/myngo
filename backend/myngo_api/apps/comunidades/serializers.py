@@ -220,9 +220,19 @@ class ComunidadSerializer(serializers.ModelSerializer):
 
 
 class MiembroComunidadSerializer(serializers.ModelSerializer):
-    """Serializador básico de la relación usuario-comunidad con su rol."""
+    """Serializador de la relación usuario-comunidad con detalles del perfil."""
+    
+    usuario_nombre = serializers.ReadOnlyField(source='usuario.nombre_usuario')
+    usuario_avatar = serializers.SerializerMethodField()
+    perfil_id = serializers.ReadOnlyField(source='usuario.perfil.id')
 
     class Meta:
-        """Configuración del modelo y campos (todos)."""
+        """Configuración del modelo y campos expuestos."""
         model = MiembrosComunidad
-        fields = '__all__'
+        fields = ['id', 'usuario', 'usuario_id', 'usuario_nombre', 'usuario_avatar', 'perfil_id', 'rol', 'fecha_union']
+
+    def get_usuario_avatar(self, obj):
+        """Retorna la URL del avatar del usuario."""
+        if obj.usuario.url_avatar:
+            return obj.usuario.url_avatar
+        return ''

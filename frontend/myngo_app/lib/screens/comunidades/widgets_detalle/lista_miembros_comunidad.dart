@@ -24,20 +24,62 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
   final _servicio = ServicioComunidades();
   List<Map<String, dynamic>> _miembros = [];
   bool _estaCargando = true;
+  bool _estaCargandoMas = false;
+  bool _hayMasMiembros = true;
+  int _paginaActual = 1;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _cargarMiembros();
+    _scrollController.addListener(_alHacerScroll);
+  }
+
+  void _alHacerScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
+      if (!_estaCargando && !_estaCargandoMas && _hayMasMiembros) {
+        _cargarMasMiembros();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _cargarMiembros() async {
     setState(() => _estaCargando = true);
-    final res = await _servicio.obtenerMiembrosComunidad(widget.comunidad.id);
+    _paginaActual = 1;
+    final res = await _servicio.obtenerMiembrosComunidad(widget.comunidad.id, pagina: _paginaActual);
     if (mounted) {
       setState(() {
         _miembros = res.datos ?? [];
+        _hayMasMiembros = (res.datos?.length ?? 0) >= 20;
         _estaCargando = false;
+      });
+    }
+  }
+
+  Future<void> _cargarMasMiembros() async {
+    if (_estaCargandoMas || !_hayMasMiembros) return;
+    setState(() => _estaCargandoMas = true);
+    
+    _paginaActual++;
+    final res = await _servicio.obtenerMiembrosComunidad(widget.comunidad.id, pagina: _paginaActual);
+    
+    if (mounted) {
+      setState(() {
+        _estaCargandoMas = false;
+        if (res.exito && res.datos != null) {
+          final nuevos = res.datos!;
+          _miembros.addAll(nuevos);
+          _hayMasMiembros = nuevos.length >= 20;
+        } else {
+          _hayMasMiembros = false;
+        }
       });
     }
   }
@@ -65,10 +107,17 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
       onRefresh: _cargarMiembros,
       color: const Color(0xFFC35E34),
       child: ListView.builder(
+        controller: _scrollController,
         primary: false,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: _miembros.length,
+        itemCount: _miembros.length + (_estaCargandoMas ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index == _miembros.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+            );
+          }
           final m = _miembros[index];
           final userId = m['usuario_id'];
           final nombre = m['usuario_nombre'] ?? 'Michi';
