@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -10,7 +11,7 @@ class DialogoCrearPost extends StatefulWidget {
   final String titulo;
   final String? initialTexto;
   final String? initialEtiquetas;
-  final Future<bool> Function(String texto, List<XFile>? archivos, String etiquetas) onPublicar;
+  final Future<bool> Function(String texto, List<XFile>? archivos, String etiquetas, {void Function(int, int)? alProgresar}) onPublicar;
 
   const DialogoCrearPost({
     super.key,
@@ -29,6 +30,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
   late final TextEditingController _controladorEtiquetas;
   List<XFile> _archivosSeleccionados = [];
   bool _estaCargando = false;
+  double _progresoSubida = 0;
 
   @override
   void initState() {
@@ -118,7 +120,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                               fit: BoxFit.cover,
                             ),
                           ),
-                          child: esVideo ? const Center(child: Icon(Icons.videocam_rounded, color: Colors.white, size: 40)) : null,
+                          child: esVideo ? _VideoPreview(file: file) : null,
                         ),
                         Positioned(
                           right: 0,
@@ -186,11 +188,21 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
               const Spacer(),
               ElevatedButton(
                 onPressed: _estaCargando ? null : () async {
-                  setState(() => _estaCargando = true);
+                  setState(() {
+                    _estaCargando = true;
+                    _progresoSubida = 0;
+                  });
                   final exitoso = await widget.onPublicar(
                     _controladorTexto.text,
                     _archivosSeleccionados,
                     _controladorEtiquetas.text,
+                    alProgresar: (enviado, total) {
+                      if (total > 0) {
+                        setState(() {
+                          _progresoSubida = enviado / total;
+                        });
+                      }
+                    },
                   );
                   if (mounted) {
                     if (exitoso) {
@@ -214,13 +226,76 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 child: _estaCargando 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            value: _progresoSubida > 0 ? _progresoSubida : null,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${(_progresoSubida * 100).toInt()}%',
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    )
                   : Text(widget.initialTexto != null ? 'Guardar Cambios' : 'Publicar', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+}
+
+class _VideoPreview extends StatefulWidget {
+  final XFile file;
+  const _VideoPreview({required this.file});
+
+  @override
+  State<_VideoPreview> createState() => _VideoPreviewState();
+}
+
+class _VideoPreviewState extends State<_VideoPreview> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = kIsWeb 
+        ? VideoPlayerController.networkUrl(Uri.parse(widget.file.path))
+        : VideoPlayerController.file(File(widget.file.path));
+    
+    _controller.initialize().then((_) {
+      if (mounted) setState(() => _initialized = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: AspectRatio(
+        aspectRatio: _controller.value.aspectRatio,
+        child: VideoPlayer(_controller),
       ),
     );
   }

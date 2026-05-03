@@ -90,7 +90,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
       builder: (ctx) => DialogoCrearPost(
         titulo: 'Editar Miau-post 🐾',
         initialTexto: widget.publicacion.contenidoTexto,
-        onPublicar: (texto, imagenes, etiquetas) async {
+        onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final res = await ServicioComunidades().actualizarPublicacion(
             idPublicacion: widget.publicacion.id,
             texto: texto,

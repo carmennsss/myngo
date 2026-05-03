@@ -41,18 +41,18 @@ class PostProvider with ChangeNotifier {
     required String texto,
     dynamic imagenes,
     String? etiquetas,
+    void Function(int, int)? alProgresar,
   }) async {
     _state = PostState.loading;
     notifyListeners();
 
     try {
-      // Nota: Aquí se debería llamar a un servicio que soporte POST multipart
-      // Por brevedad, simulamos la respuesta del backend tras validación IA
       final res = await _servicio.crearPublicacion(
         idComunidad: comunidadId,
         texto: texto,
         imagenes: imagenes,
         etiquetas: etiquetas,
+        alProgresar: alProgresar,
       );
 
       if (res.exito) {

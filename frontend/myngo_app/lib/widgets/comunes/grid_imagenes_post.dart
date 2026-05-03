@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'reproductor_video_post.dart';
 
 /// Reusable Twitter/X style media grid for posts (Images and Videos).
 class GridImagenesPost extends StatefulWidget {
@@ -159,107 +160,10 @@ class _GridMediaItem extends StatefulWidget {
 }
 
 class _GridMediaItemState extends State<_GridMediaItem> {
-  VideoPlayerController? _videoController;
-  ChewieController? _chewieController;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.tipo == 'V') {
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
-      _videoController!.initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _chewieController = ChewieController(
-              videoPlayerController: _videoController!,
-              autoPlay: false,
-              looping: false,
-              aspectRatio: _videoController!.value.aspectRatio,
-              placeholder: const Center(child: CircularProgressIndicator()),
-              errorBuilder: (context, errorMessage) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, color: Colors.white54, size: 40),
-                      const SizedBox(height: 8),
-                      Text('Error: $errorMessage', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                    ],
-                  ),
-                );
-              },
-            );
-          });
-        }
-      }).catchError((error) {
-        debugPrint("Error inicializando video: $error");
-        if (mounted) setState(() {});
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _videoController?.dispose();
-    _chewieController?.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.tipo == 'V') {
-      return Container(
-        color: Colors.black,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized
-                ? Chewie(controller: _chewieController!)
-                : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      SizedBox(height: 12),
-                      Icon(Icons.videocam_rounded, color: Colors.white54, size: 32),
-                    ],
-                  ),
-            
-            // Overlay de carga/error
-            if (_videoController != null && _videoController!.value.hasError)
-              Container(
-                color: Colors.black87,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, color: Colors.white54, size: 40),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No se pudo cargar el vídeo',
-                        style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            
-            // Indicador de vídeo (si no está reproduciendo)
-            if (_chewieController != null && 
-                _chewieController!.videoPlayerController.value.isInitialized &&
-                !_chewieController!.videoPlayerController.value.isPlaying)
-              IgnorePointer(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
-                ),
-              ),
-          ],
-        ),
-      );
+      return ReproductorVideoPost(url: widget.url);
     }
 
     return Stack(

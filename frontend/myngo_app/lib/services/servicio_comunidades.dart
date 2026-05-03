@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart' as dio;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
@@ -372,21 +373,26 @@ class ServicioComunidades {
     String? etiquetas,
   }) async {
     try {
-      final respuesta = await http.patch(
-        Uri.parse('${_urlContenido}publicaciones/$idPublicacion/'),
-        headers: await _obtenerCabeceras(),
-        body: jsonEncode({
+      final token = await _servicioUsuarios.obtenerToken();
+      final clienteDio = dio.Dio();
+      
+      final respuesta = await clienteDio.patch(
+        '${_urlContenido}publicaciones/$idPublicacion/',
+        options: dio.Options(headers: {
+          if (token != null) 'Authorization': 'Token $token',
+        }),
+        data: {
           if (titulo != null) 'titulo': titulo,
           if (texto != null) 'contenido_texto': texto,
           if (etiquetas != null) 'etiquetas': etiquetas,
-        }),
-      ).timeout(const Duration(seconds: 15));
+        },
+      );
 
       if (respuesta.statusCode == 200) {
         return RespuestaApi(
           exito: true,
           mensaje: 'Publicación actualizada',
-          datos: Publicacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
+          datos: Publicacion.fromJson(respuesta.data is String ? jsonDecode(respuesta.data) : respuesta.data),
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar (${respuesta.statusCode})');
@@ -463,64 +469,72 @@ class ServicioComunidades {
   }
 
   /// Crea una nueva publicación permitiendo el envío de múltiples archivos multimedia.
+  /// Ahora soporta seguimiento de progreso de subida.
   Future<RespuestaApi<Publicacion>> crearPublicacion({
     int? idComunidad,
     required String texto,
     List<XFile>? imagenes,
     String? etiquetas,
+    void Function(int, int)? alProgresar,
   }) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      var solicitud = http.MultipartRequest('POST', Uri.parse('${_urlContenido}publicaciones/crear/'));
+      final url = '${_urlContenido}publicaciones/crear/';
       
-      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+      final clienteDio = dio.Dio();
+      final cabeceras = {
+        if (token != null) 'Authorization': 'Token $token',
+      };
 
+      final datosFormulario = dio.FormData();
+      
       if (idComunidad != null && idComunidad != 0) {
-        solicitud.fields['comunidad'] = idComunidad.toString();
+        datosFormulario.fields.add(MapEntry('comunidad', idComunidad.toString()));
       }
-      solicitud.fields['contenido_texto'] = texto;
+      datosFormulario.fields.add(MapEntry('contenido_texto', texto));
       if (etiquetas != null && etiquetas.trim().isNotEmpty) {
-        solicitud.fields['etiquetas'] = etiquetas.trim();
+        datosFormulario.fields.add(MapEntry('etiquetas', etiquetas.trim()));
       }
 
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var img in imagenes) {
-          final fieldName = 'url_archivo_s3[]';
-          if (kIsWeb) {
-            final bytes = await img.readAsBytes();
-            final mimeType = lookupMimeType(img.name, headerBytes: bytes) ?? 'application/octet-stream';
-            final typeParts = mimeType.split('/');
-            
-            solicitud.files.add(http.MultipartFile.fromBytes(
-              fieldName,
+          final bytes = await img.readAsBytes();
+          final mimeType = lookupMimeType(img.name, headerBytes: bytes) ?? 'application/octet-stream';
+          final typeParts = mimeType.split('/');
+          
+          datosFormulario.files.add(MapEntry(
+            'url_archivo_s3[]',
+            dio.MultipartFile.fromBytes(
               bytes,
               filename: img.name,
               contentType: MediaType(typeParts[0], typeParts[1]),
-            ));
-          } else {
-            solicitud.files.add(await http.MultipartFile.fromPath(fieldName, img.path));
-          }
+            ),
+          ));
         }
       }
 
-      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 50));
-      final respuesta = await http.Response.fromStream(respuestaStream);
+      final respuesta = await clienteDio.post(
+        url,
+        data: datosFormulario,
+        options: dio.Options(headers: cabeceras),
+        onSendProgress: alProgresar,
+      );
 
       if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
         return RespuestaApi(
           exito: true,
           mensaje: '¡Publicación enviada!',
-          datos: Publicacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
+          datos: Publicacion.fromJson(respuesta.data is String ? jsonDecode(respuesta.data) : respuesta.data),
         );
       }
 
-      final datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
-      final mensajeError = datosJson is Map<String, dynamic>
-          ? datosJson['error']?.toString() ?? datosJson['mensaje']?.toString() ?? 'Error al publicar'
-          : 'Error en la publicación';
-      return RespuestaApi(exito: false, mensaje: mensajeError);
+      return RespuestaApi(exito: false, mensaje: 'Error en la publicación (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      String msg = 'Error de conexión: $e';
+      if (e is dio.DioException) {
+        msg = e.response?.data?['error']?.toString() ?? e.message ?? msg;
+      }
+      return RespuestaApi(exito: false, mensaje: msg);
     }
   }
 

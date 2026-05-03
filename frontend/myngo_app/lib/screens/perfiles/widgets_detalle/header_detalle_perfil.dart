@@ -51,44 +51,12 @@ class HeaderDetallePerfil extends StatelessWidget {
         : '?';
 
     return SliverAppBar(
-      expandedHeight: 450,
+      expandedHeight: 220,
       pinned: true,
       stretch: true,
       backgroundColor: colorCard,
       surfaceTintColor: Colors.transparent,
-      leading: esIntegrada
-          ? IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              onPressed: onBack,
-            )
-          : null,
-      actions: [
-        if (currentUserId == usuario.id)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.edit_note_rounded,
-                    color: Colors.white, size: 22),
-              ),
-              onPressed: onEditarPerfil,
-              tooltip: 'Personalizar Perfil',
-            ),
-          ),
-      ],
+      automaticallyImplyLeading: true, // Permitir el botón de atrás estándar
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
         background: Stack(
@@ -113,89 +81,115 @@ class HeaderDetallePerfil extends StatelessWidget {
                 ),
               ),
 
-            // Avatar centrado
-            Center(
+            // Avatar y botones
+            SafeArea(
               child: Stack(
-                clipBehavior: Clip.none,
                 children: [
-                  GestureDetector(
-                    onTap: currentUserId == usuario.id ? onEditarAvatar : null,
-                    child: SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          if (marcoLocal != null && marcoLocal!.isNotEmpty)
-                            Positioned.fill(
-                              child: IgnorePointer(
-                                child: Image.network(marcoLocal!,
-                                    fit: BoxFit.contain),
-                              ),
-                            ),
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              border: (marcoLocal == null || marcoLocal!.isEmpty)
-                                  ? Border.all(
-                                      color: const Color(0xFF248EA6), width: 3)
-                                  : null,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 10),
+                  // Avatar
+                  Center(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        GestureDetector(
+                          onTap: currentUserId == usuario.id ? onEditarAvatar : null,
+                          child: SizedBox(
+                            width: 140,
+                            height: 140,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (marcoLocal != null && marcoLocal!.isNotEmpty)
+                                  Positioned.fill(
+                                    child: IgnorePointer(
+                                      child: Image.network(marcoLocal!,
+                                          fit: BoxFit.contain),
+                                    ),
+                                  ),
+                                Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    border: (marcoLocal == null || marcoLocal!.isEmpty)
+                                        ? Border.all(
+                                            color: const Color(0xFF248EA6), width: 3)
+                                        : null,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                    image: (avatarLocal != null &&
+                                            avatarLocal!.isNotEmpty)
+                                        ? DecorationImage(
+                                            image: NetworkImage(avatarLocal!),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : null,
+                                  ),
+                                  child: (avatarLocal == null || avatarLocal!.isEmpty)
+                                      ? Center(
+                                          child: Text(
+                                            inicial,
+                                            style: const TextStyle(
+                                              fontSize: 48,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF248EA6),
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                _StatusIndicator(
+                                  usuario: usuario,
+                                  currentUserId: currentUserId,
+                                  colorCard: colorCard,
+                                  getColorEstado: _getColorEstado,
                                 ),
                               ],
-                              image: (avatarLocal != null &&
-                                      avatarLocal!.isNotEmpty)
-                                  ? DecorationImage(
-                                      image: NetworkImage(avatarLocal!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
                             ),
-                            child: (avatarLocal == null || avatarLocal!.isEmpty)
-                                ? Center(
-                                    child: Text(
-                                      inicial,
-                                      style: const TextStyle(
-                                        fontSize: 54,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF248EA6),
-                                      ),
-                                    ),
-                                  )
-                                : null,
                           ),
-                          _StatusIndicator(
-                            usuario: usuario,
-                            currentUserId: currentUserId,
-                            colorCard: colorCard,
-                            getColorEstado: _getColorEstado,
+                        ),
+                        if (currentUserId == usuario.id)
+                          Positioned(
+                            bottom: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: onEditarAvatar,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF28B50),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.camera_alt_rounded,
+                                    size: 16, color: Colors.white),
+                              ),
+                            ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
-                  if (currentUserId == usuario.id)
+
+                  // Botón Cerrar (Top Right para evitar conflicto con Atrás)
+                  if (esIntegrada)
                     Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: onEditarAvatar,
-                        child: Container(
+                      top: 10,
+                      right: 16,
+                      child: IconButton(
+                        icon: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF28B50),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.4),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.camera_alt_rounded,
-                              size: 18, color: Colors.white),
+                          child: const Icon(Icons.close_rounded,
+                              color: Colors.white, size: 20),
                         ),
+                        onPressed: onBack,
                       ),
                     ),
                 ],
