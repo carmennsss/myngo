@@ -179,11 +179,14 @@ class ServicioPerfiles {
     }
   }
 
-  /// Recupera la lista de publicaciones que el usuario ha marcado como favoritas.
-  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGuardadas({int? comunidadId}) async {
+  /// Recupera la lista de publicaciones que el usuario ha marcado como favoritas con paginación.
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGuardadas({int? comunidadId, int? pagina}) async {
     try {
-      final query = comunidadId != null ? '&comunidad_id=$comunidadId' : '';
-      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?solo_guardados=true$query');
+      String query = 'solo_guardados=true';
+      if (comunidadId != null) query += '&comunidad_id=$comunidadId';
+      if (pagina != null) query += '&page=$pagina';
+      
+      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?$query');
       
       final respuesta = await http.get(
         uri,
@@ -205,10 +208,11 @@ class ServicioPerfiles {
     }
   }
 
-  /// Recupera el historial completo de publicaciones de un perfil específico.
-  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(int perfilId) async {
+  /// Recupera el historial completo de publicaciones de un perfil específico con paginación.
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(int perfilId, {int? pagina}) async {
     try {
-      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?perfil_id=$perfilId');
+      final query = pagina != null ? '&page=$pagina' : '';
+      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?perfil_id=$perfilId$query');
       final respuesta = await http.get(
         uri,
         headers: await _obtenerCabeceras(),

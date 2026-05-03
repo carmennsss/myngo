@@ -46,19 +46,21 @@ class _EstadoVacioCargandoState extends State<EstadoVacioCargando> {
     }
     
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(widget.icon, size: 64, color: Colors.grey.withOpacity(0.3)),
-            const SizedBox(height: 16),
-            Text(
-              widget.message,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold),
-            ),
-          ],
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.icon, size: 64, color: Colors.grey.withOpacity(0.3)),
+              const SizedBox(height: 16),
+              Text(
+                widget.message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
       ),
     );

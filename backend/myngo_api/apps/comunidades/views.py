@@ -5,7 +5,7 @@ así como las operaciones de membresía (unirse, roles, peticiones de unión).
 """
 
 from django.db import models
-from rest_framework import filters, generics, permissions, status
+from rest_framework import filters, generics, permissions, status, pagination
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -46,6 +46,7 @@ class ComunidadListCreate(generics.ListCreateAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ['nombre', 'descripcion']
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = pagination.PageNumberPagination
 
     def get_queryset(self):
         """Retorna el conjunto de comunidades con anotaciones de membresía para el usuario actual.
@@ -301,7 +302,66 @@ class ResponderPeticionUnion(APIView):
         return Response({'mensaje': 'Respuesta enviada'}, status=status.HTTP_200_OK)
 
 
-class ListarMiembrosComunidad(APIView):
+class ListarMiembrosComunidad(generics.ListAPIView):
+    """Retorna la lista de miembros de una comunidad, incluyendo al creador."""
+
+    serializer_class = MiembroComunidadSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = pagination.PageNumberPagination
+
+    def get_queryset(self):
+        """Obtiene todos los miembros de la comunidad."""
+        pk = self.kwargs.get('pk')
+        try:
+            comunidad = Comunidad.objects.get(pk=pk)
+        except Comunidad.DoesNotExist:
+            return MiembrosComunidad.objects.none()
+        
+        return MiembrosComunidad.objects.filter(comunidad=comunidad).select_related('usuario', 'usuario__perfil').order_by('rol', '-fecha_union')
+
+    def list(self, request, *args, **kwargs):
+        """Sobrescribe para incluir al creador si es la primera página."""
+        pk = self.kwargs.get('pk')
+        try:
+            comunidad = Comunidad.objects.get(pk=pk)
+        except Comunidad.DoesNotExist:
+            return Response({'error': 'Comunidad no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        
+        miembros_data = []
+        
+        # Si es la primera página y no hay offset (o page=1), añadimos al creador
+        page_num = request.query_params.get('page', '1')
+        if page_num == '1' and comunidad.creador:
+            miembros_data.append({
+                'id': -1,
+                'usuario_id': comunidad.creador.id,
+                'perfil_id': getattr(comunidad.creador.perfil, 'id', 0) if hasattr(comunidad.creador, 'perfil') else 0,
+                'usuario_nombre': comunidad.creador.nombre_usuario,
+                'usuario_avatar': comunidad.creador.url_avatar,
+                'rol': 'Creador',
+                'fecha_union': comunidad.fecha_creacion.isoformat() if comunidad.fecha_creacion else None,
+            })
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            for m in serializer.data:
+                # Evitar duplicar al creador
+                if comunidad.creador and m['usuario_id'] == comunidad.creador.id:
+                    continue
+                miembros_data.append(m)
+            return self.get_paginated_response(miembros_data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        for m in serializer.data:
+            if comunidad.creador and m['usuario_id'] == comunidad.creador.id:
+                continue
+            miembros_data.append(m)
+        return Response({'exito': True, 'datos': miembros_data})
+
+class ListarMiembrosComunidadOld(APIView):
     """Retorna la lista de miembros de una comunidad, incluyendo al creador."""
 
     permission_classes = [IsAuthenticatedOrReadOnly]
