@@ -47,7 +47,7 @@ class ServicioComunidades {
         queryParts.add('tags=${tags.join(',')}');
       }
       if (pagina != null) {
-        query += (query.isEmpty ? '' : '&') + 'page=$pagina';
+        queryParts.add('page=$pagina');
       }
       
       final fullQuery = queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
