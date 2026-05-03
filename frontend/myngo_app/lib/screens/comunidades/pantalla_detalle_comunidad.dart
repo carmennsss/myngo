@@ -299,7 +299,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               SliverAppBar(
                 expandedHeight: 180,
                 pinned: false,
-                stretch: true,
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
                 automaticallyImplyLeading: false,

@@ -252,11 +252,13 @@ class _GridMediaItemState extends State<_GridMediaItem> {
       fit: StackFit.expand,
       children: [
         Positioned.fill(
-          child: CachedNetworkImage(
-            imageUrl: widget.url,
-            fit: BoxFit.cover,
-            errorWidget: (_, __, ___) => const SizedBox.shrink(),
-          ),
+          child: widget.url.isNotEmpty 
+            ? CachedNetworkImage(
+                imageUrl: widget.url,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+              )
+            : const SizedBox.shrink(),
         ),
         Positioned.fill(
           child: BackdropFilter(
@@ -264,31 +266,33 @@ class _GridMediaItemState extends State<_GridMediaItem> {
             child: Container(color: Colors.black.withOpacity(0.2)),
           ),
         ),
-        CachedNetworkImage(
-          imageUrl: widget.url,
-          fit: BoxFit.contain,
-          width: double.infinity,
-          height: double.infinity,
-          placeholder: (_, __) => const Center(
-            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50)),
-          ),
-          errorWidget: (_, __, ___) => Container(
-            color: Colors.grey.shade900,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 32),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Error al cargar imagen',
-                    style: GoogleFonts.inter(color: Colors.grey, fontSize: 11),
-                  ),
-                ],
+        widget.url.isNotEmpty
+          ? CachedNetworkImage(
+              imageUrl: widget.url,
+              fit: BoxFit.contain,
+              width: double.infinity,
+              height: double.infinity,
+              placeholder: (_, __) => const Center(
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50)),
               ),
-            ),
-          ),
-        ),
+              errorWidget: (_, __, ___) => Container(
+                color: Colors.grey.shade900,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 32),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Error al cargar imagen',
+                        style: GoogleFonts.inter(color: Colors.grey, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
       ],
     );
   }

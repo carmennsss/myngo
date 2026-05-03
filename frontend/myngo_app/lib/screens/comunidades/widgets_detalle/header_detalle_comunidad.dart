@@ -110,7 +110,6 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
 
     return SizedBox(
       width: double.infinity,
-      height: 180,
       child: Stack(
         children: [
           // Fondo con imagen de portada
