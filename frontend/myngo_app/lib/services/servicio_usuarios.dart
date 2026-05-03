@@ -34,6 +34,13 @@ class ServicioUsuarios {
         body: jsonEncode({'email': correo, 'password': contrasena}),
       ).timeout(const Duration(seconds: 20));
 
+      if (respuesta.body.contains('<!DOCTYPE') || respuesta.body.contains('<html')) {
+        return RespuestaApi(
+          exito: false,
+          mensaje: 'Error del servidor (${respuesta.statusCode}). La respuesta no es válida.',
+        );
+      }
+
       final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
 
       if (respuesta.statusCode == 200) {
@@ -73,7 +80,7 @@ class ServicioUsuarios {
       String nombreUsuario, String correo, String contrasena) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlUsuarios/registro/'),
+        Uri.parse('$_urlUsuarios/registrar/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nombre_usuario': nombreUsuario,
@@ -105,7 +112,7 @@ class ServicioUsuarios {
   Future<RespuestaApi> recuperarContrasena(String correo) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlUsuarios/recuperar-contrasena/'),
+        Uri.parse('$_urlUsuarios/recuperar-password/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': correo}),
       ).timeout(const Duration(seconds: 20));
