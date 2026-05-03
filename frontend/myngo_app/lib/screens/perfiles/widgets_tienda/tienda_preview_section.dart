@@ -98,34 +98,34 @@ class TiendaPreviewSection extends StatelessWidget {
     );
   }
 
-  /// Previsualización específica para la tienda de una comunidad:
-  /// muestra el avatar y el fondo de la comunidad, no del usuario.
-  Widget _buildComunidadPreview() {
-    String? fondo = previewFondo ?? comunidad!.urlFondo ?? comunidad!.urlPortada;
-    String? avatar = previewAvatar ?? comunidad!.urlAvatar ?? comunidad!.urlPortada;
+  String? _getAbsoluteUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+    final base = Configuracion.baseUrl.endsWith('/') 
+        ? Configuracion.baseUrl 
+        : '${Configuracion.baseUrl}/';
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return '$base$cleanPath';
+  }
 
-    // Asegurar que las URLs sean absolutas para comunidades
-    if (fondo != null && !fondo.startsWith('http')) {
-      fondo = '${Configuracion.baseUrl.endsWith('/') ? Configuracion.baseUrl : '${Configuracion.baseUrl}/'}${fondo.startsWith('/') ? fondo.substring(1) : fondo}';
-    }
-    if (avatar != null && !avatar.startsWith('http')) {
-      avatar = '${Configuracion.baseUrl.endsWith('/') ? Configuracion.baseUrl : '${Configuracion.baseUrl}/'}${avatar.startsWith('/') ? avatar.substring(1) : avatar}';
-    }
+  Widget _buildComunidadPreview() {
+    final fondo = _getAbsoluteUrl(previewFondo ?? comunidad!.urlFondo ?? comunidad!.urlPortada);
+    final avatar = _getAbsoluteUrl(previewAvatar ?? comunidad!.urlAvatar ?? comunidad!.urlPortada);
 
     return ProfilePreview(
-      fondoUrl: fondo != null ? Uri.encodeFull(fondo) : null,
-      avatarUrl: avatar != null ? Uri.encodeFull(avatar) : null,
-      marcoUrl: previewMarco,
+      fondoUrl: fondo,
+      avatarUrl: avatar,
+      marcoUrl: _getAbsoluteUrl(previewMarco),
       nombreUsuario: comunidad!.nombre,
-      puntos: 0, // Las comunidades no tienen puntos personales
+      puntos: 0,
     );
   }
 
   Widget _buildProfilePreview() {
     return ProfilePreview(
-      fondoUrl: previewFondo,
-      avatarUrl: previewAvatar,
-      marcoUrl: previewMarco,
+      fondoUrl: _getAbsoluteUrl(previewFondo),
+      avatarUrl: _getAbsoluteUrl(previewAvatar),
+      marcoUrl: _getAbsoluteUrl(previewMarco),
       nombreUsuario: usuarioActual?.nombreUsuario ?? 'Usuario',
       puntos: usuarioActual?.puntos ?? 0,
     );
@@ -134,8 +134,8 @@ class TiendaPreviewSection extends StatelessWidget {
   Widget _buildPostPreview() {
     return PostPreview(
       estilo: previewEstiloPost,
-      avatarUrl: previewAvatar,
-      marcoUrl: previewMarco,
+      avatarUrl: _getAbsoluteUrl(previewAvatar),
+      marcoUrl: _getAbsoluteUrl(previewMarco),
       nombreUsuario: usuarioActual?.nombreUsuario ?? 'Usuario',
     );
   }

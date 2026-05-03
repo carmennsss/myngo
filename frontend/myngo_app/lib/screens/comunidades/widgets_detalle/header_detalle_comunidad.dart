@@ -160,9 +160,9 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                         MaterialPageRoute(
                           builder: (context) => PantallaPersonalizacionComunidad(
                             comunidad: widget.comunidad,
-                            onComunidadActualizada: () {
+                            onComunidadActualizada: (nuevaComunidad) {
                               if (widget.onComunidadActualizada != null) {
-                                widget.onComunidadActualizada!(widget.comunidad);
+                                widget.onComunidadActualizada!(nuevaComunidad);
                               }
                             },
                           ),
@@ -234,7 +234,8 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                       _RoleBadge(
                           rolLabel: rolLabel,
                           iconRol: iconRol,
-                          colorRol: colorRol),
+                          colorRol: colorRol,
+                          fuente: widget.comunidad.fuenteComunidad),
                     ],
                   ),
                 ),
@@ -321,11 +322,13 @@ class _RoleBadge extends StatelessWidget {
   final String rolLabel;
   final IconData iconRol;
   final Color colorRol;
+  final String? fuente;
 
   const _RoleBadge({
     required this.rolLabel,
     required this.iconRol,
     required this.colorRol,
+    this.fuente,
   });
 
   @override
@@ -344,7 +347,8 @@ class _RoleBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             rolLabel.toUpperCase(),
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.getFont(
+              fuente ?? 'Outfit',
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 11,

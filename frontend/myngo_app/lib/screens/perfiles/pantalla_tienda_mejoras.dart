@@ -71,11 +71,11 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
 
   Future<void> _inicializarTienda() async {
     await _cargarDatosUsuario();
-    await _cargarDatosTienda();
     if (widget.comunidad != null) {
       _tabIndex = 1;
       await _checkRol();
     }
+    await _cargarDatosTienda();
   }
 
   Future<void> _cargarDatosUsuario() async {
@@ -131,7 +131,9 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
 
     try {
       final resCatalogo = widget.comunidad != null
-          ? await ServicioMejoras().obtenerMejorasComunidad(widget.comunidad!.id)
+          ? (_esModerador 
+              ? await ServicioMejoras().obtenerCatalogoGestion(widget.comunidad!.id)
+              : await ServicioMejoras().obtenerMejorasComunidad(widget.comunidad!.id))
           : await ServicioMejoras().obtenerMejorasGlobales();
 
       final resMisMejoras = await ServicioMejoras().obtenerMisMejoras();

@@ -253,54 +253,67 @@ class ServicioComunidades {
   }) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      var solicitud = http.MultipartRequest('PATCH', Uri.parse('${_urlComunidades}$idComunidad/'));
+      final url = '${_urlComunidades}$idComunidad/';
       
-      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
-
-      if (nombre != null) solicitud.fields['nombre'] = nombre;
-      if (descripcion != null) solicitud.fields['descripcion'] = descripcion;
-      if (colorTema != null) solicitud.fields['color_tema'] = colorTema;
-      if (tiendaHabilitada != null) solicitud.fields['tienda_habilitada'] = tiendaHabilitada.toString();
-      if (fondoPostsConfig != null) solicitud.fields['fondo_posts_config'] = jsonEncode(fondoPostsConfig);
-      if (fuenteComunidad != null) solicitud.fields['fuente_comunidad'] = fuenteComunidad;
-
+      final clienteDio = dio.Dio();
+      final cabeceras = {
+        if (token != null) 'Authorization': 'Token $token',
+      };
+ 
+      final datosFormulario = dio.FormData();
+ 
+      if (nombre != null) datosFormulario.fields.add(MapEntry('nombre', nombre));
+      if (descripcion != null) datosFormulario.fields.add(MapEntry('descripcion', descripcion));
+      if (colorTema != null) datosFormulario.fields.add(MapEntry('color_tema', colorTema));
+      if (tiendaHabilitada != null) datosFormulario.fields.add(MapEntry('tienda_habilitada', tiendaHabilitada.toString()));
+      if (fondoPostsConfig != null) datosFormulario.fields.add(MapEntry('fondo_posts_config', jsonEncode(fondoPostsConfig)));
+      if (fuenteComunidad != null) datosFormulario.fields.add(MapEntry('fuente_comunidad', fuenteComunidad));
+ 
       final archivos = {
         'url_portada': banner,
         'url_avatar': avatar,
         'url_fondo': fondo,
       };
-
+ 
       for (var entrada in archivos.entries) {
         final archivo = entrada.value;
         if (archivo != null) {
-          if (kIsWeb) {
-            final bytes = await archivo.readAsBytes();
-            solicitud.files.add(http.MultipartFile.fromBytes(
-              entrada.key,
+          final bytes = await archivo.readAsBytes();
+          final mimeType = lookupMimeType(archivo.name, headerBytes: bytes) ?? 'application/octet-stream';
+          final typeParts = mimeType.split('/');
+          
+          datosFormulario.files.add(MapEntry(
+            entrada.key,
+            dio.MultipartFile.fromBytes(
               bytes,
               filename: archivo.name,
-              contentType: MediaType('image', 'jpeg'),
-            ));
-          } else {
-            solicitud.files.add(await http.MultipartFile.fromPath(entrada.key, archivo.path));
-          }
+              contentType: MediaType(typeParts[0], typeParts[1]),
+            ),
+          ));
         }
       }
-
-      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 50));
-      final respuesta = await http.Response.fromStream(respuestaStream);
-
+ 
+      final respuesta = await clienteDio.patch(
+        url,
+        data: datosFormulario,
+        options: dio.Options(headers: cabeceras),
+      );
+ 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final datosRespuesta = respuesta.data is String ? jsonDecode(respuesta.data) : respuesta.data;
         return RespuestaApi(
           exito: true,
           mensaje: '¡Comunidad actualizada!',
-          datos: Comunidad.fromJson(datosJson),
+          datos: Comunidad.fromJson(datosRespuesta),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al actualizar comunidad');
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar comunidad (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      String msg = 'Error de conexión: $e';
+      if (e is dio.DioException) {
+        msg = e.response?.data?['error']?.toString() ?? e.message ?? msg;
+      }
+      return RespuestaApi(exito: false, mensaje: msg);
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfilePreview extends StatelessWidget {
   final String? fondoUrl;
@@ -47,7 +48,10 @@ class ProfilePreview extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFBE9E0),
                     image: (fondoUrl != null && fondoUrl!.isNotEmpty)
-                        ? DecorationImage(image: NetworkImage(fondoUrl!), fit: BoxFit.cover)
+                        ? DecorationImage(
+                            image: CachedNetworkImageProvider(fondoUrl!), 
+                            fit: BoxFit.cover,
+                          )
                         : null,
                   ),
                 ),
@@ -70,9 +74,13 @@ class ProfilePreview extends StatelessWidget {
                           decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                           child: CircleAvatar(
                             radius: 32,
-                            backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty) ? NetworkImage(avatarUrl!) : null,
+                            backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty) 
+                                ? CachedNetworkImageProvider(avatarUrl!) 
+                                : null,
                             backgroundColor: const Color(0xFFFBE9E0),
-                            child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Color(0xFFC35E34), size: 28) : null,
+                            child: (avatarUrl == null || avatarUrl!.isEmpty) 
+                                ? const Icon(Icons.person, color: Color(0xFFC35E34), size: 28) 
+                                : null,
                           ),
                         ),
                       ],
@@ -85,9 +93,28 @@ class ProfilePreview extends StatelessWidget {
             // Nombre y Puntos
             Text(
               nombreUsuario,
-              style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440)),
+              style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF4A4440)),
             ),
-            const SizedBox(height: 8),
+            if (puntos > 0) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.stars_rounded, color: Color(0xFFF29C50), size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$puntos Puntos',
+                    style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFC35E34)),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
           ],
         ),

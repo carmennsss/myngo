@@ -8,7 +8,7 @@ import '../../services/servicio_comunidades.dart';
 
 class PantallaPersonalizacionComunidad extends StatefulWidget {
   final Comunidad comunidad;
-  final VoidCallback onComunidadActualizada;
+  final Function(Comunidad) onComunidadActualizada;
 
   const PantallaPersonalizacionComunidad({
     super.key,
@@ -112,8 +112,8 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
         backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
       ));
 
-      if (res.exito) {
-        widget.onComunidadActualizada();
+      if (res.exito && res.datos is Comunidad) {
+        widget.onComunidadActualizada(res.datos as Comunidad);
         Navigator.pop(context);
       }
     }
