@@ -72,7 +72,11 @@ class Comunidad {
     this.tiendaHabilitada = false,
     this.miRol,
     required this.fechaCreacion,
+    this.tags = const [],
   });
+
+  /// Etiquetas o categorías de la comunidad.
+  final List<Map<String, dynamic>> tags;
 
   /// Crea una instancia de [Comunidad] a partir de un mapa JSON.
   factory Comunidad.fromJson(Map<String, dynamic> json) {
@@ -109,6 +113,7 @@ class Comunidad {
         colorTema: color,
         tiendaHabilitada: json['tienda_habilitada'] == true,
         miRol: json['mi_rol']?.toString(),
+        tags: List<Map<String, dynamic>>.from(json['tags_detalle'] ?? []),
         fechaCreacion: json['fecha_creacion'] != null
             ? DateTime.tryParse(json['fecha_creacion'].toString()) ??
                 DateTime.now()

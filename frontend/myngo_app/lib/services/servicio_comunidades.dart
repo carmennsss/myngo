@@ -38,12 +38,18 @@ class ServicioComunidades {
     };
   }
 
-  /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda.
-  Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda}) async {
+  /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda y tags.
+  Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda, List<String>? tags}) async {
     try {
-      final query = busqueda != null && busqueda.isNotEmpty ? '?search=$busqueda' : '';
+      String query = '';
+      if (busqueda != null && busqueda.isNotEmpty) query += 'search=$busqueda';
+      if (tags != null && tags.isNotEmpty) {
+        query += (query.isEmpty ? '' : '&') + 'tags=${tags.join(',')}';
+      }
+      
+      final fullQuery = query.isNotEmpty ? '?$query' : '';
       final respuesta = await http.get(
-        Uri.parse('$_urlComunidades$query'),
+        Uri.parse('$_urlComunidades$fullQuery'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 
@@ -155,38 +161,52 @@ class ServicioComunidades {
     }
   }
 
-  /// Crea una nueva comunidad permitiendo la subida de una imagen de portada.
-  Future<RespuestaApi<Comunidad>> crearComunidad(Comunidad comunidad, {XFile? imagenPortada}) async {
+  /// Crea una nueva comunidad permitiendo la subida de una imagen de portada y etiquetas.
+  Future<RespuestaApi<Comunidad>> crearComunidad(Comunidad comunidad, {XFile? imagenPortada, List<String>? tags}) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      var solicitud = http.MultipartRequest('POST', Uri.parse(_urlComunidades));
+      final url = _urlComunidades;
       
-      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
-
-      solicitud.fields['nombre'] = comunidad.nombre;
-      solicitud.fields['descripcion'] = comunidad.descripcion;
-      solicitud.fields['es_publica'] = comunidad.esPublica.toString();
-      solicitud.fields['min_rating_acceso'] = comunidad.minRatingAcceso.toString();
-
-      if (imagenPortada != null) {
-        if (kIsWeb) {
-          final bytes = await imagenPortada.readAsBytes();
-          solicitud.files.add(http.MultipartFile.fromBytes(
-            'url_portada',
-            bytes,
-            filename: imagenPortada.name,
-            contentType: MediaType('image', 'jpeg'),
-          ));
-        } else {
-          solicitud.files.add(await http.MultipartFile.fromPath('url_portada', imagenPortada.path));
+      final clienteDio = dio.Dio();
+      final cabeceras = {
+        if (token != null) 'Authorization': 'Token $token',
+      };
+ 
+      final datosFormulario = dio.FormData();
+      datosFormulario.fields.add(MapEntry('nombre', comunidad.nombre));
+      datosFormulario.fields.add(MapEntry('descripcion', comunidad.descripcion));
+      datosFormulario.fields.add(MapEntry('es_publica', comunidad.esPublica.toString()));
+      datosFormulario.fields.add(MapEntry('min_rating_acceso', comunidad.minRatingAcceso.toString()));
+ 
+      if (tags != null && tags.isNotEmpty) {
+        for (var tag in tags) {
+          datosFormulario.fields.add(MapEntry('tags', tag));
         }
       }
-
-      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
-      final respuesta = await http.Response.fromStream(respuestaStream);
-
-      if (respuesta.statusCode == 201) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+ 
+      if (imagenPortada != null) {
+        final bytes = await imagenPortada.readAsBytes();
+        final mimeType = lookupMimeType(imagenPortada.name, headerBytes: bytes) ?? 'image/jpeg';
+        final typeParts = mimeType.split('/');
+        
+        datosFormulario.files.add(MapEntry(
+          'url_portada',
+          dio.MultipartFile.fromBytes(
+            bytes,
+            filename: imagenPortada.name,
+            contentType: MediaType(typeParts[0], typeParts[1]),
+          ),
+        ));
+      }
+ 
+      final respuesta = await clienteDio.post(
+        url,
+        data: datosFormulario,
+        options: dio.Options(headers: cabeceras),
+      );
+ 
+      if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
+        final datosJson = respuesta.data is String ? jsonDecode(respuesta.data) : respuesta.data;
         return RespuestaApi(
           exito: true,
           mensaje: '¡Comunidad creada con éxito!',
@@ -195,7 +215,11 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al crear comunidad (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      String msg = 'Error de conexión: $e';
+      if (e is dio.DioException) {
+        msg = e.response?.data?.toString() ?? e.message ?? msg;
+      }
+      return RespuestaApi(exito: false, mensaje: msg);
     }
   }
 
@@ -250,6 +274,7 @@ class ServicioComunidades {
     XFile? fondo,
     Map<String, dynamic>? fondoPostsConfig,
     String? fuenteComunidad,
+    List<String>? tags,
   }) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
@@ -268,6 +293,12 @@ class ServicioComunidades {
       if (tiendaHabilitada != null) datosFormulario.fields.add(MapEntry('tienda_habilitada', tiendaHabilitada.toString()));
       if (fondoPostsConfig != null) datosFormulario.fields.add(MapEntry('fondo_posts_config', jsonEncode(fondoPostsConfig)));
       if (fuenteComunidad != null) datosFormulario.fields.add(MapEntry('fuente_comunidad', fuenteComunidad));
+      
+      if (tags != null) {
+        for (var tag in tags) {
+          datosFormulario.fields.add(MapEntry('tags', tag));
+        }
+      }
  
       final archivos = {
         'url_portada': banner,
@@ -415,10 +446,11 @@ class ServicioComunidades {
   }
 
   /// Recupera las publicaciones registradas en una comunidad específica.
-  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesComunidad(int idComunidad, {String orden = '-fecha_creacion'}) async {
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesComunidad(int idComunidad, {String orden = '-fecha_creacion', int pagina = 1, int tamanoPagina = 20}) async {
     try {
+      final offset = (pagina - 1) * tamanoPagina;
       final respuesta = await http.get(
-        Uri.parse('${_urlContenido}publicaciones/?comunidad_id=$idComunidad&ordering=$orden'),
+        Uri.parse('${_urlContenido}publicaciones/?comunidad_id=$idComunidad&ordering=$orden&limit=$tamanoPagina&offset=$offset'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
 
@@ -644,6 +676,33 @@ class ServicioComunidades {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar guardado');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Busca o sugiere tags existentes para comunidades.
+  Future<RespuestaApi<List<Map<String, dynamic>>>> buscarTags({String? query, bool popular = false}) async {
+    try {
+      String params = '';
+      if (query != null && query.isNotEmpty) params += 'search=$query';
+      if (popular) params += (params.isEmpty ? '' : '&') + 'popular=true';
+      
+      final url = '${_urlComunidades}tags/${params.isNotEmpty ? '?$params' : ''}';
+      final respuesta = await http.get(
+        Uri.parse(url),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Tags recuperados',
+          datos: List<Map<String, dynamic>>.from(datos),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al buscar tags');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

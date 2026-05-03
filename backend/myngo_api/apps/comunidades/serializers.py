@@ -4,7 +4,15 @@ from rest_framework import serializers
 
 from usuarios.models import Seguimiento
 
-from .models import Comunidad, MiembrosComunidad
+from .models import Comunidad, MiembrosComunidad, TagComunidad
+
+
+class TagComunidadSerializer(serializers.ModelSerializer):
+    """Serializador de etiquetas temáticas."""
+
+    class Meta:
+        model = TagComunidad
+        fields = ['id', 'nombre', 'slug']
 
 
 class ComunidadSerializer(serializers.ModelSerializer):
@@ -21,6 +29,7 @@ class ComunidadSerializer(serializers.ModelSerializer):
     conteo_pendiente_admin = serializers.SerializerMethodField()
     mi_rol = serializers.SerializerMethodField()
     miembros_count = serializers.SerializerMethodField()
+    tags_detalle = TagComunidadSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         """Configuración del modelo y campos expuestos."""
@@ -31,7 +40,7 @@ class ComunidadSerializer(serializers.ModelSerializer):
             'fuente_comunidad', 'es_publica', 'es_verificada', 'rating_medio',
             'min_rating_acceso', 'color_tema', 'fecha_creacion', 'es_miembro',
             'es_pendiente', 'conteo_pendiente_admin', 'mi_rol', 'miembros_count',
-            'tienda_habilitada',
+            'tienda_habilitada', 'tags', 'tags_detalle',
         ]
         extra_kwargs = {'creador': {'read_only': True}}
         
@@ -177,6 +186,37 @@ class ComunidadSerializer(serializers.ModelSerializer):
             else:
                 data[campo] = ''
         return data
+
+    def _set_tags(self, instance, tags_data):
+        """Asocia o crea etiquetas por nombre."""
+        if tags_data is not None:
+            tags = []
+            for tag_name in tags_data:
+                tag, _ = TagComunidad.objects.get_or_create(nombre=tag_name.strip())
+                tags.append(tag)
+            instance.tags.set(tags)
+
+    def create(self, validated_data):
+        """Crea la comunidad y gestiona los tags."""
+        tags_data = self.context['request'].data.getlist('tags') if 'tags' in self.context['request'].data else None
+        # Si no es multipart, puede venir como lista normal
+        if tags_data is None:
+            tags_data = self.context['request'].data.get('tags')
+            
+        instance = super().create(validated_data)
+        self._set_tags(instance, tags_data)
+        return instance
+
+    def update(self, instance, validated_data):
+        """Actualiza la comunidad y sus tags."""
+        tags_data = self.context['request'].data.getlist('tags') if 'tags' in self.context['request'].data else None
+        if tags_data is None:
+            tags_data = self.context['request'].data.get('tags')
+
+        instance = super().update(instance, validated_data)
+        if tags_data is not None:
+            self._set_tags(instance, tags_data)
+        return instance
 
 
 class MiembroComunidadSerializer(serializers.ModelSerializer):

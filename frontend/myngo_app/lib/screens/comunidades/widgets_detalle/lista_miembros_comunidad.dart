@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/configuracion.dart';
@@ -64,6 +65,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
       onRefresh: _cargarMiembros,
       color: const Color(0xFFC35E34),
       child: ListView.builder(
+        primary: false,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: _miembros.length,
         itemBuilder: (context, index) {
@@ -85,13 +87,13 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                     MaterialPageRoute(
                       builder: (c) => PantallaDetallePerfil(
                         usuario: Usuario(
-                          id: userId,
+                          id: userId ?? 0,
                           perfilId: m['perfil_id'] ?? 0,
                           nombreUsuario: nombre,
                           urlAvatar: avatar,
                           email: '',
                           biografia: '',
-                          ratingActual: 0,
+                          ratingActual: 0.0,
                           fechaRegistro: DateTime.now(),
                           esVerificado: false,
                           esPublico: true,
@@ -123,11 +125,22 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                                   urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}$urlAvatar';
                                 }
                               }
-                              return CircleAvatar(
-                                radius: 26,
-                                backgroundColor: Colors.grey.shade100,
-                                backgroundImage: (urlAvatar != null && urlAvatar.isNotEmpty) ? NetworkImage(urlAvatar) : null,
-                                child: (urlAvatar == null || urlAvatar.isEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
+                              return CachedNetworkImage(
+                                imageUrl: urlAvatar ?? '',
+                                imageBuilder: (context, imageProvider) => CircleAvatar(
+                                  radius: 26,
+                                  backgroundImage: imageProvider,
+                                ),
+                                placeholder: (context, url) => const CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: Colors.white10,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                errorWidget: (context, url, error) => CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: Colors.grey.shade100,
+                                  child: const Icon(Icons.person, color: Colors.grey),
+                                ),
                               );
                             },
                           ),

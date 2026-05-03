@@ -32,6 +32,39 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
   final _servicio = ServicioComunidades();
   final _picker = ImagePicker();
 
+  final _controladorTag = TextEditingController();
+  final List<String> _tagsSeleccionados = [];
+  List<Map<String, dynamic>> _sugerenciasTags = [];
+  bool _mostrandoSugerencias = false;
+
+  Future<void> _buscarSugerencias(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _sugerenciasTags = [];
+        _mostrandoSugerencias = false;
+      });
+      return;
+    }
+    final respuesta = await _servicio.buscarTags(query: query);
+    if (respuesta.exito && mounted) {
+      setState(() {
+        _sugerenciasTags = respuesta.datos ?? [];
+        _mostrandoSugerencias = _sugerenciasTags.isNotEmpty;
+      });
+    }
+  }
+
+  void _anadirTag(String nombre) {
+    final limpio = nombre.trim().toLowerCase();
+    if (limpio.isNotEmpty && !_tagsSeleccionados.contains(limpio) && _tagsSeleccionados.length < 5) {
+      setState(() {
+        _tagsSeleccionados.add(limpio);
+        _controladorTag.clear();
+        _mostrandoSugerencias = false;
+      });
+    }
+  }
+
   Future<void> _seleccionarImagen() async {
     final XFile? imagen = await _picker.pickImage(source: ImageSource.gallery);
     if (imagen != null) {
@@ -69,7 +102,11 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
         fechaCreacion: DateTime.now(),
       );
 
-      final respuesta = await _servicio.crearComunidad(nuevaComunidad, imagenPortada: _imagenSeleccionada);
+      final respuesta = await _servicio.crearComunidad(
+        nuevaComunidad, 
+        imagenPortada: _imagenSeleccionada,
+        tags: _tagsSeleccionados,
+      );
       _estaCargando.value = false;
 
       if (mounted) {
@@ -163,6 +200,58 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                 nodoEnfoque: _nodoDescripcion,
                 maxLineas: 5,
                 minLineas: 3,
+              ),
+              const SizedBox(height: 16),
+              
+              // --- SECCIÓN DE TAGS ---
+              Text(
+                'Etiquetas (máx. 5)',
+                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _controladorTag,
+                onChanged: _buscarSugerencias,
+                onSubmitted: _anadirTag,
+                style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Escribe un tag y pulsa intro...',
+                  hintStyle: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
+                  prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFF28B50), size: 20),
+                  filled: true,
+                  fillColor: const Color(0xFF121212),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
+                ),
+              ),
+              if (_mostrandoSugerencias)
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A2A2A),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: _sugerenciasTags.map((tag) => ListTile(
+                      title: Text(tag['nombre'], style: GoogleFonts.outfit(color: Colors.white, fontSize: 13)),
+                      onTap: () => _anadirTag(tag['nombre']),
+                      dense: true,
+                    )).toList(),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _tagsSeleccionados.map((tag) => Chip(
+                  label: Text(tag, style: GoogleFonts.outfit(fontSize: 11, color: Colors.white)),
+                  backgroundColor: const Color(0xFFC35E34),
+                  deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
+                  onDeleted: () => setState(() => _tagsSeleccionados.remove(tag)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  side: BorderSide.none,
+                )).toList(),
               ),
               const SizedBox(height: 16),
               

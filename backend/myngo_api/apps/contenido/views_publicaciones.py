@@ -1,6 +1,7 @@
 """Vistas de publicaciones: listado, creación, detalle y eliminación."""
 
-from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value
+from django.db import transaction
+from django.db.models import Count, Exists, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from rest_framework import filters, generics, pagination, permissions, serializers, status
 from rest_framework.response import Response
@@ -33,6 +34,7 @@ class PublicacionList(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ['fecha_creacion']
+    pagination_class = PaginacionGaleria
 
     def get_queryset(self):
         """Filtra y anota las publicaciones según los parámetros de la consulta.

@@ -124,7 +124,7 @@ class Publicacion {
               String tipo = map['tipo']?.toString() ?? 'I';
               // Fallback para posts antiguos o mal tipados
               final lowerUrl = url.toLowerCase();
-              if (tipo == 'I' && (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.quicktime'))) {
+              if (tipo == 'I' && (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.quicktime') || lowerUrl.endsWith('.mkv') || lowerUrl.endsWith('.webm'))) {
                 tipo = 'V';
               }
               return {
@@ -137,7 +137,7 @@ class Publicacion {
                   final url = e.toString();
                   String tipo = 'I';
                   final lowerUrl = url.toLowerCase();
-                  if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.quicktime')) {
+                  if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.quicktime') || lowerUrl.endsWith('.mkv') || lowerUrl.endsWith('.webm')) {
                     tipo = 'V';
                   }
                   return {'url': url, 'tipo': tipo};
@@ -147,7 +147,7 @@ class Publicacion {
                 ? [
                     {
                       'url': (json['url_archivo_s3'] ?? json['url_imagen']).toString(),
-                      'tipo': (json['url_archivo_s3'] ?? json['url_imagen']).toString().toLowerCase().contains(RegExp(r'\.(mp4|mov|avi|quicktime)')) ? 'V' : 'I'
+                      'tipo': (json['url_archivo_s3'] ?? json['url_imagen']).toString().toLowerCase().contains(RegExp(r'\.(mp4|mov|avi|quicktime|mkv|webm)')) ? 'V' : 'I'
                     }
                   ]
                 : []),
