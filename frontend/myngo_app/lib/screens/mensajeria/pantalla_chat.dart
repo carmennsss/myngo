@@ -190,12 +190,25 @@ class _PantallaChatState extends State<PantallaChat> {
   Widget _buildAppBarTitle() {
     final nombre = _sala?.nombre ?? widget.nombreSala ?? 'Chat';
     String subtitulo = '';
+    String? avatarUrl;
+    bool esDM = _sala != null && !_sala!.esGrupal;
     
     if (_sala != null) {
       if (_sala!.esGrupal) {
         subtitulo = '${_sala!.participantes.length} miembros • $_miembrosOnline en línea';
+        avatarUrl = _sala!.avatarS3;
       } else {
+        // DM: Buscamos al otro usuario
         final otroId = _sala!.otroUsuarioId;
+        final otroParticipante = _sala!.participantes.firstWhere(
+          (p) => p.usuarioId == otroId,
+          orElse: () => _sala!.participantes.firstWhere(
+            (p) => p.usuarioId != _miId,
+            orElse: () => _sala!.participantes.first,
+          ),
+        );
+        
+        avatarUrl = otroParticipante.usuario?.urlAvatar;
         final estado = _estadosPresencia[otroId] ?? 'DESCONECTADO';
         subtitulo = estado == 'ACTIVO' ? 'En línea' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado');
       }
@@ -203,12 +216,34 @@ class _PantallaChatState extends State<PantallaChat> {
 
     return Row(
       children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundImage: (_sala?.avatarS3 != null)
-            ? CachedNetworkImageProvider(_sala!.avatarS3!)
-            : null,
-          child: (_sala?.avatarS3 == null) ? const Icon(Icons.chat_bubble_outline, size: 20) : null,
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: (avatarUrl != null)
+                ? CachedNetworkImageProvider(avatarUrl)
+                : null,
+              backgroundColor: const Color(0xFFF28B50).withOpacity(0.2),
+              child: (avatarUrl == null) 
+                ? Icon(esDM ? Icons.person_outline : Icons.chat_bubble_outline, 
+                    size: 20, color: const Color(0xFFF28B50)) 
+                : null,
+            ),
+            if (esDM && _sala != null)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: _getColorEstado(_estadosPresencia[_sala!.otroUsuarioId] ?? 'DESCONECTADO'),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -222,6 +257,14 @@ class _PantallaChatState extends State<PantallaChat> {
         ),
       ],
     );
+  }
+
+  Color _getColorEstado(String estado) {
+    switch (estado) {
+      case 'ACTIVO': return Colors.green;
+      case 'OCUPADO': return Colors.orange;
+      default: return Colors.grey;
+    }
   }
 
   Widget _buildListaMensajes() {

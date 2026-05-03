@@ -418,7 +418,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           comoSliver: true,
         );
       case 1:
-        return SliverToBoxAdapter(child: _buildStore());
+        return SliverFillRemaining(hasScrollBody: true, child: _buildStore());
       case 2:
         return SeccionGaleriaComunidad(
           comunidad: _comunidad!,

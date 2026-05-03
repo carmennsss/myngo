@@ -1,3 +1,5 @@
+import 'usuario.dart';
+
 /// Modelo que representa la participación de un usuario en una sala de chat.
 class ParticipanteChat {
   final int id;
@@ -6,6 +8,7 @@ class ParticipanteChat {
   final DateTime fechaUnion;
   final String? apodo;
   final String? apodoPersonalizado;
+  final Usuario? usuario; // Detalles del usuario (foto, estado, etc.)
 
   ParticipanteChat({
     required this.id,
@@ -14,6 +17,7 @@ class ParticipanteChat {
     required this.fechaUnion,
     this.apodo,
     this.apodoPersonalizado,
+    this.usuario,
   });
 
   /// Crea una instancia de [ParticipanteChat] a partir de un mapa JSON.
@@ -27,11 +31,14 @@ class ParticipanteChat {
           : DateTime.now(),
       apodo: json['apodo'],
       apodoPersonalizado: json['apodo_personalizado'],
+      usuario: json['usuario_detalle'] != null
+          ? Usuario.fromJson(json['usuario_detalle'])
+          : null,
     );
   }
   
   /// Obtiene el nombre a mostrar (priorizando apodo personalizado sobre el global).
   String get nombreAMostrar {
-    return apodoPersonalizado ?? apodo ?? '';
+    return apodoPersonalizado ?? apodo ?? usuario?.nombreUsuario ?? '';
   }
 }

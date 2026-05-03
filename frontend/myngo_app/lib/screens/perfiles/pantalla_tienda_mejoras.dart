@@ -209,6 +209,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
             ],
           )
         : Column(
+            mainAxisSize: MainAxisSize.min, // Evita ocupar infinito si no es necesario
             children: [
               TiendaPreviewSection(
                 usuarioActual: _usuarioActual,
@@ -218,12 +219,23 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                 previewEstiloPost: _previewEstiloPost,
                 comunidad: widget.comunidad,
               ),
-              Expanded(child: shopSection),
+              // Si está integrado en un sliver, necesitamos una altura fija o limitada
+              widget.esVistaIntegrada 
+                ? SizedBox(height: 500, child: shopSection) 
+                : Expanded(child: shopSection),
             ],
           );
 
     return widget.esVistaIntegrada
-        ? Container(color: const Color(0xFFFEF5F1), child: content)
+        ? Container(
+            constraints: BoxConstraints(
+              // Aseguramos que tenga una altura razonable si está en un CustomScrollView
+              minHeight: 400,
+              maxHeight: esAncho ? 800 : 1200, 
+            ),
+            color: const Color(0xFFFEF5F1), 
+            child: content
+          )
         : Scaffold(
             backgroundColor: const Color(0xFFFEF5F1),
             appBar: _buildAppBar(),
