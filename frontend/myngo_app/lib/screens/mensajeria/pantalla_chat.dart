@@ -156,16 +156,19 @@ class _PantallaChatState extends State<PantallaChat> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
                   )
-                : const Icon(Icons.palette_outlined),
+                : const Icon(Icons.palette_outlined, color: Color(0xFFC35E34)),
             tooltip: 'Personalizar chat',
-            onPressed: (_estaCargando || _sala == null) 
+            onPressed: (_sala == null) 
               ? null 
               : () async {
                   final actualizado = await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => PantallaPersonalizacionChat(sala: _sala!)),
                   );
-                  if (actualizado == true) _cargarDatos();
+                  if (actualizado == true) {
+                    // Solo recargamos si hubo cambios, pero sin bloquear toda la UI si es posible
+                    _cargarDatos();
+                  }
                 },
           ),
           IconButton(
@@ -314,7 +317,6 @@ class _PantallaChatState extends State<PantallaChat> {
     final esMio = msg.emisorId == _miId;
     final borrado = msg.borradoParaTodos;
     final texto = borrado ? 'Este mensaje fue eliminado' : (msg.contenido ?? '');
-    
     final perso = _sala?.personalizacion;
     final forma = perso?.formaBurbuja ?? 'redondeada';
     final fontSize = (perso?.fontSize ?? 14).toDouble();

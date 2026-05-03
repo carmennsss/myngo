@@ -6,13 +6,15 @@ class EstadoVacioCargando extends StatefulWidget {
   final String message;
   final Duration delay;
   final Color baseColor;
+  final Color? textColor;
 
   const EstadoVacioCargando({
     super.key,
     required this.icon,
     required this.message,
     this.delay = const Duration(milliseconds: 600),
-    this.baseColor = const Color(0xFFF28B50), // Color naranja Myngo por defecto
+    this.baseColor = const Color(0xFFF28B50),
+    this.textColor,
   });
 
   @override
@@ -45,6 +47,8 @@ class _EstadoVacioCargandoState extends State<EstadoVacioCargando> {
       );
     }
     
+    final finalTextColor = widget.textColor ?? Colors.grey;
+
     return Center(
       child: SingleChildScrollView(
         child: Padding(
@@ -52,12 +56,12 @@ class _EstadoVacioCargandoState extends State<EstadoVacioCargando> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(widget.icon, size: 64, color: Colors.grey.withOpacity(0.3)),
+              Icon(widget.icon, size: 64, color: finalTextColor.withOpacity(0.3)),
               const SizedBox(height: 16),
               Text(
                 widget.message,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(color: Colors.grey, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(color: finalTextColor, fontWeight: FontWeight.bold),
               ),
             ],
           ),

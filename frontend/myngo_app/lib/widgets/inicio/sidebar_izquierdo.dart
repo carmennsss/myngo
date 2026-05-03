@@ -379,6 +379,9 @@ void _mostrarDialogoComunidades(
     List<Comunidad> comunidades, 
     Function(Comunidad) onSelected,
     Function(int, int) onReorder) {
+  // Copia local para que el diálogo refleje cambios inmediatamente
+  final listLocal = List<Comunidad>.from(comunidades);
+  
   showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -456,16 +459,21 @@ void _mostrarDialogoComunidades(
                         ],
                       ),
                     ),
-                    // Lista Reordenable
+                    // Lista Reordenable con copia local
                     Expanded(
                       child: ReorderableListView.builder(
                         buildDefaultDragHandles: false,
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        itemCount: comunidades.length,
+                        itemCount: listLocal.length,
                         onReorder: (oldIndex, newIndex) {
                           setDialogState(() {
-                            onReorder(oldIndex, newIndex);
+                            // Actualizar la lista local del diálogo inmediatamente
+                            final adjusted = newIndex > oldIndex ? newIndex - 1 : newIndex;
+                            final item = listLocal.removeAt(oldIndex);
+                            listLocal.insert(adjusted, item);
                           });
+                          // También notificar al padre para persistir
+                          onReorder(oldIndex, newIndex);
                         },
                         proxyDecorator: (child, index, animation) {
                           return Material(
@@ -493,7 +501,7 @@ void _mostrarDialogoComunidades(
                           );
                         },
                         itemBuilder: (context, index) {
-                          final c = comunidades[index];
+                          final c = listLocal[index];
                           return Container(
                             key: ValueKey('dialog_${c.id}'),
                             margin: const EdgeInsets.only(bottom: 12.0),

@@ -151,8 +151,17 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
 
           // Botones de acción (Personalizar, Ajustes, Cerrar)
           Positioned(
-            top: 16,
-            right: 16,
+            top: 24,
+            left: 24,
+            child: _ActionButton(
+              icon: Icons.arrow_back_ios_new_rounded,
+              tooltip: 'Volver',
+              onPressed: widget.onCerrar,
+            ),
+          ),
+          Positioned(
+            top: 24,
+            right: 24,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -176,7 +185,7 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                       );
                     },
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   _ActionButton(
                     icon: Icons.settings_rounded,
                     tooltip: 'Administrar Comunidad',
@@ -194,13 +203,7 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                       }
                     },
                   ),
-                  const SizedBox(width: 8),
                 ],
-                _ActionButton(
-                  icon: Icons.close_rounded,
-                  tooltip: 'Cerrar vista',
-                  onPressed: widget.onCerrar,
-                ),
               ],
             ),
           ),

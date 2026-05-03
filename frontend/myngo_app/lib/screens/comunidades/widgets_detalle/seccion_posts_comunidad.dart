@@ -16,6 +16,7 @@ class SeccionPostsComunidad extends StatelessWidget {
   final VoidCallback? onLoadMore;
   final bool hasMore;
   final bool isLoadingMore;
+  final bool tieneFondoGlobal;
 
   const SeccionPostsComunidad({
     super.key,
@@ -29,6 +30,7 @@ class SeccionPostsComunidad extends StatelessWidget {
     this.onLoadMore,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.tieneFondoGlobal = false,
   });
 
   @override
@@ -43,11 +45,33 @@ class SeccionPostsComunidad extends StatelessWidget {
     }
 
     if (publicaciones!.isEmpty) {
-      const empty = EstadoVacioCargando(
+      Color? textColor;
+      if (backgroundConfig != null) {
+        // Color basado en el fondo configurado del feed
+        final color1Hex = backgroundConfig!['color1']?.toString() ?? (esAppClara ? '#FFFFFF' : '#121212');
+        final color1 = _parseHex(color1Hex);
+        textColor = color1.computeLuminance() > 0.5 ? const Color(0xFF4A4440) : Colors.white.withOpacity(0.9);
+      } else if (tieneFondoGlobal) {
+        // Hay imagen de fondo de comunidad: texto blanco con sombra implícita
+        textColor = Colors.white.withOpacity(0.9);
+      } else {
+        // Sin fondo: adaptar al tema (claro = oscuro, oscuro = blanco)
+        textColor = esAppClara ? const Color(0xFF4A4440) : Colors.white.withOpacity(0.8);
+      }
+
+      final empty = EstadoVacioCargando(
         icon: Icons.feed_outlined,
         message: 'Aún no hay publicaciones',
+        textColor: textColor,
       );
-      return comoSliver ? const SliverToBoxAdapter(child: SizedBox(height: 200, child: empty)) : empty;
+      
+      if (comoSliver) {
+        return SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: empty),
+        );
+      }
+      return Center(child: empty);
     }
 
     // Contrucción de los slivers directamente si es comoSliver
