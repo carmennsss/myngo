@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import '../models/comunidad.dart';
 import '../models/imagen_galeria.dart';
 import '../models/publicacion.dart';
@@ -487,11 +488,14 @@ class ServicioComunidades {
           final fieldName = 'url_archivo_s3[]';
           if (kIsWeb) {
             final bytes = await img.readAsBytes();
+            final mimeType = lookupMimeType(img.name, headerBytes: bytes) ?? 'application/octet-stream';
+            final typeParts = mimeType.split('/');
+            
             solicitud.files.add(http.MultipartFile.fromBytes(
               fieldName,
               bytes,
               filename: img.name,
-              contentType: MediaType('image', 'jpeg'),
+              contentType: MediaType(typeParts[0], typeParts[1]),
             ));
           } else {
             solicitud.files.add(await http.MultipartFile.fromPath(fieldName, img.path));

@@ -79,9 +79,11 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     setState(() => _cargando = false);
   }
 
-  Future<void> _subirImagen() async {
+  Future<void> _seleccionarYSubir(bool esVideo) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = esVideo 
+        ? await picker.pickVideo(source: ImageSource.gallery)
+        : await picker.pickImage(source: ImageSource.gallery);
     
     if (pickedFile != null) {
       if (!mounted) return;
@@ -112,7 +114,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('¡Imagen añadida con éxito! 🐾', style: GoogleFonts.outfit()), 
+            content: Text(nuevaImagen.tipoArchivo == 'V' ? '¡Vídeo añadido con éxito! 🐾' : '¡Imagen añadida con éxito! 🐾', style: GoogleFonts.outfit()), 
             backgroundColor: const Color(0xFF248EA6),
             duration: const Duration(seconds: 2),
           ),
@@ -232,7 +234,23 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                 style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
-                _subirImagen();
+                _seleccionarYSubir(false);
+              },
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: const Color(0xFFC35E34).withOpacity(0.2), shape: BoxShape.circle),
+                child: const Icon(Icons.videocam_rounded, color: Color(0xFFC35E34)),
+              ),
+              title: Text(widget.coleccionId != null ? 'Subir Vídeo a esta Carpeta' : 'Subir Vídeo Crudo', 
+                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              subtitle: Text('Comparte tus mejores momentos en movimiento', 
+                style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                _seleccionarYSubir(true);
               },
             ),
             const SizedBox(height: 12),
@@ -338,7 +356,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                 onChanged: (val) => setModalState(() => esPrivada = val),
               ),
               const SizedBox(height: 24),
-              SizedBox(
+            SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
@@ -385,15 +403,25 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            CachedNetworkImage(
-              imageUrl: item.urlArchivo,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: Colors.grey[900],
-                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            if (item.tipoArchivo == 'V')
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black26,
+                  child: const Center(
+                    child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 40),
+                  ),
+                ),
+              )
+            else
+              CachedNetworkImage(
+                imageUrl: item.urlArchivo,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[900],
+                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                ),
+                errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
               ),
-              errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
-            ),
             // Menu de opciones en la esquina superior derecha
             Positioned(
               top: 4,

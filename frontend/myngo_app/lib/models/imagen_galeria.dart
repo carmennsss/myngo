@@ -46,8 +46,10 @@ class ImagenGaleria {
       comunidadNombre: json['comunidad_nombre']?.toString(),
       creadorComunidadId: json['creador_comunidad_id'] as int?,
       usuarioEsMiembro: json['usuario_es_miembro'] ?? false,
-      urlArchivo:
-          json['url_archivo']?.toString() ?? json['url_s3']?.toString() ?? '',
+      urlArchivo: json['url_archivo']?.toString() ??
+          json['url_s3']?.toString() ??
+          json['url_imagen']?.toString() ??
+          '',
       tipoArchivo: json['tipo_archivo']?.toString() ?? 'I',
       relacionAspecto: (json['relacion_aspecto'] ?? 1.0).toDouble(),
       esPublica: json['es_publica'] ?? true,

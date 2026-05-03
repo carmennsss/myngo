@@ -108,6 +108,50 @@ class ServicioMensajeria {
     } catch (_) {}
   }
 
+  /// Recupera el historial de mensajes de una sala.
+  Future<List<Map<String, dynamic>>> obtenerMensajesSala(int idSala, {int limit = 30, int offset = 0}) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/mensajes/?limit=$limit&offset=$offset'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return List<Map<String, dynamic>>.from(data['results'] ?? []);
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Edita el contenido de un mensaje enviado.
+  Future<bool> editarMensaje(int idMensaje, String nuevoContenido) async {
+    try {
+      final respuesta = await http.patch(
+        Uri.parse('$_urlApi/mensajeria/mensajes/$idMensaje/editar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'contenido': nuevoContenido}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Borra un mensaje (solo para el usuario o para todos).
+  Future<bool> borrarMensaje(int idMensaje, {bool paraTodos = false}) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlApi/mensajeria/mensajes/$idMensaje/borrar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'para_todos': paraTodos}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // --- WEBSOCKETS ---
 
   /// Conecta el WebSocket a una sala de chat específica.
@@ -231,12 +275,13 @@ class ServicioMensajeria {
   // --- COMUNICACIÓN ---
 
   /// Envía un mensaje de texto por el WebSocket de la sala actual.
-  void enviarMensajeChat(String contenido, {String? idCliente}) {
+  void enviarMensajeChat(String contenido, {String? idCliente, int? referenciaA}) {
     if (_estaConectadoChat && _canalChat != null) {
       _canalChat!.sink.add(jsonEncode({
         'type': 'message',
         'content': contenido,
         'client_id': idCliente,
+        if (referenciaA != null) 'referencia_a': referenciaA,
       }));
     }
   }

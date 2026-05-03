@@ -196,9 +196,55 @@ class _GridMediaItemState extends State<_GridMediaItem> {
     if (widget.tipo == 'V') {
       return Container(
         color: Colors.black,
-        child: _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized
-            ? Chewie(controller: _chewieController!)
-            : const Center(child: CircularProgressIndicator()),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized
+                ? Chewie(controller: _chewieController!)
+                : const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      SizedBox(height: 12),
+                      Icon(Icons.videocam_rounded, color: Colors.white54, size: 32),
+                    ],
+                  ),
+            
+            // Overlay de carga/error
+            if (_videoController != null && _videoController!.value.hasError)
+              Container(
+                color: Colors.black87,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: Colors.white54, size: 40),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No se pudo cargar el vídeo',
+                        style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            
+            // Indicador de vídeo (si no está reproduciendo)
+            if (_chewieController != null && 
+                _chewieController!.videoPlayerController.value.isInitialized &&
+                !_chewieController!.videoPlayerController.value.isPlaying)
+              IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
+                ),
+              ),
+          ],
+        ),
       );
     }
 
@@ -209,6 +255,7 @@ class _GridMediaItemState extends State<_GridMediaItem> {
           child: CachedNetworkImage(
             imageUrl: widget.url,
             fit: BoxFit.cover,
+            errorWidget: (_, __, ___) => const SizedBox.shrink(),
           ),
         ),
         Positioned.fill(
@@ -227,7 +274,19 @@ class _GridMediaItemState extends State<_GridMediaItem> {
           ),
           errorWidget: (_, __, ___) => Container(
             color: Colors.grey.shade900,
-            child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 32),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Error al cargar imagen',
+                    style: GoogleFonts.inter(color: Colors.grey, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],

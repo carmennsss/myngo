@@ -118,10 +118,24 @@ class Publicacion {
                 ?.map((e) => toInt(e))
                 .toList() ??
             [],
-        media: (json['media'] as List<dynamic>?)
-                ?.map((e) => Map<String, String>.from(e))
+        media: (json['media'] as List<dynamic>?)?.map((e) {
+              final map = e as Map<String, dynamic>;
+              return {
+                'url': map['url']?.toString() ?? '',
+                'tipo': map['tipo']?.toString() ?? 'I',
+              };
+            }).toList() ??
+            (json['urls_imagenes'] as List<dynamic>?)
+                ?.map((e) => {'url': e.toString(), 'tipo': 'I'})
                 .toList() ??
-            [],
+            ((json['url_imagen'] != null || json['url_archivo_s3'] != null)
+                ? [
+                    {
+                      'url': (json['url_archivo_s3'] ?? json['url_imagen']).toString(),
+                      'tipo': 'I'
+                    }
+                  ]
+                : []),
         relacionAspecto:
             double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ??
                 1.0,

@@ -235,14 +235,14 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
                             color: colorTexto,
                           ),
                         ),
-                        if (_post!.urlsImagenes.isNotEmpty || _post!.urlImagen != null) ...[
+                        if (_post!.media.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxHeight: 500),
                               child: GridImagenesPost(
-                                urls: _post!.urlsImagenes.isNotEmpty ? _post!.urlsImagenes : [_post!.urlImagen!],
+                                media: _post!.media,
                               ),
                             ),
                           ),

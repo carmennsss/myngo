@@ -8,6 +8,8 @@ from .views import (
     agregar_miembro,
     conteo_no_leidos,
     marcar_leidos,
+    editar_mensaje,
+    borrar_mensaje,
 )
 
 urlpatterns = [
@@ -18,6 +20,8 @@ urlpatterns = [
     # Mensajes e Historial
     path('salas/<int:sala_id>/mensajes/', MensajesChatList.as_view(), name='historial_mensajes'),
     path('salas/<int:sala_id>/marcar-leidos/', marcar_leidos, name='marcar_leidos'),
+    path('mensajes/<int:mensaje_id>/editar/', editar_mensaje, name='editar_mensaje'),
+    path('mensajes/<int:mensaje_id>/borrar/', borrar_mensaje, name='borrar_mensaje'),
 
     # Estadísticas
     path('no-leidos/', conteo_no_leidos, name='conteo_no_leidos'),
