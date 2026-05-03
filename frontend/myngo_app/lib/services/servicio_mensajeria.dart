@@ -4,13 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../utils/configuracion.dart';
+import '../models/sala_chat.dart';
 import 'servicio_usuarios.dart';
 
 /// Servicio encargado de la gestión de mensajería instantánea y presencia en tiempo real.
-///
-/// Implementa comunicación bidireccional mediante WebSockets para el chat,
-/// estados de conexión (presencia) y notificaciones internas. Además, provee
-/// métodos REST para la gestión persistente de salas y mensajes.
 class ServicioMensajeria {
   WebSocketChannel? _canalChat;
   WebSocketChannel? _canalPresencia;
@@ -27,7 +24,6 @@ class ServicioMensajeria {
   static const String _urlApi = Configuracion.baseUrl;
   static const String _urlWs = Configuracion.wsUrl;
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -38,7 +34,6 @@ class ServicioMensajeria {
 
   // --- MÉTODOS REST ---
 
-  /// Crea una nueva sala de chat (privada, grupal o de comunidad).
   Future<Map<String, dynamic>?> crearSala({
     String? nombre,
     bool esGrupal = false,
@@ -68,7 +63,6 @@ class ServicioMensajeria {
     return null;
   }
 
-  /// Recupera todas las salas de chat en las que participa el usuario.
   Future<List<Map<String, dynamic>>> obtenerSalasChat() async {
     try {
       final respuesta = await http.get(
@@ -83,7 +77,6 @@ class ServicioMensajeria {
     return [];
   }
 
-  /// Obtiene el conteo de mensajes no leídos global y por sala.
   Future<Map<String, dynamic>> obtenerConteoMensajesNoLeidos() async {
     try {
       final respuesta = await http.get(
@@ -98,7 +91,6 @@ class ServicioMensajeria {
     return {'total': 0, 'por_sala': []};
   }
 
-  /// Marca todos los mensajes de una sala específica como leídos.
   Future<void> marcarMensajesComoLeidos(int idSala) async {
     try {
       await http.post(
@@ -108,7 +100,6 @@ class ServicioMensajeria {
     } catch (_) {}
   }
 
-  /// Recupera el historial de mensajes de una sala.
   Future<List<Map<String, dynamic>>> obtenerMensajesSala(int idSala, {int limit = 30, int offset = 0}) async {
     try {
       final respuesta = await http.get(
@@ -124,13 +115,62 @@ class ServicioMensajeria {
     return [];
   }
 
-  /// Edita el contenido de un mensaje enviado.
-  Future<bool> editarMensaje(int idMensaje, String nuevoContenido) async {
+  Future<SalaChat?> obtenerDetalleSala(int idSala) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return SalaChat.fromJson(data);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<SalaChat?> obtenerSalaGeneralComunidad(int idComunidad) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlApi/mensajeria/salas/comunidad/$idComunidad/general/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return SalaChat.fromJson(data);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> enviarMensaje(int idSala, String texto) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/enviar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'texto': texto}),
+      ).timeout(const Duration(seconds: 10));
+
+      if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
+        return jsonDecode(utf8.decode(respuesta.bodyBytes));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Actualiza la configuración y metadatos de una sala.
+  Future<bool> actualizarSala(int idSala, {String? nombre, PersonalizacionChat? personalizacion, String? avatarS3}) async {
     try {
       final respuesta = await http.patch(
-        Uri.parse('$_urlApi/mensajeria/mensajes/$idMensaje/editar/'),
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/actualizar/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode({'contenido': nuevoContenido}),
+        body: jsonEncode({
+          if (nombre != null) 'nombre': nombre,
+          if (personalizacion != null) 'personalizacion': personalizacion.toJson(),
+          if (avatarS3 != null) 'avatar_s3': avatarS3,
+        }),
       ).timeout(const Duration(seconds: 10));
       return respuesta.statusCode == 200;
     } catch (_) {
@@ -138,13 +178,16 @@ class ServicioMensajeria {
     }
   }
 
-  /// Borra un mensaje (solo para el usuario o para todos).
-  Future<bool> borrarMensaje(int idMensaje, {bool paraTodos = false}) async {
+  /// Establece un apodo personalizado (privado) para otro usuario en un chat.
+  Future<bool> actualizarApodoPersonalizado(int idSala, int usuarioId, String? apodo) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlApi/mensajeria/mensajes/$idMensaje/borrar/'),
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/apodo-personalizado/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode({'para_todos': paraTodos}),
+        body: jsonEncode({
+          'usuario_id': usuarioId,
+          'apodo': apodo,
+        }),
       ).timeout(const Duration(seconds: 10));
       return respuesta.statusCode == 200;
     } catch (_) {
@@ -154,7 +197,6 @@ class ServicioMensajeria {
 
   // --- WEBSOCKETS ---
 
-  /// Conecta el WebSocket a una sala de chat específica.
   void conectarASala(int idSala, Function(Map<String, dynamic>) alRecibirMensaje, {VoidCallback? alConectar}) {
     _iniciarConexionChat(idSala, alRecibirMensaje, alConectar: alConectar);
   }
@@ -186,15 +228,12 @@ class ServicioMensajeria {
     }
   }
 
-  /// Conecta al sistema de presencia para sincronizar estados de conexión.
   Future<void> conectarPresencia(Function(Map<String, dynamic>) alCambiarEstado) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       if (token == null) return;
-
       final urlLimpia = _urlWs.endsWith('/') ? _urlWs.substring(0, _urlWs.length - 1) : _urlWs;
       final url = Uri.parse("$urlLimpia/presence/?token=$token");
-
       _canalPresencia = WebSocketChannel.connect(url);
       _estaConectadoPresencia = true;
 
@@ -220,19 +259,14 @@ class ServicioMensajeria {
     }
   }
 
-  /// Conecta al canal de notificaciones globales del chat.
   Future<void> conectarNotificacionesPersonales(Function(Map<String, dynamic>) alRecibirNotificacion) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       if (token == null) return;
-
-      // Cerrar conexión previa si existe
       _canalNotificaciones?.sink.close();
-
       final url = Uri.parse("$_urlWs/chat-notificaciones/?token=$token");
       _canalNotificaciones = WebSocketChannel.connect(url);
       _estaConectadoNotificaciones = true;
-
       _canalNotificaciones!.stream.listen(
         (datos) => alRecibirNotificacion(jsonDecode(datos)),
         onDone: () {
@@ -249,8 +283,6 @@ class ServicioMensajeria {
       _reconectarNotificaciones(alRecibirNotificacion);
     }
   }
-
-  // --- RECONEXIÓN ---
 
   void _reconectarChat(int idSala, Function(Map<String, dynamic>) callback) {
     _temporizadorReconexion?.cancel();
@@ -272,9 +304,6 @@ class ServicioMensajeria {
     });
   }
 
-  // --- COMUNICACIÓN ---
-
-  /// Envía un mensaje de texto por el WebSocket de la sala actual.
   void enviarMensajeChat(String contenido, {String? idCliente, int? referenciaA}) {
     if (_estaConectadoChat && _canalChat != null) {
       _canalChat!.sink.add(jsonEncode({
@@ -286,34 +315,12 @@ class ServicioMensajeria {
     }
   }
 
-  /// Sincroniza el estado de lectura mediante WebSocket.
   void marcarMensajesLeidosWS() {
     if (_estaConectadoChat && _canalChat != null) {
       _canalChat!.sink.add(jsonEncode({'type': 'read_messages'}));
     }
   }
 
-  /// Envía una petición para añadir a un usuario a la sala grupal.
-  void agregarMiembroSala(int idUsuario) {
-    if (_estaConectadoChat && _canalChat != null) {
-      _canalChat!.sink.add(jsonEncode({
-        'type': 'add_member',
-        'user_id': idUsuario,
-      }));
-    }
-  }
-
-  /// Notifica si el usuario está escribiendo o ha dejado de hacerlo.
-  void enviarEventoTyping(int idSala, bool estaEscribiendo) {
-    if (_estaConectadoChat && _canalChat != null) {
-      _canalChat!.sink.add(jsonEncode({
-        'type': 'typing',
-        'is_typing': estaEscribiendo,
-      }));
-    }
-  }
-
-  /// Envía un paquete de mantenimiento para evitar el cierre por inactividad.
   void enviarLatido() {
     if (_estaConectadoPresencia && _canalPresencia != null) {
       _canalPresencia!.sink.add(jsonEncode({'type': 'heartbeat'}));
@@ -330,20 +337,11 @@ class ServicioMensajeria {
     }
   }
 
-  // --- CICLO DE VIDA ---
-
-  /// Cierra todas las conexiones y libera los recursos del servicio.
   void dispose() {
     _temporizadorReconexion?.cancel();
     _temporizadorLatido?.cancel();
     _canalChat?.sink.close();
     _canalPresencia?.sink.close();
     _canalNotificaciones?.sink.close();
-  }
-
-  /// Cierra exclusivamente la conexión de notificaciones.
-  void cerrarNotificaciones() {
-    _canalNotificaciones?.sink.close();
-    _estaConectadoNotificaciones = false;
   }
 }

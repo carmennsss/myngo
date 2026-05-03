@@ -41,6 +41,9 @@ class Usuario {
   /// Estado de presencia en tiempo real ('ACTIVO', 'OCUPADO', 'DESCONECTADO').
   String? estado;
 
+  /// Orden personalizado de las comunidades en el sidebar.
+  final List<int> ordenComunidades;
+
   Usuario({
     required this.id,
     required this.perfilId,
@@ -62,6 +65,7 @@ class Usuario {
     this.estadoSeguimiento,
     this.estiloPost,
     this.estado = 'DESCONECTADO',
+    this.ordenComunidades = const [],
   });
 
   /// Crea una instancia de [Usuario] a partir de un mapa JSON.
@@ -96,6 +100,9 @@ class Usuario {
             ? Map<String, dynamic>.from(json['estilo_post'])
             : null,
         estado: json['estado']?.toString() ?? 'DESCONECTADO',
+        ordenComunidades: json['orden_comunidades'] is List 
+            ? List<int>.from(json['orden_comunidades'].map((i) => int.tryParse(i.toString()) ?? 0).where((i) => i != 0)) 
+            : [],
       );
     } catch (e) {
       // ignore: avoid_print
