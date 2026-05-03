@@ -168,18 +168,32 @@ class _GridMediaItemState extends State<_GridMediaItem> {
     if (widget.tipo == 'V') {
       _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
       _videoController!.initialize().then((_) {
-        setState(() {
-          _chewieController = ChewieController(
-            videoPlayerController: _videoController!,
-            autoPlay: false,
-            looping: false,
-            aspectRatio: _videoController!.value.aspectRatio,
-            placeholder: const Center(child: CircularProgressIndicator()),
-            errorBuilder: (context, errorMessage) {
-              return Center(child: Text(errorMessage, style: const TextStyle(color: Colors.white)));
-            },
-          );
-        });
+        if (mounted) {
+          setState(() {
+            _chewieController = ChewieController(
+              videoPlayerController: _videoController!,
+              autoPlay: false,
+              looping: false,
+              aspectRatio: _videoController!.value.aspectRatio,
+              placeholder: const Center(child: CircularProgressIndicator()),
+              errorBuilder: (context, errorMessage) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: Colors.white54, size: 40),
+                      const SizedBox(height: 8),
+                      Text('Error: $errorMessage', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                    ],
+                  ),
+                );
+              },
+            );
+          });
+        }
+      }).catchError((error) {
+        debugPrint("Error inicializando video: $error");
+        if (mounted) setState(() {});
       });
     }
   }
@@ -255,7 +269,10 @@ class _GridMediaItemState extends State<_GridMediaItem> {
           child: CachedNetworkImage(
             imageUrl: widget.url,
             fit: BoxFit.cover,
-            errorWidget: (_, __, ___) => const SizedBox.shrink(),
+            errorWidget: (context, url, error) {
+              debugPrint("Error cargando fondo de imagen ($url): $error");
+              return const SizedBox.shrink();
+            },
           ),
         ),
         Positioned.fill(
@@ -272,22 +289,25 @@ class _GridMediaItemState extends State<_GridMediaItem> {
           placeholder: (_, __) => const Center(
             child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50)),
           ),
-          errorWidget: (_, __, ___) => Container(
-            color: Colors.grey.shade900,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 32),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Error al cargar imagen',
-                    style: GoogleFonts.inter(color: Colors.grey, fontSize: 11),
-                  ),
-                ],
+          errorWidget: (context, url, error) {
+            debugPrint("Error cargando imagen principal ($url): $error");
+            return Container(
+              color: Colors.grey.shade900,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 32),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Error al cargar imagen',
+                      style: GoogleFonts.inter(color: Colors.grey, fontSize: 11),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );
