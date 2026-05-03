@@ -113,7 +113,8 @@ class EquipacionMejorasGlobales(APIView):
                             usuario=user,
                             esta_equipada=True,
                             mejora__tipo=mejora_u.mejora.tipo,
-                            mejora__url_recurso=perfil.fondo_perfil,
+                        ).filter(
+                            dj_models.Q(mejora__url_recurso=perfil.fondo_perfil)
                         ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
                         perfil.fondo_perfil = mejora_u.mejora.url_recurso.name
                     else:
@@ -122,7 +123,8 @@ class EquipacionMejorasGlobales(APIView):
                             usuario=user,
                             esta_equipada=True,
                             mejora__tipo=mejora_u.mejora.tipo,
-                            mejora__url_recurso=perfil.fondo,
+                        ).filter(
+                            dj_models.Q(mejora__url_recurso=perfil.fondo)
                         ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
                         perfil.fondo = mejora_u.mejora.url_recurso.name
                 else:
@@ -142,10 +144,11 @@ class EquipacionMejorasGlobales(APIView):
             else:
                 # Desequipar: limpiar campo correspondiente del perfil
                 if tipo == 'fondo':
-                    if destino == 'fondo_feed':
-                        perfil.fondo_perfil = None
-                    else:
+                    nombre_recurso = mejora_u.mejora.url_recurso.name
+                    if perfil.fondo == nombre_recurso:
                         perfil.fondo = None
+                    if perfil.fondo_perfil == nombre_recurso:
+                        perfil.fondo_perfil = None
                 elif tipo == 'avatar':
                     perfil.avatar = None
                 elif tipo == 'marco':

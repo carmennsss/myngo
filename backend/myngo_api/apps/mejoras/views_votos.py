@@ -62,26 +62,30 @@ class VotoAPIView(APIView):
                 "segundos_hasta_reset": 0
             })
 
-        # Buscar el voto más reciente de este usuario a este receptor
-        ultimo_voto = Voto.objects.filter(votante=votante, **count_filter).order_by('-fecha_voto').first()
-        
+        # Calcular segundos hasta medianoche para el reset diario
         ahora = timezone.now()
+        manana = ahora.replace(hour=0, minute=0, second=0, microsecond=0) + timezone.timedelta(days=1)
+        segundos_hasta_medianoche = int((manana - ahora).total_seconds())
+
+        # Buscar el voto más reciente de este usuario a este receptor en el día actual
+        ultimo_voto = Voto.objects.filter(
+            votante=votante, 
+            fecha_voto__date=ahora.date(),
+            **count_filter
+        ).first()
+        
         ha_votado = False
-        segundos_restantes = 0
         puntuacion = None
 
         if ultimo_voto:
-            diferencia = ahora - ultimo_voto.fecha_voto
-            if diferencia.total_seconds() < 86400: # 24 horas
-                ha_votado = True
-                puntuacion = ultimo_voto.estrellas
-                segundos_restantes = int(86400 - diferencia.total_seconds())
+            ha_votado = True
+            puntuacion = ultimo_voto.estrellas
 
         return Response({
             "ha_votado_hoy": ha_votado,
             "puntuacion_actual": puntuacion,
             "total_votos": total_votos,
-            "segundos_hasta_medianoche": segundos_restantes # Mantengo el nombre por compatibilidad con frontend
+            "segundos_hasta_medianoche": segundos_hasta_medianoche
         })
 
     def post(self, request):
@@ -119,28 +123,28 @@ class VotoAPIView(APIView):
         else:
             return Response({'error': 'Falta receptor.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Buscar si existe un voto activo (últimas 24h)
+        # Buscar si existe un voto hoy
         ahora = timezone.now()
-        voto_activo = Voto.objects.filter(**search_kwargs).order_by('-fecha_voto').first()
+        voto_hoy = Voto.objects.filter(fecha_voto__date=ahora.date(), **search_kwargs).first()
         
-        if voto_activo and (ahora - voto_activo.fecha_voto).total_seconds() < 86400:
-            # Actualizar voto existente dentro de su ventana de 24h
-            voto_activo.estrellas = estrellas
-            voto_activo.save()
+        if voto_hoy:
+            # Actualizar voto existente hoy
+            voto_hoy.estrellas = estrellas
+            voto_hoy.save()
             mensaje = "Voto actualizado correctamente."
         else:
-            # Límite global de 50 votos nuevos por día (opcional, manteniendo lógica previa)
-            votos_recientes = Voto.objects.filter(
+            # Límite global de 50 votos nuevos por día
+            votos_hoy_total = Voto.objects.filter(
                 votante=votante, 
-                fecha_voto__gte=ahora - timezone.timedelta(days=1)
+                fecha_voto__date=ahora.date()
             ).count()
             
-            if votos_recientes >= 50:
+            if votos_hoy_total >= 50:
                 return Response({
-                    "error": "Has alcanzado el límite de 50 votos en 24 horas. 🐾"
+                    "error": "Has alcanzado el límite de 50 votos diarios. 🐾"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Crear nuevo voto (inicia un nuevo ciclo de 24h)
+            # Crear nuevo voto
             search_kwargs['estrellas'] = estrellas
             Voto.objects.create(**search_kwargs)
             mensaje = "Voto registrado correctamente."

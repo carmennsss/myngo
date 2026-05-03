@@ -114,11 +114,16 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   Future<void> _equiparMejora(int mejoraId, String? tipo, String? url) async {
     String? destino;
     
-    // Si es un fondo, preguntamos dónde equiparlo
+    // Si es un fondo, preguntamos dónde equiparlo o desequiparlo
+    final item = _misMejoras.firstWhere((m) => m['mejora_detalles']['id'] == mejoraId);
+    final estaEquipada = item['esta_equipada'] == true;
+
     if (tipo?.toLowerCase() == 'fondo') {
-      destino = await _mostrarDialogoDestinoFondo();
+      destino = await _mostrarDialogoDestinoFondo(esDesequipar: estaEquipada);
       if (destino == null) return; // Cancelado
     }
+    
+    final va_a_equipar = !estaEquipada;
 
     final respuesta = await _servicioMejoras.equiparMejora(mejoraId, destino: destino);
     if (mounted) {
@@ -130,10 +135,36 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       );
       if (respuesta.exito) {
         if (url != null) {
-          if (destino == 'fondo_feed') {
-            setState(() => _previewFondoPerfil = url);
+          if (!va_a_equipar) {
+            // Desequipar: limpiar preview local
+            if (tipo?.toLowerCase() == 'fondo') {
+              if (destino == 'fondo_feed') {
+                setState(() => _previewFondoPerfil = null);
+              } else {
+                setState(() => _previewFondo = null);
+              }
+            } else if (tipo?.toLowerCase() == 'avatar') {
+              setState(() => _previewAvatar = null);
+            } else if (tipo?.toLowerCase() == 'marco') {
+              setState(() => _previewMarco = null);
+            } else if (tipo?.toLowerCase().contains('estilo') == true) {
+              setState(() => _previewEstilo = null);
+            }
           } else {
-            setState(() => _previewFondo = url);
+            // Equipar: actualizar preview local
+            if (destino == 'fondo_feed') {
+              setState(() => _previewFondoPerfil = url);
+            } else if (destino == 'banner' || tipo?.toLowerCase() == 'fondo') {
+              setState(() => _previewFondo = url);
+            } else if (tipo?.toLowerCase() == 'avatar') {
+              setState(() => _previewAvatar = url);
+            } else if (tipo?.toLowerCase() == 'marco') {
+              setState(() => _previewMarco = url);
+            } else if (tipo?.toLowerCase().contains('estilo') == true) {
+              // Necesitamos los datos extra para el estilo
+              final det = _misMejoras.firstWhere((m) => m['mejora_detalles']['id'] == mejoraId)['mejora_detalles'];
+              setState(() => _previewEstilo = det['datos_extra']);
+            }
           }
         }
         notificarMejoraEquipada();
@@ -142,14 +173,19 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     }
   }
 
-  Future<String?> _mostrarDialogoDestinoFondo() async {
+  Future<String?> _mostrarDialogoDestinoFondo({bool esDesequipar = false}) async {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('¿Dónde quieres usarlo? 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text('ElMichi puede usar este fondo en la cabecera (banner) o como fondo de toda la página.', style: GoogleFonts.inter()),
+        title: Text(esDesequipar ? '¿De dónde lo quitas? 🐾' : '¿Dónde quieres usarlo? 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(
+          esDesequipar 
+            ? 'ElMichi dejará de usar este fondo en la zona que elijas.'
+            : 'ElMichi puede usar este fondo en la cabecera (banner) o como fondo de toda la página.', 
+          style: GoogleFonts.inter()
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, 'banner'),
@@ -458,11 +494,11 @@ class _ListaMisMejorasTab extends StatelessWidget {
                           backgroundColor: estaEquipada ? Colors.grey.shade100 : Colors.transparent,
                         ),
                         child: Text(
-                          estaEquipada ? 'Equipado' : 'Equipar',
+                          estaEquipada ? 'Desequipar' : 'Equipar',
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
-                            color: estaEquipada ? Colors.grey.shade500 : const Color(0xFFC35E34),
+                            color: estaEquipada ? Colors.red.shade400 : const Color(0xFFC35E34),
                           ),
                         ),
                       ),

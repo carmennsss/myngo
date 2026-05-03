@@ -66,14 +66,19 @@ class ComentarioItem extends StatelessWidget {
                     ),
                   CircleAvatar(
                     radius: 16,
-                    backgroundColor: highlightColor?.withOpacity(0.1) ?? const Color(0xFFC35E34).withOpacity(0.1),
-                    backgroundImage: comentario.autorFoto != null
-                        ? CachedNetworkImageProvider(comentario.autorFoto!)
-                        : null,
-                    child: comentario.autorFoto == null
-                        ? Text(comentario.autorNombre.isNotEmpty ? comentario.autorNombre[0].toUpperCase() : '?',
-                            style: TextStyle(color: highlightColor ?? const Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 12))
-                        : null,
+                    backgroundColor: Colors.white,
+                    child: comentario.autorFoto != null && comentario.autorFoto!.isNotEmpty
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: comentario.autorFoto!,
+                              width: 32,
+                              height: 32,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(color: Colors.grey.shade100),
+                              errorWidget: (context, url, error) => _buildPlaceholder(comentario.autorNombre),
+                            ),
+                          )
+                        : _buildPlaceholder(comentario.autorNombre),
                   ),
                 ],
               ),
@@ -125,6 +130,13 @@ class ComentarioItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+  
+  Widget _buildPlaceholder(String nombre) {
+    return Text(
+      nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+      style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 12),
     );
   }
 }

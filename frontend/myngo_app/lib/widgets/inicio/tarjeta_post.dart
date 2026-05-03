@@ -191,23 +191,45 @@ class _TarjetaPostState extends State<TarjetaPost> {
                       context.go('/inicio/perfiles/${widget.post.autorId}');
                     }
                   },
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.white,
-                    child: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
-                        ? ClipOval(
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
+                          Positioned.fill(
                             child: CachedNetworkImage(
-                              imageUrl: widget.post.autorFoto!,
-                              fit: BoxFit.cover,
-                              width: 40,
-                              height: 40,
-                              errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
+                              imageUrl: widget.post.autorMarco!,
+                              fit: BoxFit.contain,
                             ),
-                          )
-                        : Text(
-                            widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16),
                           ),
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
+                              ? ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: widget.post.autorFoto!,
+                                    fit: BoxFit.cover,
+                                    width: 30,
+                                    height: 30,
+                                    errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey, size: 18),
+                                  ),
+                                )
+                              : Center(
+                                  child: Text(
+                                    widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
+                                    style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

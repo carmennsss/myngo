@@ -49,7 +49,11 @@ class LateralDerecho extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: Row(
                       children: [
-                        CircleAvatar(radius: 18, backgroundColor: const Color(0xFFF29C50).withOpacity(0.1), child: Text(c.nombre[0].toUpperCase(), style: const TextStyle(color: Color(0xFFF29C50), fontWeight: FontWeight.bold))),
+                        CircleAvatar(
+                          radius: 18, 
+                          backgroundColor: Colors.white, 
+                          child: Text(c.nombre[0].toUpperCase(), style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold))
+                        ),
                         const SizedBox(width: 12),
                         Expanded(child: Text('c/${c.nombre}', style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14, fontWeight: FontWeight.w900), overflow: TextOverflow.ellipsis)),
                         const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey),

@@ -180,14 +180,22 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                         decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
                                         child: CircleAvatar(
                                           radius: 18,
-                                          backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
-                                          backgroundImage: widget.post.autorFoto != null
-                                              ? CachedNetworkImageProvider(widget.post.autorFoto!)
-                                              : null,
-                                          child: widget.post.autorFoto == null 
-                                              ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
-                                                  style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14))
-                                              : null,
+                                          backgroundColor: Colors.white,
+                                          child: widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty
+                                              ? ClipOval(
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: widget.post.autorFoto!,
+                                                    width: 36,
+                                                    height: 36,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (context, url) => Container(color: Colors.grey.shade100),
+                                                    errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
+                                                  ),
+                                                )
+                                              : Text(
+                                                  widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : '?',
+                                                  style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14),
+                                                ),
                                         ),
                                       ),
                                     ],
