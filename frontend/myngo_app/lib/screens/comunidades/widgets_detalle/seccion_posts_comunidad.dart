@@ -34,33 +34,61 @@ class SeccionPostsComunidad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (estaCargando || publicaciones == null) {
-      final loading = const Center(
+      const loading = Center(
           child: Padding(
             padding: EdgeInsets.all(40.0),
             child: CircularProgressIndicator(color: Color(0xFFF28B50)),
           ));
-      return comoSliver ? SliverToBoxAdapter(child: SizedBox(height: 200, child: loading)) : loading;
+      return comoSliver ? const SliverToBoxAdapter(child: SizedBox(height: 200, child: loading)) : loading;
     }
 
     if (publicaciones!.isEmpty) {
-      final empty = const EstadoVacioCargando(
+      const empty = EstadoVacioCargando(
         icon: Icons.feed_outlined,
         message: 'Aún no hay publicaciones',
       );
-      return comoSliver ? SliverToBoxAdapter(child: SizedBox(height: 200, child: empty)) : empty;
+      return comoSliver ? const SliverToBoxAdapter(child: SizedBox(height: 200, child: empty)) : empty;
     }
 
+    // Contrucción de los slivers directamente si es comoSliver
     if (comoSliver) {
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildPostItem(publicaciones![index]),
-            childCount: publicaciones!.length,
+            (context, index) {
+              if (index == publicaciones!.length) {
+                return hasMore 
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32.0),
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                    )
+                  : const SizedBox.shrink();
+              }
+              return _buildPostItem(publicaciones![index]);
+            },
+            childCount: publicaciones!.length + (hasMore ? 1 : 0),
           ),
         ),
       );
     }
+
+    // Versión no-sliver (usada en previews o vistas simples)
+    final mainList = ListView.builder(
+      primary: false,
+      physics: const AlwaysScrollableScrollPhysics(), 
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      itemCount: publicaciones!.length + (hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == publicaciones!.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32.0),
+            child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+          );
+        }
+        return _buildPostItem(publicaciones![index]);
+      },
+    );
 
     final mainContent = RefreshIndicator(
       color: const Color(0xFFF28B50),
@@ -74,20 +102,7 @@ class SeccionPostsComunidad extends StatelessWidget {
           }
           return false;
         },
-        child: ListView.builder(
-          primary: false,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          itemCount: publicaciones!.length + (hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == publicaciones!.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32.0),
-                child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
-              );
-            }
-            return _buildPostItem(publicaciones![index]);
-          },
-        ),
+        child: mainList,
       ),
     );
 
@@ -95,20 +110,31 @@ class SeccionPostsComunidad extends StatelessWidget {
 
     return Stack(
       children: [
-        Positioned.fill(child: _buildBackground(context)),
+        Positioned.fill(child: buildPostsBackgroundFromConfig(backgroundConfig, context)),
         mainContent,
       ],
     );
   }
 
-  Widget _buildBackground(BuildContext context) {
-    // Importamos la lógica de renderizado desde PantallaDetalleComunidad
-    // o la duplicamos por ahora si es necesario para evitar dependencias circulares
-    // En un sistema real esto iría en un Widget reutilizable 'FondoPersonalizado'
-    return _buildPostsBackgroundFromConfig(backgroundConfig, context);
+  Widget _buildPostItem(Publicacion post) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 24.0),
+          child: TarjetaPost(
+            post: post,
+            onJoin: () {}, 
+            onEliminado: onRefresh,
+            estaEnComunidad: true,
+            fuente: fuente,
+          ),
+        ),
+      ),
+    );
   }
 
-  static Widget _buildPostsBackgroundFromConfig(Map<String, dynamic>? config, BuildContext context) {
+  static Widget buildPostsBackgroundFromConfig(Map<String, dynamic>? config, BuildContext context) {
     if (config == null) return const SizedBox.shrink();
 
     final esClaro = Theme.of(context).brightness == Brightness.light;
@@ -138,7 +164,7 @@ class SeccionPostsComunidad extends StatelessWidget {
         child: CustomPaint(
           painter: _PatronPainter(
             tipo: patron,
-            color: (color1.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.05),
+            color: (color1.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.15),
           ),
           child: Container(),
         ),
@@ -158,24 +184,6 @@ class SeccionPostsComunidad extends StatelessWidget {
       return Colors.white;
     }
   }
-
-  Widget _buildPostItem(Publicacion post) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 680),
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 24.0),
-          child: TarjetaPost(
-            post: post,
-            onJoin: () {}, 
-            onEliminado: onRefresh,
-            estaEnComunidad: true,
-            fuente: fuente,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _PatronPainter extends CustomPainter {
@@ -188,24 +196,92 @@ class _PatronPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 1.2;
 
     if (tipo == 'puntos') {
-      for (double x = 0; x < size.width; x += 20) {
-        for (double y = 0; y < size.height; y += 20) {
-          canvas.drawCircle(Offset(x, y), 1.5, paint);
+      for (double x = 0; x < size.width; x += 25) {
+        for (double y = 0; y < size.height; y += 25) {
+          canvas.drawCircle(Offset(x, y), 1.2, paint);
         }
       }
     } else if (tipo == 'lineas') {
-      for (double x = -size.height; x < size.width; x += 25) {
+      for (double x = -size.height; x < size.width; x += 30) {
         canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), paint);
       }
+    } else if (tipo == 'diagonal_inversa') {
+      for (double x = 0; x < size.width + size.height; x += 30) {
+        canvas.drawLine(Offset(x, 0), Offset(x - size.height, size.height), paint);
+      }
     } else if (tipo == 'cuadricula') {
-      for (double x = 0; x < size.width; x += 30) {
+      for (double x = 0; x < size.width; x += 40) {
         canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
       }
-      for (double y = 0; y < size.height; y += 30) {
+      for (double y = 0; y < size.height; y += 40) {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+      }
+    } else if (tipo == 'zigzag') {
+      final p = Path();
+      const step = 40.0;
+      paint.style = PaintingStyle.stroke;
+      for (double y = 0; y < size.height + step; y += step) {
+        p.moveTo(0, y);
+        for (double x = 0; x < size.width + step; x += step) {
+          p.lineTo(x + step / 2, y + step / 2);
+          p.lineTo(x + step, y);
+        }
+      }
+      canvas.drawPath(p, paint);
+    } else if (tipo == 'diamantes') {
+      const step = 50.0;
+      paint.style = PaintingStyle.stroke;
+      for (double x = 0; x < size.width + step; x += step) {
+        for (double y = 0; y < size.height + step; y += step) {
+          final p = Path()
+            ..moveTo(x, y - step / 2)
+            ..lineTo(x + step / 2, y)
+            ..lineTo(x, y + step / 2)
+            ..lineTo(x - step / 2, y)
+            ..close();
+          canvas.drawPath(p, paint);
+        }
+      }
+    } else if (tipo == 'olas') {
+      const step = 40.0;
+      paint.style = PaintingStyle.stroke;
+      for (double y = 0; y < size.height + step; y += step) {
+        final p = Path()..moveTo(0, y);
+        for (double x = 0; x < size.width + step; x += step) {
+          p.quadraticBezierTo(x + step / 4, y - step / 4, x + step / 2, y);
+          p.quadraticBezierTo(x + 3 * step / 4, y + step / 4, x + step, y);
+        }
+        canvas.drawPath(p, paint);
+      }
+    } else if (tipo == 'triangulos') {
+      const step = 40.0;
+      paint.style = PaintingStyle.stroke;
+      for (double x = 0; x < size.width + step; x += step) {
+        for (double y = 0; y < size.height + step; y += step) {
+          final p = Path()
+            ..moveTo(x, y - 10)
+            ..lineTo(x + 10, y + 10)
+            ..lineTo(x - 10, y + 10)
+            ..close();
+          canvas.drawPath(p, paint);
+        }
+      }
+    } else if (tipo == 'puntos_grandes') {
+      for (double x = 0; x < size.width; x += 50) {
+        for (double y = 0; y < size.height; y += 50) {
+          canvas.drawCircle(Offset(x, y), 4.0, paint);
+        }
+      }
+    } else if (tipo == 'estrellas') {
+      const step = 60.0;
+      for (double x = 0; x < size.width + step; x += step) {
+        for (double y = 0; y < size.height + step; y += step) {
+          canvas.drawLine(Offset(x - 5, y), Offset(x + 5, y), paint);
+          canvas.drawLine(Offset(x, y - 5), Offset(x, y + 5), paint);
+        }
       }
     }
   }

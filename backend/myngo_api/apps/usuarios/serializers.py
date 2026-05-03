@@ -35,6 +35,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'rating_actual', 'fecha_registro', 'password', 'numero_seguidores',
             'numero_seguidos', 'estado_seguimiento', 'url_avatar', 'fondo',
             'marco', 'estilo_post', 'biografia', 'es_publico', 'puntos', 'estado',
+            'orden_comunidades',
             'fondo_perfil',
         ]
         extra_kwargs = {'password': {'write_only': True}}
@@ -230,6 +231,11 @@ class UsuarioSerializer(serializers.ModelSerializer):
         perfil = self._get_perfil(obj)
         return perfil.estado if perfil else 'DESCONECTADO'
 
+    def get_orden_comunidades(self, obj):
+        """Obtiene el orden personalizado de comunidades."""
+        perfil = self._get_perfil(obj)
+        return perfil.orden_comunidades if perfil else []
+
     def update(self, instance, validated_data):
         """Actualiza el usuario, hasheando la contraseña si se proporciona.
 
@@ -261,6 +267,7 @@ class PerfilSerializer(serializers.ModelSerializer):
         fields = [
             'biografia', 'url_avatar', 'fondo', 'fondo_perfil', 'marco', 'estilo_post',
             'numero_seguidores', 'numero_seguidos', 'datos_usuario', 'estado_seguimiento',
+            'orden_comunidades',
         ]
 
     def get_numero_seguidores(self, obj):

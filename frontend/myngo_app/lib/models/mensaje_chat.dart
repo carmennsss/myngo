@@ -1,6 +1,6 @@
 /// Modelo que representa un mensaje individual dentro de una sala de chat.
 ///
-/// Soporta contenido de texto y referencias a archivos multimedia.
+/// Soporta contenido de texto, archivos multimedia y mensajes de sistema.
 class MensajeChat {
   final int id;
   final int salaId;
@@ -15,6 +15,7 @@ class MensajeChat {
   final DateTime? fechaEdicion;
   final bool borradoParaTodos;
   final bool borradoParaMi;
+  final String tipo; // TEXTO, IMAGEN, VIDEO, SISTEMA
 
   MensajeChat({
     required this.id,
@@ -30,7 +31,10 @@ class MensajeChat {
     this.fechaEdicion,
     this.borradoParaTodos = false,
     this.borradoParaMi = false,
+    this.tipo = 'TEXTO',
   });
+
+  bool get esSistema => tipo == 'SISTEMA';
 
   /// Crea una instancia de [MensajeChat] a partir de un mapa JSON.
   factory MensajeChat.fromJson(Map<String, dynamic> json) {
@@ -50,6 +54,7 @@ class MensajeChat {
       fechaEdicion: json['fecha_edicion'] != null ? DateTime.parse(json['fecha_edicion']).toLocal() : null,
       borradoParaTodos: json['borrado_para_todos'] ?? false,
       borradoParaMi: json['borrado_para_mi'] ?? false,
+      tipo: json['tipo'] ?? 'TEXTO',
     );
   }
 }
