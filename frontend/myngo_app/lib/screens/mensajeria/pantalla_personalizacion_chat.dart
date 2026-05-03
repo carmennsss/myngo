@@ -162,40 +162,118 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     final colorMio = _colorFromHex(_perso.colorBurbujaMio) ?? const Color(0xFFF28B50);
     final colorOtro = _colorFromHex(_perso.colorBurbujaOtro) ?? const Color(0xFFEEEEEE);
     final borderRadius = _perso.formaBurbuja == 'redondeada' ? 20.0 : 4.0;
+    
+    // Obtener avatar del otro si es DM
+    String? avatarOtro;
+    if (!widget.sala.esGrupal) {
+      final otroId = widget.sala.otroUsuarioId;
+      try {
+        final otro = widget.sala.participantes.firstWhere((p) => p.usuarioId == otroId);
+        avatarOtro = otro.usuario?.urlAvatar;
+      } catch (_) {}
+    }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[300]!),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFFBE9E0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFC35E34).withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Text('VISTA PREVIA', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: colorOtro,
-                borderRadius: BorderRadius.circular(borderRadius),
-              ),
-              child: Text('Hola, ¿qué tal?', style: TextStyle(color: Colors.black87, fontSize: _perso.fontSize.toDouble())),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFBE9E0).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'VISTA PREVIA EN TIEMPO REAL', 
+              style: GoogleFonts.outfit(
+                fontSize: 9, 
+                fontWeight: FontWeight.w900, 
+                color: const Color(0xFFC35E34),
+                letterSpacing: 1.0,
+              )
             ),
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: colorMio,
-                borderRadius: BorderRadius.circular(borderRadius),
+          const SizedBox(height: 24),
+          // Burbuja del otro
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!widget.sala.esGrupal)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: CircleAvatar(
+                    radius: 14,
+                    backgroundImage: avatarOtro != null ? NetworkImage(avatarOtro) : null,
+                    backgroundColor: Colors.grey[200],
+                    child: avatarOtro == null ? const Icon(Icons.person, size: 16, color: Colors.grey) : null,
+                  ),
+                ),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colorOtro,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(borderRadius),
+                      topRight: Radius.circular(borderRadius),
+                      bottomRight: Radius.circular(borderRadius),
+                      bottomLeft: const Radius.circular(4),
+                    ),
+                  ),
+                  child: Text(
+                    '¡Oye! ¿Has visto los nuevos estilos? 🐾', 
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF4A4440), 
+                      fontSize: _perso.fontSize.toDouble(),
+                    )
+                  ),
+                ),
               ),
-              child: Text('¡Todo genial! ¿Y tú?', style: TextStyle(color: Colors.white, fontSize: _perso.fontSize.toDouble())),
-            ),
+              const SizedBox(width: 40), // Espacio para que no ocupe todo
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Burbuja mía
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const SizedBox(width: 40),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colorMio,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(borderRadius),
+                      topRight: Radius.circular(borderRadius),
+                      bottomLeft: Radius.circular(borderRadius),
+                      bottomRight: const Radius.circular(4),
+                    ),
+                  ),
+                  child: Text(
+                    '¡Sí! Se ven increíbles. Voy a probar este. ✨', 
+                    style: GoogleFonts.inter(
+                      color: Colors.white, 
+                      fontSize: _perso.fontSize.toDouble(),
+                      fontWeight: FontWeight.w500,
+                    )
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

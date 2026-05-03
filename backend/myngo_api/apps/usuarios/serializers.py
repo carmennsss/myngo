@@ -26,6 +26,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
     puntos = serializers.SerializerMethodField()
     estado = serializers.SerializerMethodField()
     fondo_perfil = serializers.SerializerMethodField()
+    orden_comunidades = serializers.SerializerMethodField()
 
     class Meta:
         """Configuración del modelo y campos del serializador."""

@@ -316,20 +316,22 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       backgroundColor: _colorPagina(context),
       body: Stack(
         children: [
-          _buildPersonalizedFeedBackground(),
           NestedScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverAppBar(
-                  expandedHeight: 200,
+                  expandedHeight: 280,
                   pinned: false,
-                  floating: true, // Reaparece al hacer scroll hacia arriba
-                  snap: true,
+                  floating: false,
+                  snap: false,
                   backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  scrolledUnderElevation: 0,
                   surfaceTintColor: Colors.transparent,
                   automaticallyImplyLeading: false,
                   flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.parallax,
                     background: HeaderDetalleComunidad(
                       comunidad: _comunidad!,
                       miId: _miId,
@@ -346,22 +348,27 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _SliverAppBarDelegate(
-                    minHeight: 60,
-                    maxHeight: 60,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
-                        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.1))),
-                      ),
+                    minHeight: 70,
+                    maxHeight: 70,
+                    child: Material(
+                      elevation: 2,
+                      color: _colorPagina(context),
+                      shadowColor: Colors.black.withOpacity(0.12),
                       child: _buildSubNav(context),
                     ),
                   ),
                 ),
               ];
             },
-            body: CustomScrollView(
-              slivers: [
-                _buildSliverContent(),
+            body: Stack(
+              children: [
+                // El fondo solo se pinta en el área del body, nunca en la cabecera
+                Positioned.fill(child: _buildPersonalizedFeedBackground()),
+                CustomScrollView(
+                  slivers: [
+                    _buildSliverContent(),
+                  ],
+                ),
               ],
             ),
           ),
@@ -373,23 +380,32 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   /// Construye el fondo personalizado solo para la parte central del feed
   Widget _buildPersonalizedFeedBackground() {
-    if (_indiceSeccion != 0) return _cachedBackground!;
+    // 1. El fondo global (imagen que cubre TODO el viewport)
+    final globalBg = _buildGlobalBackground();
     
+    // Si no estamos en la sección de posts, mostramos solo el fondo global
+    if (_indiceSeccion != 0) return globalBg;
+    
+    // 2. Para posts, el fondo global + el contenedor central con su propio diseño
+    final config = _comunidad?.fondoPostsConfig;
+    // Si no hay configuración de fondo para posts, devolvemos el global
+    if (config == null) return globalBg;
+
     return Stack(
       children: [
-        _cachedBackground!,
+        globalBg,
         Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 900), // Un poco más ancho para web
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12),
+              margin: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 30,
-                    offset: const Offset(0, 0),
-                  )
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 40,
+                    offset: const Offset(0, 10),
+                  ),
                 ],
               ),
               child: ClipRRect(
@@ -415,6 +431,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           isLoadingMore: _cargandoMasPosts,
           esAppClara: _esAppClara(context),
           fuente: _comunidad?.fuenteComunidad,
+          backgroundConfig: _comunidad?.fondoPostsConfig,
+          tieneFondoGlobal: _comunidad?.urlFondo != null && _comunidad!.urlFondo!.isNotEmpty,
           comoSliver: true,
         );
       case 1:
@@ -450,21 +468,90 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildSubNav(BuildContext context) {
-    return Container(
-      color: _colorPagina(context),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          _buildNavItem(0, 'POSTS', Icons.grid_view_rounded),
-          _buildNavItem(1, 'TIENDA', Icons.shopping_bag_rounded),
-          _buildNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
-          _buildNavItem(3, 'CHATS', Icons.chat_bubble_rounded),
-          _buildNavItem(4, 'MIEMBROS', Icons.people_alt_rounded),
-        ],
+    final comunidad = _comunidad!;
+    final rawAvatar = comunidad.urlAvatar ?? '';
+    final avatarUrl = rawAvatar.isNotEmpty
+        ? (rawAvatar.startsWith('http')
+            ? rawAvatar
+            : '${Configuracion.baseUrl}${rawAvatar.startsWith('/') ? '' : '/'}$rawAvatar')
+        : null;
+
+    return Row(
+      children: [
+        // Tabs — scrollables a la izquierda
+        Expanded(
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            children: [
+              _buildNavItem(0, 'POSTS', Icons.grid_view_rounded),
+              _buildNavItem(1, 'TIENDA', Icons.shopping_bag_rounded),
+              _buildNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
+              _buildNavItem(3, 'CHATS', Icons.chat_bubble_rounded),
+              _buildNavItem(4, 'MIEMBROS', Icons.people_alt_rounded),
+            ],
+          ),
+        ),
+        // Identidad de la comunidad — fija a la derecha
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 1,
+                height: 28,
+                color: Colors.grey.withOpacity(0.25),
+                margin: const EdgeInsets.only(right: 12),
+              ),
+              if (avatarUrl != null)
+                ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: avatarUrl,
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => _buildAvatarFallback(comunidad),
+                  ),
+                )
+              else
+                _buildAvatarFallback(comunidad),
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Text(
+                  comunidad.nombre,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: _colorTextoPrincipal(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvatarFallback(Comunidad comunidad) {
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: comunidad.colorTema.withOpacity(0.15),
+      child: Text(
+        comunidad.nombre.isNotEmpty ? comunidad.nombre[0].toUpperCase() : '🐾',
+        style: GoogleFonts.outfit(
+          color: comunidad.colorTema,
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+        ),
       ),
     );
   }
+
 
   Widget _buildNavItem(int index, String label, IconData icon) {
     final activo = _indiceSeccion == index;
@@ -647,22 +734,25 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (_comunidad == null) return Container();
     final urlFondo = _comunidad!.urlFondo;
     final esClaro = _esAppClara(context);
-    if (urlFondo != null && urlFondo.isNotEmpty) {
-      return Container(
-        color: _colorPagina(context),
-        child: Opacity(
-          opacity: esClaro ? 0.4 : 0.2,
-          child: CachedNetworkImage(
-            imageUrl: urlFondo.startsWith('http') 
-                ? urlFondo 
-                : Uri.encodeFull('${Configuracion.baseUrl}${urlFondo.startsWith('/') ? '' : '/'}$urlFondo'), 
-            fit: BoxFit.cover,
-            errorWidget: (context, url, error) => const SizedBox(),
-          ),
-        ),
-      );
-    }
-    return Container(color: _colorPagina(context));
+    
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: _colorPagina(context),
+      child: (urlFondo != null && urlFondo.isNotEmpty)
+          ? CachedNetworkImage(
+              imageUrl: urlFondo.startsWith('http') 
+                  ? urlFondo 
+                  : Uri.encodeFull('${Configuracion.baseUrl}${urlFondo.startsWith('/') ? '' : '/'}$urlFondo'), 
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.white.withOpacity(esClaro ? 0.7 : 0.4),
+              colorBlendMode: BlendMode.modulate,
+              errorWidget: (context, url, error) => const SizedBox(),
+            )
+          : null,
+    );
   }
 
   Widget _buildBackgroundFeed() {

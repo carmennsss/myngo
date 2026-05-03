@@ -259,18 +259,27 @@ class ServicioUsuarios {
         }),
       ).timeout(const Duration(seconds: 20));
 
-      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-
       if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
         return RespuestaApi.fromJson(
           datosJson,
           transformador: (j) => Usuario.fromJson(j),
         );
       }
-      return RespuestaApi(
-        exito: false,
-        mensaje: datosJson['mensaje'] ?? 'Error al actualizar perfil',
-      );
+      
+      // Intentar decodificar error si es JSON, si no, dar error genérico
+      try {
+        final Map<String, dynamic> datosError = jsonDecode(respuesta.body);
+        return RespuestaApi(
+          exito: false,
+          mensaje: datosError['mensaje'] ?? datosError['errores']?.toString() ?? 'Error al actualizar perfil',
+        );
+      } catch (_) {
+        return RespuestaApi(
+          exito: false, 
+          mensaje: 'Error del servidor (${respuesta.statusCode}): Asegúrate de que el ID del perfil es correcto y el backend está activo.',
+        );
+      }
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
