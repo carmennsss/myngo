@@ -200,7 +200,7 @@ class PublicacionCreate(generics.CreateAPIView):
                     # Crear la relación con orden
                     PublicacionImagen.objects.create(
                         publicacion=publicacion,
-                        imagen=img_instancia,
+                        imagengaleria=img_instancia,
                         orden=i
                     )
                     

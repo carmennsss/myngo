@@ -74,7 +74,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
         
         if relaciones.exists():
             for rel in relaciones:
-                img = rel.imagen
+                img = rel.imagengaleria
                 if img.url_s3:
                     url = request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url
                     media_list.append({
