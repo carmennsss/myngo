@@ -75,7 +75,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   bool _cargandoMasPosts = false;
   int? _miId;
   int _indiceSeccion = 0;
-  String _miRol = 'Miembro';
+  String _miRol = 'Visitante';
   String _tipoMejoraSeleccionado = 'Avatar';
 
   List<Publicacion>? _publicaciones;
