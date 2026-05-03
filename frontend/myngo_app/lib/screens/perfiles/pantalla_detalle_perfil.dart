@@ -182,6 +182,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final id = await ServicioUsuarios().obtenerIdUsuario();
     if (mounted) setState(() => _currentUserId = id);
 
+    // Si el usuario está incompleto (ej: viene de una lista con solo nombre/avatar)
+    // Forzamos la carga completa del perfil
+    bool incompleto = _usuario != null && (_usuario!.biografia?.isEmpty ?? true) && _usuario!.ratingActual == 0.0;
+    
+    if (incompleto) {
+      await _cargarPerfilInicial();
+    }
+
     await Future.wait([
       _cargarEstadoVoto(),
       _cargarPublicaciones(),
@@ -367,6 +375,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               usuario: _usuario!,
               avatarLocal: _avatarLocal,
               fondoLocal: _fondoLocal,
+              fondoPerfilLocal: _fondoPerfilLocal,
               marcoLocal: _marcoLocal,
               currentUserId: _currentUserId,
               onEditarAvatar: _editarAvatar,

@@ -91,18 +91,27 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     super.initState();
     _comunidad = widget.comunidad;
     _indiceSeccion = widget.initialIndex;
+    
+    // Si no hay comunidad, o la que hay parece incompleta (viene de TarjetaPost
+    // con solo id y nombre), cargamos los datos completos desde la API
+    final comunidadIncompleta = _comunidad != null && 
+        (_comunidad!.urlPortada.isEmpty && _comunidad!.creadorNombre == 'Sistema');
+    
     if (_comunidad == null && widget.id != null) {
       _cargarComunidadInicial();
+    } else if (comunidadIncompleta) {
+      _cargarComunidadInicial(idOverride: _comunidad!.id);
     } else {
       _inicializarDatos();
     }
   }
 
-  Future<void> _cargarComunidadInicial() async {
+  Future<void> _cargarComunidadInicial({int? idOverride}) async {
     if (!mounted) return;
     setState(() => _estaCargandoComunidad = true);
+    final idACargar = idOverride ?? widget.id!;
     try {
-      final res = await _servicio.obtenerComunidad(widget.id!);
+      final res = await _servicio.obtenerComunidad(idACargar);
       if (mounted) {
         if (res.exito && res.datos != null) {
           setState(() {
@@ -112,7 +121,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           await _inicializarDatos();
         } else {
           setState(() {
-            _comunidad = null;
+            if (idOverride == null) _comunidad = null;
             _estaCargandoComunidad = false;
           });
         }
@@ -120,7 +129,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _comunidad = null;
+          if (idOverride == null) _comunidad = null;
           _estaCargandoComunidad = false;
         });
       }

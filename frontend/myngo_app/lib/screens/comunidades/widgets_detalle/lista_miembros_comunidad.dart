@@ -122,7 +122,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
           final userId = m['usuario_id'];
           final nombre = m['usuario_nombre'] ?? 'Michi';
           final avatar = m['usuario_avatar'];
-          final rol = m['rol'] ?? 'Miembro';
+          final rol = _normalizarRol(m['rol'] ?? 'Miembro');
           
           return Consumer<ChatProvider>(
             builder: (context, chatProv, _) {
@@ -174,21 +174,50 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                                   urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}$urlAvatar';
                                 }
                               }
+                              // Si no hay avatar, mostrar placeholder directamente
+                              if (urlAvatar == null || urlAvatar.isEmpty) {
+                                return CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: Colors.grey.shade200,
+                                  child: Text(
+                                    nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                );
+                              }
                               return CachedNetworkImage(
-                                imageUrl: urlAvatar ?? '',
+                                imageUrl: urlAvatar,
                                 imageBuilder: (context, imageProvider) => CircleAvatar(
                                   radius: 26,
                                   backgroundImage: imageProvider,
                                 ),
-                                placeholder: (context, url) => const CircleAvatar(
+                                placeholder: (context, url) => CircleAvatar(
                                   radius: 26,
-                                  backgroundColor: Colors.white10,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  backgroundColor: Colors.grey.shade200,
+                                  child: Text(
+                                    nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
                                 ),
                                 errorWidget: (context, url, error) => CircleAvatar(
                                   radius: 26,
-                                  backgroundColor: Colors.grey.shade100,
-                                  child: const Icon(Icons.person, color: Colors.grey),
+                                  backgroundColor: Colors.grey.shade200,
+                                  child: Text(
+                                    nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
                                 ),
                               );
                             },
@@ -254,6 +283,12 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
         },
       ),
     );
+  }
+
+  String _normalizarRol(String rol) {
+    // El backend devuelve 'Administrador' para el creador, lo normalizamos
+    if (rol.toLowerCase() == 'administrador') return 'Creador';
+    return rol;
   }
 
   Color _getColorRol(String rol) {
