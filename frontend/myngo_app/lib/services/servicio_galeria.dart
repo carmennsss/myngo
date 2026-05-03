@@ -137,7 +137,7 @@ class ServicioGaleria {
         Uri.parse('$_urlContenido/colecciones/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({
-          'nombre': nombre,
+          'nombre_coleccion': nombre,
           'descripcion': descripcion,
           'es_privada': esPrivada,
           if (idComunidad != null) 'comunidad': idComunidad,

@@ -102,7 +102,7 @@ class PublicacionList(generics.ListAPIView):
                         return Publicacion.objects.none()
                 else:
                     return Publicacion.objects.none()
-            return qs.filter(comunidad_id=comunidad_id).order_by('-fecha_creacion')
+            return qs.filter(comunidad_id=comunidad_id).distinct().order_by('-fecha_creacion')
 
         if perfil_id:
             try:
@@ -118,7 +118,7 @@ class PublicacionList(generics.ListAPIView):
                         return Publicacion.objects.none()
                 else:
                     return Publicacion.objects.none()
-            return qs.filter(autor=perfil.usuario, comunidad__isnull=True).order_by('-fecha_creacion')
+            return qs.filter(autor=perfil.usuario, comunidad__isnull=True).distinct().order_by('-fecha_creacion')
 
         # Filtro por etiquetas (tags)
         tags_query = self.request.query_params.get('tags')

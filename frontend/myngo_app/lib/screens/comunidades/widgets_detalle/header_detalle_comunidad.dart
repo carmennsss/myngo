@@ -58,7 +58,10 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
         .obtenerRolUsuarioEnComunidad(widget.comunidad.id, widget.miId!);
     if (mounted) {
       setState(() {
-        _miRol = res.datos ?? 'Visitante';
+        String rolObtenido = res.datos ?? 'Visitante';
+        // Normalizar: el backend devuelve 'Administrador' para el creador
+        if (rolObtenido.toLowerCase() == 'administrador') rolObtenido = 'Creador';
+        _miRol = rolObtenido;
         _cargandoRol = false;
       });
     }

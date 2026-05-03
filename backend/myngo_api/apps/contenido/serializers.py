@@ -240,7 +240,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
         relaciones = obj.publicacionimagen_set.all().order_by('orden')[:4]
         
         for rel in relaciones:
-            img = rel.imagen
+            img = rel.imagengaleria
             if img.url_s3:
                 urls.append(request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url)
         
