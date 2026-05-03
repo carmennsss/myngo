@@ -54,10 +54,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
   Future<void> _initializePlayer() async {
     try {
       VideoFormat? formatHint;
-      final lowerUrl = widget.url.toLowerCase();
-      if (lowerUrl.contains('.m3u8')) formatHint = VideoFormat.hls;
-      if (lowerUrl.contains('.mpd')) formatHint = VideoFormat.dash;
-
+      // Dejamos que el reproductor detecte el formato automáticamente
       _videoController = VideoPlayerController.networkUrl(
         Uri.parse(widget.url),
         formatHint: formatHint,

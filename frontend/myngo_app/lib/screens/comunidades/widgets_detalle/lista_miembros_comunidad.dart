@@ -145,7 +145,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
       );
     }
     final m = _miembros[index];
-    final userId = m['usuario_id'];
+    final userId = m['usuario_id'] ?? m['usuario'];
     final nombre = m['usuario_nombre'] ?? 'Michi';
     final avatar = m['usuario_avatar'];
     final rol = _normalizarRol(m['rol'] ?? 'Miembro');
