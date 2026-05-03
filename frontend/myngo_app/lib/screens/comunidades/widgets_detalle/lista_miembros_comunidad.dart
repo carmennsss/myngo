@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../../utils/configuracion.dart';
 import '../../../models/comunidad.dart';
 import '../../../services/servicio_comunidades.dart';
 import '../../../providers/chat_provider.dart';
@@ -114,11 +115,21 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                     children: [
                       Stack(
                         children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: Colors.grey.shade100,
-                            backgroundImage: (avatar != null && avatar.isNotEmpty) ? NetworkImage(avatar) : null,
-                            child: avatar == null ? const Icon(Icons.person, color: Colors.grey) : null,
+                          Builder(
+                            builder: (context) {
+                              String? urlAvatar = avatar;
+                              if (urlAvatar != null && urlAvatar.isNotEmpty) {
+                                if (!urlAvatar.startsWith('http')) {
+                                  urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}$urlAvatar';
+                                }
+                              }
+                              return CircleAvatar(
+                                radius: 26,
+                                backgroundColor: Colors.grey.shade100,
+                                backgroundImage: (urlAvatar != null && urlAvatar.isNotEmpty) ? NetworkImage(urlAvatar) : null,
+                                child: (urlAvatar == null || urlAvatar.isEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
+                              );
+                            },
                           ),
                           Positioned(
                             right: 0,

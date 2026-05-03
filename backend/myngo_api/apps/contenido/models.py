@@ -48,7 +48,7 @@ class ImagenGaleria(models.Model):
     comunidad = models.ForeignKey(
         Comunidad, on_delete=models.CASCADE, null=True, blank=True
     )
-    url_s3 = models.ImageField(
+    url_s3 = models.FileField(
         upload_to=_definir_ruta_almacenamiento,
         max_length=500,
         null=True,

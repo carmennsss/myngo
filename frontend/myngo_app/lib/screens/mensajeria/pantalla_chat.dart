@@ -20,6 +20,8 @@ import '../../models/comunidad.dart';
 import '../../models/respuesta_api.dart';
 import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as emoji;
+import 'package:flutter/foundation.dart' as foundation;
 import '../../providers/chat_provider.dart';
 
 class PantallaChat extends StatefulWidget {
@@ -57,6 +59,8 @@ class _PantallaChatState extends State<PantallaChat> {
   bool _hasMore = true;
   final int _limit = 30;
   bool _chatConectado = false;
+  bool _mostrarEmojis = false;
+  final FocusNode _focusNode = FocusNode();
 
   /// IDs de mensajes que ya han sido leídos por el receptor.
   final Set<int> _mensajesLeidos = {};
@@ -333,6 +337,7 @@ class _PantallaChatState extends State<PantallaChat> {
       context.read<ChatProvider>().setSalaActiva(null);
     } catch (_) {}
     
+    _focusNode.dispose();
     _servicioChat.dispose();
     _mensajeController.dispose();
     _scrollController.dispose();
@@ -687,48 +692,124 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5))
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(24)),
-                child: TextField(
-                  controller: _mensajeController,
-                  decoration: InputDecoration(
-                    hintText: 'Escribe un mensaje...',
-                    hintStyle: GoogleFonts.outfit(color: Colors.grey),
-                    border: InputBorder.none,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5))
+            ],
+          ),
+          child: SafeArea(
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    _mostrarEmojis ? Icons.keyboard_rounded : Icons.emoji_emotions_outlined,
+                    color: const Color(0xFFC35E34),
                   ),
-                  style: GoogleFonts.outfit(fontSize: 15),
-                  onSubmitted: (_) => _enviarMensaje(),
+                  onPressed: () {
+                    setState(() => _mostrarEmojis = !_mostrarEmojis);
+                    if (!_mostrarEmojis) {
+                      _focusNode.requestFocus();
+                    } else {
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
                 ),
-              ),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(24)),
+                    child: TextField(
+                      controller: _mensajeController,
+                      focusNode: _focusNode,
+                      onTap: () {
+                        if (_mostrarEmojis) setState(() => _mostrarEmojis = false);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Escribe un mensaje...',
+                        hintStyle: GoogleFonts.outfit(color: Colors.grey),
+                        border: InputBorder.none,
+                      ),
+                      style: GoogleFonts.outfit(fontSize: 15),
+                      onSubmitted: (_) => _enviarMensaje(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Material(
+                  color: const Color(0xFFC35E34),
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    onPressed: _enviarMensaje,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Material(
-              color: const Color(0xFFC35E34),
-              shape: const CircleBorder(),
-              child: IconButton(
-                icon: const Icon(Icons.send_rounded, color: Colors.white),
-                onPressed: _enviarMensaje,
-              ),
+          ),
+        ),
+        if (_mostrarEmojis) _buildEmojiPicker(),
+      ],
+    );
+  }
+
+  Widget _buildEmojiPicker() {
+    return SizedBox(
+      height: 250,
+      child: emoji.EmojiPicker(
+        onEmojiSelected: (emoji.Category? category, emoji.Emoji emojiData) {
+          // El paquete ya maneja la inserción si le pasamos el controller
+        },
+        onBackspacePressed: () {
+          // El paquete ya maneja el backspace si le pasamos el controller
+        },
+        textEditingController: _mensajeController,
+        config: emoji.Config(
+          height: 250,
+          checkPlatformCompatibility: true,
+          emojiViewConfig: emoji.EmojiViewConfig(
+            columns: 7,
+            emojiSizeMax: 32 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.30 : 1.0),
+            verticalSpacing: 0,
+            horizontalSpacing: 0,
+            gridPadding: EdgeInsets.zero,
+            initCategory: emoji.Category.RECENT,
+            bgColor: const Color(0xFFFBF9F8),
+            recentTabBehavior: emoji.RecentTabBehavior.RECENT,
+            recentsLimit: 28,
+            noRecents: const Text(
+              'No hay emojis recientes 🐾',
+              style: TextStyle(fontSize: 20, color: Colors.black26),
+              textAlign: TextAlign.center,
             ),
-          ],
+            loadingIndicator: const SizedBox.shrink(),
+          ),
+          categoryViewConfig: emoji.CategoryViewConfig(
+            indicatorColor: const Color(0xFFC35E34),
+            iconColor: Colors.grey,
+            iconColorSelected: const Color(0xFFC35E34),
+            backspaceColor: const Color(0xFFC35E34),
+            categoryIcons: const emoji.CategoryIcons(),
+            tabBarIndicatorSize: TabBarIndicatorSize.label,
+          ),
+          skinToneConfig: const emoji.SkinToneConfig(
+            enabled: true,
+            dialogBackgroundColor: Colors.white,
+            indicatorColor: Colors.grey,
+          ),
+          bottomActionBarConfig: const emoji.BottomActionBarConfig(
+            buttonMode: emoji.ButtonMode.MATERIAL,
+          ),
         ),
       ),
     );

@@ -2,15 +2,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 
-/// Reusable Twitter/X style image grid for posts.
+/// Reusable Twitter/X style media grid for posts (Images and Videos).
 class GridImagenesPost extends StatefulWidget {
-  final List<String> urls;
+  final List<Map<String, String>> media;
   final VoidCallback? onTap;
 
   const GridImagenesPost({
     super.key,
-    required this.urls,
+    required this.media,
     this.onTap,
   });
 
@@ -30,10 +32,9 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.urls.isEmpty) return const SizedBox.shrink();
+    if (widget.media.isEmpty) return const SizedBox.shrink();
 
     final isMobile = MediaQuery.of(context).size.width < 800;
-    // Reducimos las alturas máximas para que no ocupen toda la pantalla en el feed
     final maxHeight = isMobile ? 220.0 : 340.0;
 
     return ClipRRect(
@@ -42,22 +43,27 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
         constraints: BoxConstraints(maxHeight: maxHeight),
         color: Colors.black.withOpacity(0.03),
         child: AspectRatio(
-          aspectRatio: 1.5, // Más horizontal para que la imagen se vea completa y ocupe menos vertical
+          aspectRatio: 1.5,
           child: Stack(
             children: [
-              if (widget.urls.length == 1)
-                _GridImageItem(url: widget.urls[0])
+              if (widget.media.length == 1)
+                _GridMediaItem(
+                  url: widget.media[0]['url']!, 
+                  tipo: widget.media[0]['tipo'] ?? 'I'
+                )
               else
                 PageView.builder(
                   controller: _pageController,
-                  itemCount: widget.urls.length,
+                  itemCount: widget.media.length,
                   physics: const BouncingScrollPhysics(),
                   onPageChanged: (index) => setState(() => _currentPage = index),
-                  itemBuilder: (context, index) => _GridImageItem(url: widget.urls[index]),
+                  itemBuilder: (context, index) => _GridMediaItem(
+                    url: widget.media[index]['url']!, 
+                    tipo: widget.media[index]['tipo'] ?? 'I'
+                  ),
                 ),
               
-              // El indicador de página e indicadores visuales
-              if (widget.urls.length > 1) ...[
+              if (widget.media.length > 1) ...[
                 Positioned(
                   top: 12,
                   right: 12,
@@ -68,7 +74,7 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${_currentPage + 1}/${widget.urls.length}',
+                      '${_currentPage + 1}/${widget.media.length}',
                       style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 10,
@@ -78,7 +84,6 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
                   ),
                 ),
                 
-                // Puntos indicadores inferiores
                 Positioned(
                   bottom: 12,
                   left: 0,
@@ -86,7 +91,7 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
-                      widget.urls.length,
+                      widget.media.length,
                       (index) => AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -103,7 +108,6 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
                   ),
                 ),
 
-                // Flechas de navegación (solo Desktop para facilitar el uso)
                 if (!isMobile) ...[
                   if (_currentPage > 0)
                     Positioned(
@@ -120,7 +124,7 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
                         ),
                       ),
                     ),
-                  if (_currentPage < widget.urls.length - 1)
+                  if (_currentPage < widget.media.length - 1)
                     Positioned(
                       right: 8,
                       top: 0,
@@ -145,19 +149,65 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
   }
 }
 
-class _GridImageItem extends StatelessWidget {
+class _GridMediaItem extends StatefulWidget {
   final String url;
-  const _GridImageItem({required this.url});
+  final String tipo;
+  const _GridMediaItem({required this.url, required this.tipo});
+
+  @override
+  State<_GridMediaItem> createState() => _GridMediaItemState();
+}
+
+class _GridMediaItemState extends State<_GridMediaItem> {
+  VideoPlayerController? _videoController;
+  ChewieController? _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.tipo == 'V') {
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+      _videoController!.initialize().then((_) {
+        setState(() {
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController!,
+            autoPlay: false,
+            looping: false,
+            aspectRatio: _videoController!.value.aspectRatio,
+            placeholder: const Center(child: CircularProgressIndicator()),
+            errorBuilder: (context, errorMessage) {
+              return Center(child: Text(errorMessage, style: const TextStyle(color: Colors.white)));
+            },
+          );
+        });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.tipo == 'V') {
+      return Container(
+        color: Colors.black,
+        child: _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized
+            ? Chewie(controller: _chewieController!)
+            : const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Fondo desenfocado para las zonas vacías (efecto premium)
         Positioned.fill(
           child: CachedNetworkImage(
-            imageUrl: url,
+            imageUrl: widget.url,
             fit: BoxFit.cover,
           ),
         ),
@@ -167,10 +217,9 @@ class _GridImageItem extends StatelessWidget {
             child: Container(color: Colors.black.withOpacity(0.2)),
           ),
         ),
-        // Imagen principal completa
         CachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.contain, // Se ve completa sin cortes
+          imageUrl: widget.url,
+          fit: BoxFit.contain,
           width: double.infinity,
           height: double.infinity,
           placeholder: (_, __) => const Center(
@@ -210,4 +259,3 @@ class _BotonNavegacion extends StatelessWidget {
     );
   }
 }
-

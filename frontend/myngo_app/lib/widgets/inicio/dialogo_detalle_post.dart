@@ -224,14 +224,14 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             widget.post.contenidoTexto,
                             style: GoogleFonts.outfit(fontSize: 16, height: 1.4, color: colorTexto),
                           ),
-                          if (widget.post.urlsImagenes.isNotEmpty || widget.post.urlImagen != null) ...[
+                          if (widget.post.media.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(16),
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(maxHeight: 400),
                                 child: GridImagenesPost(
-                                  urls: widget.post.urlsImagenes.isNotEmpty ? widget.post.urlsImagenes : [widget.post.urlImagen!],
+                                  media: widget.post.media,
                                 ),
                               ),
                             ),

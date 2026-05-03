@@ -300,11 +300,11 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             ),
                           ),
                       ],
-                      if (widget.post.urlsImagenes.isNotEmpty || (widget.post.urlImagen != null && widget.post.urlImagen!.isNotEmpty))
+                      if (widget.post.media.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
                           child: GridImagenesPost(
-                            urls: widget.post.urlsImagenes.isNotEmpty ? widget.post.urlsImagenes : [widget.post.urlImagen!],
+                            media: widget.post.media,
                             onTap: () => _mostrarDetalles(context),
                           ),
                         ),

@@ -38,6 +38,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
     es_valido_ia = serializers.BooleanField(read_only=True)
     urls_imagenes = serializers.SerializerMethodField()
     imagenes_ids = serializers.SerializerMethodField()
+    media = serializers.SerializerMethodField()
 
     likes_count = serializers.SerializerMethodField()
     comentarios_count = serializers.SerializerMethodField()
@@ -51,10 +52,38 @@ class PublicacionSerializer(serializers.ModelSerializer):
             'id', 'autor', 'autor_perfil_id', 'autor_nombre', 'autor_foto', 'autor_marco', 'autor_fondo',
             'autor_estado', 'autor_estilo_post', 'comunidad', 'comunidad_nombre',
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
-            'url_imagen', 'urls_imagenes', 'imagenes_ids', 'relacion_aspecto',
+            'url_imagen', 'urls_imagenes', 'imagenes_ids', 'media', 'relacion_aspecto',
             'es_valido_ia', 'etiquetas', 'fecha_creacion', 'likes_count',
             'comentarios_count', 'usuario_dio_like', 'usuario_guardo_post',
         ]
+
+    def get_media(self, obj):
+        """Lista detallada de archivos multimedia (URL y tipo).
+        
+        Args:
+            obj: Instancia de Publicacion.
+            
+        Returns:
+            list: Objetos con 'url' y 'tipo' ('I' o 'V').
+        """
+        media_list = []
+        request = self.context.get('request')
+        
+        # Primero intentamos obtener de la relación ManyToMany 'imagenes'
+        archivos = obj.imagenes.all()[:4]
+        
+        # Si no hay en 'imagenes', usamos el campo 'imagen' heredado
+        if not archivos and obj.imagen:
+            archivos = [obj.imagen]
+            
+        for img in archivos:
+            if img.url_s3:
+                url = request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url
+                media_list.append({
+                    'url': url,
+                    'tipo': img.tipo_archivo
+                })
+        return media_list
 
     def get_url_imagen(self, obj):
         """Obtiene la URL absoluta de la imagen principal.

@@ -578,7 +578,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   void _iniciarChat() async {
     if (_usuario == null) return;
-    final sala = await ServicioMensajeria().crearSalaPrivada(_usuario!.id);
+    final sala = await ServicioMensajeria().crearSala(idOtroUsuario: _usuario!.id);
     if (sala != null && mounted) {
       Navigator.push(
           context,

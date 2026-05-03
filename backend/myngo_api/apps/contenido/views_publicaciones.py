@@ -158,12 +158,22 @@ class PublicacionCreate(generics.CreateAPIView):
                 publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
                 imagenes_creadas = []
                 for archivo in archivos[:4]:
+                    # Validación de tamaño (100 MB = 100 * 1024 * 1024 bytes)
+                    if archivo.size > 100 * 1024 * 1024:
+                        raise Exception(f"El archivo {archivo.name} supera el límite de 100MB.")
+
+                    # Detección de tipo
+                    tipo = 'I'
+                    if archivo.content_type and archivo.content_type.startswith('video/'):
+                        tipo = 'V'
+
                     img_instancia = ImagenGaleria.objects.create(
                         propietario=request.user,
                         url_s3=archivo,
                         comunidad_id=request.data.get('comunidad') or None,
                         relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
                         etiquetas=request.data.get('etiquetas', ''),
+                        tipo_archivo=tipo,
                     )
                     imagenes_creadas.append(img_instancia)
                 if imagenes_creadas:
