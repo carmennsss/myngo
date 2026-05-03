@@ -224,7 +224,7 @@ class MiembroComunidadSerializer(serializers.ModelSerializer):
     class Meta:
         """Configuración del modelo y campos expuestos."""
         model = MiembrosComunidad
-        fields = ['id', 'usuario', 'usuario_nombre', 'usuario_avatar', 'perfil_id', 'rol', 'fecha_union']
+        fields = ['id', 'usuario', 'usuario_id', 'usuario_nombre', 'usuario_avatar', 'perfil_id', 'rol', 'fecha_union']
 
     def get_usuario_avatar(self, obj):
         """Retorna la URL completa del avatar del usuario."""

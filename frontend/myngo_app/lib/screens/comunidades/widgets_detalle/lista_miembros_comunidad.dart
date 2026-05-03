@@ -145,7 +145,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
       );
     }
     final m = _miembros[index];
-    final userId = m['usuario_id'];
+    final userId = m['usuario_id'] ?? m['usuario'];
     final nombre = m['usuario_nombre'] ?? 'Michi';
     final avatar = m['usuario_avatar'];
     final rol = _normalizarRol(m['rol'] ?? 'Miembro');
@@ -157,26 +157,28 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
         return BotonTactil(
           onTap: () {
             // Navegar al perfil del usuario
-            Navigator.push(
-              context, 
-              MaterialPageRoute(
-                builder: (c) => PantallaDetallePerfil(
-                  usuario: Usuario(
-                    id: userId ?? 0,
-                    perfilId: m['perfil_id'] ?? 0,
-                    nombreUsuario: nombre,
-                    urlAvatar: avatar,
-                    email: '',
-                    biografia: '',
-                    ratingActual: 0.0,
-                    fechaRegistro: DateTime.now(),
-                    esVerificado: false,
-                    esPublico: true,
-                    estado: estaOnline ? 'ACTIVO' : 'DESCONECTADO',
+            if (userId != null) {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(
+                  builder: (c) => PantallaDetallePerfil(
+                    usuario: Usuario(
+                      id: userId,
+                      perfilId: m['perfil_id'] ?? 0,
+                      nombreUsuario: nombre,
+                      urlAvatar: avatar,
+                      email: '',
+                      biografia: '',
+                      ratingActual: 0.0,
+                      fechaRegistro: DateTime.now(),
+                      esVerificado: false,
+                      esPublico: true,
+                      estado: estaOnline ? 'ACTIVO' : 'DESCONECTADO',
+                    )
                   )
                 )
-              )
-            );
+              );
+            }
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
