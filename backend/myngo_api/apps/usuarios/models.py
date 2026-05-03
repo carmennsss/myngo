@@ -181,7 +181,10 @@ class Perfil(models.Model):
                 dias_inactivo = (fecha_actual - last_login.date()).days
 
             puntos_por_dia = 0
-            match rating:
+            # Convertimos a float para que el match funcione correctamente incluso si es None o Decimal
+            rating_val = float(rating or 0.0)
+            
+            match rating_val:
                 case m if 0 <= m <= 1:
                     puntos_por_dia = 20
                 case m if 1 < m <= 2:
