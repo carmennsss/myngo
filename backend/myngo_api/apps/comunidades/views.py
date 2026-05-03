@@ -381,6 +381,16 @@ class ListarMiembrosComunidadOld(APIView):
         except Comunidad.DoesNotExist:
             return Response({'error': 'Comunidad no encontrada'}, status=status.HTTP_404_NOT_FOUND)
 
+        from django.core.files.storage import default_storage
+
+        def construir_url_avatar(usuario):
+            if not usuario or not usuario.url_avatar:
+                return None
+            url = usuario.url_avatar
+            if url.startswith('http'):
+                return url
+            return default_storage.url(url.lstrip('/'))
+
         miembros_data = []
 
         # 1. Añadir al creador siempre al principio
@@ -390,7 +400,7 @@ class ListarMiembrosComunidadOld(APIView):
                 'usuario_id': comunidad.creador.id,
                 'perfil_id': getattr(comunidad.creador.perfil, 'id', 0) if hasattr(comunidad.creador, 'perfil') else 0,
                 'usuario_nombre': comunidad.creador.nombre_usuario,
-                'usuario_avatar': comunidad.creador.url_avatar,
+                'usuario_avatar': construir_url_avatar(comunidad.creador),
                 'rol': 'Creador',
                 'fecha_union': comunidad.fecha_creacion.isoformat() if comunidad.fecha_creacion else None,
             })
@@ -412,7 +422,7 @@ class ListarMiembrosComunidadOld(APIView):
                 'usuario_id': m.usuario.id,
                 'perfil_id': getattr(m.usuario.perfil, 'id', 0) if hasattr(m.usuario, 'perfil') else 0,
                 'usuario_nombre': m.usuario.nombre_usuario,
-                'usuario_avatar': m.usuario.url_avatar,
+                'usuario_avatar': construir_url_avatar(m.usuario),
                 'rol': m.rol,
                 'fecha_union': m.fecha_union.isoformat() if m.fecha_union else None,
             })

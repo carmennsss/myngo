@@ -4,11 +4,11 @@ Maneja la sincronización de metadatos de imágenes en la galería y las
 notificaciones automáticas de interacciones (likes y comentarios).
 """
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from notificaciones.models import Notificacion
-from .models import Comentario, MeGusta, Publicacion
+from .models import Comentario, MeGusta, Publicacion, ImagenGaleria
 
 
 @receiver(post_save, sender=Publicacion)
@@ -88,3 +88,19 @@ def notificar_comentario(sender, instance, created, **kwargs):
             referencia_usuario=instance.autor,
             referencia_id=instance.publicacion.id,
         )
+
+
+@receiver(post_delete, sender=ImagenGaleria)
+def limpiar_archivo_s3(sender, instance, **kwargs):
+    """Elimina el archivo físico de S3 cuando se borra el registro de la galería.
+
+    Asegura que no queden archivos huérfanos en el almacenamiento en la nube
+    tras borrar publicaciones o limpiar la galería.
+    """
+    if instance.url_s3:
+        try:
+            instance.url_s3.delete(save=False)
+        except Exception as e:
+            # No bloqueamos el borrado de la BD si falla S3, pero lo logueamos
+            print(f"Error al eliminar archivo de S3: {str(e)}")
+

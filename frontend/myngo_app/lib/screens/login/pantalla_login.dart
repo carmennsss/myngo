@@ -251,9 +251,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     super.initState();
     _nodoEnfoqueEmail.addListener(_alCambiarEnfoque);
     _nodoEnfoquePassword.addListener(_alCambiarEnfoque);
-    _controladorEmail.clear();
-    _controladorPassword.clear();
-    _checkExistingTokenAndRedirect(); // Task 6: Auto-redirección si ya hay sesión
+    _checkExistingTokenAndRedirect(); 
     _cargarCredencialesGuardadas();
   }
 
@@ -485,31 +483,39 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
-            CampoTextoPersonalizado(
-              etiqueta: 'Email',
-              icono: Icons.alternate_email_rounded,
-              controlador: _controladorEmail,
-              nodoEnfoque: _nodoEnfoqueEmail,
-              alCambiar: _actualizarPosicionMirada,
-              tipoTeclado: TextInputType.emailAddress,
-              validador: (valor) {
-                if (valor == null || valor.isEmpty) return '¿Tu email? 🐾';
-                if (!valor.contains('@')) return 'Email no válido';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            CampoTextoPersonalizado(
-              etiqueta: 'Contraseña',
-              icono: Icons.lock_open_rounded,
-              controlador: _controladorPassword,
-              nodoEnfoque: _nodoEnfoquePassword,
-              esContrasena: true,
-              alCambiarVisibilidad: _alCambiarVisibilidadPassword,
-              validador: (valor) {
-                if (valor == null || valor.isEmpty) return 'Falta la clave michi';
-                return null;
-              },
+            AutofillGroup(
+              child: Column(
+                children: [
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Email',
+                    icono: Icons.alternate_email_rounded,
+                    controlador: _controladorEmail,
+                    nodoEnfoque: _nodoEnfoqueEmail,
+                    alCambiar: _actualizarPosicionMirada,
+                    tipoTeclado: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) return '¿Tu email? 🐾';
+                      if (!valor.contains('@')) return 'Email no válido';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Contraseña',
+                    icono: Icons.lock_open_rounded,
+                    controlador: _controladorPassword,
+                    nodoEnfoque: _nodoEnfoquePassword,
+                    esContrasena: true,
+                    autofillHints: const [AutofillHints.password],
+                    alCambiarVisibilidad: _alCambiarVisibilidadPassword,
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) return 'Falta la clave michi';
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             Row(
