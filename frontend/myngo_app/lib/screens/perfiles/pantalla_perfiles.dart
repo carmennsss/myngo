@@ -28,13 +28,13 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
   }
 
   Future<void> _cargarDatos({String? filtro}) async {
-    setState(() => _estaCargando = true);
+    super.setState(() => _estaCargando = true);
     
     final respuesta = await _servicioUsuarios.listarUsuarios();
     if (respuesta.exito && mounted) {
       _usuariosOriginales = respuesta.datos ?? [];
       
-      setState(() {
+      super.setState(() {
         if (filtro != null && filtro.isNotEmpty) {
           _usuariosFiltrados = _usuariosOriginales.where((u) => 
              u.nombreUsuario.toLowerCase().contains(filtro.toLowerCase()) ||
@@ -135,6 +135,7 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
             margin: const EdgeInsets.symmetric(vertical: 8),
             child: ListTile(
               leading: CircleAvatar(
+                backgroundColor: Colors.white,
                 backgroundImage: usuario.urlAvatar != null ? NetworkImage(usuario.urlAvatar!) : null,
                 child: usuario.urlAvatar == null ? const Icon(Icons.person) : null,
               ),

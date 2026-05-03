@@ -10,6 +10,8 @@ import 'grid_imagenes_post.dart';
 import 'hover_profile_card.dart';
 import 'acciones_y_comentarios_post.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../dialogo_crear_post.dart';
+import '../../services/servicio_comunidades.dart';
 
 
 /// Bottom sheet estilo Instagram que muestra el detalle completo de un post.
@@ -56,12 +58,12 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
 
   void _irAPerfil(BuildContext context) async {
     if (_navegandoAPerfil) return;
-    setState(() => _navegandoAPerfil = true);
+    super.setState(() => _navegandoAPerfil = true);
     
     final res = await ServicioUsuarios().obtenerDatosUsuario(widget.publicacion.autorId);
     
     if (mounted) {
-      setState(() => _navegandoAPerfil = false);
+      super.setState(() => _navegandoAPerfil = false);
       if (res.exito && res.datos != null) {
         Navigator.pop(context); // Cerrar bottom sheet
         if (widget.onProfileSelected != null) {
@@ -79,6 +81,30 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
         }
       }
     }
+  }
+
+  void _mostrarDialogoEdicion() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (ctx) => DialogoCrearPost(
+        titulo: 'Editar Miau-post 🐾',
+        initialTexto: widget.publicacion.contenidoTexto,
+        onPublicar: (texto, imagenes, etiquetas) async {
+          final res = await ServicioComunidades().actualizarPublicacion(
+            idPublicacion: widget.publicacion.id,
+            texto: texto,
+          );
+          if (res.exito && mounted) {
+            setState(() {
+              widget.publicacion.contenidoTexto = texto;
+            });
+            return true;
+          }
+          return false;
+        },
+      ),
+    );
   }
 
   @override
@@ -195,17 +221,18 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                       Navigator.pop(context);
                       if (onEliminado != null) onEliminado!();
                     },
+                    onEditado: _mostrarDialogoEdicion,
                   ),
                 ],
               ),
             ),
 
             // ── Imagen / Rejilla (si existe) ──
-            if (publicacion.urlsImagenes.isNotEmpty || tieneImagen)
+            if (publicacion.media.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: GridImagenesPost(
-                  urls: publicacion.urlsImagenes.isNotEmpty ? publicacion.urlsImagenes : [publicacion.urlImagen!],
+                  media: publicacion.media,
                 ),
               ),
 

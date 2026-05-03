@@ -7,7 +7,7 @@ class DialogosComunidad {
   /// Muestra el diálogo para crear una nueva colección de galería.
   static void mostrarDialogoNuevaColeccion(
     BuildContext context, {
-    required int comunidadId,
+    required int idComunidad,
     required VoidCallback onCreada,
   }) {
     final nombreCtrl = TextEditingController();
@@ -102,7 +102,7 @@ class DialogosComunidad {
                             nombre: nombreCtrl.text,
                             descripcion: descCtrl.text,
                             esPrivada: esPrivada,
-                            idComunidad: comunidadId,
+                            idComunidad: idComunidad,
                           );
 
                           if (context.mounted) {

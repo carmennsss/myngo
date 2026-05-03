@@ -83,6 +83,25 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     });
   }
 
+  Widget _buildPreviewHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.remove_red_eye_rounded, size: 12, color: Colors.grey),
+        const SizedBox(width: 6),
+        Text(
+          'VISTA PREVIA',
+          style: GoogleFonts.outfit(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _equiparMejora(int mejoraId) async {
     final respuesta = await _servicioMejoras.equiparMejora(mejoraId);
     if (mounted) {
@@ -120,41 +139,24 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // --- SECCIÓN DE PREVISUALIZACIÓN COMPACTA ---
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
             ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.remove_red_eye_rounded, size: 12, color: Colors.grey),
-                    const SizedBox(width: 6),
-                    Text(
-                      'VISTA PREVIA',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final bool esAncho = constraints.maxWidth > 600;
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Transform.scale(
-                            scale: esAncho ? 1.0 : 0.85,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bool esAncho = constraints.maxWidth > 600;
+                if (esAncho) {
+                  return Column(
+                    children: [
+                      _buildPreviewHeader(),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
                             child: ProfilePreview(
                               fondoUrl: _previewFondo,
                               avatarUrl: _previewAvatar,
@@ -163,9 +165,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                               puntos: _puntos,
                             ),
                           ),
-                        ),
-                        if (esAncho) const SizedBox(width: 20),
-                        if (esAncho)
+                          const SizedBox(width: 20),
                           Expanded(
                             child: PostPreview(
                               estilo: _previewEstilo,
@@ -174,31 +174,61 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                               nombreUsuario: _nombreUsuario,
                             ),
                           ),
-                      ],
-                    );
-                  },
-                ),
-                // En móvil, si no es ancho, mostramos el post preview debajo pero también pequeño
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (constraints.maxWidth > 600) return const SizedBox.shrink();
-                    return Column(
-                      children: [
-                        const SizedBox(height: 4),
-                        Transform.scale(
-                          scale: 0.85,
-                          child: PostPreview(
-                            estilo: _previewEstilo,
-                            avatarUrl: _previewAvatar,
-                            marcoUrl: _previewMarco,
-                            nombreUsuario: _nombreUsuario,
-                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                } else {
+                  // MÓVIL: PageView compacto para ahorrar espacio vertical
+                  return Column(
+                    children: [
+                      _buildPreviewHeader(),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 160, // Reducido para mejor responsividad en móvil
+                        child: PageView(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Transform.scale(
+                                scale: 0.9,
+                                child: ProfilePreview(
+                                  fondoUrl: _previewFondo,
+                                  avatarUrl: _previewAvatar,
+                                  marcoUrl: _previewMarco,
+                                  nombreUsuario: _nombreUsuario,
+                                  puntos: _puntos,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Transform.scale(
+                                scale: 0.9,
+                                child: PostPreview(
+                                  estilo: _previewEstilo,
+                                  avatarUrl: _previewAvatar,
+                                  marcoUrl: _previewMarco,
+                                  nombreUsuario: _nombreUsuario,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    );
-                  },
-                ),
-              ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFC35E34), shape: BoxShape.circle)),
+                          const SizedBox(width: 4),
+                          Container(width: 6, height: 6, decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle)),
+                        ],
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
           ),
 

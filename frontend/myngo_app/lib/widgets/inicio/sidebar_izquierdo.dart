@@ -16,6 +16,7 @@ class SidebarIzquierdo extends StatelessWidget {
   final Function(Comunidad) onComunidadSelected;
   final Function(Usuario) onUsuarioSelected;
   final Function(int, int) onReorder;
+  final bool embeddedInDrawer;
 
   const SidebarIzquierdo({
     super.key,
@@ -28,6 +29,7 @@ class SidebarIzquierdo extends StatelessWidget {
     required this.onComunidadSelected,
     required this.onUsuarioSelected,
     required this.onReorder,
+    this.embeddedInDrawer = false,
   });
 
   String _obtenerRango(int puntos) {
@@ -39,7 +41,7 @@ class SidebarIzquierdo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _TarjetaSidebar(
@@ -99,6 +101,57 @@ class SidebarIzquierdo extends StatelessWidget {
           ),
         ),
       ],
+    );
+
+    if (embeddedInDrawer) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: content,
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro)
+      ),
+      child: Stack(
+        children: [
+          // Patrón de fondo (Patas de gato)
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.15,
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 30.0,
+                  crossAxisSpacing: 30.0,
+                ),
+                itemBuilder: (context, index) => Transform.rotate(
+                  angle: index % 2 == 0 ? 0.3 : -0.2,
+                  child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
+                ),
+              ),
+            ),
+          ),
+          // Contenido scrollable
+          Theme(
+            data: Theme.of(context).copyWith(
+              scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
+                thumbVisibility: WidgetStateProperty.all(false),
+                trackVisibility: WidgetStateProperty.all(false),
+              ),
+            ),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: content,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -277,7 +330,7 @@ class _ComunidadAvatarCompacto extends StatelessWidget {
             ],
           ),
           child: CircleAvatar(
-            backgroundColor: comunidad.colorTema.withOpacity(0.1),
+                  backgroundColor: Colors.white,
             backgroundImage: comunidad.urlPortada.isNotEmpty 
               ? CachedNetworkImageProvider(comunidad.urlPortada) 
               : null,
@@ -474,7 +527,7 @@ void _mostrarDialogoComunidades(
                                         ),
                                         child: CircleAvatar(
                                           radius: 26,
-                                          backgroundColor: c.colorTema.withOpacity(0.1),
+                                          backgroundColor: Colors.white,
                                           backgroundImage: (c.urlPortada != null && c.urlPortada!.isNotEmpty) 
                                             ? CachedNetworkImageProvider(c.urlPortada!) 
                                             : null,
@@ -565,7 +618,7 @@ class _RankingItem extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                  backgroundColor: Colors.white,
                   backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
                       ? CachedNetworkImageProvider(usuario.urlAvatar!)
                       : null,

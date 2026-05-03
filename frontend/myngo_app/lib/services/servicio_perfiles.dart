@@ -147,13 +147,13 @@ class ServicioPerfiles {
           if (kIsWeb) {
             final bytes = await img.readAsBytes();
             solicitud.files.add(http.MultipartFile.fromBytes(
-              'url_archivo_s3',
+              'url_archivo_s3[]',
               bytes,
               filename: img.name,
               contentType: MediaType('image', 'jpeg'),
             ));
           } else {
-            solicitud.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
+            solicitud.files.add(await http.MultipartFile.fromPath('url_archivo_s3[]', img.path));
           }
         }
       }

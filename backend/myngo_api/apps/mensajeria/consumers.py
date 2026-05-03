@@ -42,27 +42,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         # Marcar mensajes previos como leídos
-        updated_count = await self.marcar_mensajes_como_leidos()
+        leidos_ids = await self.marcar_mensajes_como_leidos()
         
-        if updated_count > 0:
+        if leidos_ids:
             # Notificar a los demás que sus mensajes han sido leídos
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'messages_read',
-                    'user_id': self.user.id
+                    'leidos_ids': leidos_ids,
+                    'leido_por': self.user.id
                 }
             )
 
-        # Notificar a los demás que se ha unido
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'user_joined',
-                'user_id': self.user.id,
-                'username': self.user.nombre_usuario or f"Usuario_{self.user.id}"
-            }
-        )
+        # Notificar a los demás que se ha unido (solo en comunidades)
+        is_community = await self.is_community_room(self.room_id)
+        if is_community:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_joined',
+                    'user_id': self.user.id,
+                    'username': self.user.nombre_usuario or f"Usuario_{self.user.id}"
+                }
+            )
 
     async def disconnect(self, close_code):
         """Abandona el grupo de la sala al desconectarse."""
@@ -81,7 +84,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             content = data.get('content')
             if content:
                 # Guardar en BD
-                msg = await self.save_message(self.user, self.room_id, content)
+                msg = await self.save_message(self.user, self.room_id, content, referencia_id=data.get('referencia_a'))
 
                 # Broadcast al canal de la sala
                 await self.channel_layer.group_send(
@@ -94,7 +97,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'user_id': self.user.id,
                         'username': self.user.nombre_usuario,
                         'timestamp': msg.fecha_envio.isoformat(),
-                        'leido': False,
+                        'leido_por_ids': [],
+                        'referencia_a': data.get('referencia_a'),
+                        'referencia_a_detalle': await self.get_msg_detail(data.get('referencia_a')),
                     }
                 )
 
@@ -120,15 +125,28 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         elif message_type == 'read_messages':
             # El cliente indica que ha leído los mensajes de esta sala
-            updated_count = await self.marcar_mensajes_como_leidos()
-            if updated_count > 0:
+            leidos_ids = await self.marcar_mensajes_como_leidos()
+            if leidos_ids:
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         'type': 'messages_read',
-                        'user_id': self.user.id
+                        'leidos_ids': leidos_ids,
+                        'leido_por': self.user.id
                     }
                 )
+
+        elif message_type == 'typing':
+            # Notificar que el usuario está escribiendo
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_typing',
+                    'user_id': self.user.id,
+                    'username': self.user.nombre_usuario,
+                    'is_typing': data.get('is_typing', True)
+                }
+            )
 
         elif message_type == 'add_member':
             target_user_id = data.get('user_id')
@@ -168,6 +186,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Notifica que los mensajes han sido leídos."""
         await self.send(text_data=json.dumps(event))
 
+    async def user_typing(self, event):
+        """Notifica que un usuario está escribiendo."""
+        # No enviamos la notificación al propio usuario que escribe
+        if event.get('user_id') != self.user.id:
+            await self.send(text_data=json.dumps(event))
+
+    async def message_edited(self, event):
+        """Notifica que un mensaje ha sido editado."""
+        await self.send(text_data=json.dumps(event))
+
+    async def message_deleted(self, event):
+        """Notifica que un mensaje ha sido borrado para todos."""
+        await self.send(text_data=json.dumps(event))
+
     # ── Métodos de BD ─────────────────────────────────────────────────
 
     @database_sync_to_async
@@ -176,23 +208,48 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return SalaChat.objects.filter(id=room_id, miembros=user).exists()
 
     @database_sync_to_async
-    def save_message(self, user, room_id, content):
+    def is_community_room(self, room_id):
+        """Verifica si la sala pertenece a una comunidad."""
+        try:
+            return SalaChat.objects.get(id=room_id).comunidad is not None
+        except SalaChat.DoesNotExist:
+            return False
+
+    @database_sync_to_async
+    def save_message(self, user, room_id, content, referencia_id=None):
         """Guarda un nuevo mensaje en la base de datos."""
         room = SalaChat.objects.get(id=room_id)
-        return MensajeChat.objects.create(sala=room, emisor=user, contenido=content)
+        return MensajeChat.objects.create(
+            sala=room, 
+            emisor=user, 
+            contenido=content,
+            referencia_a_id=referencia_id
+        )
 
     @database_sync_to_async
     def marcar_mensajes_como_leidos(self):
-        """Marca como leídos los mensajes no leídos enviados por otros usuarios."""
+        """Marca como leídos los mensajes no leídos por el usuario actual."""
         mensajes = MensajeChat.objects.filter(
             sala_id=self.room_id,
-            es_leido=False
-        ).exclude(emisor_id=self.user.id)
+        ).exclude(leido_por=self.user).exclude(emisor_id=self.user.id)
         
-        count = mensajes.count()
-        if count > 0:
-            mensajes.update(es_leido=True, fecha_lectura=timezone.now())
-        return count
+        ids = list(mensajes.values_list('id', flat=True))
+        if ids:
+            for msg in mensajes:
+                msg.leido_por.add(self.user)
+        return ids
+
+    @database_sync_to_async
+    def get_msg_detail(self, msg_id):
+        if not msg_id: return None
+        try:
+            m = MensajeChat.objects.get(id=msg_id)
+            return {
+                'id': m.id,
+                'emisor_nombre': m.emisor.nombre_usuario,
+                'contenido': m.contenido if not m.borrado_para_todos else 'Mensaje borrado'
+            }
+        except: return None
 
     @database_sync_to_async
     def get_miembros_ids(self, room_id, exclude_user_id=None):

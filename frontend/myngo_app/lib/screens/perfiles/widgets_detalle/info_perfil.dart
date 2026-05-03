@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../../models/usuario.dart';
+import '../../../providers/chat_provider.dart';
 import '../../inicio/pantalla_inicio.dart';
 
 /// Widget que muestra la información textual y acciones de un perfil.
@@ -102,45 +104,112 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildStatusLabel(BuildContext context) {
-    String displayEstado = usuario.estado ?? 'DESCONECTADO';
-    try {
-      final inicioState =
-          context.findAncestorStateOfType<PantallaInicioState>();
-      if (inicioState != null && inicioState.miId == usuario.id) {
-        displayEstado = inicioState.miEstado;
-      }
-    } catch (_) {}
+    return Consumer<ChatProvider>(
+      builder: (context, chatProv, _) {
+        String displayEstado = chatProv.getEstadoUsuario(usuario.id);
+        
+        // Prioridad: Si es mi propio perfil, usar el estado de PantallaInicio para cambios locales inmediatos
+        try {
+          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+          if (inicioState != null && inicioState.miId == usuario.id) {
+            displayEstado = inicioState.miEstado;
+          }
+        } catch (_) {}
 
-    final color = _getColorEstado(displayEstado);
+        final color = _getColorEstado(displayEstado);
+        final bool esPropio = currentUserId == usuario.id;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
+        return Builder(
+          builder: (statusContext) {
+            return GestureDetector(
+              onTapDown: esPropio
+                  ? (details) {
+                      final RenderBox box = statusContext.findRenderObject() as RenderBox;
+                      final RenderBox overlay = Overlay.of(statusContext).context.findRenderObject() as RenderBox;
+                      final RelativeRect position = RelativeRect.fromRect(
+                        Rect.fromPoints(
+                          box.localToGlobal(Offset.zero, ancestor: overlay),
+                          box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
+                        ),
+                        Offset.zero & overlay.size,
+                      );
+
+                      showMenu<String>(
+                        context: statusContext,
+                        position: position,
+                        color: Colors.white,
+                        elevation: 10,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        items: [
+                          _buildStatusMenuItem('ACTIVO', 'Activo', Colors.greenAccent),
+                          _buildStatusMenuItem('OCUPADO', 'Ocupado', Colors.redAccent),
+                        ],
+                      ).then((nuevoEstado) {
+                        if (nuevoEstado != null) {
+                          final inicioState =
+                              statusContext.findAncestorStateOfType<PantallaInicioState>();
+                          inicioState?.cambiarEstado(nuevoEstado);
+                        }
+                      });
+                    }
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      displayEstado == 'ACTIVO'
+                          ? 'Activo'
+                          : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                      ),
+                    ),
+                    if (esPropio) ...[
+                      const SizedBox(width: 4),
+                      Icon(Icons.keyboard_arrow_down_rounded, color: color, size: 16),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  PopupMenuItem<String> _buildStatusMenuItem(
+      String value, String label, Color color) {
+    return PopupMenuItem(
+      value: value,
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
+          Icon(Icons.circle, color: color, size: 12),
           const SizedBox(width: 8),
-          Text(
-            displayEstado == 'ACTIVO'
-                ? 'Activo'
-                : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
-          ),
+          Text(label,
+              style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF4A4440))),
         ],
       ),
     );
@@ -175,25 +244,34 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildBioSection(Color colorTextoP, Color colorTextoS) {
+    final bool esPropio = currentUserId != null && currentUserId == usuario.id;
+    
     return GestureDetector(
-      onTap: currentUserId == usuario.id ? onEditarBio : null,
+      onTap: esPropio ? onEditarBio : null,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            biografiaLocal ?? 'Sin biografía',
+            (biografiaLocal == null || biografiaLocal!.isEmpty) ? 'Sin biografía' : biografiaLocal!,
             style: GoogleFonts.inter(
               fontSize: 16,
               height: 1.5,
               color: colorTextoP.withOpacity(0.9),
             ),
           ),
-          if (currentUserId == usuario.id)
+          if (esPropio)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Toca para editar',
-                style: GoogleFonts.inter(fontSize: 11, color: colorTextoS),
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 16, color: colorTextoS),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Toca para editar biografía',
+                    style: GoogleFonts.inter(fontSize: 11, color: colorTextoS, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
             ),
         ],
@@ -215,21 +293,29 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    if (currentUserId == null) {
+      return const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+    }
     final bool esPropio = currentUserId == usuario.id;
 
     return Row(
       children: [
         if (!esPropio) ...[
-          Expanded(
-            child: _ActionButton(
-              label: _getFollowText(),
-              color: _getFollowColor(),
-              isLoading: isLoading,
-              onPressed: onManejarSeguimiento,
-            ),
+          _ActionButton(
+            label: _getFollowText(),
+            color: _getFollowColor(),
+            isLoading: isLoading,
+            onPressed: onManejarSeguimiento,
           ),
           const SizedBox(width: 12),
           _CircularAction(icon: Icons.chat_bubble_outline, onPressed: onChat),
+          const SizedBox(width: 12),
+          _ActionButton(
+            label: haVotadoHoy ? 'Editar Voto' : 'Votar',
+            color: haVotadoHoy ? const Color(0xFF248EA6).withOpacity(0.7) : const Color(0xFF248EA6),
+            isLoading: false,
+            onPressed: onMostrarVoto,
+          ),
           const SizedBox(width: 12),
         ],
         _RateButton(
@@ -275,7 +361,7 @@ class _ActionButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: isLoading

@@ -1,8 +1,10 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Scaffold;
+import 'package:flutter/material.dart' as material show Scaffold;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/usuario.dart';
 import '../../models/publicacion.dart';
@@ -23,13 +25,17 @@ import 'widgets_detalle/header_detalle_perfil.dart';
 import 'widgets_detalle/info_perfil.dart';
 import 'widgets_detalle/seccion_posts_perfil.dart';
 import 'widgets_detalle/seccion_guardados_perfil.dart';
+import 'widgets_detalle/seccion_colecciones_perfil.dart';
+import '../../services/servicio_galeria.dart';
+import '../../models/coleccion.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 ///
 /// Implementa un diseño premium con cabecera dinámica, sistema de votación
 /// y pestañas para publicaciones propias y guardadas.
 class PantallaDetallePerfil extends StatefulWidget {
-  final Usuario usuario;
+  final int? id;
+  final Usuario? usuario;
   final int? comunidadIdContexto;
   final bool esIntegrada;
   final VoidCallback? onBack;
@@ -37,12 +43,13 @@ class PantallaDetallePerfil extends StatefulWidget {
 
   const PantallaDetallePerfil({
     super.key,
-    required this.usuario,
+    this.id,
+    this.usuario,
     this.comunidadIdContexto,
     this.esIntegrada = false,
     this.onBack,
     this.onPerfilActualizado,
-  });
+  }) : assert(id != null || usuario != null, 'Debe proporcionarse id o usuario');
 
   @override
   State<PantallaDetallePerfil> createState() => _PantallaDetallePerfilState();
@@ -51,10 +58,10 @@ class PantallaDetallePerfil extends StatefulWidget {
 class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     with SingleTickerProviderStateMixin {
   TabController? _tabController;
-  int _tabActual = 0;
-
+  Usuario? _usuario;
   int? _currentUserId;
   bool _isLoading = false;
+  bool _cargandoPerfil = false;
   String? _estadoSeguimiento;
   List<Publicacion>? _publicaciones;
   bool _cargandoPublicaciones = true;
@@ -64,6 +71,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   int? _filtroComunidadId;
   List<Map<String, dynamic>> _comunidadesFiltro = [];
 
+  List<Coleccion>? _misColecciones;
+  bool _cargandoColecciones = false;
+
   String? _biografiaLocal;
   String? _avatarLocal;
   String? _fondoLocal;
@@ -71,31 +81,93 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   double _ratingLocal = 0.0;
 
   bool _haVotadoHoy = false;
+  int _miVotoHoy = 0;
   int _totalVotosRecibidos = 0;
   int _segundosParaReinicio = 0;
   Timer? _timerReinicio;
   String? _rolEnComunidad;
+  int _tabActual = 0;
 
   @override
   void initState() {
     super.initState();
-    _biografiaLocal = widget.usuario.biografia;
-    _avatarLocal = widget.usuario.urlAvatar;
-    _fondoLocal = widget.usuario.fondo;
-    _marcoLocal = widget.usuario.marco;
-    _ratingLocal = widget.usuario.ratingActual;
-    _estadoSeguimiento = widget.usuario.estadoSeguimiento;
-
-    _inicializarDatos();
-    mejoraEquipadaNotifier.addListener(_onMejoraEquipada);
+    _usuario = widget.usuario;
+    if (_usuario == null && widget.id != null) {
+      _cargarPerfilInicial();
+    } else if (_usuario != null) {
+      _sincronizarEstadoLocal();
+      _inicializarDatos();
+    }
 
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(() {
       if (_tabController!.index != _tabActual) {
         setState(() => _tabActual = _tabController!.index);
-        if (_tabActual == 1) _cargarGuardados();
+        if (_tabActual == 1) {
+          if (_publicacionesGuardadas == null) _cargarGuardados();
+          if (_misColecciones == null) _cargarColecciones();
+        }
       }
     });
+    
+    mejoraEquipadaNotifier.addListener(_onMejoraEquipada);
+  }
+
+  void _sincronizarEstadoLocal() {
+    if (_usuario == null) return;
+    _biografiaLocal = _usuario!.biografia;
+    _avatarLocal = _usuario!.urlAvatar;
+    _fondoLocal = _usuario!.fondo;
+    _marcoLocal = _usuario!.marco;
+    _ratingLocal = _usuario!.ratingActual;
+    _estadoSeguimiento = _usuario!.estadoSeguimiento;
+  }
+
+  Future<void> _cargarPerfilInicial() async {
+    if (!mounted) return;
+    setState(() => _cargandoPerfil = true);
+    final res = await ServicioUsuarios().obtenerDatosUsuario(widget.id!);
+    if (mounted) {
+      setState(() {
+        _usuario = res.datos;
+        _cargandoPerfil = false;
+      });
+      if (_usuario != null) {
+        _sincronizarEstadoLocal();
+        _inicializarDatos();
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(PantallaDetallePerfil oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldId = oldWidget.id ?? oldWidget.usuario?.id;
+    final newId = widget.id ?? widget.usuario?.id;
+    if (oldId != newId) {
+      _usuario = widget.usuario;
+      if (_usuario == null && widget.id != null) {
+        _cargarPerfilInicial();
+      } else if (_usuario != null) {
+        _sincronizarEstadoLocal();
+        _inicializarDatos();
+      }
+      _biografiaLocal = widget.usuario?.biografia;
+      _avatarLocal = widget.usuario?.urlAvatar;
+      _fondoLocal = widget.usuario?.fondo;
+      _marcoLocal = widget.usuario?.marco;
+      _ratingLocal = widget.usuario?.ratingActual ?? 0.0;
+      _estadoSeguimiento = widget.usuario?.estadoSeguimiento;
+      _publicaciones = null;
+      _publicacionesGuardadas = null;
+      _misColecciones = null;
+      _cargandoPublicaciones = true;
+      _rolEnComunidad = null;
+      _haVotadoHoy = false;
+      _miVotoHoy = 0;
+      _timerReinicio?.cancel();
+      _inicializarDatos();
+    }
   }
 
   @override
@@ -118,14 +190,15 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   void _onMejoraEquipada() {
-    if (_currentUserId == widget.usuario.id) {
+    if (_usuario != null && _currentUserId == _usuario!.id) {
       _recargarUsuarioActualizado();
       _cargarPublicaciones();
     }
   }
 
   Future<void> _recargarUsuarioActualizado() async {
-    final res = await ServicioUsuarios().obtenerDatosUsuario(widget.usuario.id);
+    if (_usuario == null) return;
+    final res = await ServicioUsuarios().obtenerDatosUsuario(_usuario!.id);
     if (mounted && res.exito && res.datos != null) {
       final u = res.datos!;
       setState(() {
@@ -140,17 +213,19 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _cargarRolContextual() async {
+    if (_usuario == null) return;
     if (widget.comunidadIdContexto != null) {
       final res = await ServicioComunidades().obtenerRolUsuarioEnComunidad(
-          widget.comunidadIdContexto!, widget.usuario.id);
+          widget.comunidadIdContexto!, _usuario!.id);
       if (res.exito && mounted) setState(() => _rolEnComunidad = res.datos);
     }
   }
 
   Future<void> _cargarPublicaciones() async {
+    if (_usuario == null) return;
     setState(() => _cargandoPublicaciones = true);
     final res = await ServicioPerfiles()
-        .obtenerPublicacionesPerfil(widget.usuario.perfilId);
+        .obtenerPublicacionesPerfil(_usuario!.perfilId);
     if (mounted) {
       setState(() {
         _publicaciones = res.exito ? res.datos : [];
@@ -159,7 +234,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     }
   }
 
-  Future<void> _cargarGuardados({int? comunidadId}) async {
+  Future<void> _cargarGuardados({int? comunidadId, bool force = false}) async {
+    if (!force && _publicacionesGuardadas != null && comunidadId == _filtroComunidadId) return;
     setState(() => _cargandoGuardados = true);
     final res = await ServicioPerfiles()
         .obtenerPublicacionesGuardadas(comunidadId: comunidadId);
@@ -170,6 +246,19 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           _extraerComunidadesFiltro(_publicacionesGuardadas!);
         }
         _cargandoGuardados = false;
+      });
+    }
+  }
+
+  Future<void> _cargarColecciones({bool force = false}) async {
+    if (!force && _misColecciones != null) return;
+    if (_usuario == null) return;
+    setState(() => _cargandoColecciones = true);
+    final res = await ServicioGaleria().obtenerColecciones(idUsuario: _usuario!.id);
+    if (mounted) {
+      setState(() {
+        _misColecciones = res.exito ? res.datos : [];
+        _cargandoColecciones = false;
       });
     }
   }
@@ -185,15 +274,16 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _cargarEstadoVoto() async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null || _usuario == null) return;
     final res = await ServicioMejoras()
-        .obtenerEstadoVoto(idReceptorUsuario: widget.usuario.id);
+        .obtenerEstadoVoto(idReceptorUsuario: _usuario!.id);
     if (mounted && res.exito) {
       final d = res.datos!;
       setState(() {
-        _haVotadoHoy = d['ha_votado_hoy'];
-        _totalVotosRecibidos = d['total_votos'];
-        _segundosParaReinicio = d['segundos_hasta_medianoche'];
+        _haVotadoHoy = d['ha_votado_hoy'] ?? false;
+        _miVotoHoy = d['estrellas'] ?? 0;
+        _totalVotosRecibidos = d['total_votos'] ?? 0;
+        _segundosParaReinicio = d['segundos_hasta_medianoche'] ?? 0;
       });
       _iniciarContador();
     }
@@ -219,10 +309,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _manejarSeguimiento() async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null || _usuario == null) return;
     setState(() => _isLoading = true);
     final res = await ServicioPerfiles()
-        .enviarSolicitudSeguimiento(widget.usuario.nombreUsuario);
+        .enviarSolicitudSeguimiento(_usuario!.nombreUsuario);
     if (mounted) {
       if (res.exito) setState(() => _estadoSeguimiento = res.datos);
       setState(() => _isLoading = false);
@@ -233,9 +323,33 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    if (_cargandoPerfil || _usuario == null) {
+      final loading = material.Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(color: Color(0xFFF28B50)),
+              if (_cargandoPerfil) ...[
+                const SizedBox(height: 16),
+                Text('Cargando perfil...', style: GoogleFonts.inter(color: Colors.grey)),
+              ] else if (_usuario == null && !_cargandoPerfil) ...[
+                const SizedBox(height: 16),
+                Text('Usuario no encontrado 😿', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: const Text('Volver'))
+              ]
+            ],
+          ),
+        ),
+      );
+      return widget.esIntegrada ? loading : loading;
+    }
+
+    return material.Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      floatingActionButton: _currentUserId == widget.usuario.id
+      floatingActionButton: _currentUserId == _usuario!.id
           ? FloatingActionButton.extended(
               onPressed: _mostrarDialogoCrearPost,
               backgroundColor: const Color(0xFFF28B50),
@@ -245,71 +359,86 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                       fontWeight: FontWeight.bold, color: Colors.white)),
             )
           : null,
-      body: CustomScrollView(
-        slivers: [
-          HeaderDetallePerfil(
-            usuario: widget.usuario,
-            avatarLocal: _avatarLocal,
-            fondoLocal: _fondoLocal,
-            marcoLocal: _marcoLocal,
-            currentUserId: _currentUserId,
-            onEditarAvatar: _editarAvatar,
-            onBack: widget.onBack ?? () => Navigator.pop(context),
-            esIntegrada: widget.esIntegrada,
-          ),
-          SliverToBoxAdapter(
-            child: InfoPerfil(
-              usuario: widget.usuario,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            HeaderDetallePerfil(
+              usuario: _usuario!,
+              avatarLocal: _avatarLocal,
+              fondoLocal: _fondoLocal,
+              marcoLocal: _marcoLocal,
               currentUserId: _currentUserId,
-              biografiaLocal: _biografiaLocal,
-              estadoSeguimiento: _estadoSeguimiento,
-              isLoading: _isLoading,
-              rolEnComunidad: _rolEnComunidad,
-              ratingLocal: _ratingLocal,
-              haVotadoHoy: _haVotadoHoy,
-              tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
-              onManejarSeguimiento: _manejarSeguimiento,
-              onMostrarVoto: _mostrarSelectorVoto,
-              onEditarBio: _mostrarDialogoEditarBio,
-              onChat: _iniciarChat,
+              onEditarAvatar: _editarAvatar,
+              onEditarPerfil: _irAInventario,
+              onBack: widget.onBack ?? () => Navigator.pop(context),
+              esIntegrada: widget.esIntegrada,
             ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SliverTabsDelegate(
-              tabBar: TabBar(
-                controller: _tabController,
-                tabs: const [Tab(text: 'Posts'), Tab(text: 'Guardados')],
-                labelStyle:
-                    GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
-                indicatorColor: const Color(0xFFF28B50),
+            SliverToBoxAdapter(
+              child: InfoPerfil(
+                usuario: _usuario!,
+                currentUserId: _currentUserId,
+                biografiaLocal: _biografiaLocal,
+                estadoSeguimiento: _estadoSeguimiento,
+                isLoading: _isLoading,
+                rolEnComunidad: _rolEnComunidad,
+                ratingLocal: _ratingLocal,
+                haVotadoHoy: _haVotadoHoy,
+                tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
+                onManejarSeguimiento: _manejarSeguimiento,
+                onMostrarVoto: _mostrarSelectorVoto,
+                onEditarBio: _mostrarDialogoEditarBio,
+                onChat: _iniciarChat,
               ),
             ),
-          ),
-          SliverFillRemaining(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                SeccionPostsPerfil(
-                  publicaciones: _publicaciones,
-                  estaCargando: _cargandoPublicaciones,
-                  onRefresh: _cargarPublicaciones,
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabsDelegate(
+                tabBar: TabBar(
+                  controller: _tabController,
+                  tabs: [
+                    const Tab(text: 'Posts'),
+                    Tab(text: _currentUserId == _usuario!.id ? 'Favoritos' : 'Colecciones'),
+                  ],
+                  labelStyle: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                  indicatorColor: const Color(0xFFF28B50),
                 ),
-                SeccionGuardadosPerfil(
-                  publicaciones: _publicacionesGuardadas,
-                  estaCargando: _cargandoGuardados,
-                  comunidadesFiltro: _comunidadesFiltro,
-                  filtroComunidadId: _filtroComunidadId,
-                  onFiltroChanged: (id) {
-                    setState(() => _filtroComunidadId = id);
-                    _cargarGuardados(comunidadId: id);
-                  },
-                  onRefresh: _cargarGuardados,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            SeccionPostsPerfil(
+              publicaciones: _publicaciones,
+              estaCargando: _cargandoPublicaciones,
+              onRefresh: _cargarPublicaciones,
+            ),
+            if (_currentUserId == _usuario!.id)
+              SeccionGuardadosPerfil(
+                publicaciones: _publicacionesGuardadas,
+                colecciones: _misColecciones,
+                estaCargando: _cargandoGuardados,
+                estaCargandoColecciones: _cargandoColecciones,
+                comunidadesFiltro: _comunidadesFiltro,
+                filtroComunidadId: _filtroComunidadId,
+                onFiltroChanged: (id) {
+                  setState(() => _filtroComunidadId = id);
+                  _cargarGuardados(comunidadId: id);
+                },
+                onRefresh: () => _cargarGuardados(force: true),
+                onRefreshColecciones: () => _cargarColecciones(force: true),
+              )
+            else
+              SeccionColeccionesPerfil(
+                colecciones: _misColecciones,
+                estaCargando: _cargandoColecciones,
+                onRefresh: () => _cargarColecciones(force: true),
+                esPropietario: false,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -317,45 +446,145 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   // --- MÉTODOS DE ACCIÓN ---
 
   void _mostrarSelectorVoto() {
-    if (_haVotadoHoy || _currentUserId == widget.usuario.id) return;
+    if (_usuario == null || _currentUserId == _usuario!.id) return;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => SelectorEstrellas(
-        onRatingChanged: (puntos) async {
-          final res = await ServicioMejoras().votar(
-            idReceptorUsuario: widget.usuario.id,
-            cantidadEstrellas: puntos,
-          );
-          if (res.exito) {
-            _cargarEstadoVoto();
-            _recargarUsuarioActualizado();
-          }
-        },
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _haVotadoHoy ? '¿Qué quieres hacer con tu voto?' : '¡Vota a este Michi!',
+              style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _haVotadoHoy ? 'Puedes cambiar tu puntuación o eliminar el voto.' : 'Dalle amor con tus estrellas 🐾',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            SelectorEstrellas(
+              initialRating: _miVotoHoy,
+              onRatingChanged: (puntos) async {
+                final res = await ServicioMejoras().votar(
+                  idReceptorUsuario: _usuario!.id,
+                  cantidadEstrellas: puntos,
+                );
+                if (res.exito) {
+                  _cargarEstadoVoto();
+                  _recargarUsuarioActualizado();
+                  if (mounted) Navigator.pop(context);
+                }
+              },
+            ),
+            if (_haVotadoHoy) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: () async {
+                  final res = await ServicioMejoras().eliminarVoto(idReceptorUsuario: _usuario!.id);
+                  if (res.exito) {
+                    setState(() {
+                      _haVotadoHoy = false;
+                      _miVotoHoy = 0;
+                    });
+                    _cargarEstadoVoto();
+                    _recargarUsuarioActualizado();
+                    if (mounted) Navigator.pop(context);
+                  }
+                },
+                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                label: Text('Eliminar mi voto', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              ),
+            ],
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }
 
-  void _mostrarDialogoEditarBio() async {
-    // Implementación similar a la anterior pero simplificada
+  void _mostrarDialogoEditarBio() {
+    final controller = TextEditingController(text: _biografiaLocal);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Editar Biografía',
+            style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          style: GoogleFonts.inter(color: Colors.white70),
+          decoration: InputDecoration(
+            hintText: 'Cuéntanos algo sobre ti...',
+            hintStyle: TextStyle(color: Colors.grey.shade600),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancelar', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final nuevaBio = controller.text;
+              final res = await ServicioPerfiles().editarBiografia(
+                textoBiografia: nuevaBio,
+                perfilId: _usuario!.perfilId,
+              );
+              if (res.exito) {
+                setState(() => _biografiaLocal = nuevaBio);
+                if (mounted) Navigator.pop(ctx);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF248EA6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Guardar',
+                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _editarAvatar() async {
     final img = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (img == null) return;
+    if (_usuario == null) return;
     final res = await ServicioPerfiles()
-        .editarAvatarPerfil(imagen: img, perfilId: widget.usuario.perfilId);
+        .editarAvatarPerfil(imagen: img, perfilId: _usuario!.perfilId);
     if (res.exito) _recargarUsuarioActualizado();
   }
 
   void _iniciarChat() async {
-    final sala = await ServicioMensajeria().crearSalaPrivada(widget.usuario.id);
+    if (_usuario == null) return;
+    final sala = await ServicioMensajeria().crearSala(idOtroUsuario: _usuario!.id);
     if (sala != null && mounted) {
       Navigator.push(
           context,
           MaterialPageRoute(
               builder: (ctx) => PantallaChat(
-                  salaId: sala['id'], nombreSala: widget.usuario.nombreUsuario)));
+                  salaId: sala['id'], nombreSala: _usuario!.nombreUsuario, otroUsuarioId: _usuario!.id)));
     }
   }
 
@@ -368,12 +597,16 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
         titulo: 'Nuevo Miau-Post',
         onPublicar: (txt, imgs, tags) async {
           final ok = await Provider.of<PostProvider>(context, listen: false)
-              .crearPost(comunidadId: widget.comunidadIdContexto ?? 1, texto: txt, imagenes: imgs, etiquetas: tags);
+              .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: imgs, etiquetas: tags);
           if (ok) _cargarPublicaciones();
           return ok;
         },
       ),
     );
+  }
+
+  void _irAInventario() {
+    context.push('/inventario');
   }
 }
 

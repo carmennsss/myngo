@@ -10,6 +10,7 @@ class SeccionPostsComunidad extends StatelessWidget {
   final bool estaCargando;
   final Future<void> Function() onRefresh;
   final bool esAppClara;
+  final bool comoSliver;
 
   const SeccionPostsComunidad({
     super.key,
@@ -17,42 +18,66 @@ class SeccionPostsComunidad extends StatelessWidget {
     required this.estaCargando,
     required this.onRefresh,
     required this.esAppClara,
+    this.comoSliver = false,
   });
 
   @override
   Widget build(BuildContext context) {
     if (estaCargando || publicaciones == null) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+      final loading = const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40.0),
+            child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+          ));
+      return comoSliver ? SliverToBoxAdapter(child: SizedBox(height: 200, child: loading)) : loading;
+    }
+
+    if (publicaciones!.isEmpty) {
+      final empty = const EstadoVacioCargando(
+        icon: Icons.feed_outlined,
+        message: 'Aún no hay publicaciones',
+      );
+      return comoSliver ? SliverToBoxAdapter(child: SizedBox(height: 200, child: empty)) : empty;
+    }
+
+    if (comoSliver) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _buildPostItem(publicaciones![index]),
+            childCount: publicaciones!.length,
+          ),
+        ),
+      );
     }
 
     return RefreshIndicator(
       color: const Color(0xFFF28B50),
       backgroundColor: Colors.white,
       onRefresh: onRefresh,
-      child: publicaciones!.isEmpty
-          ? const EstadoVacioCargando(
-              icon: Icons.feed_outlined,
-              message: 'Aún no hay publicaciones',
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              itemCount: publicaciones!.length,
-              itemBuilder: (context, index) => Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 680),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 24.0),
-                    child: TarjetaPost(
-                      post: publicaciones![index],
-                      onJoin: () {}, // Ya está en la comunidad
-                      onEliminado: onRefresh,
-                      estaEnComunidad: true,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        itemCount: publicaciones!.length,
+        itemBuilder: (context, index) => _buildPostItem(publicaciones![index]),
+      ),
+    );
+  }
+
+  Widget _buildPostItem(Publicacion post) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 24.0),
+          child: TarjetaPost(
+            post: post,
+            onJoin: () {}, 
+            onEliminado: onRefresh,
+            estaEnComunidad: true,
+          ),
+        ),
+      ),
     );
   }
 }

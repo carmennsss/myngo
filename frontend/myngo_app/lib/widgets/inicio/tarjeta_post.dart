@@ -10,7 +10,10 @@ import '../comunes/menu_opciones_contenido.dart';
 import 'dialogo_detalle_post.dart';
 import '../comunes/grid_imagenes_post.dart';
 import '../comunes/hover_profile_card.dart';
+import '../comunes/bottom_sheet_colecciones.dart';
+import '../dialogo_crear_post.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../../services/servicio_comunidades.dart';
 
 class TarjetaPost extends StatefulWidget {
   final Publicacion post;
@@ -52,7 +55,15 @@ class _TarjetaPostState extends State<TarjetaPost> {
     showDialog(
       context: context,
       builder: (context) => DialogoDetallePublicacion(post: widget.post),
-    );
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _dioLike = widget.post.usuarioDioLike;
+          _likesCount = widget.post.likesCount;
+          _estaGuardado = widget.post.usuarioGuardoPost;
+        });
+      }
+    });
   }
 
   Future<void> _toggleLike() async {
@@ -78,30 +89,48 @@ class _TarjetaPostState extends State<TarjetaPost> {
   }
 
   Future<void> _toggleGuardado() async {
-    setState(() {
-      _estaGuardado = !_estaGuardado;
-      widget.post.usuarioGuardoPost = _estaGuardado;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => BottomSheetColecciones(
+        postId: widget.post.id,
+        estaGuardadoPost: _estaGuardado,
+        imagenId: widget.post.imagenId,
+        imagenUrl: widget.post.urlImagen,
+      ),
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _estaGuardado = widget.post.usuarioGuardoPost;
+        });
+      }
     });
+  }
 
-    final res = await _servicioInteraccion.alternarGuardado(widget.post.id);
-    if (!res.exito && mounted) {
-      setState(() {
-        _estaGuardado = !_estaGuardado;
-        widget.post.usuarioGuardoPost = _estaGuardado;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_estaGuardado ? '¡Post guardado! 🐾' : 'Eliminado de tus miau-guardados'),
-          backgroundColor: const Color(0xFF248EA6),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+  void _mostrarDialogoEdicion() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DialogoCrearPost(
+        titulo: 'Editar Miau-post 🐾',
+        initialTexto: widget.post.contenidoTexto,
+        onPublicar: (texto, imagenes, etiquetas) async {
+          final res = await ServicioComunidades().actualizarPublicacion(
+            idPublicacion: widget.post.id,
+            texto: texto,
+          );
+          if (res.exito) {
+            setState(() {
+              widget.post.contenidoTexto = texto;
+            });
+            return true;
+          }
+          return false;
+        },
+      ),
+    );
   }
 
   @override
@@ -137,6 +166,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   nombre: widget.post.autorNombre,
                   avatarUrl: widget.post.autorFoto,
                   marcoUrl: widget.post.autorMarco,
+                  fondoUrl: widget.post.autorFondo,
                   puntos: 0,
                   estado: widget.post.autorEstado ?? 'DESCONECTADO',
                   userId: widget.post.autorId,
@@ -161,7 +191,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   },
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                    backgroundColor: Colors.white,
                     backgroundImage: widget.post.autorFoto != null
                         ? CachedNetworkImageProvider(widget.post.autorFoto!)
                         : null,
@@ -240,6 +270,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             autorId: widget.post.autorId,
                             comunidadId: widget.post.comunidadId,
                             onEliminado: widget.onEliminado,
+                            onEditado: _mostrarDialogoEdicion,
                             tituloPreview: widget.post.titulo,
                             iconColor: textColor.withOpacity(0.7),
                           ),
@@ -250,13 +281,30 @@ class _TarjetaPostState extends State<TarjetaPost> {
                         Text(widget.post.titulo, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
                       if (widget.post.contenidoTexto.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(widget.post.contenidoTexto, style: GoogleFonts.outfit(color: subTextColor, fontSize: 15), maxLines: 4, overflow: TextOverflow.ellipsis),
+                        Text(
+                          widget.post.contenidoTexto,
+                          style: GoogleFonts.outfit(color: subTextColor, fontSize: 15),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (widget.post.contenidoTexto.length > 100)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              'Leer más...',
+                              style: GoogleFonts.outfit(
+                                color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                       ],
-                      if (widget.post.urlsImagenes.isNotEmpty || (widget.post.urlImagen != null && widget.post.urlImagen!.isNotEmpty))
+                      if (widget.post.media.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
                           child: GridImagenesPost(
-                            urls: widget.post.urlsImagenes.isNotEmpty ? widget.post.urlsImagenes : [widget.post.urlImagen!],
+                            media: widget.post.media,
                             onTap: () => _mostrarDetalles(context),
                           ),
                         ),

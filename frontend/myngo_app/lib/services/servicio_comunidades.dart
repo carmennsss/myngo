@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import '../models/comunidad.dart';
 import '../models/imagen_galeria.dart';
 import '../models/publicacion.dart';
@@ -105,6 +106,28 @@ class ServicioComunidades {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar comunidad');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene la lista de miembros de una comunidad con sus roles.
+  Future<RespuestaApi<List<Map<String, dynamic>>>> obtenerMiembrosComunidad(int idComunidad) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlComunidades$idComunidad/miembros/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Miembros cargados',
+          datos: List<Map<String, dynamic>>.from(datos),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar miembros');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -341,6 +364,37 @@ class ServicioComunidades {
     }
   }
 
+  /// Actualiza una publicación existente.
+  Future<RespuestaApi<Publicacion>> actualizarPublicacion({
+    required int idPublicacion,
+    String? titulo,
+    String? texto,
+    String? etiquetas,
+  }) async {
+    try {
+      final respuesta = await http.patch(
+        Uri.parse('${_urlContenido}publicaciones/$idPublicacion/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({
+          if (titulo != null) 'titulo': titulo,
+          if (texto != null) 'contenido_texto': texto,
+          if (etiquetas != null) 'etiquetas': etiquetas,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Publicación actualizada',
+          datos: Publicacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al actualizar (${respuesta.statusCode})');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Recupera las publicaciones registradas en una comunidad específica.
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesComunidad(int idComunidad, {String orden = '-fecha_creacion'}) async {
     try {
@@ -410,7 +464,7 @@ class ServicioComunidades {
 
   /// Crea una nueva publicación permitiendo el envío de múltiples archivos multimedia.
   Future<RespuestaApi<Publicacion>> crearPublicacion({
-    required int idComunidad,
+    int? idComunidad,
     required String texto,
     List<XFile>? imagenes,
     String? etiquetas,
@@ -421,7 +475,9 @@ class ServicioComunidades {
       
       if (token != null) solicitud.headers['Authorization'] = 'Token $token';
 
-      solicitud.fields['comunidad'] = idComunidad.toString();
+      if (idComunidad != null && idComunidad != 0) {
+        solicitud.fields['comunidad'] = idComunidad.toString();
+      }
       solicitud.fields['contenido_texto'] = texto;
       if (etiquetas != null && etiquetas.trim().isNotEmpty) {
         solicitud.fields['etiquetas'] = etiquetas.trim();
@@ -429,16 +485,20 @@ class ServicioComunidades {
 
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var img in imagenes) {
+          final fieldName = 'url_archivo_s3[]';
           if (kIsWeb) {
             final bytes = await img.readAsBytes();
+            final mimeType = lookupMimeType(img.name, headerBytes: bytes) ?? 'application/octet-stream';
+            final typeParts = mimeType.split('/');
+            
             solicitud.files.add(http.MultipartFile.fromBytes(
-              'url_archivo_s3',
+              fieldName,
               bytes,
               filename: img.name,
-              contentType: MediaType('image', 'jpeg'),
+              contentType: MediaType(typeParts[0], typeParts[1]),
             ));
           } else {
-            solicitud.files.add(await http.MultipartFile.fromPath('url_archivo_s3', img.path));
+            solicitud.files.add(await http.MultipartFile.fromPath(fieldName, img.path));
           }
         }
       }

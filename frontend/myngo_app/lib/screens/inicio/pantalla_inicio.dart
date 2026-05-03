@@ -11,6 +11,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../providers/chat_provider.dart';
+import '../../utils/mejoras_notifier.dart';
 import 'package:provider/provider.dart';
 import '../comunidades/pantalla_comunidades.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
@@ -60,11 +61,21 @@ class PantallaInicioState extends State<PantallaInicio> {
   bool _isSidebarOpen = true;
   List<Usuario>? _rankingUsuarios;
   bool _cargandoRanking = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     _inicializarDatos();
+    mejoraEquipadaNotifier.addListener(_inicializarDatos);
+  }
+
+  @override
+  void dispose() {
+    mejoraEquipadaNotifier.removeListener(_inicializarDatos);
+    _servicioChat.dispose();
+    _servicioNotifChat.dispose();
+    super.dispose();
   }
 
   Future<void> _inicializarDatos() async {
@@ -101,7 +112,10 @@ class PantallaInicioState extends State<PantallaInicio> {
               setState(() => _miEstado = newStatus);
             }
             
-            // 2. Actualizar el estado en la lista del ranking si el usuario está ahí
+            // 2. Actualizar ChatProvider para que las pantallas de chat y perfil se enteren
+            context.read<ChatProvider>().actualizarEstadoUsuario(userId, newStatus);
+            
+            // 3. Actualizar el estado en la lista del ranking si el usuario está ahí
             if (_rankingUsuarios != null) {
               final index = _rankingUsuarios!.indexWhere((u) => u.id == userId);
               if (index != -1) {
@@ -122,6 +136,12 @@ class PantallaInicioState extends State<PantallaInicio> {
                 }
               }
             });
+            // Sincronizar lista de usuarios online inicial en ChatProvider
+            if (datos['online_users'] != null) {
+              context.read<ChatProvider>().setUsuariosOnline(
+                (datos['online_users'] as List).map((id) => (id as num).toInt()).toList()
+              );
+            }
           }
         });
 
@@ -277,36 +297,34 @@ class PantallaInicioState extends State<PantallaInicio> {
 
 
   @override
-  void dispose() {
-    _servicioChat.dispose();
-    _servicioNotifChat.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
+    final location = GoRouterState.of(context).uri.toString();
+    final bool esSalaChat = location.contains('/mensajes/sala/');
     
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: isMobile && _estaLogueado ? _construirDrawerMobile() : null,
       body: Column(
         children: [
-          CabeceraPro(
-            estaLogueado: _estaLogueado,
-            nombreUsuario: _miNombre,
-            avatarUrl: _miAvatar,
-            marcoUrl: _miMarco,
-            miId: _miId,
-            estado: _miEstado,
-            indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
-            puntos: _puntos,
-            notificacionesSinLeer: _notificacionesSinLeer,
-            mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
-            onNavSelected: _alPulsarNav,
-            onProfileSelected: _seleccionarUsuario,
-            onStatusChanged: cambiarEstado,
-          ),
+          if (_estaLogueado)
+            CabeceraPro(
+              estaLogueado: _estaLogueado,
+              nombreUsuario: _miNombre,
+              avatarUrl: _miAvatar,
+              marcoUrl: _miMarco,
+              miId: _miId,
+              estado: _miEstado,
+              indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
+              puntos: _puntos,
+              notificacionesSinLeer: _notificacionesSinLeer,
+              mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
+              onNavSelected: _alPulsarNav,
+              onProfileSelected: _seleccionarUsuario,
+              onStatusChanged: cambiarEstado,
+            ),
           Expanded(
             child: Stack(
               children: [
@@ -319,67 +337,16 @@ class PantallaInicioState extends State<PantallaInicio> {
                         curve: Curves.easeInOutCubic,
                         width: _isSidebarOpen ? 320.0 : 0.0,
                         height: double.infinity,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro) para contrastar el navbar
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const NeverScrollableScrollPhysics(),
-                          child: SizedBox(
-                            width: 320.0,
-                            child: Stack(
-                              children: [
-                                // Patrón para el fondo de TODA la barra
-                                Positioned.fill(
-                                  child: Opacity(
-                                    opacity: 0.15,
-                                    child: GridView.builder(
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 3,
-                                        mainAxisSpacing: 30.0,
-                                        crossAxisSpacing: 30.0,
-                                      ),
-                                      itemBuilder: (context, index) => Transform.rotate(
-                                        angle: index % 2 == 0 ? 0.3 : -0.2,
-                                        child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // El SidebarIzquierdo real y deslizable
-                                Positioned.fill(
-                                  child: Theme(
-                                  data: Theme.of(context).copyWith(
-                                    scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
-                                      thumbVisibility: WidgetStateProperty.all(false),
-                                      trackVisibility: WidgetStateProperty.all(false),
-                                    ),
-                                  ),
-                                  child: ScrollConfiguration(
-                                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                                    child: SingleChildScrollView(
-                                      primary: false,
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                                      child: SidebarIzquierdo(
-                                        estaLogueado: _estaLogueado == true,
-                                        cargando: _cargandoComunidades == true,
-                                        comunidades: _misComunidades,
-                                        rankingUsuarios: _rankingUsuarios,
-                                        cargandoRanking: _cargandoRanking == true,
-                                        onComunidadSelected: _seleccionarComunidad,
-                                        onUsuarioSelected: _seleccionarUsuario,
-                                        onReorder: _reordenarComunidades,
-                                        misPuntos: _puntos,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        child: SidebarIzquierdo(
+                          estaLogueado: _estaLogueado == true,
+                          cargando: _cargandoComunidades == true,
+                          comunidades: _misComunidades,
+                          rankingUsuarios: _rankingUsuarios,
+                          cargandoRanking: _cargandoRanking == true,
+                          onComunidadSelected: _seleccionarComunidad,
+                          onUsuarioSelected: _seleccionarUsuario,
+                          onReorder: _reordenarComunidades,
+                          misPuntos: _puntos,
                         ),
                       ),
                       Expanded(
@@ -437,121 +404,99 @@ class PantallaInicioState extends State<PantallaInicio> {
     final colorPrincipal = const Color(0xFFC35E34);
     
     return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFC35E34), Color(0xFFE89A6A)]),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.pets, color: Colors.white, size: 48),
-                  const SizedBox(height: 10),
-                  Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                ],
+      child: Container(
+        color: const Color(0xFFFEF5F1), // Fondo a juego con la app
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              margin: EdgeInsets.zero,
+              padding: EdgeInsets.zero,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFC35E34), Color(0xFFE89A6A)]
+                ),
               ),
-            ),
-          ),
-          ListTile(
-            leading: Icon(Icons.home_rounded, color: currentIndex == 0 ? colorPrincipal : Colors.grey),
-            title: Text('Inicio', style: GoogleFonts.outfit(fontWeight: currentIndex == 0 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 0 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(0); },
-          ),
-          ListTile(
-            leading: Icon(Icons.explore_rounded, color: currentIndex == 1 ? colorPrincipal : Colors.grey),
-            title: Text('Explorar', style: GoogleFonts.outfit(fontWeight: currentIndex == 1 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 1 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(1); },
-          ),
-          ListTile(
-            leading: Icon(Icons.storefront_rounded, color: currentIndex == 4 ? colorPrincipal : Colors.grey),
-            title: Text('Tienda', style: GoogleFonts.outfit(fontWeight: currentIndex == 4 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 4 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(4); },
-          ),
-          ListTile(
-            leading: Consumer<ChatProvider>(
-              builder: (context, chat, child) => Badge(
-                label: chat.totalNoLeidos > 0 ? Text('${chat.totalNoLeidos}') : null,
-                isLabelVisible: chat.totalNoLeidos > 0,
-                backgroundColor: const Color(0xFFD95F43),
-                child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
-              ),
-            ),
-            title: Text('Chats', style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(3); },
-          ),
-          ListTile(
-            leading: Badge(
-              label: _notificacionesSinLeer > 0 ? Text('$_notificacionesSinLeer') : null,
-              isLabelVisible: _notificacionesSinLeer > 0,
-              backgroundColor: const Color(0xFFD95F43),
-              child: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
-            ),
-            title: Text('Notificaciones', style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
-            onTap: () { Navigator.pop(context); _alPulsarNav(2); },
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'MIS COMUNIDADES',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.grey.shade500,
-                  letterSpacing: 1.2,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.pets, color: Colors.white, size: 40),
+                    const SizedBox(height: 8),
+                    Text('MYNGO', 
+                      style: GoogleFonts.outfit(
+                        color: Colors.white, 
+                        fontSize: 24, 
+                        fontWeight: FontWeight.w900, 
+                        letterSpacing: 2
+                      )
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-          if (_cargandoComunidades)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-          else if (_misComunidades != null && _misComunidades!.isNotEmpty)
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: _misComunidades!.length,
-                itemBuilder: (context, index) {
-                  final comunidad = _misComunidades![index];
-                  return ListTile(
-                    leading: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: CachedNetworkImageProvider(comunidad.urlPortada),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      comunidad.nombre,
-                      style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _seleccionarComunidad(comunidad);
-                    },
-                  );
-                },
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Aún no te has unido a ninguna comunidad 🐾',
-                style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
-              ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(Icons.home_rounded, color: currentIndex == 0 ? colorPrincipal : Colors.grey),
+              title: Text('Inicio', style: GoogleFonts.outfit(fontWeight: currentIndex == 0 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 0 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(0); },
             ),
-        ],
+            ListTile(
+              leading: Icon(Icons.explore_rounded, color: currentIndex == 1 ? colorPrincipal : Colors.grey),
+              title: Text('Explorar', style: GoogleFonts.outfit(fontWeight: currentIndex == 1 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 1 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(1); },
+            ),
+            ListTile(
+              leading: Icon(Icons.storefront_rounded, color: currentIndex == 4 ? colorPrincipal : Colors.grey),
+              title: Text('Tienda', style: GoogleFonts.outfit(fontWeight: currentIndex == 4 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 4 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(4); },
+            ),
+            ListTile(
+              leading: Consumer<ChatProvider>(
+                builder: (context, chat, child) => Badge(
+                  label: chat.totalNoLeidos > 0 ? Text('${chat.totalNoLeidos}') : null,
+                  isLabelVisible: chat.totalNoLeidos > 0,
+                  backgroundColor: const Color(0xFFD95F43),
+                  child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+                ),
+              ),
+              title: Text('Chats', style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(3); },
+            ),
+            ListTile(
+              leading: Badge(
+                label: _notificacionesSinLeer > 0 ? Text('$_notificacionesSinLeer') : null,
+                isLabelVisible: _notificacionesSinLeer > 0,
+                backgroundColor: const Color(0xFFD95F43),
+                child: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
+              ),
+              title: Text('Notificaciones', style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
+              onTap: () { Navigator.pop(context); _alPulsarNav(2); },
+            ),
+            const Divider(height: 32, indent: 20, endIndent: 20),
+            SidebarIzquierdo(
+              estaLogueado: _estaLogueado == true,
+              cargando: _cargandoComunidades == true,
+              comunidades: _misComunidades,
+              rankingUsuarios: _rankingUsuarios,
+              cargandoRanking: _cargandoRanking == true,
+              onComunidadSelected: (c) {
+                Navigator.pop(context);
+                _seleccionarComunidad(c);
+              },
+              onUsuarioSelected: (u) {
+                Navigator.pop(context);
+                _seleccionarUsuario(u);
+              },
+              onReorder: _reordenarComunidades,
+              misPuntos: _puntos,
+              embeddedInDrawer: true,
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -596,6 +541,15 @@ class _ToastMensajeState extends State<_ToastMensaje>
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut));
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _ctrl.forward();
+    
+    // Auto-desvanecer después de 5 segundos
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        _ctrl.reverse().then((_) {
+          if (mounted) widget.onDismiss();
+        });
+      }
+    });
   }
 
   @override

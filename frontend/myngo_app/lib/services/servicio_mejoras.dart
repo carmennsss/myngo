@@ -83,6 +83,36 @@ class ServicioMejoras {
     }
   }
 
+  /// Elimina un voto registrado hoy para un receptor.
+  Future<RespuestaApi> eliminarVoto({
+    int? idReceptorUsuario,
+    int? idReceptorComunidad,
+  }) async {
+    try {
+      final parametros = idReceptorUsuario != null
+          ? 'receptor_usuario=$idReceptorUsuario'
+          : 'receptor_comunidad=$idReceptorComunidad';
+
+      final respuesta = await http.delete(
+        Uri.parse('$_urlMejoras/votar/?$parametros'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(
+          exito: true,
+          mensaje: datosJson['mensaje'] ?? 'Voto eliminado',
+          datos: datosJson['nueva_media'],
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al eliminar el voto');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Obtiene la lista de artículos cosméticos disponibles en la tienda global.
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasGlobales() async {
     try {
@@ -222,7 +252,7 @@ class ServicioMejoras {
   }
 
   /// Recupera el inventario completo de artículos adquiridos por el usuario actual.
-  Future<RespuestaApi<List<dynamic>>> obtenerInventarioUsuario() async {
+  Future<RespuestaApi<List<dynamic>>> obtenerMisMejoras() async {
     try {
       final respuesta = await http.get(
         Uri.parse('$_urlMejoras/tienda/mis-mejoras/'),

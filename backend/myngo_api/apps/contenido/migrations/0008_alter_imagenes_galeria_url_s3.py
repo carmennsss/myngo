@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='imagenes_galeria',
             name='url_s3',
-            field=models.ImageField(blank=True, max_length=500, null=True, upload_to=contenido.models.Imagenes_galeria.definir_ruta_almacenamiento),
+            field=models.ImageField(blank=True, max_length=500, null=True, upload_to=contenido.models._definir_ruta_almacenamiento),
         ),
     ]

@@ -48,12 +48,23 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         # Subconsulta para contar mensajes no leídos de otros para esta sala
         no_leidos_subquery = MensajeChat.objects.filter(
             sala=OuterRef('pk'),
-            es_leido=False
-        ).exclude(emisor=self.request.user).values('sala').annotate(cnt=Count('id')).values('cnt')
+        ).exclude(leido_por=self.request.user).exclude(emisor=self.request.user).values('sala').annotate(cnt=Count('id')).values('cnt')
 
-        return SalaChat.objects.filter(
-            Q(miembros=self.request.user) | Q(es_publica=True)
-        ).distinct().annotate(
+        queryset = SalaChat.objects.all()
+        comunidad_id = self.request.query_params.get('comunidad_id')
+
+        if comunidad_id:
+            # Si se pide una comunidad específica, solo mostrar salas de esa comunidad
+            queryset = queryset.filter(comunidad_id=comunidad_id)
+        else:
+            # Si no hay comunidad (pestaña mensajes global), mostrar SOLO mis chats privados (DMs)
+            # Filtramos para que comunidad sea NULL
+            queryset = queryset.filter(
+                miembros=self.request.user,
+                comunidad__isnull=True
+            )
+
+        return queryset.distinct().annotate(
             fecha_ultimo_mensaje=Max('mensajes__fecha_envio'),
             count_no_leidos=Subquery(no_leidos_subquery)
         ).prefetch_related(
@@ -68,7 +79,7 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         usuarios, se devuelve la instancia existente.
 
         Args:
-            request: Datos con 'nombre', 'es_grupal' y 'otro_usuario_id'.
+            request: Datos con 'nombre', 'es_grupal', 'es_publica', 'comunidad_id' y 'miembros_ids'.
             *args: Argumentos adicionales.
             **kwargs: Argumentos de palabra clave.
 
@@ -77,7 +88,10 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         """
         nombre = request.data.get('nombre', f'Sala_{request.user.nombre_usuario}')
         es_grupal = request.data.get('es_grupal', False)
+        es_publica = request.data.get('es_publica', False)
+        comunidad_id = request.data.get('comunidad_id')
         otro_usuario_id = request.data.get('otro_usuario_id')
+        miembros_ids = request.data.get('miembros_ids', [])
 
         # Si es privada y ya existe una sala entre estos dos usuarios, devolver la existente
         if not es_grupal and otro_usuario_id:
@@ -85,7 +99,8 @@ class SalaChatListCreate(generics.ListCreateAPIView):
                 otro = Usuario.objects.get(pk=otro_usuario_id)
                 sala_existente = SalaChat.objects.filter(
                     es_grupal=False,
-                    miembros=request.user
+                    miembros=request.user,
+                    comunidad_id=comunidad_id
                 ).filter(miembros=otro).first()
 
                 if sala_existente:
@@ -100,15 +115,28 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         sala = SalaChat.objects.create(
             nombre=nombre,
             es_grupal=es_grupal,
+            es_publica=es_publica,
+            comunidad_id=comunidad_id,
             invite_token=str(uuid.uuid4()),
         )
         sala.miembros.add(request.user)
 
+        # Añadir otro usuario (si se proporcionó uno solo)
         if otro_usuario_id:
             try:
                 sala.miembros.add(Usuario.objects.get(pk=otro_usuario_id))
             except Usuario.DoesNotExist:
                 pass
+        
+        # Añadir lista de miembros
+        if miembros_ids:
+            for m_id in miembros_ids:
+                if m_id == request.user.id:
+                    continue
+                try:
+                    sala.miembros.add(Usuario.objects.get(pk=m_id))
+                except Usuario.DoesNotExist:
+                    pass
 
         return Response(
             SalaChatSerializer(sala, context={'request': request}).data,
@@ -175,6 +203,7 @@ class MensajesChatList(generics.ListAPIView):
         ).exists():
             return MensajeChat.objects.none()
         return MensajeChat.objects.filter(sala_id=sala_id)\
+            .exclude(borrado_para=self.request.user)\
             .select_related('emisor', 'emisor__perfil')\
             .order_by('-fecha_envio')
 
@@ -196,7 +225,7 @@ def conteo_no_leidos(request):
     total = 0
     por_sala = []
     for sala in salas:
-        count = sala.mensajes.filter(es_leido=False).exclude(emisor_id=usuario.id).count()
+        count = sala.mensajes.exclude(leido_por=usuario).exclude(emisor_id=usuario.id).count()
         if count > 0:
             por_sala.append({'sala_id': sala.id, 'count': count})
             total += count
@@ -227,16 +256,14 @@ def marcar_leidos(request, sala_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
-<<<<<<< Updated upstream
-    mensajes_nuevos = sala.mensajes.filter(es_leido=False).exclude(emisor=request.user)
-=======
-    # Mensajes no leídos de otros en esta sala
-    mensajes_nuevos = sala.mensajes.filter(es_leido=False).exclude(emisor_id=request.user.id)
->>>>>>> Stashed changes
+    # Mensajes no leídos por mí en esta sala
+    mensajes_nuevos = sala.mensajes.exclude(leido_por=request.user).exclude(emisor_id=request.user.id)
+
     ids_leidos = list(mensajes_nuevos.values_list('id', flat=True))
 
     if ids_leidos:
-        mensajes_nuevos.update(es_leido=True, fecha_lectura=timezone.now())
+        for msg in mensajes_nuevos:
+            msg.leido_por.add(request.user)
 
         # Notificar por WebSocket al canal de la sala
         channel_layer = get_channel_layer()
@@ -249,4 +276,61 @@ def marcar_leidos(request, sala_id):
             }
         )
 
-    return Response({'marcados': len(ids_leidos)})
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def editar_mensaje(request, mensaje_id):
+    try:
+        mensaje = MensajeChat.objects.get(pk=mensaje_id, emisor=request.user)
+        nuevo_contenido = request.data.get('contenido')
+        if not nuevo_contenido:
+            return Response({'error': 'Contenido vacío'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        mensaje.contenido = nuevo_contenido
+        mensaje.es_editado = True
+        mensaje.fecha_edicion = timezone.now()
+        mensaje.save()
+
+        # Notificar por WebSocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{mensaje.sala.id}',
+            {
+                'type': 'message_edited',
+                'mensaje_id': mensaje.id,
+                'nuevo_contenido': nuevo_contenido,
+            }
+        )
+        return Response({'mensaje': 'Editado correctamente'})
+    except MensajeChat.DoesNotExist:
+        return Response({'error': 'Mensaje no encontrado o no eres el autor'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def borrar_mensaje(request, mensaje_id):
+    try:
+        mensaje = MensajeChat.objects.get(pk=mensaje_id)
+        para_todos = request.data.get('para_todos', False)
+
+        if para_todos:
+            if mensaje.emisor != request.user:
+                return Response({'error': 'No puedes borrar mensajes de otros para todos'}, status=status.HTTP_403_FORBIDDEN)
+            mensaje.borrado_para_todos = True
+            mensaje.contenido = "Mensaje borrado"
+            mensaje.save()
+            
+            # Notificar por WebSocket
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{mensaje.sala.id}',
+                {
+                    'type': 'message_deleted',
+                    'mensaje_id': mensaje.id,
+                    'para_todos': True
+                }
+            )
+        else:
+            mensaje.borrado_para.add(request.user)
+        
+        return Response({'mensaje': 'Borrado correctamente'})
+    except MensajeChat.DoesNotExist:
+        return Response({'error': 'Mensaje no encontrado'}, status=status.HTTP_404_NOT_FOUND)

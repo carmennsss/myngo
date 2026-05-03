@@ -1,14 +1,16 @@
 """Vistas de galería de imágenes y colecciones."""
 
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value, IntegerField
+from django.db.models.functions import Coalesce
 from rest_framework import generics, pagination, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from comunidades.models import Comunidad, MiembrosComunidad
 from notificaciones.models import Notificacion
+from usuarios.models import Seguimiento
 
-from .models import Coleccion, ImagenGaleria, MeGusta, PostGuardado, Publicacion, Reporte
+from .models import Coleccion, Comentario, ImagenGaleria, MeGusta, PostGuardado, Publicacion, Reporte
 from .permissions import IsAuthorOrAdmin
 from .serializers import ColeccionSerializer, ImagenGaleriaSerializer, PublicacionSerializer
 
@@ -151,7 +153,7 @@ class ImagenGaleriaDetail(generics.RetrieveUpdateDestroyAPIView):
 class InicioGaleria(generics.ListAPIView):
     """Feed de imágenes para la pantalla de exploración de galería.
 
-    Filtra según las comunidades del usuario autenticado, con soporte de etiquetas.
+    Incluye contenido de comunidades del usuario, seguidos y perfiles públicos.
     """
 
     serializer_class = PublicacionSerializer
@@ -159,38 +161,104 @@ class InicioGaleria(generics.ListAPIView):
     pagination_class = PaginacionGaleria
 
     def get_queryset(self):
-        """Genera el feed de imágenes para exploración.
+        """Genera el feed de imágenes para la galería de inicio.
+
+        Lógica:
+        1. Obtener mis comunidades (donde soy miembro).
+        2. Obtener mis amigos (usuarios que sigo con estado ACEPTADO).
+        3. Mostrar posts que tengan foto Y cumplan al menos una:
+           - Son de mis amigos
+           - Son de mis comunidades
+           - Son míos
+           - Son de un perfil público
+           - Son de una comunidad pública
 
         Returns:
-            QuerySet: Publicaciones con imagen filtradas por comunidad o etiquetas.
+            QuerySet: Publicaciones con imagen filtradas y anotadas.
         """
         usuario = self.request.user if self.request.user.is_authenticated else None
         etiquetas = self.request.query_params.get('etiquetas')
-        qs = Publicacion.objects.filter(
-            imagen__isnull=False, imagen__url_s3__gt='', es_valido_ia=True
-        )
-        if usuario:
-            comunidades_usuario = MiembrosComunidad.objects.filter(usuario=usuario).values_list('comunidad_id', flat=True)
-            publicaciones = qs.filter(comunidad_id__in=comunidades_usuario)
-        else:
-            publicaciones = qs.filter(comunidad__es_publica=True)
 
-        publicaciones = (
-            publicaciones.select_related('autor', 'comunidad', 'imagen', 'autor__perfil')
-            .prefetch_related('imagenes')
-            .annotate(
-                anotado_likes_count=Count('me_gustas', distinct=True),
-                anotado_comentarios_count=Count('comentario', distinct=True),
-            )
+        # Base: solo posts válidos por IA que tengan al menos una foto
+        qs = Publicacion.objects.filter(es_valido_ia=True).filter(
+            Q(imagen__isnull=False) | Q(imagenes__isnull=False)
         )
+
+        # Subqueries de anotaciones (reutilizables)
+        likes_sub = MeGusta.objects.filter(
+            publicacion=OuterRef('pk')
+        ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+
+        coments_sub = Comentario.objects.filter(
+            publicacion=OuterRef('pk')
+        ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
+
         if usuario:
-            publicaciones = publicaciones.annotate(
-                anotado_usuario_dio_like=Exists(MeGusta.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
-                anotado_usuario_guardo_post=Exists(PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)),
+            # 1. Mis comunidades = comunidades de las que soy miembro
+            mis_comunidades_ids = list(
+                MiembrosComunidad.objects.filter(
+                    usuario=usuario
+                ).values_list('comunidad_id', flat=True)
             )
+
+            # 2. Mis amigos = usuarios que sigo con solicitud aceptada
+            mis_amigos_ids = list(
+                Seguimiento.objects.filter(
+                    seguidor=usuario,
+                    seguido_usuario__isnull=False,
+                    estado='ACEPTADO'
+                ).values_list('seguido_usuario_id', flat=True)
+            )
+
+            # 3. Filtro social: mostrar si cumple alguna condición
+            # IMPORTANTE: Los Q() deben estar bien balanceados para perfiles Y comunidades
+            qs = qs.filter(
+                Q(autor=usuario) |                                  # Mis propios posts
+                Q(autor_id__in=mis_amigos_ids) |                    # Posts de mis amigos
+                Q(comunidad_id__in=mis_comunidades_ids) |           # Posts de mis comunidades
+                (Q(autor__perfil__es_publico=True) & Q(comunidad__isnull=True)) |  # Posts de perfiles públicos (no en comunidad)
+                (Q(comunidad__es_publica=True) & Q(comunidad__isnull=False))       # Posts de comunidades públicas
+            )
+
+            # Anotaciones con estado de interacción del usuario actual
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=IntegerField()), Value(0)),
+                anotado_usuario_dio_like=Exists(
+                    MeGusta.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
+                ),
+                anotado_usuario_guardo_post=Exists(
+                    PostGuardado.objects.filter(publicacion=OuterRef('pk'), usuario=usuario)
+                ),
+            )
+        else:
+            # Sin autenticar: perfiles públicos (sin comunidad) y comunidades públicas
+            qs = qs.filter(
+                (Q(autor__perfil__es_publico=True) & Q(comunidad__isnull=True)) |
+                (Q(comunidad__es_publica=True) & Q(comunidad__isnull=False))
+            )
+
+            qs = qs.annotate(
+                anotado_likes_count=Coalesce(Subquery(likes_sub, output_field=IntegerField()), Value(0)),
+                anotado_comentarios_count=Coalesce(Subquery(coments_sub, output_field=IntegerField()), Value(0)),
+            )
+
+        # Eliminar duplicados (por el M2M de imagenes)
+        qs = qs.distinct()
+
+        # Carga optimizada de relaciones
+        qs = qs.select_related(
+            'autor', 'autor__perfil', 'comunidad', 'imagen'
+        ).prefetch_related('imagenes')
+
+        # Filtro opcional por etiquetas
         if etiquetas:
-            publicaciones = publicaciones.filter(imagen__etiquetas__icontains=etiquetas)
-        return publicaciones.distinct().order_by('-fecha_creacion')
+            qs = qs.filter(
+                Q(imagen__etiquetas__icontains=etiquetas) |
+                Q(imagenes__etiquetas__icontains=etiquetas)
+            ).distinct()
+
+        return qs.order_by('-fecha_creacion')
 
 
 class ColeccionViewSet:

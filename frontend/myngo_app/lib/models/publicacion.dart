@@ -11,8 +11,8 @@ class Publicacion {
   final int comunidadId;
   final String comunidadNombre;
   final int? creadorComunidadId;
-  final String titulo;
-  final String contenidoTexto;
+  String titulo;
+  String contenidoTexto;
 
   /// URL de la imagen principal (si existe).
   final String? urlImagen;
@@ -23,6 +23,9 @@ class Publicacion {
   final List<String> urlsImagenes;
 
   final List<int> imagenesIds;
+
+  /// Lista de objetos con 'url' y 'tipo' ('I' o 'V') para cada archivo.
+  final List<Map<String, String>> media;
 
   final double relacionAspecto;
 
@@ -64,6 +67,7 @@ class Publicacion {
     this.imagenId,
     this.urlsImagenes = const [],
     this.imagenesIds = const [],
+    this.media = const [],
     required this.relacionAspecto,
     this.esValidoIa = true,
     this.autorFoto,
@@ -114,6 +118,24 @@ class Publicacion {
                 ?.map((e) => toInt(e))
                 .toList() ??
             [],
+        media: (json['media'] as List<dynamic>?)?.map((e) {
+              final map = e as Map<String, dynamic>;
+              return {
+                'url': map['url']?.toString() ?? '',
+                'tipo': map['tipo']?.toString() ?? 'I',
+              };
+            }).toList() ??
+            (json['urls_imagenes'] as List<dynamic>?)
+                ?.map((e) => {'url': e.toString(), 'tipo': 'I'})
+                .toList() ??
+            ((json['url_imagen'] != null || json['url_archivo_s3'] != null)
+                ? [
+                    {
+                      'url': (json['url_archivo_s3'] ?? json['url_imagen']).toString(),
+                      'tipo': 'I'
+                    }
+                  ]
+                : []),
         relacionAspecto:
             double.tryParse(json['relacion_aspecto']?.toString() ?? '1.0') ??
                 1.0,
@@ -160,6 +182,7 @@ class Publicacion {
     int? imagenId,
     List<String>? urlsImagenes,
     List<int>? imagenesIds,
+    List<Map<String, String>>? media,
     double? relacionAspecto,
     bool? esValidoIa,
     String? autorFoto,
@@ -184,6 +207,7 @@ class Publicacion {
       imagenId: imagenId ?? this.imagenId,
       urlsImagenes: urlsImagenes ?? this.urlsImagenes,
       imagenesIds: imagenesIds ?? this.imagenesIds,
+      media: media ?? this.media,
       relacionAspecto: relacionAspecto ?? this.relacionAspecto,
       esValidoIa: esValidoIa ?? this.esValidoIa,
       autorFoto: autorFoto ?? this.autorFoto,

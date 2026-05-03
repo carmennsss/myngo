@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../models/comunidad.dart';
 import '../../../models/sala_chat.dart';
-import '../../mensajeria/pantalla_chat.dart';
 
 /// Widget que muestra las salas de chat disponibles en la comunidad.
 class SeccionChatComunidad extends StatelessWidget {
@@ -27,21 +27,32 @@ class SeccionChatComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (estaCargando || salasChat == null) {
+    if (estaCargando && salasChat == null) {
       return const Center(
           child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     }
 
+    final salasFiltradas = (salasChat ?? []).where((s) => s.esGrupal).toList();
+
     return ListView.builder(
       padding: const EdgeInsets.all(24),
-      itemCount: (salasChat?.length ?? 0) + 2,
+      itemCount: (salasChat != null) ? salasFiltradas.length + 2 : 1,
       itemBuilder: (context, index) {
         if (index == 0) return _buildChatHeader(context);
+        
+        if (salasChat == null) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.only(top: 40.0),
+            child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+          ));
+        }
+
         if (index == 1) return _buildGeneralChatTile(context);
 
-        final sala = salasChat![index - 2];
+        final sala = salasFiltradas[index - 2];
         return _SalaChatTile(
           sala: sala,
+          comunidad: comunidad,
           esAppClara: esAppClara,
           colorTextoPrincipal: colorTextoPrincipal,
         );
@@ -81,44 +92,74 @@ class SeccionChatComunidad extends StatelessWidget {
   }
 
   Widget _buildGeneralChatTile(BuildContext context) {
+    // Buscar la sala general real:
+    // 1. Que contenga "general"
+    // 2. O la primera sala grupal que encuentre
+    final SalaChat? salaGeneral = (salasChat ?? []).firstWhere(
+      (s) => s.nombre.toLowerCase().contains('general'),
+      orElse: () => (salasChat ?? []).firstWhere(
+        (s) => s.esGrupal,
+        orElse: () => SalaChat(
+          id: -1, 
+          nombre: 'Buscando sala...', 
+          comunidadId: comunidad.id, 
+          esGrupal: true, 
+          fechaCreacion: DateTime.now()
+        ),
+      ),
+    );
+
+    final bool salaEncontrada = salaGeneral != null && salaGeneral.id > 0;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: esAppClara ? Colors.black.withOpacity(0.02) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF28B50).withOpacity(0.4)),
+        border: Border.all(
+          color: salaEncontrada 
+            ? const Color(0xFFF28B50).withOpacity(0.4)
+            : Colors.grey.withOpacity(0.3),
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
-        leading: const CircleAvatar(
-          backgroundColor: Color(0xFFF28B50),
-          child: Icon(Icons.forum_rounded, color: Colors.white, size: 20),
+        leading: CircleAvatar(
+          backgroundColor: salaEncontrada ? const Color(0xFFF28B50) : Colors.grey,
+          child: const Icon(Icons.forum_rounded, color: Colors.white, size: 20),
         ),
         title: Text(
-          'Chat General ✨',
+          salaEncontrada ? 'Chat General ✨' : 'No hay salas disponibles 🐾',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w900,
             color: colorTextoPrincipal,
           ),
         ),
         subtitle: Text(
-          '¡Habla con toda la comunidad!',
+          salaEncontrada ? '¡Habla con toda la comunidad!' : 'Prueba a crear una sala nueva.',
           style: GoogleFonts.outfit(
             color: colorTextoSecundario,
             fontSize: 13,
           ),
         ),
-        trailing:
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFFF28B50)),
+        trailing: Icon(
+          Icons.chevron_right_rounded, 
+          color: salaEncontrada ? const Color(0xFFF28B50) : Colors.grey
+        ),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => PantallaChat(
-                salaId: comunidad.id * -1, // ID negativo para la sala general
-                nombreSala: 'Chat General ✨ ${comunidad.nombre}',
-              ),
-            ),
+          if (!salaEncontrada) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No hay una sala general en esta comunidad 🐾'))
+            );
+            return;
+          }
+          context.push(
+            '/mensajes/sala/${salaGeneral.id}',
+            extra: {
+              'nombre': 'Chat General ✨ ${comunidad.nombre}',
+              'comunidad_id': comunidad.id,
+              'sala': {'id': salaGeneral.id, '_otro_usuario_id': null}
+            },
           );
         },
       ),
@@ -128,11 +169,13 @@ class SeccionChatComunidad extends StatelessWidget {
 
 class _SalaChatTile extends StatelessWidget {
   final SalaChat sala;
+  final Comunidad comunidad;
   final bool esAppClara;
   final Color colorTextoPrincipal;
 
   const _SalaChatTile({
     required this.sala,
+    required this.comunidad,
     required this.esAppClara,
     required this.colorTextoPrincipal,
   });
@@ -160,14 +203,13 @@ class _SalaChatTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right_rounded,
           size: 20, color: Colors.grey),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (ctx) => PantallaChat(
-              salaId: sala.id,
-              nombreSala: sala.nombre,
-            ),
-          ),
+        context.push(
+          '/mensajes/sala/${sala.id}',
+          extra: {
+            'nombre': sala.nombre,
+            'comunidad_id': comunidad.id,
+            'sala': {'id': sala.id, '_otro_usuario_id': null}
+          },
         );
       },
     );

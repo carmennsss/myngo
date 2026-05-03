@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../models/publicacion.dart';
 import '../../../widgets/comunes/estado_vacio_cargando.dart';
@@ -64,80 +65,90 @@ class _TarjetaPostPerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final estilo = post.autorEstiloPost;
-    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
-    final textColor = esFondoClaro ? Colors.black87 : Colors.white;
+    final esFondoClaro = EstiloPostHelper.esFondoClaro(post.autorEstiloPost);
+    final colorTexto = esFondoClaro ? Colors.black87 : Colors.white.withOpacity(0.9);
 
     return GestureDetector(
       onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => DetallePublicacionSheet(
-            publicacion: post,
-            avatarUrl: post.autorFoto ?? '',
-            onEliminado: onUpdate,
-          ),
+        DetallePublicacionSheet.mostrar(
+          context,
+          publicacion: post,
+          avatarUrl: post.autorFoto ?? '',
+          onEliminado: onUpdate,
         );
       },
       child: Container(
         decoration: EstiloPostHelper.buildDecoracion(
-          estilo,
-          borderRadius: BorderRadius.circular(16),
-          borderWidth: 1.5,
-          shadows: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          post.autorEstiloPost,
+          borderRadius: BorderRadius.circular(12),
+          borderWidth: 1.0,
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (post.urlsImagenes.isNotEmpty || post.urlImagen != null)
-              Image.network(
-                post.urlsImagenes.isNotEmpty ? post.urlsImagenes.first : post.urlImagen!,
-                fit: BoxFit.cover,
+            if (post.urlsImagenes.isNotEmpty)
+              Stack(
+                children: [
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    width: double.infinity,
+                    color: Colors.black.withOpacity(0.03),
+                    child: CachedNetworkImage(
+                      imageUrl: post.urlsImagenes.first,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => Container(
+                        color: Colors.black.withOpacity(0.05),
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                    ),
+                  ),
+                  if (post.urlsImagenes.length > 1)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.layers_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    post.contenidoTexto,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.favorite_rounded,
-                          color: Color(0xFFF28B50), size: 12),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.likesCount}',
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+                  if (post.contenidoTexto.isNotEmpty)
+                    Text(
+                      post.contenidoTexto,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: colorTexto,
                       ),
-                      const Spacer(),
-                      Text(
+                    ),
+                  if (post.comunidadNombre != 'General')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
                         post.comunidadNombre,
                         style: GoogleFonts.inter(
                             fontSize: 9,
                             color: const Color(0xFF248EA6),
                             fontWeight: FontWeight.bold),
                       ),
-                    ],
-                  ),
+                    ),
                 ],
               ),
             ),

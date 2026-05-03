@@ -8,8 +8,11 @@ import '../../models/comunidad.dart';
 import '../../models/usuario.dart';
 import '../comunes/grid_imagenes_post.dart';
 import '../comunes/acciones_y_comentarios_post.dart';
+import '../comunes/menu_opciones_contenido.dart';
 import '../../utils/estilo_post_helper.dart';
 import '../comunes/hover_profile_card.dart';
+import '../dialogo_crear_post.dart';
+import '../../services/servicio_comunidades.dart';
 
 class DialogoDetallePublicacion extends StatefulWidget {
   final Publicacion post;
@@ -93,9 +96,43 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                       ),
                     ],
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                  Row(
+                    children: [
+                      MenuOpcionesContenido(
+                        tipoObjeto: 'POST',
+                        objetoId: widget.post.id,
+                        autorId: widget.post.autorId,
+                        comunidadId: widget.post.comunidadId,
+                        onEditado: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => DialogoCrearPost(
+                              titulo: 'Editar Miau-post 🐾',
+                              initialTexto: widget.post.contenidoTexto,
+                              onPublicar: (texto, imagenes, etiquetas) async {
+                                final res = await ServicioComunidades().actualizarPublicacion(
+                                  idPublicacion: widget.post.id,
+                                  texto: texto,
+                                );
+                                if (res.exito) {
+                                  setState(() {
+                                    widget.post.contenidoTexto = texto;
+                                  });
+                                  return true;
+                                }
+                                return false;
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -187,14 +224,14 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             widget.post.contenidoTexto,
                             style: GoogleFonts.outfit(fontSize: 16, height: 1.4, color: colorTexto),
                           ),
-                          if (widget.post.urlsImagenes.isNotEmpty || widget.post.urlImagen != null) ...[
+                          if (widget.post.media.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(16),
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(maxHeight: 400),
                                 child: GridImagenesPost(
-                                  urls: widget.post.urlsImagenes.isNotEmpty ? widget.post.urlsImagenes : [widget.post.urlImagen!],
+                                  media: widget.post.media,
                                 ),
                               ),
                             ),

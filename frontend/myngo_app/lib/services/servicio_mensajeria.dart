@@ -38,13 +38,27 @@ class ServicioMensajeria {
 
   // --- MÉTODOS REST ---
 
-  /// Crea una nueva sala de chat privada con otro usuario.
-  Future<Map<String, dynamic>?> crearSalaPrivada(int idOtroUsuario) async {
+  /// Crea una nueva sala de chat (privada, grupal o de comunidad).
+  Future<Map<String, dynamic>?> crearSala({
+    String? nombre,
+    bool esGrupal = false,
+    bool esPublica = false,
+    int? idOtroUsuario,
+    List<int>? miembrosIds,
+    int? comunidadId,
+  }) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlApi/mensajeria/salas/crear_privada/'),
+        Uri.parse('$_urlApi/mensajeria/salas/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode({'otro_usuario_id': idOtroUsuario}),
+        body: jsonEncode({
+          if (nombre != null) 'nombre': nombre,
+          'es_grupal': esGrupal,
+          'es_publica': esPublica,
+          if (idOtroUsuario != null) 'otro_usuario_id': idOtroUsuario,
+          if (miembrosIds != null) 'miembros_ids': miembrosIds,
+          if (comunidadId != null) 'comunidad_id': comunidadId,
+        }),
       ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
@@ -73,7 +87,7 @@ class ServicioMensajeria {
   Future<Map<String, dynamic>> obtenerConteoMensajesNoLeidos() async {
     try {
       final respuesta = await http.get(
-        Uri.parse('$_urlApi/mensajeria/mensajes/no_leidos/'),
+        Uri.parse('$_urlApi/mensajeria/no-leidos/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
 
@@ -92,6 +106,50 @@ class ServicioMensajeria {
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
     } catch (_) {}
+  }
+
+  /// Recupera el historial de mensajes de una sala.
+  Future<List<Map<String, dynamic>>> obtenerMensajesSala(int idSala, {int limit = 30, int offset = 0}) async {
+    try {
+      final respuesta = await http.get(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/mensajes/?limit=$limit&offset=$offset'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return List<Map<String, dynamic>>.from(data['results'] ?? []);
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Edita el contenido de un mensaje enviado.
+  Future<bool> editarMensaje(int idMensaje, String nuevoContenido) async {
+    try {
+      final respuesta = await http.patch(
+        Uri.parse('$_urlApi/mensajeria/mensajes/$idMensaje/editar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'contenido': nuevoContenido}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Borra un mensaje (solo para el usuario o para todos).
+  Future<bool> borrarMensaje(int idMensaje, {bool paraTodos = false}) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlApi/mensajeria/mensajes/$idMensaje/borrar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'para_todos': paraTodos}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   // --- WEBSOCKETS ---
@@ -168,6 +226,9 @@ class ServicioMensajeria {
       final token = await _servicioUsuarios.obtenerToken();
       if (token == null) return;
 
+      // Cerrar conexión previa si existe
+      _canalNotificaciones?.sink.close();
+
       final url = Uri.parse("$_urlWs/chat-notificaciones/?token=$token");
       _canalNotificaciones = WebSocketChannel.connect(url);
       _estaConectadoNotificaciones = true;
@@ -214,12 +275,13 @@ class ServicioMensajeria {
   // --- COMUNICACIÓN ---
 
   /// Envía un mensaje de texto por el WebSocket de la sala actual.
-  void enviarMensajeChat(String contenido, {String? idCliente}) {
+  void enviarMensajeChat(String contenido, {String? idCliente, int? referenciaA}) {
     if (_estaConectadoChat && _canalChat != null) {
       _canalChat!.sink.add(jsonEncode({
         'type': 'message',
         'content': contenido,
         'client_id': idCliente,
+        if (referenciaA != null) 'referencia_a': referenciaA,
       }));
     }
   }
@@ -237,6 +299,16 @@ class ServicioMensajeria {
       _canalChat!.sink.add(jsonEncode({
         'type': 'add_member',
         'user_id': idUsuario,
+      }));
+    }
+  }
+
+  /// Notifica si el usuario está escribiendo o ha dejado de hacerlo.
+  void enviarEventoTyping(int idSala, bool estaEscribiendo) {
+    if (_estaConectadoChat && _canalChat != null) {
+      _canalChat!.sink.add(jsonEncode({
+        'type': 'typing',
+        'is_typing': estaEscribiendo,
       }));
     }
   }

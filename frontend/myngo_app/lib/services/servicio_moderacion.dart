@@ -37,7 +37,7 @@ class ServicioModeracion {
         'objeto_id': idObjeto,
         'motivo': motivo,
         'comentario': comentario,
-        'comunidad': comunidadId,
+        'comunidad': (comunidadId != null && comunidadId != 0) ? comunidadId : null,
       };
 
       final respuesta = await http.post(

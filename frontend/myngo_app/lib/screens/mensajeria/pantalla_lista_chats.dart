@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/servicio_mensajeria.dart';
+import '../../services/servicio_usuarios.dart';
+import '../../models/usuario.dart';
+import '../../widgets/mensajeria/dialogo_crear_sala.dart';
 import '../inicio/pantalla_inicio.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
@@ -21,6 +24,8 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   bool _cargando = true;
   int? _miId;
   final TextEditingController _searchController = TextEditingController();
+  final _servicioMensajeria = ServicioMensajeria();
+  final _servicioUsuarios = ServicioUsuarios();
 
   @override
   void initState() {
@@ -38,14 +43,16 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   Future<void> _cargar() async {
     if (!mounted) return;
     setState(() => _cargando = true);
+    
     final prefs = await SharedPreferences.getInstance();
-    _miId = prefs.getInt('usuario_id');
+    final id = prefs.getInt('usuario_id');
     
     // Obtener salas (el backend ya está optimizado con prefetch)
-    final salas = await ServicioMensajeria().obtenerSalasChat();
+    final salas = await _servicioMensajeria.obtenerSalasChat();
     
     if (mounted) {
       setState(() {
+        _miId = id;
         _salas = salas;
         _salasFiltradas = salas;
         _cargando = false;
@@ -85,6 +92,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         (m) => m['id'] != _miId,
         orElse: () => miembros.first,
       );
+      sala['_otro_usuario_id'] = otro['id'];
       return {
         'nombre': '@${otro['nombre_usuario'] ?? sala['nombre']}',
         'avatar': otro['url_avatar'],
@@ -93,10 +101,55 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     return {'nombre': sala['nombre'] ?? 'Chat', 'avatar': null};
   }
 
+  void _mostrarDialogoCrearSala() async {
+    // Obtener lista de posibles participantes (amigos/seguidos)
+    final res = await _servicioUsuarios.listarUsuarios();
+    if (!res.exito || !mounted) return;
+
+    // Filtramos para mostrar a todos menos yo
+    final potenciales = (res.datos ?? []).where((u) => u.id != _miId).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DialogoCrearSala(
+        potencialesParticipantes: potenciales,
+        alCrear: (nombre, esPublica, miembrosIds) async {
+          Navigator.pop(context); // Cerrar diálogo
+          
+          final nuevaSala = await _servicioMensajeria.crearSala(
+            nombre: nombre,
+            esGrupal: true,
+            esPublica: esPublica,
+            miembrosIds: miembrosIds,
+          );
+
+          if (nuevaSala != null && mounted) {
+            _cargar(); // Recargar lista
+            context.push('/mensajes/sala/${nuevaSala['id']}', extra: {
+              'nombre': nuevaSala['nombre'],
+              'sala': nuevaSala
+            });
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F8),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _mostrarDialogoCrearSala,
+        backgroundColor: const Color(0xFFC35E34),
+        icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
+        label: Text(
+          'Nuevo Chat',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xFFC35E34),
@@ -174,21 +227,6 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                 ),
             ],
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Implementar búsqueda de usuarios para iniciar chat nuevo
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Busca a alguien en Explorar para chatear 🐾')),
-          );
-        },
-        backgroundColor: const Color(0xFFC35E34),
-        elevation: 4,
-        icon: const Icon(Icons.edit_note_rounded, color: Colors.white),
-        label: Text(
-          'Nuevo Chat',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
     );
@@ -276,7 +314,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           child: InkWell(
             onTap: () async {
               await context.push('/mensajes/sala/${sala['id']}', extra: {'nombre': nombre, 'sala': sala});
-              _cargar();
+              if (mounted) _cargar();
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
@@ -292,7 +330,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                 children: [
                   // Avatar
                   Hero(
-                    tag: 'avatar_${sala['id']}',
+                    tag: 'avatar_sala_${sala['id'] ?? index}',
                     child: Container(
                       width: 64,
                       height: 64,
@@ -330,12 +368,15 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              nombre,
-                              style: GoogleFonts.outfit(
-                                fontWeight: noLeidos > 0 ? FontWeight.w800 : FontWeight.w600,
-                                fontSize: 17,
-                                color: const Color(0xFF2D2D2D),
+                            Expanded(
+                              child: Text(
+                                nombre,
+                                style: GoogleFonts.outfit(
+                                  fontWeight: noLeidos > 0 ? FontWeight.w800 : FontWeight.w600,
+                                  fontSize: 17,
+                                  color: const Color(0xFF2D2D2D),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Text(

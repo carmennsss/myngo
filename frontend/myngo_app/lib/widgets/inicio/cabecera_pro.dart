@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/comunes/boton_tactil.dart';
-import '../../screens/perfiles/pantalla_detalle_perfil.dart';
+import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
 
 /// Cabecera superior de la pantalla de inicio con logo, navegación y perfil de usuario.
 class CabeceraPro extends StatelessWidget {
@@ -47,14 +47,25 @@ class CabeceraPro extends StatelessWidget {
     final isSmallMobile = screenWidth < 500;
 
     return Container(
-      height: 60,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-      decoration: const BoxDecoration(
+      height: 70,
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFC35E34), Color(0xFFE89A6A)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: [
+            const Color(0xFFC35E34),
+            const Color(0xFFD95F43).withOpacity(0.95),
+            const Color(0xFFE89A6A).withOpacity(0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -65,7 +76,7 @@ class CabeceraPro extends StatelessWidget {
                 Scaffold.of(context).openDrawer();
               },
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
           ],
           MouseRegion(
             cursor: SystemMouseCursors.click,
@@ -73,10 +84,26 @@ class CabeceraPro extends StatelessWidget {
               onTap: () => onNavSelected(0),
               child: Row(
                 children: [
-                  Icon(Icons.pets, color: Colors.white, size: isMobile ? 24 : 28),
+                  Image.asset(
+                    'assets/images/logo_myngo.png',
+                    height: isMobile ? 50 : 64,
+                    width: isMobile ? 50 : 64,
+                    fit: BoxFit.contain,
+                  ),
                   if (!isSmallMobile) ...[
-                    SizedBox(width: isMobile ? 8 : 12),
-                    Text('MYNGO', style: GoogleFonts.outfit(color: Colors.white, fontSize: isMobile ? 20 : 26, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                    const SizedBox(width: 14),
+                    Text(
+                      'MYNGO',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: isMobile ? 22 : 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2.0,
+                        shadows: [
+                          Shadow(color: Colors.black26, offset: const Offset(0, 2), blurRadius: 4),
+                        ],
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -281,7 +308,7 @@ class _UserProfileHeader extends StatelessWidget {
                     height: 30,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white,
                       image: (avatarUrl != null && avatarUrl!.isNotEmpty)
                           ? DecorationImage(image: CachedNetworkImageProvider(avatarUrl!), fit: BoxFit.cover)
                           : null,

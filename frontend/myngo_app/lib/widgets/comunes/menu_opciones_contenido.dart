@@ -136,13 +136,17 @@ class MenuOpcionesContenido extends StatelessWidget {
                 final servicioComunidades = ServicioComunidades();
 
                 if (tipoObjeto == 'POST') {
-                  res = await servicioComunidades.eliminarPublicacionModeracion(objetoId, razon: esModeracion ? razon : null);
+                  res = esModeracion 
+                      ? await servicioComunidades.eliminarPublicacionModeracion(objetoId, razon: razon)
+                      : await servicioGaleria.eliminarPublicacion(objetoId, razon: razon);
                 } else if (tipoObjeto == 'IMAGEN') {
                   res = await servicioGaleria.eliminarImagen(objetoId, razon: esModeracion ? razon : null);
                 } else if (tipoObjeto == 'COMUNIDAD') {
                   res = await servicioComunidades.eliminarComunidad(objetoId);
                 } else if (tipoObjeto == 'COMENTARIO') {
-                  res = await servicioComunidades.eliminarComentarioModeracion(objetoId, razon: esModeracion ? razon : null);
+                  res = esModeracion
+                      ? await servicioComunidades.eliminarComentarioModeracion(objetoId, razon: razon)
+                      : RespuestaApi(exito: false, mensaje: 'Eliminar comentario no implementado');
                 }
 
                 if (res.exito) {

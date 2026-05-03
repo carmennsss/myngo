@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/coleccion.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
+import '../../services/servicio_interaccion.dart';
 
 class BottomSheetColecciones extends StatefulWidget {
   final int? imagenId;
@@ -60,7 +61,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
   Future<void> _toggleGuardarPost() async {
     if (widget.postId == null) return;
     setState(() => _guardando = true);
-    final res = await _servicioComunidades.alternarGuardadoPost(widget.postId!);
+    final res = await ServicioInteraccion().alternarGuardado(widget.postId!);
     if (mounted) {
       if (res.exito) {
         setState(() {

@@ -183,8 +183,14 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
           setState(() {
             _mode = mode;
             _posts = null;
+            // Al volver a social (Para ti), limpiamos la búsqueda si existía
+            if (mode == FeedMode.social) {
+              _searchController.clear();
+            }
           });
-          _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null);
+          _cargarPosts(busqueda: mode == FeedMode.gallery && _searchController.text.isNotEmpty 
+              ? _searchController.text 
+              : null);
         }
       },
       child: Column(

@@ -118,7 +118,10 @@ class PublicacionList(generics.ListAPIView):
                     return Publicacion.objects.none()
             return qs.filter(autor=perfil.usuario, comunidad__isnull=True).order_by('-fecha_creacion')
 
-        return qs.filter(comunidad__es_publica=True).order_by('-fecha_creacion')
+        return qs.filter(
+            Q(comunidad__es_publica=True) |
+            Q(autor__perfil__es_publico=True, comunidad__isnull=True)
+        ).distinct().order_by('-fecha_creacion')
 
 
 class PublicacionCreate(generics.CreateAPIView):
@@ -143,7 +146,7 @@ class PublicacionCreate(generics.CreateAPIView):
             Response: Datos de la publicación creada o mensaje de error.
         """
         from django.db import transaction
-        archivos = request.FILES.getlist('url_archivo_s3')
+        archivos = request.FILES.getlist('url_archivo_s3[]') or request.FILES.getlist('url_archivo_s3')
         titulo = request.data.get('titulo', '') or ''
         contenido_texto = request.data.get('contenido_texto', '') or ''
         texto = f"{titulo} {contenido_texto}".strip()
@@ -155,12 +158,22 @@ class PublicacionCreate(generics.CreateAPIView):
                 publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
                 imagenes_creadas = []
                 for archivo in archivos[:4]:
+                    # Validación de tamaño (100 MB = 100 * 1024 * 1024 bytes)
+                    if archivo.size > 100 * 1024 * 1024:
+                        raise Exception(f"El archivo {archivo.name} supera el límite de 100MB.")
+
+                    # Detección de tipo
+                    tipo = 'I'
+                    if archivo.content_type and archivo.content_type.startswith('video/'):
+                        tipo = 'V'
+
                     img_instancia = ImagenGaleria.objects.create(
                         propietario=request.user,
                         url_s3=archivo,
                         comunidad_id=request.data.get('comunidad') or None,
                         relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
                         etiquetas=request.data.get('etiquetas', ''),
+                        tipo_archivo=tipo,
                     )
                     imagenes_creadas.append(img_instancia)
                 if imagenes_creadas:

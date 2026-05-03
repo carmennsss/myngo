@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
@@ -72,19 +74,22 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
       body: Stack(
         children: [
           // Visor de la imagen central interactiva de Zoom
+          // Visor de contenido (Imagen o Vídeo)
           Center(
-            child: InteractiveViewer(
-              minScale: 0.1,
-              maxScale: 6.0,
-              child: CachedNetworkImage(
-                imageUrl: widget.imagen.urlArchivo,
-                fit: BoxFit.contain,
-                width: double.infinity,
-                height: double.infinity,
-                placeholder: (c, u) => const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
-                errorWidget: (c, u, e) => const Center(child: Icon(Icons.error_outline, color: Colors.white24, size: 48)),
-              ),
-            ),
+            child: widget.imagen.tipoArchivo == 'V'
+                ? _VideoDetalle(url: widget.imagen.urlArchivo)
+                : InteractiveViewer(
+                    minScale: 0.1,
+                    maxScale: 6.0,
+                    child: CachedNetworkImage(
+                      imageUrl: widget.imagen.urlArchivo,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                      placeholder: (c, u) => const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                      errorWidget: (c, u, e) => const Center(child: Icon(Icons.error_outline, color: Colors.white24, size: 48)),
+                    ),
+                  ),
           ),
           
           // AppBar superpuesta transparente para volver
@@ -309,5 +314,60 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     }
 
     return widgets;
+  }
+}
+
+class _VideoDetalle extends StatefulWidget {
+  final String url;
+  const _VideoDetalle({required this.url});
+
+  @override
+  State<_VideoDetalle> createState() => _VideoDetalleState();
+}
+
+class _VideoDetalleState extends State<_VideoDetalle> {
+  late VideoPlayerController _videoController;
+  ChewieController? _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _videoController.initialize().then((_) {
+      if (mounted) {
+        setState(() {
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController,
+            autoPlay: true,
+            looping: false,
+            aspectRatio: _videoController.value.aspectRatio,
+            materialProgressColors: ChewieProgressColors(
+              playedColor: const Color(0xFFF28B50),
+              handleColor: const Color(0xFFF28B50),
+              backgroundColor: Colors.white24,
+              bufferedColor: Colors.white38,
+            ),
+          );
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_chewieController != null && _chewieController!.videoPlayerController.value.isInitialized) {
+      return AspectRatio(
+        aspectRatio: _videoController.value.aspectRatio,
+        child: Chewie(controller: _chewieController!),
+      );
+    }
+    return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
   }
 }
