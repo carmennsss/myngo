@@ -79,8 +79,12 @@ class MensajeChat(models.Model):
     contenido = models.TextField(null=True, blank=True)
     url_archivo_s3 = models.CharField(max_length=500, null=True, blank=True)
     fecha_envio = models.DateTimeField(auto_now_add=True)
-    es_leido = models.BooleanField(default=False)
-    fecha_lectura = models.DateTimeField(null=True, blank=True)
+    leido_por = models.ManyToManyField(Usuario, related_name='mensajes_leidos', blank=True)
+    referencia_a = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='respuestas')
+    es_editado = models.BooleanField(default=False)
+    fecha_edicion = models.DateTimeField(null=True, blank=True)
+    borrado_para_todos = models.BooleanField(default=False)
+    borrado_para = models.ManyToManyField(Usuario, related_name='mensajes_borrados_localmente', blank=True)
 
     def __str__(self):
         return f"Mensaje #{self.id} en {self.sala.nombre}"

@@ -213,14 +213,15 @@ class ServicioGaleria {
       if (idComunidad != null) solicitud.fields['comunidad'] = idComunidad.toString();
       solicitud.fields['es_publica'] = esPublica ? 'true' : 'false';
 
-      final datosMime = lookupMimeType(imagenArchivo.path)?.split('/');
       final bytes = await imagenArchivo.readAsBytes();
+      final mimeType = lookupMimeType(imagenArchivo.name, headerBytes: bytes) ?? 'application/octet-stream';
+      final typeParts = mimeType.split('/');
       
       solicitud.files.add(http.MultipartFile.fromBytes(
         'url_s3',
         bytes,
         filename: imagenArchivo.name,
-        contentType: datosMime != null ? MediaType(datosMime[0], datosMime[1]) : null,
+        contentType: MediaType(typeParts[0], typeParts[1]),
       ));
 
       final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));

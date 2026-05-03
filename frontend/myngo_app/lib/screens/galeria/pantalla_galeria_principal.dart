@@ -97,9 +97,13 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         ),
         actions: [
           if (_puedeCrearColeccion)
-            IconButton(
+            PopupMenuButton<String>(
               icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFFC35E34)),
-              onPressed: () => _subirImagen(),
+              onSelected: (value) => _seleccionarYSubir(value == 'video'),
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'image', child: Row(children: [Icon(Icons.image_outlined, size: 20), SizedBox(width: 8), Text('Subir Imagen')])),
+                const PopupMenuItem(value: 'video', child: Row(children: [Icon(Icons.videocam_outlined, size: 20), SizedBox(width: 8), Text('Subir Vídeo')])),
+              ],
             ),
         ],
       ),
@@ -273,17 +277,19 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     );
   }
 
-  Future<void> _subirImagen() async {
+  Future<void> _seleccionarYSubir(bool esVideo) async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = esVideo 
+        ? await picker.pickVideo(source: ImageSource.gallery)
+        : await picker.pickImage(source: ImageSource.gallery);
     
-    if (image != null) {
+    if (pickedFile != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Subiendo imagen... 🐾'), behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text(esVideo ? 'Subiendo vídeo... 🐾' : 'Subiendo imagen... 🐾'), behavior: SnackBarBehavior.floating),
       );
       
       final res = await _servicioGaleria.subirImagenGaleria(
-        image, 
+        pickedFile, 
         comunidadId: widget.comunidadId,
         esPublica: true
       );

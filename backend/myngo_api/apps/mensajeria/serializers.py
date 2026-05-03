@@ -16,14 +16,33 @@ class MensajeChatSerializer(serializers.ModelSerializer):
     emisor_nombre = serializers.ReadOnlyField(source='emisor.nombre_usuario')
     emisor_foto = serializers.SerializerMethodField()
     content = serializers.ReadOnlyField(source='contenido')
-    leido = serializers.BooleanField(source='es_leido', read_only=True)
+    leido_por_ids = serializers.PrimaryKeyRelatedField(source='leido_por', many=True, read_only=True)
+    referencia_a_detalle = serializers.SerializerMethodField()
+    borrado_para_mi = serializers.SerializerMethodField()
 
     class Meta:
         model = MensajeChat
         fields = [
             'id', 'sala', 'emisor', 'emisor_nombre', 'emisor_foto',
-            'content', 'fecha_envio', 'leido'
+            'content', 'fecha_envio', 'leido_por_ids',
+            'referencia_a', 'referencia_a_detalle', 'es_editado', 
+            'fecha_edicion', 'borrado_para_todos', 'borrado_para_mi'
         ]
+
+    def get_referencia_a_detalle(self, obj):
+        if obj.referencia_a:
+            return {
+                'id': obj.referencia_a.id,
+                'emisor_nombre': obj.referencia_a.emisor.nombre_usuario,
+                'contenido': obj.referencia_a.contenido if not obj.referencia_a.borrado_para_todos else 'Mensaje borrado'
+            }
+        return None
+
+    def get_borrado_para_mi(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.borrado_para.filter(id=request.user.id).exists()
+        return False
 
     def get_emisor_foto(self, obj):
         """Obtiene la URL de la foto del emisor del mensaje."""
@@ -67,5 +86,5 @@ class SalaChatSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.mensajes.filter(es_leido=False).exclude(emisor=request.user).count()
+            return obj.mensajes.exclude(leido_por=request.user).exclude(emisor=request.user).count()
         return 0

@@ -6,12 +6,8 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import '../../utils/configuracion.dart';
-import '../../services/servicio_mensajeria.dart';
-import '../../utils/configuracion.dart';
-import '../inicio/pantalla_inicio.dart';
-
 import 'package:provider/provider.dart';
+import '../../utils/configuracion.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
@@ -68,6 +64,10 @@ class _PantallaChatState extends State<PantallaChat> {
   Timer? _typingTimer;
   bool _yoEstoyEscribiendo = false;
   final Map<int, String> _usuariosEscribiendo = {};
+
+  // Estado para edición y respuestas
+  int? _mensajeIdEdicion;
+  Map<String, dynamic>? _mensajeParaResponder;
 
   @override
   void initState() {
@@ -224,8 +224,12 @@ class _PantallaChatState extends State<PantallaChat> {
       'user_id': m['emisor'],
       'username': m['emisor_nombre'],
       'timestamp': m['fecha_envio'],
-      'leido': m['leido'] ?? false,
-      'hasError': (m['content'] == null || m['content'].toString().isEmpty),
+      'leido_por_ids': List<int>.from(m['leido_por_ids'] ?? []),
+      'referencia_a': m['referencia_a'],
+      'referencia_a_detalle': m['referencia_a_detalle'],
+      'es_editado': m['es_editado'] ?? false,
+      'borrado_para_todos': m['borrado_para_todos'] ?? false,
+      'hasError': (m['content'] == null && m['url_archivo_s3'] == null),
     };
   }
 
@@ -272,17 +276,35 @@ class _PantallaChatState extends State<PantallaChat> {
             } else {
               _usuariosEscribiendo.remove(uId);
             }
+          } else if (data['type'] == 'message_edited') {
+            final idx = _mensajes.indexWhere((m) => m['message_id'] == data['mensaje_id']);
+            if (idx != -1) {
+              _mensajes[idx] = Map<String, dynamic>.from(_mensajes[idx])
+                ..['content'] = data['nuevo_contenido']
+                ..['es_editado'] = true;
+            }
+          } else if (data['type'] == 'message_deleted') {
+            if (data['para_todos'] == true) {
+              final idx = _mensajes.indexWhere((m) => m['message_id'] == data['mensaje_id']);
+              if (idx != -1) {
+                _mensajes[idx] = Map<String, dynamic>.from(_mensajes[idx])
+                  ..['content'] = 'Mensaje borrado'
+                  ..['borrado_para_todos'] = true;
+              }
+            }
           } else if (data['type'] == 'messages_read') {
             // El receptor ha leído los mensajes → marcar como leídos en UI
             final List<dynamic> ids = data['leidos_ids'] ?? [];
-            for (final id in ids) {
-              _mensajesLeidos.add(id as int);
-            }
-            // Actualizar campo leido en la lista local
+            final int leidoPor = data['leido_por'] ?? 0;
+            
             for (int i = 0; i < _mensajes.length; i++) {
-              if (_mensajesLeidos.contains(_mensajes[i]['message_id'])) {
-                _mensajes[i] = Map<String, dynamic>.from(_mensajes[i])
-                  ..['leido'] = true;
+              if (ids.contains(_mensajes[i]['message_id'])) {
+                final currentLeidos = List<int>.from(_mensajes[i]['leido_por_ids'] ?? []);
+                if (!currentLeidos.contains(leidoPor)) {
+                  currentLeidos.add(leidoPor);
+                  _mensajes[i] = Map<String, dynamic>.from(_mensajes[i])
+                    ..['leido_por_ids'] = currentLeidos;
+                }
               }
             }
           }
@@ -294,10 +316,22 @@ class _PantallaChatState extends State<PantallaChat> {
 
   }
 
-  void _enviarMensaje() {
+  void _enviarMensaje() async {
     final texto = _mensajeController.text.trim();
     if (texto.isNotEmpty) {
-      // Optimismo: Añadir mensaje localmente de inmediato
+      if (_mensajeIdEdicion != null) {
+        // Modo edición
+        final exito = await _servicioChat.editarMensaje(_mensajeIdEdicion!, texto);
+        if (exito) {
+          setState(() {
+            _mensajeIdEdicion = null;
+            _mensajeController.clear();
+          });
+        }
+        return;
+      }
+
+      // Modo envío normal o respuesta
       final clientId = DateTime.now().microsecondsSinceEpoch.toString();
       final mensajeOptimista = {
         'type': 'chat_message',
@@ -307,25 +341,76 @@ class _PantallaChatState extends State<PantallaChat> {
         'timestamp': DateTime.now().toIso8601String(),
         'isOptimistic': true,
         'client_id': clientId,
-        'leido': false,
+        'leido_por_ids': [],
+        'referencia_a': _mensajeParaResponder?['message_id'],
+        'referencia_a_detalle': _mensajeParaResponder != null ? {
+          'id': _mensajeParaResponder!['message_id'],
+          'emisor_nombre': _mensajeParaResponder!['username'],
+          'contenido': _mensajeParaResponder!['content'],
+        } : null,
       };
 
       setState(() {
         _mensajes.insert(0, mensajeOptimista);
+        _mensajeController.clear();
+        final refId = _mensajeParaResponder?['message_id'];
+        _mensajeParaResponder = null;
+        _servicioChat.enviarMensajeChat(texto, idCliente: clientId, referenciaA: refId as int?);
       });
 
-      _servicioChat.enviarMensajeChat(texto, idCliente: clientId);
-      _mensajeController.clear();
-      
-      // Auto-scroll si no estamos arriba
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     }
+  }
+
+  void _responderMensaje(Map<String, dynamic> msg) {
+    setState(() {
+      _mensajeParaResponder = msg;
+      _mensajeIdEdicion = null;
+      _focusNode.requestFocus();
+    });
+  }
+
+  void _editarMensaje(Map<String, dynamic> msg) {
+    setState(() {
+      _mensajeIdEdicion = msg['message_id'];
+      _mensajeParaResponder = null;
+      _mensajeController.text = msg['content'] ?? '';
+      _focusNode.requestFocus();
+    });
+  }
+
+  void _confirmarBorrado(Map<String, dynamic> msg) {
+    final esMio = msg['user_id'] == _miId;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Borrar mensaje?'),
+        content: const Text('Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _servicioChat.borrarMensaje(msg['message_id']);
+              setState(() {
+                _mensajes.removeWhere((m) => m['message_id'] == msg['message_id']);
+              });
+            },
+            child: const Text('Borrar para mí'),
+          ),
+          if (esMio)
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _servicioChat.borrarMensaje(msg['message_id'], paraTodos: true);
+              },
+              child: const Text('Borrar para todos', style: TextStyle(color: Colors.red)),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -566,127 +651,212 @@ class _PantallaChatState extends State<PantallaChat> {
             style: GoogleFonts.outfit(
                 fontSize: 12,
                 color: Colors.grey.shade600,
-                fontStyle: FontStyle.italic)),
-      ),
-    );
+                fontStyle: FontStyle.italic),
+          ),
+        ),
+      );
   }
 
-  Widget _buildChatBubble(
-      Map<String, dynamic> msg, bool esMio, String status, bool leido) {
+  Widget _buildChatBubble(Map<String, dynamic> msg, bool esMio, String status, bool _) {
     String timestampStr = '';
     try {
-      timestampStr =
-          DateFormat('HH:mm').format(DateTime.parse(msg['timestamp']));
+      timestampStr = DateFormat('HH:mm').format(DateTime.parse(msg['timestamp']));
     } catch (_) {}
 
-    return Align(
-      alignment: esMio ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        child: Column(
-          crossAxisAlignment:
-              esMio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            if (!esMio)
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(msg['username'] ?? '',
-                        style: GoogleFonts.outfit(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade700)),
+    final leidoPorIds = List<int>.from(msg['leido_por_ids'] ?? []);
+    final esLeidoTotal = leidoPorIds.isNotEmpty;
+    final borrado = msg['borrado_para_todos'] == true;
+
+    return GestureDetector(
+      onLongPress: () {
+        if (!borrado) _mostrarMenuMensaje(msg);
+      },
+      child: Align(
+        alignment: esMio ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+          child: Column(
+            crossAxisAlignment: esMio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              if (!esMio && widget.comunidadId != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 2),
+                  child: Text(msg['username'] ?? '',
+                      style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFC35E34))),
+                ),
+              Container(
+                decoration: BoxDecoration(
+                  color: esMio ? const Color(0xFFC35E34) : Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: Radius.circular(esMio ? 16 : 4),
+                    bottomRight: Radius.circular(esMio ? 4 : 16),
+                  ),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
                   ],
                 ),
-              ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: esMio ? const Color(0xFFC35E34) : Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(esMio ? 16 : 4),
-                  bottomRight: Radius.circular(esMio ? 4 : 16),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2))
-                ],
-              ),
-              child: Opacity(
-                opacity: (msg['isOptimistic'] == true || msg['hasError'] == true) ? 0.6 : 1.0,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.otroUsuarioId == null && !esMio)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: Text(
-                          msg['username'] ?? 'Usuario',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                            color: const Color(0xFFC35E34),
+                    // Preview de Respuesta
+                    if (msg['referencia_a_detalle'] != null)
+                      Container(
+                        margin: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: esMio ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border(left: BorderSide(color: esMio ? Colors.white54 : const Color(0xFFC35E34), width: 3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              msg['referencia_a_detalle']['emisor_nombre'] ?? '',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: esMio ? Colors.white : const Color(0xFFC35E34),
+                              ),
+                            ),
+                            Text(
+                              msg['referencia_a_detalle']['contenido'] ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: esMio ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            borrado ? 'Mensaje borrado' : (msg['content'] ?? ''),
+                            style: GoogleFonts.outfit(
+                              color: esMio ? Colors.white : const Color(0xFF4A4440),
+                              fontSize: 15,
+                              fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
+                            ),
                           ),
-                        ),
+                          if (msg['es_editado'] == true && !borrado)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text('editado',
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      color: esMio ? Colors.white70 : Colors.grey.shade400)),
+                            ),
+                        ],
                       ),
-                    Text(
-                      msg['content'] ?? '',
-                      style: GoogleFonts.outfit(
-                          color: esMio ? Colors.white : const Color(0xFF4A4440),
-                          fontSize: 15),
                     ),
-                    if (msg['hasError'] == true) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'No se pudo cargar este mensaje',
-                        style: GoogleFonts.outfit(
-                          color: esMio ? Colors.white70 : Colors.red.shade400,
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 3, right: 4, left: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (timestampStr.isNotEmpty)
+                      Text(timestampStr, style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey.shade500)),
+                    if (esMio) ...[
+                      const SizedBox(width: 4),
+                      if (msg['isOptimistic'] == true)
+                        Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade400)
+                      else
+                        esLeidoTotal
+                            ? const Icon(Icons.done_all_rounded, size: 14, color: Color(0xFF248EA6))
+                            : Icon(Icons.done_rounded, size: 14, color: Colors.grey.shade400),
                     ],
                   ],
                 ),
               ),
-            ),
-            // Timestamp + estado de lectura (solo en mensajes propios)
-            Padding(
-              padding: const EdgeInsets.only(top: 3, right: 4, left: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (timestampStr.isNotEmpty)
-                    Text(timestampStr,
-                        style: GoogleFonts.outfit(
-                            fontSize: 10, color: Colors.grey.shade500)),
-                  if (esMio) ...[
-                    const SizedBox(width: 4),
-                    if (msg['isOptimistic'] == true)
-                      Icon(Icons.access_time_rounded,
-                          size: 14, color: Colors.grey.shade400)
-                    else
-                      // ✓ gris = enviado, ✓✓ azul = visto
-                      leido
-                          ? const Icon(Icons.done_all_rounded,
-                              size: 14, color: Color(0xFF248EA6))
-                          : Icon(Icons.done_rounded,
-                              size: 14, color: Colors.grey.shade400),
-                  ],
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  void _mostrarMenuMensaje(Map<String, dynamic> msg) {
+    final esMio = msg['user_id'] == _miId;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.reply_rounded),
+                title: const Text('Responder'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _responderMensaje(msg);
+                },
+              ),
+              if (esMio)
+                ListTile(
+                  leading: const Icon(Icons.edit_rounded),
+                  title: const Text('Editar'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _editarMensaje(msg);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                title: const Text('Borrar', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmarBorrado(msg);
+                },
+              ),
+              if (esMio && widget.comunidadId != null)
+                ListTile(
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: const Text('Info de lectura'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _mostrarInfoLectura(msg);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _mostrarInfoLectura(Map<String, dynamic> msg) {
+    // Aquí podrías mostrar un diálogo con la lista de quiénes han leído el mensaje.
+    // Por simplicidad, mostramos un snackbar o un diálogo simple.
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Visto por'),
+        content: Text('Este mensaje ha sido leído por ${msg['leido_por_ids']?.length ?? 0} personas.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar')),
+        ],
       ),
     );
   }
@@ -695,6 +865,55 @@ class _PantallaChatState extends State<PantallaChat> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (_mensajeParaResponder != null || _mensajeIdEdicion != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF5F5F5),
+              border: Border(top: BorderSide(color: Colors.black12)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _mensajeIdEdicion != null ? Icons.edit_rounded : Icons.reply_rounded,
+                  size: 16,
+                  color: const Color(0xFFC35E34),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _mensajeIdEdicion != null ? 'Editando mensaje' : 'Respondiendo a ${_mensajeParaResponder!['username']}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFC35E34),
+                        ),
+                      ),
+                      Text(
+                        _mensajeIdEdicion != null 
+                          ? _mensajes.firstWhere((m) => m['message_id'] == _mensajeIdEdicion)['content'] ?? ''
+                          : _mensajeParaResponder!['content'] ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(fontSize: 12, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () => setState(() {
+                    _mensajeParaResponder = null;
+                    _mensajeIdEdicion = null;
+                    if (_mensajeIdEdicion != null) _mensajeController.clear();
+                  }),
+                ),
+              ],
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -736,7 +955,7 @@ class _PantallaChatState extends State<PantallaChat> {
                         if (_mostrarEmojis) setState(() => _mostrarEmojis = false);
                       },
                       decoration: InputDecoration(
-                        hintText: 'Escribe un mensaje...',
+                        hintText: _mensajeIdEdicion != null ? 'Edita tu mensaje...' : 'Escribe un mensaje...',
                         hintStyle: GoogleFonts.outfit(color: Colors.grey),
                         border: InputBorder.none,
                       ),
@@ -750,7 +969,10 @@ class _PantallaChatState extends State<PantallaChat> {
                   color: const Color(0xFFC35E34),
                   shape: const CircleBorder(),
                   child: IconButton(
-                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    icon: Icon(
+                      _mensajeIdEdicion != null ? Icons.check_rounded : Icons.send_rounded,
+                      color: Colors.white,
+                    ),
                     onPressed: _enviarMensaje,
                   ),
                 ),
@@ -783,9 +1005,7 @@ class _PantallaChatState extends State<PantallaChat> {
             verticalSpacing: 0,
             horizontalSpacing: 0,
             gridPadding: EdgeInsets.zero,
-            initCategory: emoji.Category.RECENT,
-            bgColor: const Color(0xFFFBF9F8),
-            recentTabBehavior: emoji.RecentTabBehavior.RECENT,
+            backgroundColor: const Color(0xFFFBF9F8),
             recentsLimit: 28,
             noRecents: const Text(
               'No hay emojis recientes 🐾',
@@ -795,12 +1015,13 @@ class _PantallaChatState extends State<PantallaChat> {
             loadingIndicator: const SizedBox.shrink(),
           ),
           categoryViewConfig: emoji.CategoryViewConfig(
+            initCategory: emoji.Category.RECENT,
+            recentTabBehavior: emoji.RecentTabBehavior.RECENT,
             indicatorColor: const Color(0xFFC35E34),
             iconColor: Colors.grey,
             iconColorSelected: const Color(0xFFC35E34),
             backspaceColor: const Color(0xFFC35E34),
             categoryIcons: const emoji.CategoryIcons(),
-            tabBarIndicatorSize: TabBarIndicatorSize.label,
           ),
           skinToneConfig: const emoji.SkinToneConfig(
             enabled: true,
@@ -808,7 +1029,7 @@ class _PantallaChatState extends State<PantallaChat> {
             indicatorColor: Colors.grey,
           ),
           bottomActionBarConfig: const emoji.BottomActionBarConfig(
-            buttonMode: emoji.ButtonMode.MATERIAL,
+            enabled: false,
           ),
         ),
       ),
