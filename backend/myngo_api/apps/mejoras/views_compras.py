@@ -97,16 +97,26 @@ class EquipacionMejorasGlobales(APIView):
             mejora_u.esta_equipada = not mejora_u.esta_equipada
 
             if mejora_u.esta_equipada:
-                MejoraUsuario.objects.filter(
-                    usuario=user,
-                    esta_equipada=True,
-                    mejora__tipo=mejora_u.mejora.tipo
-                ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
-
-            mejora_u.save()
-
             perfil = Perfil.objects.get(usuario=user)
             tipo = mejora_u.mejora.tipo.casefold()
+
+            if not es_desequipar:
+                # Lógica de exclusividad por tipo
+                filtros_desequipar = models.Q(usuario=user, esta_equipada=True, mejora__tipo=mejora_u.mejora.tipo)
+                
+                # Si es un fondo, la exclusividad depende del destino
+                if tipo == "fondo":
+                    destino = request.data.get('destino', 'banner')
+                    if destino == 'fondo_feed':
+                        # Solo desequipar lo que esté en el fondo_perfil
+                        filtros_desequipar &= models.Q(mejora__url_recurso=perfil.fondo_perfil)
+                    else:
+                        # Solo desequipar lo que esté en el fondo (banner)
+                        filtros_desequipar &= models.Q(mejora__url_recurso=perfil.fondo)
+                
+                MejoraUsuario.objects.filter(filtros_desequipar).exclude(pk=mejora_u.pk).update(esta_equipada=False)
+
+            mejora_u.save()
 
             if tipo == "avatar":
                 perfil.avatar = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None

@@ -64,7 +64,7 @@ class ComunidadListCreate(generics.ListCreateAPIView):
             queryset = queryset.filter(tags__slug__in=tags_list).distinct()
 
         queryset = queryset.annotate(
-            anotado_miembros_count=models.Count('miembros_comunidades', distinct=True) + 1
+            anotado_miembros_count=models.Count('miembros_comunidades', distinct=True)
         )
         if usuario and usuario.is_authenticated:
             from django.db.models import Exists, OuterRef, Subquery
@@ -135,7 +135,7 @@ class MisComunidadesList(generics.ListAPIView):
             )
             .distinct()
             .annotate(
-                anotado_miembros_count=Count('miembros_comunidades', distinct=True) + 1,
+                anotado_miembros_count=Count('miembros_comunidades', distinct=True),
                 anotado_es_miembro=Exists(
                     MiembrosComunidad.objects.filter(
                         usuario=usuario, comunidad=OuterRef('pk')
@@ -335,12 +335,17 @@ class ListarMiembrosComunidad(generics.ListAPIView):
         # Si es la primera página y no hay offset (o page=1), añadimos al creador
         page_num = request.query_params.get('page', '1')
         if page_num == '1' and comunidad.creador:
+            from django.core.files.storage import default_storage
+            url_av = comunidad.creador.url_avatar
+            if url_av and not url_av.startswith('http'):
+                url_av = default_storage.url(url_av.lstrip('/'))
+
             miembros_data.append({
                 'id': -1,
                 'usuario_id': comunidad.creador.id,
                 'perfil_id': getattr(comunidad.creador.perfil, 'id', 0) if hasattr(comunidad.creador, 'perfil') else 0,
                 'usuario_nombre': comunidad.creador.nombre_usuario,
-                'usuario_avatar': comunidad.creador.url_avatar,
+                'usuario_avatar': url_av,
                 'rol': 'Creador',
                 'fecha_union': comunidad.fecha_creacion.isoformat() if comunidad.fecha_creacion else None,
             })

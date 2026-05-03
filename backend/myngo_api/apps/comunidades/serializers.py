@@ -45,18 +45,30 @@ class ComunidadSerializer(serializers.ModelSerializer):
         extra_kwargs = {'creador': {'read_only': True}}
         
     def to_internal_value(self, data):
-        """Maneja la conversión de campos JSON enviados como string en multipart.
+        """Maneja la conversión de campos multipart y evita errores de validación en tags.
         
-        Si fondo_posts_config llega como string (típico en subidas de archivos),
-        se intenta parsear a diccionario para que el modelo lo valide correctamente.
+        Si los datos vienen de un formulario (QueryDict), extraemos y limpiamos
+        los campos que requieren procesamiento especial.
         """
-        if 'fondo_posts_config' in data and isinstance(data['fondo_posts_config'], str):
-            import json
-            try:
-                data = data.copy()
-                data['fondo_posts_config'] = json.loads(data['fondo_posts_config'])
-            except (ValueError, TypeError):
-                pass
+        from django.http import QueryDict
+        import json
+
+        if isinstance(data, QueryDict):
+            data = data.copy()
+            
+            # 1. Parsear JSON de fondo si viene como string
+            if 'fondo_posts_config' in data and isinstance(data['fondo_posts_config'], str):
+                try:
+                    data['fondo_posts_config'] = json.loads(data['fondo_posts_config'])
+                except (ValueError, TypeError):
+                    pass
+            
+            # 2. Los tags vienen como nombres, pero DRF espera PKs (IDs).
+            # Los eliminamos de la data de validación para procesarlos manualmente.
+            # Si no los quitamos, DRF lanzará un error de validación 400.
+            if 'tags' in data:
+                data.pop('tags')
+
         return super().to_internal_value(data)
 
     def get_es_miembro(self, obj):
@@ -167,25 +179,8 @@ class ComunidadSerializer(serializers.ModelSerializer):
         return count
 
     def to_representation(self, instance):
-        """Convierte las URLs de imágenes S3 a rutas absolutas.
-
-        Args:
-            instance: Instancia de Comunidad.
-
-        Returns:
-            dict: Representación serializada con URLs de imagen válidas.
-        """
-        data = super().to_representation(instance)
-        for campo in ['url_portada', 'url_avatar', 'url_fondo']:
-            img_field = getattr(instance, campo, None)
-            if img_field:
-                try:
-                    data[campo] = img_field.url
-                except Exception:
-                    data[campo] = ''
-            else:
-                data[campo] = ''
-        return data
+        """Asegura que los campos calculados y las URLs se devuelvan correctamente."""
+        return super().to_representation(instance)
 
     def _set_tags(self, instance, tags_data):
         """Asocia o crea etiquetas por nombre."""
@@ -232,7 +227,11 @@ class MiembroComunidadSerializer(serializers.ModelSerializer):
         fields = ['id', 'usuario', 'usuario_id', 'usuario_nombre', 'usuario_avatar', 'perfil_id', 'rol', 'fecha_union']
 
     def get_usuario_avatar(self, obj):
-        """Retorna la URL del avatar del usuario."""
+        """Retorna la URL completa del avatar del usuario."""
         if obj.usuario.url_avatar:
-            return obj.usuario.url_avatar
+            from django.core.files.storage import default_storage
+            url = obj.usuario.url_avatar
+            if url.startswith('http'):
+                return url
+            return default_storage.url(url.lstrip('/'))
         return ''

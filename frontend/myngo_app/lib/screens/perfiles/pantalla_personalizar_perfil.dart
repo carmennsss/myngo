@@ -27,6 +27,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   String? _previewAvatar;
   String? _previewMarco;
   String? _previewFondo;
+  String? _previewFondoPerfil;
   Map<String, dynamic>? _previewEstilo;
   String _nombreUsuario = 'Usuario';
   int _puntos = 0;
@@ -62,6 +63,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             _previewAvatar = u.urlAvatar;
             _previewMarco = u.marco;
             _previewFondo = u.fondo;
+            _previewFondoPerfil = u.fondoPerfil;
             _previewEstilo = u.estiloPost;
             _perfilId = u.perfilId;
           }
@@ -80,7 +82,10 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       } else if (t == 'marco') {
         _previewMarco = detalles['url_recurso'];
       } else if (t == 'fondo') {
+        // Por defecto actualizamos banner, pero si viene de equipar se maneja ahí
         _previewFondo = detalles['url_recurso'];
+      } else if (t == 'fondo_feed') {
+        _previewFondoPerfil = detalles['url_recurso'];
       } else if (t.contains('estilo')) {
         _previewEstilo = detalles['datos_extra'];
       }
@@ -124,9 +129,12 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         ),
       );
       if (respuesta.exito) {
-        if (destino == 'fondo_feed' && url != null) {
-            setState(() => _previewFondo = url); // Usamos _previewFondo para la lógica de feed si se prefiere, pero el modelo ahora tiene fondoPerfil
-            // Realmente deberíamos tener _previewFondoPerfil
+        if (url != null) {
+          if (destino == 'fondo_feed') {
+            setState(() => _previewFondoPerfil = url);
+          } else {
+            setState(() => _previewFondo = url);
+          }
         }
         notificarMejoraEquipada();
         _cargarMisMejoras();
@@ -160,38 +168,6 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Future<void> _subirFondoPersonalizado() async {
-    if (_perfilId == null) return;
-    
-    final destino = await _mostrarDialogoDestinoFondo();
-    if (destino == null) return;
-
-    final ImagePicker picker = ImagePicker();
-    final XFile? imagen = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    
-    if (imagen != null) {
-      setState(() => _isLoading = true);
-      final res = await ServicioPerfiles().editarFondoPerfil(
-        imagen: imagen,
-        perfilId: _perfilId!,
-        destino: destino,
-      );
-      
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.mensaje),
-            backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-          ),
-        );
-        if (res.exito) {
-          notificarMejoraEquipada();
-          _cargarMisMejoras();
-        }
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -218,6 +194,16 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
+              image: (_previewFondoPerfil != null && _previewFondoPerfil!.isNotEmpty)
+                ? DecorationImage(
+                    image: NetworkImage(_previewFondoPerfil!),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Colors.white.withOpacity(0.6), // Opacidad suave para que se vea como en el perfil
+                      BlendMode.lighten
+                    )
+                  )
+                : null,
               border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
             ),
             child: LayoutBuilder(
@@ -260,7 +246,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                       _buildPreviewHeader(),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 160, // Reducido para mejor responsividad en móvil
+                        height: 160,
                         child: PageView(
                           children: [
                             Padding(
@@ -341,7 +327,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
               children: [
                 _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
                 _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
-                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview, onSubirCustom: _subirFondoPersonalizado),
+                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
                 _ListaMisMejorasTab(tipo: 'Estilo Post', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
               ],
             ),
@@ -359,9 +345,7 @@ class _ListaMisMejorasTab extends StatelessWidget {
   final String? errorMensaje;
   final Function(int, String?, String?) onEquipar;
   final Function(String, dynamic) onPreview;
-  final VoidCallback? onSubirCustom;
-
-  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar, required this.onPreview, this.onSubirCustom});
+  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar, required this.onPreview});
 
   @override
   Widget build(BuildContext context) {
@@ -389,13 +373,9 @@ class _ListaMisMejorasTab extends StatelessWidget {
         mainAxisSpacing: 16,
         childAspectRatio: 0.75,
       ),
-      itemCount: filtradas.length + (onSubirCustom != null ? 1 : 0),
+      itemCount: filtradas.length,
       itemBuilder: (context, index) {
-        if (onSubirCustom != null && index == 0) {
-          return _buildBotonSubirCustom();
-        }
-        
-        final item = filtradas[onSubirCustom != null ? index - 1 : index];
+        final item = filtradas[index];
         final detalles = item['mejora_detalles'];
         final estaEquipada = item['esta_equipada'] == true;
         final esEstiloPost = detalles['tipo'].toString().toLowerCase() == 'estilo post';
@@ -515,44 +495,5 @@ class _ListaMisMejorasTab extends StatelessWidget {
     );
   }
 
-  Widget _buildBotonSubirCustom() {
-    return GestureDetector(
-      onTap: onSubirCustom,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.3), style: BorderStyle.none),
-          boxShadow: [
-            BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFBE9E0),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFFC35E34), size: 32),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Personalizar',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 14, color: const Color(0xFF4A4440)),
-            ),
-            Text(
-              'Sube tu imagen',
-              style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey),
-            ),
-            const Spacer(),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
