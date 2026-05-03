@@ -39,6 +39,11 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   int _paginaActualComunidades = 1;
   int _paginaActualUsuarios = 1;
 
+  bool _hayMas = true;
+  List<Usuario> _usuariosOriginales = [];
+  List<Usuario> _usuariosFiltrados = [];
+  final int _tamanoPagina = 20;
+
   @override
   void initState() {
     super.initState();
@@ -65,14 +70,6 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     super.dispose();
   }
 
-  void _alHacerScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      if (!_estaCargando && !_cargandoMas && _hayMas) {
-        _cargarMas();
-      }
-    }
-  }
-
   Future<void> _cargarDatos({String? filtro}) async {
     setState(() {
       _estaCargando = true;
@@ -85,22 +82,23 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
       if (mounted) {
         setState(() {
           _comunidades = respuesta.datos ?? [];
-          _hayMasComunidades = (respuesta.datos?.length ?? 0) >= 20;
+          _hayMasComunidades = (respuesta.datos?.length ?? 0) >= _tamanoPagina;
           _estaCargando = false;
         });
       }
     } else {
       _paginaActualUsuarios = 1;
       final respuesta = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
-      if (respuesta.exito && mounted) {
-        _usuariosOriginales = respuesta.datos ?? [];
-        _hayMasUsuarios = (respuesta.datos?.length ?? 0) >= 20;
-      }
-      
       if (mounted) {
+        if (respuesta.exito) {
+          _usuariosOriginales = respuesta.datos ?? [];
+          _usuariosFiltrados = List.from(_usuariosOriginales);
+          _hayMasUsuarios = (respuesta.datos?.length ?? 0) >= _tamanoPagina;
+        }
+        
         setState(() {
-          _usuarios = respuesta.datos ?? [];
-          _hayMas = _usuarios.length >= _tamanoPagina;
+          _usuarios = _usuariosFiltrados;
+          _hayMas = _hayMasUsuarios;
           _estaCargando = false;
         });
       }
@@ -123,7 +121,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
         if (res.exito && res.datos != null) {
           final nuevos = res.datos!;
           _comunidades.addAll(nuevos);
-          _hayMasComunidades = nuevos.length >= 20;
+          _hayMasComunidades = nuevos.length >= _tamanoPagina;
         } else {
           _hayMasComunidades = false;
         }
@@ -144,7 +142,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
         if (res.exito && res.datos != null) {
           final nuevos = res.datos!;
           _usuariosOriginales.addAll(nuevos);
-          _hayMasUsuarios = nuevos.length >= 20;
+          _hayMasUsuarios = nuevos.length >= _tamanoPagina;
           
           // Re-aplicar filtro si hay búsqueda activa
           final filtro = _controladorBusqueda.text;
@@ -156,6 +154,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
           } else {
             _usuariosFiltrados = List.from(_usuariosOriginales);
           }
+          _usuarios = _usuariosFiltrados;
         } else {
           _hayMasUsuarios = false;
         }
