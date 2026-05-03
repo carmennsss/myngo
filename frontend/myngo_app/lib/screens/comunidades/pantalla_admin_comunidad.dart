@@ -12,6 +12,7 @@ import 'package:myngo_app/screens/galeria/pantalla_detalle_imagen.dart';
 import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
 import 'pantalla_moderacion_tienda.dart';
+import 'pantalla_personalizacion_comunidad.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaAdminComunidad extends StatefulWidget {
@@ -37,6 +38,10 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   String? _colorSeleccionado;
   XFile? _nuevoBanner;
   bool _tiendaHabilitada = false;
+  final List<String> _tagsSeleccionados = [];
+  final _controladorTag = TextEditingController();
+  List<Map<String, dynamic>> _sugerenciasTags = [];
+  bool _mostrandoSugerencias = false;
 
   @override
   void initState() {
@@ -46,6 +51,15 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     _descCtrl = TextEditingController(text: widget.comunidad.descripcion);
     _colorSeleccionado = widget.comunidad.colorTema.toHex();
     _tiendaHabilitada = widget.comunidad.tiendaHabilitada;
+    
+    // Cargar tags iniciales
+    for (var tag in widget.comunidad.tags) {
+      final nombre = tag['nombre']?.toString();
+      if (nombre != null && nombre.isNotEmpty) {
+        _tagsSeleccionados.add(nombre);
+      }
+    }
+    
     _cargarDatos();
   }
 
@@ -341,6 +355,34 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     }
   }
 
+  Future<void> _buscarSugerencias(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _sugerenciasTags = [];
+        _mostrandoSugerencias = false;
+      });
+      return;
+    }
+    final respuesta = await _servicioComunidades.buscarTags(query: query);
+    if (respuesta.exito && mounted) {
+      setState(() {
+        _sugerenciasTags = respuesta.datos ?? [];
+        _mostrandoSugerencias = _sugerenciasTags.isNotEmpty;
+      });
+    }
+  }
+
+  void _anadirTag(String nombre) {
+    final limpio = nombre.trim().toLowerCase();
+    if (limpio.isNotEmpty && !_tagsSeleccionados.contains(limpio) && _tagsSeleccionados.length < 5) {
+      setState(() {
+        _tagsSeleccionados.add(limpio);
+        _controladorTag.clear();
+        _mostrandoSugerencias = false;
+      });
+    }
+  }
+
   Widget _buildAjustesTab() {
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -395,6 +437,87 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
             onChanged: (val) => setState(() => _tiendaHabilitada = val),
           ),
           onTap: () => setState(() => _tiendaHabilitada = !_tiendaHabilitada),
+        ),
+        const SizedBox(height: 32),
+        _buildSeccionHeader('Categorización'),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey.shade200)
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Etiquetas de la Comunidad (máx. 5)', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _controladorTag,
+                onChanged: _buscarSugerencias,
+                onSubmitted: _anadirTag,
+                decoration: InputDecoration(
+                  hintText: 'Añadir tag...',
+                  prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFC35E34)),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              if (_mostrandoSugerencias)
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: _sugerenciasTags.map((tag) => ListTile(
+                      title: Text(tag['nombre'], style: const TextStyle(fontSize: 13)),
+                      onTap: () => _anadirTag(tag['nombre']),
+                      dense: true,
+                    )).toList(),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _tagsSeleccionados.map((tag) => Chip(
+                  label: Text(tag, style: const TextStyle(fontSize: 11, color: Colors.white)),
+                  backgroundColor: const Color(0xFFC35E34),
+                  deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
+                  onDeleted: () => setState(() => _tagsSeleccionados.remove(tag)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                )).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+        _buildSeccionHeader('Personalización Visual'),
+        const SizedBox(height: 16),
+        _buildConfigItem(
+          icon: Icons.auto_awesome_rounded,
+          title: 'Personalización Avanzada',
+          subtitle: 'Fuentes, fondos de posts y más diseños',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PantallaPersonalizacionComunidad(
+                  comunidad: widget.comunidad,
+                  onComunidadActualizada: (nueva) {
+                    setState(() {
+                      // Actualizamos localmente lo que podamos
+                    });
+                    _cargarDatos(silencioso: true);
+                  },
+                ),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 40),
         ElevatedButton(
@@ -457,6 +580,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
       colorTema: _colorSeleccionado,
       tiendaHabilitada: _tiendaHabilitada,
       banner: _nuevoBanner,
+      tags: _tagsSeleccionados,
     );
 
     if (mounted) {

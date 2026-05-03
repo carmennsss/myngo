@@ -69,19 +69,25 @@ class PublicacionSerializer(serializers.ModelSerializer):
         media_list = []
         request = self.context.get('request')
         
-        # Primero intentamos obtener de la relación ManyToMany 'imagenes'
-        archivos = obj.imagenes.all()[:4]
+        # Obtener imágenes ordenadas mediante el modelo intermedio
+        relaciones = obj.publicacionimagen_set.all().order_by('orden')[:4]
         
-        # Si no hay en 'imagenes', usamos el campo 'imagen' heredado
-        if not archivos and obj.imagen:
-            archivos = [obj.imagen]
-            
-        for img in archivos:
-            if img.url_s3:
-                url = request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url
+        if relaciones.exists():
+            for rel in relaciones:
+                img = rel.imagen
+                if img.url_s3:
+                    url = request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url
+                    media_list.append({
+                        'url': url,
+                        'tipo': img.tipo_archivo
+                    })
+        elif obj.imagen:
+            # Fallback a la imagen principal para posts antiguos
+            if obj.imagen.url_s3:
+                url = request.build_absolute_uri(obj.imagen.url_s3.url) if request else obj.imagen.url_s3.url
                 media_list.append({
                     'url': url,
-                    'tipo': img.tipo_archivo
+                    'tipo': obj.imagen.tipo_archivo
                 })
         return media_list
 
@@ -231,9 +237,13 @@ class PublicacionSerializer(serializers.ModelSerializer):
         """
         urls = []
         request = self.context.get('request')
-        for img in obj.imagenes.all()[:4]:
+        relaciones = obj.publicacionimagen_set.all().order_by('orden')[:4]
+        
+        for rel in relaciones:
+            img = rel.imagen
             if img.url_s3:
                 urls.append(request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url)
+        
         if not urls and obj.imagen and obj.imagen.url_s3:
             urls.append(request.build_absolute_uri(obj.imagen.url_s3.url) if request else obj.imagen.url_s3.url)
         return urls

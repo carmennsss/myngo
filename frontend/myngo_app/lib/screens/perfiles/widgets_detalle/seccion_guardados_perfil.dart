@@ -20,6 +20,7 @@ class SeccionGuardadosPerfil extends StatefulWidget {
   final Function(int?) onFiltroChanged;
   final VoidCallback onRefresh;
   final VoidCallback onRefreshColecciones;
+  final Future<List<Publicacion>> Function(int) onLoadMore;
 
   const SeccionGuardadosPerfil({
     super.key,
@@ -32,6 +33,7 @@ class SeccionGuardadosPerfil extends StatefulWidget {
     required this.onFiltroChanged,
     required this.onRefresh,
     required this.onRefreshColecciones,
+    required this.onLoadMore,
   });
 
   @override
@@ -40,6 +42,62 @@ class SeccionGuardadosPerfil extends StatefulWidget {
 
 class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
   bool _mostrarCarpetas = false;
+  final ScrollController _scrollController = ScrollController();
+  bool _estaCargandoMas = false;
+  bool _hayMasPosts = true;
+  int _paginaActual = 1;
+  late List<Publicacion> _posts;
+
+  @override
+  void initState() {
+    super.initState();
+    _posts = widget.publicaciones ?? [];
+    _scrollController.addListener(_alHacerScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant SeccionGuardadosPerfil oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.publicaciones != oldWidget.publicaciones) {
+      _posts = widget.publicaciones ?? [];
+      _paginaActual = 1;
+      _hayMasPosts = true;
+    }
+  }
+
+  void _alHacerScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
+      if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
+        _cargarMasPosts();
+      }
+    }
+  }
+
+  Future<void> _cargarMasPosts() async {
+    setState(() => _estaCargandoMas = true);
+    _paginaActual++;
+    try {
+      final nuevos = await widget.onLoadMore(_paginaActual);
+      if (mounted) {
+        setState(() {
+          _estaCargandoMas = false;
+          if (nuevos.isEmpty) {
+            _hayMasPosts = false;
+          } else {
+            _posts.addAll(nuevos);
+          }
+        });
+      }
+    } catch (e) {
+      setState(() => _estaCargandoMas = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,13 +156,17 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
       );
     }
     return MasonryGridView.count(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       crossAxisCount: 2,
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      itemCount: widget.publicaciones!.length,
+      itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
       itemBuilder: (context, index) {
-        final post = widget.publicaciones![index];
+        if (index == _posts.length) {
+          return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+        }
+        final post = _posts[index];
         return _TarjetaPostGuardado(post: post, onUpdate: widget.onRefresh);
       },
     );
