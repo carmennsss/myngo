@@ -39,15 +39,17 @@ class ServicioComunidades {
   }
 
   /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda y tags.
-  Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda, List<String>? tags}) async {
+  Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda, List<String>? tags, int limit = 20, int offset = 0}) async {
     try {
-      String query = '';
-      if (busqueda != null && busqueda.isNotEmpty) query += 'search=$busqueda';
+      List<String> queryParts = [];
+      if (busqueda != null && busqueda.isNotEmpty) queryParts.add('search=$busqueda');
       if (tags != null && tags.isNotEmpty) {
-        query += (query.isEmpty ? '' : '&') + 'tags=${tags.join(',')}';
+        queryParts.add('tags=${tags.join(',')}');
       }
+      queryParts.add('limit=$limit');
+      queryParts.add('offset=$offset');
       
-      final fullQuery = query.isNotEmpty ? '?$query' : '';
+      final fullQuery = queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
       final respuesta = await http.get(
         Uri.parse('$_urlComunidades$fullQuery'),
         headers: await _obtenerCabeceras(),

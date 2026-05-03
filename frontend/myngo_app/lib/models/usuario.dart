@@ -22,6 +22,7 @@ class Usuario {
   final String? biografia;
   final String? urlAvatar;
   final String? fondo;
+  final String? fondoPerfil;
   final String? marco;
 
   /// Puntos acumulados por actividad en la plataforma.
@@ -53,6 +54,7 @@ class Usuario {
     this.biografia,
     this.urlAvatar,
     this.fondo,
+    this.fondoPerfil,
     this.marco,
     this.puntos,
     this.numeroSeguidores = 0,
@@ -82,6 +84,7 @@ class Usuario {
         biografia: json['biografia']?.toString(),
         urlAvatar: json['url_avatar']?.toString() ?? json['autor_foto']?.toString(),
         fondo: json['fondo']?.toString() ?? json['autor_fondo']?.toString(),
+        fondoPerfil: json['fondo_perfil']?.toString(),
         marco: json['marco']?.toString() ?? json['autor_marco']?.toString(),
         puntos: int.tryParse(json['puntos']?.toString() ?? '0'),
         numeroSeguidores:

@@ -39,6 +39,9 @@ class CampoTextoPersonalizado extends StatefulWidget {
   /// Mínimo número de líneas.
   final int? minLineas;
 
+  /// Sugerencias de autocompletado para el sistema (ej. email, password).
+  final Iterable<String>? autofillHints;
+
   const CampoTextoPersonalizado({
     super.key,
     required this.etiqueta,
@@ -52,6 +55,7 @@ class CampoTextoPersonalizado extends StatefulWidget {
     this.validador,
     this.maxLineas = 1,
     this.minLineas,
+    this.autofillHints,
   });
 
   @override
@@ -71,6 +75,7 @@ class _CampoTextoPersonalizadoState extends State<CampoTextoPersonalizado> {
       onChanged: widget.alCambiar,
       keyboardType: widget.tipoTeclado,
       validator: widget.validador,
+      autofillHints: widget.autofillHints,
       maxLines: widget.maxLineas,
       minLines: widget.minLineas,
       autovalidateMode: AutovalidateMode.onUserInteraction,

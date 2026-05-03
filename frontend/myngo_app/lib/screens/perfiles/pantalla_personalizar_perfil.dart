@@ -6,6 +6,8 @@ import '../../utils/estilo_post_helper.dart';
 import '../../widgets/comunes/post_preview.dart';
 import '../../widgets/comunes/profile_preview.dart';
 import '../../services/servicio_usuarios.dart';
+import '../../services/servicio_perfiles.dart';
+import 'package:image_picker/image_picker.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -28,6 +30,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   Map<String, dynamic>? _previewEstilo;
   String _nombreUsuario = 'Usuario';
   int _puntos = 0;
+  int? _perfilId;
 
   @override
   void initState() {
@@ -60,6 +63,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             _previewMarco = u.marco;
             _previewFondo = u.fondo;
             _previewEstilo = u.estiloPost;
+            _perfilId = u.perfilId;
           }
         } else {
           _errorMensaje = respuesta.mensaje;
@@ -102,18 +106,89 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Future<void> _equiparMejora(int mejoraId) async {
-    final respuesta = await _servicioMejoras.equiparMejora(mejoraId);
+  Future<void> _equiparMejora(int mejoraId, String? tipo, String? url) async {
+    String? destino;
+    
+    // Si es un fondo, preguntamos dónde equiparlo
+    if (tipo?.toLowerCase() == 'fondo') {
+      destino = await _mostrarDialogoDestinoFondo();
+      if (destino == null) return; // Cancelado
+    }
+
+    final respuesta = await _servicioMejoras.equiparMejora(mejoraId, destino: destino);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(respuesta.mensaje),
-          backgroundColor: respuesta.exito ? Colors.green : Colors.red,
+          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : Colors.red,
         ),
       );
       if (respuesta.exito) {
-        notificarMejoraEquipada(); // Avisa al perfil para que recargue posts y datos
-        _cargarMisMejoras();       // Actualiza el estado "esta_equipada" en esta pantalla
+        if (destino == 'fondo_feed' && url != null) {
+            setState(() => _previewFondo = url); // Usamos _previewFondo para la lógica de feed si se prefiere, pero el modelo ahora tiene fondoPerfil
+            // Realmente deberíamos tener _previewFondoPerfil
+        }
+        notificarMejoraEquipada();
+        _cargarMisMejoras();
+      }
+    }
+  }
+
+  Future<String?> _mostrarDialogoDestinoFondo() async {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('¿Dónde quieres usarlo? 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text('ElMichi puede usar este fondo en la cabecera (banner) o como fondo de toda la página.', style: GoogleFonts.inter()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'banner'),
+            child: Text('BANNER', style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 'fondo_feed'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF248EA6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('FONDO FEED', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _subirFondoPersonalizado() async {
+    if (_perfilId == null) return;
+    
+    final destino = await _mostrarDialogoDestinoFondo();
+    if (destino == null) return;
+
+    final ImagePicker picker = ImagePicker();
+    final XFile? imagen = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    
+    if (imagen != null) {
+      setState(() => _isLoading = true);
+      final res = await ServicioPerfiles().editarFondoPerfil(
+        imagen: imagen,
+        perfilId: _perfilId!,
+        destino: destino,
+      );
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.mensaje),
+            backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
+          ),
+        );
+        if (res.exito) {
+          notificarMejoraEquipada();
+          _cargarMisMejoras();
+        }
       }
     }
   }
@@ -266,7 +341,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
               children: [
                 _ListaMisMejorasTab(tipo: 'Avatar', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
                 _ListaMisMejorasTab(tipo: 'Marco', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
-                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
+                _ListaMisMejorasTab(tipo: 'Fondo', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview, onSubirCustom: _subirFondoPersonalizado),
                 _ListaMisMejorasTab(tipo: 'Estilo Post', mejoras: _misMejoras, isLoading: _isLoading, errorMensaje: _errorMensaje, onEquipar: _equiparMejora, onPreview: _actualizarPreview),
               ],
             ),
@@ -282,10 +357,11 @@ class _ListaMisMejorasTab extends StatelessWidget {
   final List<dynamic> mejoras;
   final bool isLoading;
   final String? errorMensaje;
-  final Function(int) onEquipar;
+  final Function(int, String?, String?) onEquipar;
   final Function(String, dynamic) onPreview;
+  final VoidCallback? onSubirCustom;
 
-  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar, required this.onPreview});
+  const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar, required this.onPreview, this.onSubirCustom});
 
   @override
   Widget build(BuildContext context) {
@@ -305,21 +381,6 @@ class _ListaMisMejorasTab extends StatelessWidget {
 
     final filtradas = mejoras.where((m) => m['mejora_detalles'] != null && m['mejora_detalles']['tipo'].toString().toLowerCase() == tipo.toLowerCase()).toList();
 
-    if (filtradas.isEmpty) {
-      final String tipoPlural = tipo.toLowerCase() == 'avatar' ? 'avatares' : '${tipo.toLowerCase()}s';
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inventory_2_outlined, color: Colors.grey.shade300, size: 64),
-            const SizedBox(height: 16),
-            Text('No posees $tipoPlural 🐾', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 16)),
-            Text('Visita la tienda para adquirir diseños', style: GoogleFonts.outfit(color: Colors.grey.shade500, fontSize: 14)),
-          ],
-        ),
-      );
-    }
-
     return GridView.builder(
       padding: const EdgeInsets.all(20),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -328,9 +389,13 @@ class _ListaMisMejorasTab extends StatelessWidget {
         mainAxisSpacing: 16,
         childAspectRatio: 0.75,
       ),
-      itemCount: filtradas.length,
+      itemCount: filtradas.length + (onSubirCustom != null ? 1 : 0),
       itemBuilder: (context, index) {
-        final item = filtradas[index];
+        if (onSubirCustom != null && index == 0) {
+          return _buildBotonSubirCustom();
+        }
+        
+        final item = filtradas[onSubirCustom != null ? index - 1 : index];
         final detalles = item['mejora_detalles'];
         final estaEquipada = item['esta_equipada'] == true;
         final esEstiloPost = detalles['tipo'].toString().toLowerCase() == 'estilo post';
@@ -403,7 +468,7 @@ class _ListaMisMejorasTab extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: () {
                           if (detalles['id'] != null) {
-                            onEquipar(detalles['id']);
+                            onEquipar(detalles['id'], tipo, detalles['url_recurso']);
                           }
                         },
                         style: OutlinedButton.styleFrom(
@@ -445,6 +510,46 @@ class _ListaMisMejorasTab extends StatelessWidget {
           Icons.palette_rounded, 
           color: EstiloPostHelper.esFondoClaro(datos) ? Colors.black26 : Colors.white24, 
           size: 32
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBotonSubirCustom() {
+    return GestureDetector(
+      onTap: onSubirCustom,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.3), style: BorderStyle.none),
+          boxShadow: [
+            BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBE9E0),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFFC35E34), size: 32),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Personalizar',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 14, color: const Color(0xFF4A4440)),
+            ),
+            Text(
+              'Sube tu imagen',
+              style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey),
+            ),
+            const Spacer(),
+          ],
         ),
       ),
     );

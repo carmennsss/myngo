@@ -111,7 +111,11 @@ class EquipacionMejorasGlobales(APIView):
             if tipo == "avatar":
                 perfil.avatar = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
             elif tipo == "fondo":
-                perfil.fondo = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
+                destino = request.data.get('destino', 'banner')
+                if destino == 'fondo_feed':
+                    perfil.fondo_perfil = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
+                else:
+                    perfil.fondo = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
             elif tipo == "marco":
                 perfil.marco = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
             elif tipo in ["estilo_post", "estilo post"]:

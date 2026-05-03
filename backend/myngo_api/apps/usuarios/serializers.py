@@ -25,6 +25,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
     estilo_post = serializers.SerializerMethodField()
     puntos = serializers.SerializerMethodField()
     estado = serializers.SerializerMethodField()
+    fondo_perfil = serializers.SerializerMethodField()
 
     class Meta:
         """Configuración del modelo y campos del serializador."""
@@ -34,6 +35,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'rating_actual', 'fecha_registro', 'password', 'numero_seguidores',
             'numero_seguidos', 'estado_seguimiento', 'url_avatar', 'fondo',
             'marco', 'estilo_post', 'biografia', 'es_publico', 'puntos', 'estado',
+            'fondo_perfil',
         ]
         extra_kwargs = {'password': {'write_only': True}}
 
@@ -160,6 +162,22 @@ class UsuarioSerializer(serializers.ModelSerializer):
             return default_storage.url(perfil.fondo.lstrip('/'))
         return None
 
+    def get_fondo_perfil(self, obj):
+        """Obtiene la URL pública de la imagen de fondo del perfil (feed).
+
+        Args:
+            obj: Instancia de Usuario.
+
+        Returns:
+            str: URL absoluta o None.
+        """
+        perfil = self._get_perfil(obj)
+        if perfil and perfil.fondo_perfil:
+            if perfil.fondo_perfil.startswith('http'):
+                return perfil.fondo_perfil
+            return default_storage.url(perfil.fondo_perfil.lstrip('/'))
+        return None
+
     def get_marco(self, obj):
         """Obtiene la URL pública del marco de avatar.
 
@@ -241,7 +259,7 @@ class PerfilSerializer(serializers.ModelSerializer):
         """Configuración del modelo y campos."""
         model = Perfil
         fields = [
-            'biografia', 'url_avatar', 'fondo', 'marco', 'estilo_post',
+            'biografia', 'url_avatar', 'fondo', 'fondo_perfil', 'marco', 'estilo_post',
             'numero_seguidores', 'numero_seguidos', 'datos_usuario', 'estado_seguimiento',
         ]
 

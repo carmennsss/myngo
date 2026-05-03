@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../pantalla_personalizar_perfil.dart';
 import '../../../models/usuario.dart';
 import '../../../providers/chat_provider.dart';
 import '../../inicio/pantalla_inicio.dart';
@@ -293,36 +294,41 @@ class InfoPerfil extends StatelessWidget {
   }  Widget _buildActionButtons(BuildContext context) {
     if (currentUserId == null) return const SizedBox.shrink();
     final bool esPropio = currentUserId == usuario.id;
-    if (esPropio) return const SizedBox.shrink();
+    
+    if (esPropio) {
+      return const SizedBox.shrink();
+    }
 
     return SizedBox(
-      height: 44,
+      height: 50,
       child: Row(
         children: [
           Expanded(
-            flex: 3,
+            flex: 4,
             child: _ActionButton(
               label: _getFollowText(),
-              color: _getFollowColor(),
+              gradient: _getFollowGradient(),
               isLoading: isLoading,
               onPressed: onManejarSeguimiento,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           _CircularAction(icon: Icons.chat_bubble_outline_rounded, onPressed: onChat),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 3,
+            flex: 4,
             child: _ActionButton(
               label: haVotadoHoy ? 'Editar Voto' : 'Votar',
-              color: haVotadoHoy
-                  ? const Color(0xFF248EA6).withOpacity(0.6)
-                  : const Color(0xFF248EA6),
+              gradient: LinearGradient(
+                colors: haVotadoHoy 
+                  ? [const Color(0xFF248EA6).withOpacity(0.6), const Color(0xFF248EA6).withOpacity(0.4)]
+                  : [const Color(0xFF248EA6), const Color(0xFF24A69A)],
+              ),
               isLoading: false,
               onPressed: onMostrarVoto,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           _RateBadge(
             rating: ratingLocal,
             haVotado: haVotadoHoy,
@@ -333,56 +339,77 @@ class InfoPerfil extends StatelessWidget {
     );
   }
 
+  LinearGradient _getFollowGradient() {
+    if (estadoSeguimiento == 'ACEPTADO') {
+      return LinearGradient(colors: [Colors.grey.shade800, Colors.grey.shade700]);
+    }
+    if (estadoSeguimiento == 'SOLICITUD') {
+      return LinearGradient(colors: [Colors.grey.shade700, Colors.grey.shade600]);
+    }
+    return const LinearGradient(
+      colors: [Color(0xFFF28B50), Color(0xFFF29C50)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+
   String _getFollowText() {
     if (estadoSeguimiento == 'ACEPTADO') return 'Siguiendo';
     if (estadoSeguimiento == 'SOLICITUD') return 'Pendiente';
     return 'Seguir';
   }
-
-  Color _getFollowColor() {
-    if (estadoSeguimiento == 'ACEPTADO') return Colors.grey.shade800;
-    if (estadoSeguimiento == 'SOLICITUD') return Colors.grey.shade700;
-    return const Color(0xFFF28B50);
-  }
 }
 
 class _ActionButton extends StatelessWidget {
   final String label;
-  final Color color;
+  final LinearGradient gradient;
   final bool isLoading;
   final VoidCallback onPressed;
 
   const _ActionButton({
     required this.label,
-    required this.color,
+    required this.gradient,
     required this.isLoading,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: isLoading ? null : onPressed,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(22),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(25),
+        gradient: gradient,
+        boxShadow: [
+          BoxShadow(
+            color: gradient.colors.first.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : onPressed,
+          borderRadius: BorderRadius.circular(25),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : Text(
+                    label,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+          ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.white,
-                ),
-              ),
       ),
     );
   }
@@ -396,18 +423,22 @@ class _CircularAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white12),
+    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+        shape: BoxShape.circle,
+        border: Border.all(color: esOscuro ? Colors.white12 : Colors.black12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(25),
+          child: Icon(icon, color: esOscuro ? Colors.white : Colors.black87, size: 22),
         ),
-        child: Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }
@@ -426,39 +457,45 @@ class _RateBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
+    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final Color colorP = const Color(0xFF248EA6);
+    
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: haVotado
+            ? (esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
+            : colorP.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(
           color: haVotado
-              ? Colors.white.withOpacity(0.05)
-              : const Color(0xFF248EA6).withOpacity(0.12),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: haVotado
-                ? Colors.white12
-                : const Color(0xFF248EA6).withOpacity(0.3),
-          ),
+              ? (esOscuro ? Colors.white12 : Colors.black12)
+              : colorP.withOpacity(0.3),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.star_rounded,
-                color: haVotado ? Colors.grey : const Color(0xFF248EA6),
-                size: 18),
-            const SizedBox(width: 4),
-            Text(
-              rating.toStringAsFixed(1),
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w900,
-                fontSize: 15,
-                color: haVotado ? Colors.grey : Colors.white,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(25),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.star_rounded,
+                  color: haVotado ? Colors.grey : colorP,
+                  size: 20),
+              const SizedBox(width: 6),
+              Text(
+                rating.toStringAsFixed(1),
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: haVotado ? Colors.grey : (esOscuro ? Colors.white : Colors.black87),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

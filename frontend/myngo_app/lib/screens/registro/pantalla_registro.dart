@@ -543,44 +543,56 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            CampoTextoPersonalizado(
-              etiqueta: 'Nombre de usuario',
-              icono: Icons.person_outline_rounded,
-              controlador: _controladorNombre,
-              nodoEnfoque: _nodoEnfoqueNombre,
-              alCambiar: _actualizarPosicionMirada,
-              validador: (valor) {
-                if (valor == null || valor.isEmpty) return '¿Tu nombre? 🐾';
-                if (valor.length < 3) return 'Mínimo 3 letras';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            CampoTextoPersonalizado(
-              etiqueta: 'Email',
-              icono: Icons.alternate_email_rounded,
-              controlador: _controladorEmail,
-              nodoEnfoque: _nodoEnfoqueEmail,
-              alCambiar: _actualizarPosicionMirada,
-              validador: (valor) {
-                if (valor == null || valor.isEmpty) return 'Falta el email 📧';
-                if (!valor.contains('@')) return 'Email no válido';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            CampoTextoPersonalizado(
-              etiqueta: 'Contraseña',
-              icono: Icons.lock_open_rounded,
-              controlador: _controladorPassword,
-              nodoEnfoque: _nodoEnfoquePassword,
-              esContrasena: true,
-              alCambiarVisibilidad: _alCambiarVisibilidadPassword,
-              validador: (valor) {
-                if (valor == null || valor.isEmpty) return 'La clave secreta 🔑';
-                if (valor.length < 6) return 'Mínimo 6 caracteres';
-                return null;
-              },
+            AutofillGroup(
+              child: Column(
+                children: [
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Nombre de usuario',
+                    icono: Icons.person_outline_rounded,
+                    controlador: _controladorNombre,
+                    nodoEnfoque: _nodoEnfoqueNombre,
+                    alCambiar: _actualizarPosicionMirada,
+                    autofillHints: const [AutofillHints.username],
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) return '¿Tu nombre? 🐾';
+                      if (valor.length < 3) return 'Mínimo 3 letras';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Email',
+                    icono: Icons.alternate_email_rounded,
+                    controlador: _controladorEmail,
+                    nodoEnfoque: _nodoEnfoqueEmail,
+                    alCambiar: _actualizarPosicionMirada,
+                    autofillHints: const [AutofillHints.email],
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) return 'Falta el email 📧';
+                      if (!valor.contains('@')) return 'Email no válido';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  CampoTextoPersonalizado(
+                    etiqueta: 'Contraseña',
+                    icono: Icons.lock_open_rounded,
+                    controlador: _controladorPassword,
+                    nodoEnfoque: _nodoEnfoquePassword,
+                    esContrasena: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    alCambiarVisibilidad: _alCambiarVisibilidadPassword,
+                    validador: (valor) {
+                      if (valor == null || valor.isEmpty) return 'La clave secreta 🔑';
+                      if (valor.length < 8) return 'Mínimo 8 caracteres';
+                      if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$').hasMatch(valor)) {
+                        return 'Debe tener: Mayúscula, minúscula, número y símbolo';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 32),
             ValueListenableBuilder<bool>(
