@@ -13,6 +13,7 @@ class SeccionChatComunidad extends StatelessWidget {
   final bool esAppClara;
   final Color colorTextoPrincipal;
   final Color colorTextoSecundario;
+  final bool comoSliver;
 
   const SeccionChatComunidad({
     super.key,
@@ -23,40 +24,57 @@ class SeccionChatComunidad extends StatelessWidget {
     required this.esAppClara,
     required this.colorTextoPrincipal,
     required this.colorTextoSecundario,
+    this.comoSliver = false,
   });
 
   @override
   Widget build(BuildContext context) {
     if (estaCargando && salasChat == null) {
-      return const Center(
+      final loading = const Center(
           child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+      return comoSliver ? SliverFillRemaining(child: loading) : loading;
     }
 
     final salasFiltradas = (salasChat ?? []).where((s) => s.esGrupal).toList();
+    final itemCount = (salasChat != null) ? salasFiltradas.length + 2 : 1;
+
+    if (comoSliver) {
+      return SliverPadding(
+        padding: const EdgeInsets.all(24),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _buildItem(context, index, salasFiltradas),
+            childCount: itemCount,
+          ),
+        ),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(24),
-      itemCount: (salasChat != null) ? salasFiltradas.length + 2 : 1,
-      itemBuilder: (context, index) {
-        if (index == 0) return _buildChatHeader(context);
-        
-        if (salasChat == null) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.only(top: 40.0),
-            child: CircularProgressIndicator(color: Color(0xFFF28B50)),
-          ));
-        }
+      itemCount: itemCount,
+      itemBuilder: (context, index) => _buildItem(context, index, salasFiltradas),
+    );
+  }
 
-        if (index == 1) return _buildGeneralChatTile(context);
+  Widget _buildItem(BuildContext context, int index, List<SalaChat> salasFiltradas) {
+    if (index == 0) return _buildChatHeader(context);
+    
+    if (salasChat == null) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.only(top: 40.0),
+        child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+      ));
+    }
 
-        final sala = salasFiltradas[index - 2];
-        return _SalaChatTile(
-          sala: sala,
-          comunidad: comunidad,
-          esAppClara: esAppClara,
-          colorTextoPrincipal: colorTextoPrincipal,
-        );
-      },
+    if (index == 1) return _buildGeneralChatTile(context);
+
+    final sala = salasFiltradas[index - 2];
+    return _SalaChatTile(
+      sala: sala,
+      comunidad: comunidad,
+      esAppClara: esAppClara,
+      colorTextoPrincipal: colorTextoPrincipal,
     );
   }
 

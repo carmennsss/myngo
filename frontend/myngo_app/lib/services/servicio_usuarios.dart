@@ -241,4 +241,43 @@ class ServicioUsuarios {
       await preferencias.clear();
     } catch (_) {}
   }
+
+  /// Actualiza los datos del perfil del usuario (incluyendo avatar, bio, y orden de comunidades).
+  Future<RespuestaApi<Usuario>> actualizarPerfil({
+    required int perfilId,
+    String? biografia,
+    List<int>? ordenComunidades,
+  }) async {
+    try {
+      final respuesta = await http.patch(
+        Uri.parse('$_urlUsuarios/perfil/editar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({
+          'perfil_id': perfilId,
+          if (biografia != null) 'biografia': biografia,
+          if (ordenComunidades != null) 'orden_comunidades': ordenComunidades,
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi.fromJson(
+          datosJson,
+          transformador: (j) => Usuario.fromJson(j),
+        );
+      }
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'Error al actualizar perfil',
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Guarda el orden personalizado de las comunidades del usuario.
+  Future<RespuestaApi> actualizarOrdenComunidades(int perfilId, List<int> idsOrdenados) async {
+    return actualizarPerfil(perfilId: perfilId, ordenComunidades: idsOrdenados);
+  }
 }
