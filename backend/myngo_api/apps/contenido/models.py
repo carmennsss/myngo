@@ -90,7 +90,7 @@ class Publicacion(models.Model):
     imagenes = models.ManyToManyField(
         ImagenGaleria,
         through='PublicacionImagen',
-        through_fields=('publicacion', 'imagen'),
+        through_fields=('publicacion', 'imagengaleria'),
         related_name='publicaciones_asociadas',
         blank=True,
     )
@@ -105,10 +105,10 @@ class PublicacionImagen(models.Model):
     class Meta:
         db_table = 'publicacion_imagenes'
         ordering = ['orden']
-        unique_together = ('publicacion', 'imagen')
+        unique_together = ('publicacion', 'imagengaleria')
 
     publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE)
-    imagen = models.ForeignKey(ImagenGaleria, on_delete=models.CASCADE)
+    imagengaleria = models.ForeignKey(ImagenGaleria, on_delete=models.CASCADE)
     orden = models.PositiveIntegerField(default=0)
 
 
