@@ -43,6 +43,8 @@ class PostProvider with ChangeNotifier {
     String? etiquetas,
     void Function(int, int)? alProgresar,
   }) async {
+    if (_state == PostState.loading) return false;
+
     _state = PostState.loading;
     notifyListeners();
 

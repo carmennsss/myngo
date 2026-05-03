@@ -531,7 +531,10 @@ class ServicioComunidades {
       final token = await _servicioUsuarios.obtenerToken();
       final url = '${_urlContenido}publicaciones/crear/';
       
-      final clienteDio = dio.Dio();
+      final clienteDio = dio.Dio(dio.BaseOptions(
+        connectTimeout: const Duration(minutes: 2),
+        receiveTimeout: const Duration(minutes: 2),
+      ));
       final cabeceras = {
         if (token != null) 'Authorization': 'Token $token',
       };

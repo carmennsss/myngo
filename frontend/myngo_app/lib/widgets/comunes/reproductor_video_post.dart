@@ -52,14 +52,30 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
   }
 
   Future<void> _initializePlayer() async {
-    debugPrint('[Video] Inicializando reproductor para URL: ${widget.url}');
     try {
-      // Usar httpHeaders para compatibilidad con URLs de S3
+      VideoFormat? formatHint;
+      final lowerUrl = widget.url.toLowerCase();
+      if (lowerUrl.contains('.m3u8')) formatHint = VideoFormat.hls;
+      if (lowerUrl.contains('.mpd')) formatHint = VideoFormat.dash;
+
       _videoController = VideoPlayerController.networkUrl(
         Uri.parse(widget.url),
-        httpHeaders: const {'Access-Control-Allow-Origin': '*'},
+        formatHint: formatHint,
+        httpHeaders: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': '*/*',
+        },
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
+      
+      // Añadir listener para capturar errores asíncronos
+      _videoController.addListener(() {
+        if (_videoController.value.hasError && !_error) {
+          debugPrint('[Video] Error detectado en listener: ${_videoController.value.errorDescription}');
+          if (mounted) setState(() => _error = true);
+        }
+      });
+
       await _videoController.initialize();
       
       if (!mounted) return;
@@ -165,7 +181,11 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
             children: [
               const Icon(Icons.error_outline_rounded, color: Colors.white54, size: 40),
               const SizedBox(height: 8),
-              const Text('No se pudo cargar el vídeo', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(
+                'No se pudo cargar el vídeo\n${_videoController.value.errorDescription ?? "Error de formato o red"}', 
+                style: const TextStyle(color: Colors.white70, fontSize: 10),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 12),
               GestureDetector(
                 onTap: () {

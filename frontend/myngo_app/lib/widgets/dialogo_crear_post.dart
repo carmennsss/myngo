@@ -187,7 +187,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
               ),
               const Spacer(),
               ElevatedButton(
-                onPressed: _estaCargando ? null : () async {
+                onPressed: (_estaCargando || _controladorTexto.text.trim().isEmpty && _archivosSeleccionados.isEmpty) ? null : () async {
                   setState(() {
                     _estaCargando = true;
                     _progresoSubida = 0;

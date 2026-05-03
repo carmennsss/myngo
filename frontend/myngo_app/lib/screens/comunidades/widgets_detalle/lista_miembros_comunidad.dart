@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -323,5 +324,30 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
       default:
         return Colors.grey.shade600;
     }
+  }
+
+  Widget _buildPlaceholderAvatar(String nombre) {
+    return Container(
+      width: 52,
+      height: 52,
+      color: Colors.grey.shade200,
+      child: Center(
+        child: Text(
+          nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildPlaceholder(String nombre) {
+    return Text(
+      nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+      style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 12),
+    );
   }
 }

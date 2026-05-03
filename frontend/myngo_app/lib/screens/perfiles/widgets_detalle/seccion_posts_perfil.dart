@@ -46,9 +46,19 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
   void didUpdateWidget(covariant SeccionPostsPerfil oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.publicaciones != oldWidget.publicaciones) {
-      _posts = widget.publicaciones ?? [];
+      _limpiarYAsignarPosts(widget.publicaciones ?? []);
       _paginaActual = 1;
       _hayMasPosts = true;
+    }
+  }
+
+  void _limpiarYAsignarPosts(List<Publicacion> source) {
+    final ids = <int>{};
+    _posts = [];
+    for (var p in source) {
+      if (ids.add(p.id)) {
+        _posts.add(p);
+      }
     }
   }
 
@@ -71,7 +81,12 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
           if (nuevos.isEmpty) {
             _hayMasPosts = false;
           } else {
-            _posts.addAll(nuevos);
+            final idsExistentes = _posts.map((p) => p.id).toSet();
+            for (var n in nuevos) {
+              if (idsExistentes.add(n.id)) {
+                _posts.add(n);
+              }
+            }
           }
         });
       }
@@ -155,22 +170,32 @@ class _TarjetaPostPerfil extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (post.urlsImagenes.isNotEmpty)
+            if (post.media.isNotEmpty)
               Stack(
+                alignment: Alignment.center,
                 children: [
                   Container(
                     constraints: const BoxConstraints(maxHeight: 200),
                     width: double.infinity,
                     color: Colors.black.withOpacity(0.03),
-                    child: CachedNetworkImage(
-                      imageUrl: post.urlsImagenes.first,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => Container(
-                        color: Colors.black.withOpacity(0.05),
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(Icons.broken_image_rounded, color: Colors.grey),
-                    ),
+                    child: post.media.first['tipo'] == 'V'
+                        ? Container(
+                            height: 150,
+                            color: Colors.black.withOpacity(0.1),
+                            child: const Center(
+                              child: Icon(Icons.play_circle_fill_rounded, 
+                                  color: Color(0xFFF28B50), size: 48),
+                            ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: post.media.first['url'] ?? '',
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => Container(
+                              color: Colors.black.withOpacity(0.05),
+                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                          ),
                   ),
                   if (post.urlsImagenes.length > 1)
                     Positioned(

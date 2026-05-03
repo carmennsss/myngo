@@ -191,9 +191,13 @@ class _TarjetaPostState extends State<TarjetaPost> {
                       context.go('/inicio/perfiles/${widget.post.autorId}');
                     }
                   },
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.white,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
                     child: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
                         ? ClipOval(
                             child: CachedNetworkImage(
@@ -204,9 +208,11 @@ class _TarjetaPostState extends State<TarjetaPost> {
                               errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
                             ),
                           )
-                        : Text(
-                            widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16),
+                        : Center(
+                            child: Text(
+                              widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
+                              style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
                           ),
                   ),
                 ),
