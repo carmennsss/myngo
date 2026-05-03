@@ -140,6 +140,7 @@ class Perfil(models.Model):
     biografia = models.TextField(blank=True, null=True)
     avatar = models.CharField(max_length=255, null=True, blank=True)
     fondo = models.CharField(max_length=255, null=True, blank=True)
+    fondo_perfil = models.CharField(max_length=255, null=True, blank=True)
     marco = models.CharField(max_length=255, null=True, blank=True)
     estilo_post = models.JSONField(null=True, blank=True)
     puntos = models.IntegerField(

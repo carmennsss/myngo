@@ -270,12 +270,15 @@ class ServicioMejoras {
   }
 
   /// Activa o desactiva visualmente un cosmético del inventario.
-  Future<RespuestaApi> equiparMejora(int idMejora) async {
+  Future<RespuestaApi> equiparMejora(int idMejora, {String? destino}) async {
     try {
       final respuesta = await http.post(
         Uri.parse('$_urlMejoras/tienda/equipar/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode({'mejora_id': idMejora}),
+        body: jsonEncode({
+          'mejora_id': idMejora,
+          if (destino != null) 'destino': destino,
+        }),
       ).timeout(const Duration(seconds: 20));
 
       final datosJson = jsonDecode(respuesta.body);

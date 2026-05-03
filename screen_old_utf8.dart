@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart' hide Scaffold;
 import 'package:flutter/material.dart' as material show Scaffold;
 import 'package:google_fonts/google_fonts.dart';
@@ -15,13 +15,12 @@ import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../utils/mejoras_notifier.dart';
 import '../../providers/post_provider.dart';
-import '../../providers/chat_provider.dart';
 
 import '../../widgets/dialogo_crear_post.dart';
 import '../../widgets/selector_estrellas.dart';
 import '../mensajeria/pantalla_chat.dart';
 
-// Widgets extraídos
+// Widgets extra├¡dos
 import 'widgets_detalle/header_detalle_perfil.dart';
 import 'widgets_detalle/info_perfil.dart';
 import 'widgets_detalle/seccion_posts_perfil.dart';
@@ -31,6 +30,9 @@ import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
+///
+/// Implementa un dise├▒o premium con cabecera din├ímica, sistema de votaci├│n
+/// y pesta├▒as para publicaciones propias y guardadas.
 class PantallaDetallePerfil extends StatefulWidget {
   final int? id;
   final Usuario? usuario;
@@ -75,7 +77,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   String? _biografiaLocal;
   String? _avatarLocal;
   String? _fondoLocal;
-  String? _fondoPerfilLocal;
   String? _marcoLocal;
   double _ratingLocal = 0.0;
 
@@ -117,7 +118,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     _biografiaLocal = _usuario!.biografia;
     _avatarLocal = _usuario!.urlAvatar;
     _fondoLocal = _usuario!.fondo;
-    _fondoPerfilLocal = _usuario!.fondoPerfil;
     _marcoLocal = _usuario!.marco;
     _ratingLocal = _usuario!.ratingActual;
     _estadoSeguimiento = _usuario!.estadoSeguimiento;
@@ -155,7 +155,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       _biografiaLocal = widget.usuario?.biografia;
       _avatarLocal = widget.usuario?.urlAvatar;
       _fondoLocal = widget.usuario?.fondo;
-      _fondoPerfilLocal = widget.usuario?.fondoPerfil;
       _marcoLocal = widget.usuario?.marco;
       _ratingLocal = widget.usuario?.ratingActual ?? 0.0;
       _estadoSeguimiento = widget.usuario?.estadoSeguimiento;
@@ -183,14 +182,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final id = await ServicioUsuarios().obtenerIdUsuario();
     if (mounted) setState(() => _currentUserId = id);
 
-    // Si el usuario está incompleto (ej: viene de una lista con solo nombre/avatar)
-    // Forzamos la carga completa del perfil
-    bool incompleto = _usuario != null && (_usuario!.biografia?.isEmpty ?? true) && _usuario!.ratingActual == 0.0;
-    
-    if (incompleto) {
-      await _cargarPerfilInicial();
-    }
-
     await Future.wait([
       _cargarEstadoVoto(),
       _cargarPublicaciones(),
@@ -214,7 +205,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
         _biografiaLocal = u.biografia;
         _avatarLocal = u.urlAvatar;
         _fondoLocal = u.fondo;
-        _fondoPerfilLocal = u.fondoPerfil;
         _marcoLocal = u.marco;
         _ratingLocal = u.ratingActual;
       });
@@ -346,7 +336,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                 Text('Cargando perfil...', style: GoogleFonts.inter(color: Colors.grey)),
               ] else if (_usuario == null && !_cargandoPerfil) ...[
                 const SizedBox(height: 16),
-                Text('Usuario no encontrado 😿', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('Usuario no encontrado ­ƒÿ┐', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: const Text('Volver'))
               ]
@@ -376,7 +366,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               usuario: _usuario!,
               avatarLocal: _avatarLocal,
               fondoLocal: _fondoLocal,
-              fondoPerfilLocal: _fondoPerfilLocal,
               marcoLocal: _marcoLocal,
               currentUserId: _currentUserId,
               onEditarAvatar: _editarAvatar,
@@ -425,10 +414,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               publicaciones: _publicaciones,
               estaCargando: _cargandoPublicaciones,
               onRefresh: _cargarPublicaciones,
-              onLoadMore: (pagina) async {
-                final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
-                return res.datos ?? [];
-              },
             ),
             if (_currentUserId == _usuario!.id)
               SeccionGuardadosPerfil(
@@ -444,13 +429,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                 },
                 onRefresh: () => _cargarGuardados(force: true),
                 onRefreshColecciones: () => _cargarColecciones(force: true),
-                onLoadMore: (pagina) async {
-                  final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
-                    comunidadId: _filtroComunidadId,
-                    pagina: pagina,
-                  );
-                  return res.datos ?? [];
-                },
               )
             else
               SeccionColeccionesPerfil(
@@ -465,7 +443,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     );
   }
 
-  // --- MÉTODOS DE ACCIÓN ---
+  // --- M├ëTODOS DE ACCI├ôN ---
 
   void _mostrarSelectorVoto() {
     if (_usuario == null || _currentUserId == _usuario!.id) return;
@@ -489,12 +467,12 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
             ),
             const SizedBox(height: 20),
             Text(
-              _haVotadoHoy ? '¿Qué quieres hacer con tu voto?' : '¡Vota a este Michi!',
+              _haVotadoHoy ? '┬┐Qu├® quieres hacer con tu voto?' : '┬íVota a este Michi!',
               style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              _haVotadoHoy ? 'Puedes cambiar tu puntuación o eliminar el voto.' : 'Dalle amor con tus estrellas 🐾',
+              _haVotadoHoy ? 'Puedes cambiar tu puntuaci├│n o eliminar el voto.' : 'Dalle amor con tus estrellas ­ƒÉ¥',
               style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
             ),
             const SizedBox(height: 24),
@@ -545,14 +523,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Editar Biografía',
+        title: Text('Editar Biograf├¡a',
             style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           maxLines: 5,
           style: GoogleFonts.inter(color: Colors.white70),
           decoration: InputDecoration(
-            hintText: 'Cuéntanos algo sobre ti...',
+            hintText: 'Cu├®ntanos algo sobre ti...',
             hintStyle: TextStyle(color: Colors.grey.shade600),
             filled: true,
             fillColor: Colors.white.withOpacity(0.05),
@@ -600,11 +578,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   void _iniciarChat() async {
     if (_usuario == null) return;
-    final sala = await ServicioMensajeria().crearSala(idOtroUsuario: _usuario!.id);
+    final sala = await ServicioMensajeria().crearSalaPrivada(_usuario!.id);
     if (sala != null && mounted) {
-      // Notificar al provider para que se refresquen las listas de chats
-      context.read<ChatProvider>().notificarNuevaSala();
-      
       Navigator.push(
           context,
           MaterialPageRoute(
@@ -620,9 +595,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
         titulo: 'Nuevo Miau-Post',
-        onPublicar: (txt, archivos, tags, {void Function(int, int)? alProgresar}) async {
+        onPublicar: (txt, imgs, tags) async {
           final ok = await Provider.of<PostProvider>(context, listen: false)
-              .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: archivos, etiquetas: tags);
+              .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: imgs, etiquetas: tags);
           if (ok) _cargarPublicaciones();
           return ok;
         },

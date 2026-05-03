@@ -27,7 +27,7 @@ class HeaderDetalleComunidad extends StatefulWidget {
 }
 
 class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
-  String _miRol = 'Miembro';
+  String _miRol = 'Visitante';
   bool _cargandoRol = true;
 
   @override
@@ -48,14 +48,20 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
     if (!mounted) return;
     setState(() => _cargandoRol = true);
     if (widget.miId == null) {
-      if (mounted) setState(() => _cargandoRol = false);
+      if (mounted) setState(() {
+        _miRol = 'Visitante';
+        _cargandoRol = false;
+      });
       return;
     }
     final res = await ServicioComunidades()
         .obtenerRolUsuarioEnComunidad(widget.comunidad.id, widget.miId!);
     if (mounted) {
       setState(() {
-        _miRol = res.datos ?? 'Miembro';
+        String rolObtenido = res.datos ?? 'Visitante';
+        // Normalizar: el backend devuelve 'Administrador' para el creador
+        if (rolObtenido.toLowerCase() == 'administrador') rolObtenido = 'Creador';
+        _miRol = rolObtenido;
         _cargandoRol = false;
       });
     }

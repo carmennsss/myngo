@@ -194,13 +194,20 @@ class _TarjetaPostState extends State<TarjetaPost> {
                   child: CircleAvatar(
                     radius: 20,
                     backgroundColor: Colors.white,
-                    backgroundImage: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
-                        ? CachedNetworkImageProvider(widget.post.autorFoto!)
-                        : null,
-                    child: (widget.post.autorFoto == null || widget.post.autorFoto!.isEmpty)
-                        ? Text(widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16))
-                        : null,
+                    child: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: widget.post.autorFoto!,
+                              fit: BoxFit.cover,
+                              width: 40,
+                              height: 40,
+                              errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
+                            ),
+                          )
+                        : Text(
+                            widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
+                            style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),

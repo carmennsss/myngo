@@ -164,6 +164,34 @@ class EditarPerfil(APIView):
             imagen_nueva.save()
             perfil.avatar = imagen_nueva.url_s3.name
 
+        imagen_fondo = request.FILES.get('url_fondo')
+        if imagen_fondo:
+            imagen_nueva = ImagenGaleria.objects.create(
+                propietario=request.user,
+                comunidad_id=request.data.get('comunidad') or None,
+                relacion_aspecto=float(request.data.get('relacion_aspecto', 1.5)),
+                etiquetas=request.data.get('etiquetas', ''),
+            )
+            if request.data.get('es_perfil'):
+                imagen_nueva._es_avatar = True
+            imagen_nueva.url_s3 = imagen_fondo
+            imagen_nueva.save()
+            perfil.fondo = imagen_nueva.url_s3.name
+
+        imagen_fondo_perfil = request.FILES.get('url_fondo_perfil')
+        if imagen_fondo_perfil:
+            imagen_nueva = ImagenGaleria.objects.create(
+                propietario=request.user,
+                comunidad_id=request.data.get('comunidad') or None,
+                relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
+                etiquetas=request.data.get('etiquetas', ''),
+            )
+            if request.data.get('es_perfil'):
+                imagen_nueva._es_avatar = True
+            imagen_nueva.url_s3 = imagen_fondo_perfil
+            imagen_nueva.save()
+            perfil.fondo_perfil = imagen_nueva.url_s3.name
+
         serializer = PerfilSerializer(perfil, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()

@@ -72,7 +72,8 @@ class MisMejorasView(APIView):
 class EquipacionMejorasGlobales(APIView):
     """Gestiona la equipación de mejoras (avatar, fondo, marco, estilo post) en el perfil.
 
-    Al equipar una mejora, se desequipa automáticamente cualquier otra del mismo tipo.
+    Los fondos tienen dos ranuras independientes: 'banner' y 'fondo_feed'.
+    El resto de tipos solo permiten una mejora equipada a la vez.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -81,45 +82,81 @@ class EquipacionMejorasGlobales(APIView):
         """Equipa o desequipa una mejora específica.
 
         Args:
-            request: Datos con 'mejora_id'.
+            request: Datos con 'mejora_id' y opcionalmente 'destino' ('banner' o 'fondo_feed').
 
         Returns:
             Response: Confirmación del cambio de estado.
         """
+        from django.db import models as dj_models
+
         user = request.user
         mejora_id = request.data.get('mejora_id')
+        destino = request.data.get('destino', 'banner')  # 'banner' o 'fondo_feed'
 
         if mejora_id is None:
             return Response({'error': 'mejora_id es requerido'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             mejora_u = MejoraUsuario.objects.get(mejora_id=mejora_id, usuario=user)
-            mejora_u.esta_equipada = not mejora_u.esta_equipada
-
-            if mejora_u.esta_equipada:
-                MejoraUsuario.objects.filter(
-                    usuario=user,
-                    esta_equipada=True,
-                    mejora__tipo=mejora_u.mejora.tipo
-                ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
-
-            mejora_u.save()
-
             perfil = Perfil.objects.get(usuario=user)
             tipo = mejora_u.mejora.tipo.casefold()
 
-            if tipo == "avatar":
-                perfil.avatar = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
-            elif tipo == "fondo":
-                perfil.fondo = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
-            elif tipo == "marco":
-                perfil.marco = mejora_u.mejora.url_recurso.name if mejora_u.esta_equipada else None
-            elif tipo in ["estilo_post", "estilo post"]:
-                perfil.estilo_post = mejora_u.mejora.datos_extra if mejora_u.esta_equipada else None
+            # Toggle: si ya está equipada, desequipar; si no, equipar
+            mejora_u.esta_equipada = not mejora_u.esta_equipada
+            va_a_equipar = mejora_u.esta_equipada
 
+            if va_a_equipar:
+                if tipo == 'fondo':
+                    if destino == 'fondo_feed':
+                        # Desequipar solo el fondo que ocupa la ranura fondo_feed
+                        MejoraUsuario.objects.filter(
+                            usuario=user,
+                            esta_equipada=True,
+                            mejora__tipo=mejora_u.mejora.tipo,
+                            mejora__url_recurso=perfil.fondo_perfil,
+                        ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
+                        perfil.fondo_perfil = mejora_u.mejora.url_recurso.name
+                    else:
+                        # Desequipar solo el fondo que ocupa la ranura banner
+                        MejoraUsuario.objects.filter(
+                            usuario=user,
+                            esta_equipada=True,
+                            mejora__tipo=mejora_u.mejora.tipo,
+                            mejora__url_recurso=perfil.fondo,
+                        ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
+                        perfil.fondo = mejora_u.mejora.url_recurso.name
+                else:
+                    # Para el resto de tipos, solo uno equipado a la vez
+                    MejoraUsuario.objects.filter(
+                        usuario=user,
+                        esta_equipada=True,
+                        mejora__tipo=mejora_u.mejora.tipo,
+                    ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
+
+                    if tipo == 'avatar':
+                        perfil.avatar = mejora_u.mejora.url_recurso.name
+                    elif tipo == 'marco':
+                        perfil.marco = mejora_u.mejora.url_recurso.name
+                    elif tipo in ['estilo_post', 'estilo post']:
+                        perfil.estilo_post = mejora_u.mejora.datos_extra
+            else:
+                # Desequipar: limpiar campo correspondiente del perfil
+                if tipo == 'fondo':
+                    if destino == 'fondo_feed':
+                        perfil.fondo_perfil = None
+                    else:
+                        perfil.fondo = None
+                elif tipo == 'avatar':
+                    perfil.avatar = None
+                elif tipo == 'marco':
+                    perfil.marco = None
+                elif tipo in ['estilo_post', 'estilo post']:
+                    perfil.estilo_post = None
+
+            mejora_u.save()
             perfil.save()
 
-            mensaje = "La mejora se ha equipado" if mejora_u.esta_equipada else "La mejora se ha desequipado"
+            mensaje = 'La mejora se ha equipado' if va_a_equipar else 'La mejora se ha desequipado'
             return Response({'resultado': mensaje}, status=status.HTTP_200_OK)
 
         except MejoraUsuario.DoesNotExist:

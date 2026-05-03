@@ -6,6 +6,8 @@ import '../../utils/estilo_post_helper.dart';
 import '../../widgets/comunes/post_preview.dart';
 import '../../widgets/comunes/profile_preview.dart';
 import '../../services/servicio_usuarios.dart';
+import '../../services/servicio_perfiles.dart';
+import 'package:image_picker/image_picker.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -25,9 +27,11 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   String? _previewAvatar;
   String? _previewMarco;
   String? _previewFondo;
+  String? _previewFondoPerfil;
   Map<String, dynamic>? _previewEstilo;
   String _nombreUsuario = 'Usuario';
   int _puntos = 0;
+  int? _perfilId;
 
   @override
   void initState() {
@@ -59,7 +63,9 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             _previewAvatar = u.urlAvatar;
             _previewMarco = u.marco;
             _previewFondo = u.fondo;
+            _previewFondoPerfil = u.fondoPerfil;
             _previewEstilo = u.estiloPost;
+            _perfilId = u.perfilId;
           }
         } else {
           _errorMensaje = respuesta.mensaje;
@@ -76,7 +82,10 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       } else if (t == 'marco') {
         _previewMarco = detalles['url_recurso'];
       } else if (t == 'fondo') {
+        // Por defecto actualizamos banner, pero si viene de equipar se maneja ahí
         _previewFondo = detalles['url_recurso'];
+      } else if (t == 'fondo_feed') {
+        _previewFondoPerfil = detalles['url_recurso'];
       } else if (t.contains('estilo')) {
         _previewEstilo = detalles['datos_extra'];
       }
@@ -102,21 +111,63 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Future<void> _equiparMejora(int mejoraId) async {
-    final respuesta = await _servicioMejoras.equiparMejora(mejoraId);
+  Future<void> _equiparMejora(int mejoraId, String? tipo, String? url) async {
+    String? destino;
+    
+    // Si es un fondo, preguntamos dónde equiparlo
+    if (tipo?.toLowerCase() == 'fondo') {
+      destino = await _mostrarDialogoDestinoFondo();
+      if (destino == null) return; // Cancelado
+    }
+
+    final respuesta = await _servicioMejoras.equiparMejora(mejoraId, destino: destino);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(respuesta.mensaje),
-          backgroundColor: respuesta.exito ? Colors.green : Colors.red,
+          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : Colors.red,
         ),
       );
       if (respuesta.exito) {
-        notificarMejoraEquipada(); // Avisa al perfil para que recargue posts y datos
-        _cargarMisMejoras();       // Actualiza el estado "esta_equipada" en esta pantalla
+        if (url != null) {
+          if (destino == 'fondo_feed') {
+            setState(() => _previewFondoPerfil = url);
+          } else {
+            setState(() => _previewFondo = url);
+          }
+        }
+        notificarMejoraEquipada();
+        _cargarMisMejoras();
       }
     }
   }
+
+  Future<String?> _mostrarDialogoDestinoFondo() async {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('¿Dónde quieres usarlo? 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text('ElMichi puede usar este fondo en la cabecera (banner) o como fondo de toda la página.', style: GoogleFonts.inter()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'banner'),
+            child: Text('BANNER', style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 'fondo_feed'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF248EA6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('FONDO FEED', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   void dispose() {
@@ -143,6 +194,16 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
+              image: (_previewFondoPerfil != null && _previewFondoPerfil!.isNotEmpty)
+                ? DecorationImage(
+                    image: NetworkImage(_previewFondoPerfil!),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Colors.white.withOpacity(0.6), // Opacidad suave para que se vea como en el perfil
+                      BlendMode.lighten
+                    )
+                  )
+                : null,
               border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
             ),
             child: LayoutBuilder(
@@ -185,7 +246,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                       _buildPreviewHeader(),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 160, // Reducido para mejor responsividad en móvil
+                        height: 160,
                         child: PageView(
                           children: [
                             Padding(
@@ -282,9 +343,8 @@ class _ListaMisMejorasTab extends StatelessWidget {
   final List<dynamic> mejoras;
   final bool isLoading;
   final String? errorMensaje;
-  final Function(int) onEquipar;
+  final Function(int, String?, String?) onEquipar;
   final Function(String, dynamic) onPreview;
-
   const _ListaMisMejorasTab({required this.tipo, required this.mejoras, required this.isLoading, this.errorMensaje, required this.onEquipar, required this.onPreview});
 
   @override
@@ -304,21 +364,6 @@ class _ListaMisMejorasTab extends StatelessWidget {
     }
 
     final filtradas = mejoras.where((m) => m['mejora_detalles'] != null && m['mejora_detalles']['tipo'].toString().toLowerCase() == tipo.toLowerCase()).toList();
-
-    if (filtradas.isEmpty) {
-      final String tipoPlural = tipo.toLowerCase() == 'avatar' ? 'avatares' : '${tipo.toLowerCase()}s';
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inventory_2_outlined, color: Colors.grey.shade300, size: 64),
-            const SizedBox(height: 16),
-            Text('No posees $tipoPlural 🐾', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 16)),
-            Text('Visita la tienda para adquirir diseños', style: GoogleFonts.outfit(color: Colors.grey.shade500, fontSize: 14)),
-          ],
-        ),
-      );
-    }
 
     return GridView.builder(
       padding: const EdgeInsets.all(20),
@@ -403,7 +448,7 @@ class _ListaMisMejorasTab extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: () {
                           if (detalles['id'] != null) {
-                            onEquipar(detalles['id']);
+                            onEquipar(detalles['id'], tipo, detalles['url_recurso']);
                           }
                         },
                         style: OutlinedButton.styleFrom(
@@ -449,5 +494,6 @@ class _ListaMisMejorasTab extends StatelessWidget {
       ),
     );
   }
+
 }
 

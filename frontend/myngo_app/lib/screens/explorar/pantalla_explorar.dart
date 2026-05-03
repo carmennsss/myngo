@@ -30,8 +30,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   int _indicePestana = 0; // 0: Comunidades, 1: Perfiles
   
   List<Comunidad> _comunidades = [];
-  List<Usuario> _usuariosOriginales = [];
-  List<Usuario> _usuariosFiltrados = [];
+  List<Usuario> _usuarios = [];
   
   bool _estaCargando = true;
   bool _estaCargandoMas = false;
@@ -39,6 +38,11 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   bool _hayMasUsuarios = true;
   int _paginaActualComunidades = 1;
   int _paginaActualUsuarios = 1;
+
+  bool _hayMas = true;
+  List<Usuario> _usuariosOriginales = [];
+  List<Usuario> _usuariosFiltrados = [];
+  final int _tamanoPagina = 20;
 
   @override
   void initState() {
@@ -67,7 +71,10 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   }
 
   Future<void> _cargarDatos({String? filtro}) async {
-    setState(() => _estaCargando = true);
+    setState(() {
+      _estaCargando = true;
+      _hayMas = true;
+    });
     
     if (_indicePestana == 0) {
       _paginaActualComunidades = 1;
@@ -75,28 +82,23 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
       if (mounted) {
         setState(() {
           _comunidades = respuesta.datos ?? [];
-          _hayMasComunidades = (respuesta.datos?.length ?? 0) >= 20;
+          _hayMasComunidades = (respuesta.datos?.length ?? 0) >= _tamanoPagina;
           _estaCargando = false;
         });
       }
     } else {
       _paginaActualUsuarios = 1;
       final respuesta = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
-      if (respuesta.exito && mounted) {
-        _usuariosOriginales = respuesta.datos ?? [];
-        _hayMasUsuarios = (respuesta.datos?.length ?? 0) >= 20;
-      }
-      
       if (mounted) {
+        if (respuesta.exito) {
+          _usuariosOriginales = respuesta.datos ?? [];
+          _usuariosFiltrados = List.from(_usuariosOriginales);
+          _hayMasUsuarios = (respuesta.datos?.length ?? 0) >= _tamanoPagina;
+        }
+        
         setState(() {
-          if (filtro != null && filtro.isNotEmpty) {
-            _usuariosFiltrados = _usuariosOriginales.where((u) => 
-               u.nombreUsuario.toLowerCase().contains(filtro.toLowerCase()) ||
-               u.email.toLowerCase().contains(filtro.toLowerCase())
-            ).toList();
-          } else {
-            _usuariosFiltrados = List.from(_usuariosOriginales);
-          }
+          _usuarios = _usuariosFiltrados;
+          _hayMas = _hayMasUsuarios;
           _estaCargando = false;
         });
       }
@@ -119,7 +121,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
         if (res.exito && res.datos != null) {
           final nuevos = res.datos!;
           _comunidades.addAll(nuevos);
-          _hayMasComunidades = nuevos.length >= 20;
+          _hayMasComunidades = nuevos.length >= _tamanoPagina;
         } else {
           _hayMasComunidades = false;
         }
@@ -140,7 +142,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
         if (res.exito && res.datos != null) {
           final nuevos = res.datos!;
           _usuariosOriginales.addAll(nuevos);
-          _hayMasUsuarios = nuevos.length >= 20;
+          _hayMasUsuarios = nuevos.length >= _tamanoPagina;
           
           // Re-aplicar filtro si hay búsqueda activa
           final filtro = _controladorBusqueda.text;
@@ -152,6 +154,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
           } else {
             _usuariosFiltrados = List.from(_usuariosOriginales);
           }
+          _usuarios = _usuariosFiltrados;
         } else {
           _hayMasUsuarios = false;
         }
@@ -176,17 +179,16 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
               SliverToBoxAdapter(
                 child: Container(
                   color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(28, 8, 28, 8), // Más compacto
+                  padding: const EdgeInsets.fromLTRB(28, 8, 28, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Título y Botón
                       Row(
                         children: [
                           Text(
                             'EXPLORAR MUNDOS',
                             style: GoogleFonts.outfit(
-                              fontSize: 18, // Reducido de 24
+                              fontSize: 18,
                               fontWeight: FontWeight.w900,
                               color: const Color(0xFF4A4440),
                               letterSpacing: 0.5,
@@ -205,8 +207,6 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      
-                      // Pestañas
                       Row(
                         children: [
                           _buildPestana('COMUNIDADES', 0),
@@ -215,8 +215,6 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                         ],
                       ),
                       const SizedBox(height: 8),
-
-                      // Barra de Búsqueda
                       TextField(
                         controller: _controladorBusqueda,
                         onChanged: (valor) => _cargarDatos(filtro: valor),
@@ -264,6 +262,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     bool activa = _indicePestana == index;
     return BotonTactil(
       onTap: () {
+        if (_indicePestana == index) return;
         setState(() {
           _indicePestana = index;
           _controladorBusqueda.clear();
@@ -358,7 +357,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   }
 
   Widget _buildSliverGridPerfiles() {
-    if (_usuariosFiltrados.isEmpty) {
+    if (_usuarios.isEmpty) {
       return SliverFillRemaining(
         child: Center(
           child: Column(
@@ -381,16 +380,31 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final usuario = _usuariosFiltrados[index];
+            final usuario = _usuarios[index];
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 8),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
               child: ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: usuario.urlAvatar != null ? NetworkImage(usuario.urlAvatar!) : null,
-                  child: usuario.urlAvatar == null ? const Icon(Icons.person) : null,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 2),
+                    image: usuario.urlAvatar != null
+                        ? DecorationImage(image: NetworkImage(usuario.urlAvatar!), fit: BoxFit.cover)
+                        : null,
+                  ),
+                  child: usuario.urlAvatar == null ? const Icon(Icons.person, color: Color(0xFFC35E34)) : null,
                 ),
-                title: Text(usuario.nombreUsuario, style: GoogleFonts.outfit(fontWeight: FontWeight.w900)),
-                subtitle: Text(usuario.email, style: GoogleFonts.outfit(fontSize: 12)),
+                title: Text(usuario.nombreUsuario, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
+                subtitle: Text(usuario.email, style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
+                trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFC35E34)),
                 onTap: () {
                   Future.delayed(Duration.zero, () {
                     final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
@@ -407,7 +421,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
               ),
             );
           },
-          childCount: _usuariosFiltrados.length,
+          childCount: _usuarios.length,
         ),
       ),
     );

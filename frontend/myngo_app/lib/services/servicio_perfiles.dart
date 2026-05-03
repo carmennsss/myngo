@@ -308,4 +308,56 @@ class ServicioPerfiles {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
+
+  /// Actualiza la imagen de fondo (banner o feed) del perfil del usuario.
+  Future<RespuestaApi<String>> editarFondoPerfil({
+    required dynamic imagen,
+    required int perfilId,
+    String destino = 'banner',
+  }) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      final uri = Uri.parse('${Configuracion.baseUrl}/usuarios/perfil/editar/');
+      var solicitud = http.MultipartRequest('PATCH', uri);
+
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+
+      solicitud.fields['perfil_id'] = perfilId.toString();
+      solicitud.fields['es_perfil'] = 'True';
+
+      final fieldName = (destino == 'fondo_feed') ? 'url_fondo_perfil' : 'url_fondo';
+
+      if (imagen is XFile) {
+        if (kIsWeb) {
+          final bytes = await imagen.readAsBytes();
+          solicitud.files.add(http.MultipartFile.fromBytes(
+            fieldName,
+            bytes,
+            filename: imagen.name,
+            contentType: MediaType('image', 'jpeg'),
+          ));
+        } else {
+          solicitud.files.add(await http.MultipartFile.fromPath(fieldName, imagen.path));
+        }
+      }
+
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
+      final respuesta = await http.Response.fromStream(respuestaStream);
+
+      if (respuesta.statusCode == 200) {
+        final datosJson = jsonDecode(respuesta.body);
+        final resultKey = (destino == 'fondo_feed') ? 'fondo_perfil' : 'fondo';
+        String? urlFinal = datosJson['datos']?[resultKey]?.toString();
+
+        return RespuestaApi(
+          exito: true,
+          mensaje: (destino == 'fondo_feed') ? '¡Fondo del feed actualizado!' : '¡Fondo (banner) actualizado!',
+          datos: urlFinal,
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al subir la imagen');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
 }

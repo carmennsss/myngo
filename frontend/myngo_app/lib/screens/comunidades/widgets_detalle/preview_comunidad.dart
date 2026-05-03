@@ -49,108 +49,109 @@ class PreviewComunidad extends StatelessWidget {
   Widget build(BuildContext context) {
     final urlFondo = comunidad.urlFondo;
     
-    final content = CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        // Cabecera Principal (Expandible)
-        SliverAppBar(
-          expandedHeight: 180,
-          pinned: false,
-          backgroundColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          automaticallyImplyLeading: false,
-          flexibleSpace: FlexibleSpaceBar(
-            background: HeaderDetalleComunidad(
-              comunidad: comunidad,
-              miId: miId,
-              onCerrar: onBack,
-            ),
-          ),
-        ),
-
-        // Selector de Pestañas (Sticky)
-        SliverAppBar(
-          pinned: true,
-          toolbarHeight: 60,
-          automaticallyImplyLeading: false,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          surfaceTintColor: Colors.transparent,
-          flexibleSpace: _buildPreviewTabs(context),
-        ),
-
-        // Contenido según pestaña
-        if (indiceSeccion == 0)
-          SeccionPostsComunidad(
-            key: ValueKey('posts_${publicaciones?.length}'),
-            publicaciones: publicaciones,
-            estaCargando: estaCargandoDatos,
-            onRefresh: () async {},
-            esAppClara: esAppClara,
-            comoSliver: true,
-          )
-        else
-          SliverToBoxAdapter(child: _buildPreviewGallery(context)),
-
-        // Pie de página con botón de unión
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-            child: Column(
-              children: [
-                const Spacer(),
-                PreviewAboutSection(
+    final content = Stack(
+      children: [
+        CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // Cabecera Principal (Expandible)
+            SliverAppBar(
+              expandedHeight: 180,
+              pinned: false,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                background: HeaderDetalleComunidad(
                   comunidad: comunidad,
-                  esAppClara: esAppClara,
-                  colorTextoPrincipal: colorTextoPrincipal,
-                  colorTextoSecundario: colorTextoSecundario,
-                  bgColor: comunidad.colorTema,
+                  miId: miId,
+                  onCerrar: onBack,
                 ),
-                const SizedBox(height: 30),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      )
-                    ],
+              ),
+            ),
+
+            // Selector de Pestañas (Sticky)
+            SliverAppBar(
+              pinned: true,
+              toolbarHeight: 60,
+              automaticallyImplyLeading: false,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              surfaceTintColor: Colors.transparent,
+              flexibleSpace: _buildPreviewTabs(context),
+            ),
+
+            // Contenido según pestaña
+            if (indiceSeccion == 0)
+              SeccionPostsComunidad(
+                key: ValueKey('posts_${publicaciones?.length}'),
+                publicaciones: publicaciones,
+                estaCargando: estaCargandoDatos,
+                onRefresh: () async {},
+                esAppClara: esAppClara,
+                comoSliver: true,
+              )
+            else
+              SliverToBoxAdapter(child: _buildPreviewGallery(context)),
+
+            // Espacio al final para que la tarjeta flotante no tape el último post
+            const SliverToBoxAdapter(child: SizedBox(height: 180)),
+          ],
+        ),
+
+        // Pie de página flotante con botón de unión (Sticky)
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.0),
+                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                  Theme.of(context).scaffoldBackgroundColor,
+                ],
+                stops: const [0.0, 0.3, 1.0],
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '¿Te gusta lo que ves?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colorTextoPrincipal,
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      Text(
-                        '¿Te gusta lo que ves?',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorTextoPrincipal,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Únete para participar en las conversaciones y compartir tu contenido.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colorTextoSecundario,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      CommunityJoinButton(
-                        comunidad: comunidad,
-                        miId: miId,
-                        estaCargandoPeticion: estaCargandoPeticion,
-                        onLogin: () => Navigator.pushNamed(context, '/login'),
-                        onJoin: onJoin,
-                        isPreview: true,
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  CommunityJoinButton(
+                    comunidad: comunidad,
+                    miId: miId,
+                    estaCargandoPeticion: estaCargandoPeticion,
+                    onLogin: () => Navigator.pushNamed(context, '/login'),
+                    onJoin: onJoin,
+                    isPreview: true,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

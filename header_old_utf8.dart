@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/usuario.dart';
 import '../../inicio/pantalla_inicio.dart';
@@ -8,7 +8,6 @@ class HeaderDetallePerfil extends StatelessWidget {
   final Usuario usuario;
   final String? avatarLocal;
   final String? fondoLocal;
-  final String? fondoPerfilLocal;
   final String? marcoLocal;
   final int? currentUserId;
   final VoidCallback? onEditarAvatar;
@@ -21,7 +20,6 @@ class HeaderDetallePerfil extends StatelessWidget {
     required this.usuario,
     this.avatarLocal,
     this.fondoLocal,
-    this.fondoPerfilLocal,
     this.marcoLocal,
     this.currentUserId,
     this.onEditarAvatar,
@@ -96,15 +94,8 @@ class HeaderDetallePerfil extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Fondo de pantalla (usa fondoPerfilLocal primero, luego fondoLocal como fallback)
-            if (fondoPerfilLocal != null && fondoPerfilLocal!.isNotEmpty)
-              Image.network(
-                fondoPerfilLocal!,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => Container(color: colorGradTop),
-              )
-            else if (fondoLocal != null && fondoLocal!.isNotEmpty)
+            // Fondo
+            if (fondoLocal != null && fondoLocal!.isNotEmpty)
               Image.network(
                 fondoLocal!,
                 fit: BoxFit.cover,
@@ -159,16 +150,16 @@ class HeaderDetallePerfil extends StatelessWidget {
                                   offset: const Offset(0, 10),
                                 ),
                               ],
-                            ),
-                            child: (avatarLocal != null && avatarLocal!.isNotEmpty)
-                                ? ClipOval(
-                                    child: Image.network(
-                                      avatarLocal!,
+                              image: (avatarLocal != null &&
+                                      avatarLocal!.isNotEmpty)
+                                  ? DecorationImage(
+                                      image: NetworkImage(avatarLocal!),
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50, color: Colors.grey),
-                                    ),
-                                  )
-                                : Center(
+                                    )
+                                  : null,
+                            ),
+                            child: (avatarLocal == null || avatarLocal!.isEmpty)
+                                ? Center(
                                     child: Text(
                                       inicial,
                                       style: const TextStyle(
@@ -177,7 +168,8 @@ class HeaderDetallePerfil extends StatelessWidget {
                                         color: Color(0xFF248EA6),
                                       ),
                                     ),
-                                  ),
+                                  )
+                                : null,
                           ),
                           _StatusIndicator(
                             usuario: usuario,
