@@ -89,6 +89,15 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  int _refrescoSalasTrigger = 0;
+  int get refrescoSalasTrigger => _refrescoSalasTrigger;
+
+  /// Incrementa el trigger para que las pantallas que listan chats se actualicen.
+  void notificarNuevaSala() {
+    _refrescoSalasTrigger++;
+    notifyListeners();
+  }
+
   /// Incrementa el total (usado si llega una notificación genérica).
   void incrementarTotal() {
     _totalNoLeidos++;

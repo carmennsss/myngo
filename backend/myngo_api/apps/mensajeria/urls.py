@@ -10,12 +10,18 @@ from .views import (
     marcar_leidos,
     editar_mensaje,
     borrar_mensaje,
+    actualizar_sala,
+    actualizar_participante,
+    actualizar_apodo_personalizado,
 )
 
 urlpatterns = [
     # Gestión de Salas
     path('salas/', SalaChatListCreate.as_view(), name='lista_salas'),
     path('salas/<int:pk>/agregar_miembro/', agregar_miembro, name='agregar_miembro'),
+    path('salas/<int:pk>/actualizar/', actualizar_sala, name='actualizar_sala'),
+    path('salas/<int:sala_id>/participante/', actualizar_participante, name='actualizar_participante'),
+    path('salas/<int:sala_id>/apodo-personalizado/', actualizar_apodo_personalizado, name='actualizar_apodo_personalizado'),
 
     # Mensajes e Historial
     path('salas/<int:sala_id>/mensajes/', MensajesChatList.as_view(), name='historial_mensajes'),

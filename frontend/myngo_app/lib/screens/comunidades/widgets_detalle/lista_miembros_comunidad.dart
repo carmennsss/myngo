@@ -14,7 +14,13 @@ import '../../../models/usuario.dart';
 class ListaMiembrosComunidad extends StatefulWidget {
   final Comunidad comunidad;
 
-  const ListaMiembrosComunidad({super.key, required this.comunidad});
+  final bool comoSliver;
+
+  const ListaMiembrosComunidad({
+    super.key, 
+    required this.comunidad,
+    this.comoSliver = false,
+  });
 
   @override
   State<ListaMiembrosComunidad> createState() => _ListaMiembrosComunidadState();
@@ -87,11 +93,12 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
   @override
   Widget build(BuildContext context) {
     if (_estaCargando) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
+      final loading = const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
+      return widget.comoSliver ? SliverFillRemaining(child: loading) : loading;
     }
 
     if (_miembros.isEmpty) {
-      return Center(
+      final empty = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -99,6 +106,19 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
             const SizedBox(height: 16),
             Text('No hay miembros en esta comunidad 🐾', style: GoogleFonts.outfit(color: Colors.grey)),
           ],
+        ),
+      );
+      return widget.comoSliver ? SliverFillRemaining(child: empty) : empty;
+    }
+
+    if (widget.comoSliver) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _buildMemberItem(context, index),
+            childCount: _miembros.length + (_estaCargandoMas ? 1 : 0),
+          ),
         ),
       );
     }
@@ -111,148 +131,150 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
         primary: false,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: _miembros.length + (_estaCargandoMas ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _miembros.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+        itemBuilder: (context, index) => _buildMemberItem(context, index),
+      ),
+    );
+  }
+
+  Widget _buildMemberItem(BuildContext context, int index) {
+    if (index == _miembros.length) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+      );
+    }
+    final m = _miembros[index];
+    final userId = m['usuario_id'];
+    final nombre = m['usuario_nombre'] ?? 'Michi';
+    final avatar = m['usuario_avatar'];
+    final rol = m['rol'] ?? 'Miembro';
+    
+    return Consumer<ChatProvider>(
+      builder: (context, chatProv, _) {
+        final estaOnline = chatProv.isUsuarioOnline(userId);
+        
+        return BotonTactil(
+          onTap: () {
+            // Navegar al perfil del usuario
+            Navigator.push(
+              context, 
+              MaterialPageRoute(
+                builder: (c) => PantallaDetallePerfil(
+                  usuario: Usuario(
+                    id: userId ?? 0,
+                    perfilId: m['perfil_id'] ?? 0,
+                    nombreUsuario: nombre,
+                    urlAvatar: avatar,
+                    email: '',
+                    biografia: '',
+                    ratingActual: 0.0,
+                    fechaRegistro: DateTime.now(),
+                    esVerificado: false,
+                    esPublico: true,
+                    estado: estaOnline ? 'ACTIVO' : 'DESCONECTADO',
+                  )
+                )
+              )
             );
-          }
-          final m = _miembros[index];
-          final userId = m['usuario_id'];
-          final nombre = m['usuario_nombre'] ?? 'Michi';
-          final avatar = m['usuario_avatar'];
-          final rol = m['rol'] ?? 'Miembro';
-          
-          return Consumer<ChatProvider>(
-            builder: (context, chatProv, _) {
-              final estaOnline = chatProv.isUsuarioOnline(userId);
-              
-              return BotonTactil(
-                onTap: () {
-                  // Navegar al perfil del usuario
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                      builder: (c) => PantallaDetallePerfil(
-                        usuario: Usuario(
-                          id: userId ?? 0,
-                          perfilId: m['perfil_id'] ?? 0,
-                          nombreUsuario: nombre,
-                          urlAvatar: avatar,
-                          email: '',
-                          biografia: '',
-                          ratingActual: 0.0,
-                          fechaRegistro: DateTime.now(),
-                          esVerificado: false,
-                          esPublico: true,
-                          estado: estaOnline ? 'ACTIVO' : 'DESCONECTADO',
-                        )
-                      )
-                    )
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Stack(
-                        children: [
-                          Builder(
-                            builder: (context) {
-                              String? urlAvatar = avatar;
-                              if (urlAvatar != null && urlAvatar.isNotEmpty) {
-                                if (!urlAvatar.startsWith('http')) {
-                                  urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}$urlAvatar';
-                                }
-                              }
-                              return CachedNetworkImage(
-                                imageUrl: urlAvatar ?? '',
-                                imageBuilder: (context, imageProvider) => CircleAvatar(
-                                  radius: 26,
-                                  backgroundImage: imageProvider,
-                                ),
-                                placeholder: (context, url) => const CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors.white10,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                                errorWidget: (context, url, error) => CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors.grey.shade100,
-                                  child: const Icon(Icons.person, color: Colors.grey),
-                                ),
-                              );
-                            },
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Row(
+              children: [
+                Stack(
+                  children: [
+                    Builder(
+                      builder: (context) {
+                        String? urlAvatar = avatar;
+                        if (urlAvatar != null && urlAvatar.isNotEmpty) {
+                          if (!urlAvatar.startsWith('http')) {
+                            urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}$urlAvatar';
+                          }
+                        }
+                        return CachedNetworkImage(
+                          imageUrl: urlAvatar ?? '',
+                          imageBuilder: (context, imageProvider) => CircleAvatar(
+                            radius: 26,
+                            backgroundImage: imageProvider,
                           ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 14,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                color: estaOnline ? Colors.green : Colors.grey.shade400,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                            ),
+                          placeholder: (context, url) => const CircleAvatar(
+                            radius: 26,
+                            backgroundColor: Colors.white10,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              nombre,
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF4A4440)),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: _getColorRol(rol).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                rol.toUpperCase(),
-                                style: GoogleFonts.outfit(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  color: _getColorRol(rol),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              'Miembro desde ${DateFormat('dd/MM/yyyy').format(DateTime.parse(m['fecha_union'] ?? DateTime.now().toIso8601String()))}',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
+                          errorWidget: (context, url, error) => CircleAvatar(
+                            radius: 26,
+                            backgroundColor: Colors.grey.shade100,
+                            child: const Icon(Icons.person, color: Colors.grey),
+                          ),
+                        );
+                      },
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: estaOnline ? Colors.green : Colors.grey.shade400,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded, color: Colors.grey.shade300),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nombre,
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF4A4440)),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _getColorRol(rol).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          rol.toUpperCase(),
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: _getColorRol(rol),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Miembro desde ${DateFormat('dd/MM/yyyy').format(DateTime.parse(m['fecha_union'] ?? DateTime.now().toIso8601String()))}',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              );
-            },
-          );
-        },
-      ),
+                Icon(Icons.chevron_right_rounded, color: Colors.grey.shade300),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

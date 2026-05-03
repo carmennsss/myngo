@@ -15,6 +15,7 @@ class SeccionGaleriaComunidad extends StatefulWidget {
   final bool estaCargando;
   final VoidCallback onNuevaColeccion;
   final Key galeriaKey;
+  final bool comoSliver;
 
   const SeccionGaleriaComunidad({
     super.key,
@@ -23,6 +24,7 @@ class SeccionGaleriaComunidad extends StatefulWidget {
     required this.estaCargando,
     required this.onNuevaColeccion,
     required this.galeriaKey,
+    this.comoSliver = false,
   });
 
   @override
@@ -40,6 +42,15 @@ class _SeccionGaleriaComunidadState extends State<SeccionGaleriaComunidad> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.comoSliver) {
+      return SliverFillRemaining(
+        child: _buildContenido(),
+      );
+    }
+    return _buildContenido();
+  }
+
+  Widget _buildContenido() {
     return Column(
       children: [
         Padding(

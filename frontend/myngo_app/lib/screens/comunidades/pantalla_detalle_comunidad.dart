@@ -83,7 +83,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   List<Coleccion>? _colecciones;
   Key _galeriaKey = UniqueKey();
   
-  // Cache del fondo para evitar recrearlo y causar parpadeos o lentitud
   Widget? _cachedBackground;
 
   @override
@@ -189,14 +188,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (_comunidad == null) return;
     final res = await _servicioGaleria.obtenerColecciones(
         idComunidad: _comunidad!.id);
-    // Siempre asignamos para no dejar estado null indefinidamente
     if (mounted) setState(() => _colecciones = res.datos ?? []);
   }
 
   Future<void> _cargarDatosSeccion(int index) async {
     if (_comunidad == null) return;
-    
-    // Reset pagination when switching sections or refreshing
     _paginaActual = 1;
     _hayMasPosts = true;
     
@@ -259,7 +255,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   @override
   Widget build(BuildContext context) {
     if (_estaCargandoComunidad || _comunidad == null) {
-      final loading = Scaffold(
+      return Scaffold(
         backgroundColor: _colorPagina(context),
         body: Center(
           child: Column(
@@ -279,12 +275,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           ),
         ),
       );
-      return widget.esIntegrada ? loading : loading;
     }
 
     final esCreador = _miId != null && _miId == _comunidad!.creadorId;
     final esMiembro = _comunidad!.esMiembro || esCreador;
-    
     _cachedBackground ??= _buildGlobalBackground();
 
     if (!esMiembro) {
@@ -309,54 +303,98 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       );
     }
 
-    final dashboard = Stack(
-      children: [
-        Positioned.fill(child: _cachedBackground!),
-        NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                expandedHeight: 180,
-                pinned: false,
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                automaticallyImplyLeading: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: HeaderDetalleComunidad(
-                    comunidad: _comunidad!,
-                    miId: _miId,
-                    onCerrar: widget.onBack ?? () => Navigator.pop(context),
-                    onComunidadActualizada: (c) {
-                      setState(() {
-                        _comunidad = c;
-                        _cachedBackground = null;
-                      });
-                    },
+    return Scaffold(
+      backgroundColor: _colorPagina(context),
+      body: Stack(
+        children: [
+          _buildPersonalizedFeedBackground(),
+          NestedScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverAppBar(
+                  expandedHeight: 200,
+                  pinned: false,
+                  floating: true, // Reaparece al hacer scroll hacia arriba
+                  snap: true,
+                  backgroundColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  automaticallyImplyLeading: false,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: HeaderDetalleComunidad(
+                      comunidad: _comunidad!,
+                      miId: _miId,
+                      onCerrar: widget.onBack ?? () => Navigator.pop(context),
+                      onComunidadActualizada: (c) {
+                        setState(() {
+                          _comunidad = c;
+                          _cachedBackground = null;
+                        });
+                      },
+                    ),
                   ),
                 ),
-              ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _SliverAppBarDelegate(
-                  minHeight: 60,
-                  maxHeight: 60,
-                  child: _buildSubNav(context),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverAppBarDelegate(
+                    minHeight: 60,
+                    maxHeight: 60,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
+                        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.1))),
+                      ),
+                      child: _buildSubNav(context),
+                    ),
+                  ),
                 ),
-              ),
-            ];
-          },
-          body: _buildBodyContent(),
-        ),
-        _buildFAB(),
-      ],
+              ];
+            },
+            body: CustomScrollView(
+              slivers: [
+                _buildSliverContent(),
+              ],
+            ),
+          ),
+          _buildFAB(),
+        ],
+      ),
     );
-
-    return widget.esIntegrada
-        ? Container(color: _colorPagina(context), child: dashboard)
-        : Scaffold(backgroundColor: _colorPagina(context), body: dashboard);
   }
 
-  Widget _buildBodyContent() {
+  /// Construye el fondo personalizado solo para la parte central del feed
+  Widget _buildPersonalizedFeedBackground() {
+    if (_indiceSeccion != 0) return _cachedBackground!;
+    
+    return Stack(
+      children: [
+        _cachedBackground!,
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 30,
+                    offset: const Offset(0, 0),
+                  )
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                child: _buildBackgroundFeed(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSliverContent() {
     switch (_indiceSeccion) {
       case 0:
         return SeccionPostsComunidad(
@@ -368,10 +406,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           isLoadingMore: _cargandoMasPosts,
           esAppClara: _esAppClara(context),
           fuente: _comunidad?.fuenteComunidad,
-          backgroundConfig: _comunidad?.fondoPostsConfig,
+          comoSliver: true,
         );
       case 1:
-        return _buildStore();
+        return SliverToBoxAdapter(child: _buildStore());
       case 2:
         return SeccionGaleriaComunidad(
           comunidad: _comunidad!,
@@ -379,6 +417,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           estaCargando: _estaCargandoDatos,
           onNuevaColeccion: () => _mostrarDialogoNuevaColeccion(context),
           galeriaKey: _galeriaKey,
+          comoSliver: true,
         );
       case 3:
         return SeccionChatComunidad(
@@ -389,11 +428,15 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           esAppClara: _esAppClara(context),
           colorTextoPrincipal: _colorTextoPrincipal(context),
           colorTextoSecundario: _colorTextoSecundario(context),
+          comoSliver: true,
         );
       case 4:
-        return ListaMiembrosComunidad(comunidad: _comunidad!);
+        return ListaMiembrosComunidad(
+          comunidad: _comunidad!,
+          comoSliver: true,
+        );
       default:
-        return const SizedBox();
+        return const SliverToBoxAdapter(child: SizedBox());
     }
   }
 
@@ -498,11 +541,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   void _mostrarDialogoCrearSalaComunidad(BuildContext context) async {
-    // Obtener miembros de la comunidad
     final res = await _servicio.obtenerMiembrosComunidad(_comunidad!.id);
     if (!res.exito || !mounted) return;
-
-    // Convertir datos de miembros a objetos Usuario para el diálogo
     final potenciales = (res.datos as List)
         .where((m) => m['usuario_id'] != _miId)
         .map((m) => Usuario.fromJson({
@@ -521,8 +561,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         titulo: 'Nueva Sala en ${_comunidad!.nombre} 🐾',
         potencialesParticipantes: potenciales,
         alCrear: (nombre, esPublica, miembrosIds) async {
-          Navigator.pop(context); // Cerrar diálogo
-          
+          Navigator.pop(context);
           final servMensajeria = ServicioMensajeria();
           final nuevaSala = await servMensajeria.crearSala(
             nombre: nombre,
@@ -531,9 +570,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             miembrosIds: miembrosIds,
             comunidadId: _comunidad!.id,
           );
-
           if (nuevaSala != null && mounted) {
-            _cargarDatosSeccion(3); // Recargar salas
+            _cargarDatosSeccion(3);
           }
         },
       ),
@@ -598,11 +636,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Widget _buildGlobalBackground() {
     if (_comunidad == null) return Container();
-    
     final urlFondo = _comunidad!.urlFondo;
     final esClaro = _esAppClara(context);
-    
-    // 1. Si hay una imagen de fondo global, prima
     if (urlFondo != null && urlFondo.isNotEmpty) {
       return Container(
         color: _colorPagina(context),
@@ -618,25 +653,20 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         ),
       );
     }
-
     return Container(color: _colorPagina(context));
   }
 
   Widget _buildBackgroundFeed() {
-    // Este método ahora solo se usa si queremos renderizarlo en algún sitio específico
-    // Pero lo mantendremos por compatibilidad o lo moveremos a un helper
     return _buildPostsBackgroundFromConfig(_comunidad?.fondoPostsConfig, context);
   }
 
   static Widget _buildPostsBackgroundFromConfig(Map<String, dynamic>? config, BuildContext context) {
     if (config == null) return const SizedBox.shrink();
-
     final esClaro = Theme.of(context).brightness == Brightness.light;
     final tipo = config['tipo'] ?? 'solido';
     final color1Hex = config['color1']?.toString() ?? (esClaro ? '#FFFFFF' : '#121212');
     final color2Hex = config['color2']?.toString();
     final patron = config['patron']?.toString() ?? 'puntos';
-
     final color1 = _PantallaDetalleComunidadState._parseHex(color1Hex);
     final color2 = _PantallaDetalleComunidadState._parseHex(color2Hex) ?? color1.withOpacity(0.8);
 
@@ -651,20 +681,18 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         ),
       );
     }
-
     if (tipo == 'patron') {
       return Container(
         color: color1,
         child: CustomPaint(
           painter: _PatronPainter(
             tipo: patron,
-            color: (color1.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.05),
+            color: (color1.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.12),
           ),
           child: Container(),
         ),
       );
     }
-
     return Container(color: color1);
   }
 
@@ -688,26 +716,92 @@ class _PatronPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.0;
-
+    final paint = Paint()..color = color..strokeWidth = 1.0;
     if (tipo == 'puntos') {
-      for (double x = 0; x < size.width; x += 20) {
-        for (double y = 0; y < size.height; y += 20) {
-          canvas.drawCircle(Offset(x, y), 1.5, paint);
+      for (double x = 0; x < size.width; x += 25) {
+        for (double y = 0; y < size.height; y += 25) {
+          canvas.drawCircle(Offset(x, y), 1.2, paint);
         }
       }
     } else if (tipo == 'lineas') {
-      for (double x = -size.height; x < size.width; x += 25) {
+      for (double x = -size.height; x < size.width; x += 30) {
         canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), paint);
       }
+    } else if (tipo == 'diagonal_inversa') {
+      for (double x = 0; x < size.width + size.height; x += 30) {
+        canvas.drawLine(Offset(x, 0), Offset(x - size.height, size.height), paint);
+      }
     } else if (tipo == 'cuadricula') {
-      for (double x = 0; x < size.width; x += 30) {
+      for (double x = 0; x < size.width; x += 40) {
         canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
       }
-      for (double y = 0; y < size.height; y += 30) {
+      for (double y = 0; y < size.height; y += 40) {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+      }
+    } else if (tipo == 'zigzag') {
+      final p = Path();
+      const step = 40.0;
+      paint.style = PaintingStyle.stroke;
+      for (double y = 0; y < size.height + step; y += step) {
+        p.moveTo(0, y);
+        for (double x = 0; x < size.width + step; x += step) {
+          p.lineTo(x + step / 2, y + step / 2);
+          p.lineTo(x + step, y);
+        }
+      }
+      canvas.drawPath(p, paint);
+    } else if (tipo == 'diamantes') {
+      const step = 50.0;
+      paint.style = PaintingStyle.stroke;
+      for (double x = 0; x < size.width + step; x += step) {
+        for (double y = 0; y < size.height + step; y += step) {
+          final p = Path()
+            ..moveTo(x, y - step / 2)
+            ..lineTo(x + step / 2, y)
+            ..lineTo(x, y + step / 2)
+            ..lineTo(x - step / 2, y)
+            ..close();
+          canvas.drawPath(p, paint);
+        }
+      }
+    } else if (tipo == 'olas') {
+      const step = 40.0;
+      paint.style = PaintingStyle.stroke;
+      for (double y = 0; y < size.height + step; y += step) {
+        final p = Path()..moveTo(0, y);
+        for (double x = 0; x < size.width + step; x += step) {
+          p.quadraticBezierTo(x + step / 4, y - step / 4, x + step / 2, y);
+          p.quadraticBezierTo(x + 3 * step / 4, y + step / 4, x + step, y);
+        }
+        canvas.drawPath(p, paint);
+      }
+    } else if (tipo == 'triangulos') {
+      const step = 40.0;
+      paint.style = PaintingStyle.stroke;
+      for (double x = 0; x < size.width + step; x += step) {
+        for (double y = 0; y < size.height + step; y += step) {
+          final p = Path()
+            ..moveTo(x, y - 10)
+            ..lineTo(x + 10, y + 10)
+            ..lineTo(x - 10, y + 10)
+            ..close();
+          canvas.drawPath(p, paint);
+        }
+      }
+    } else if (tipo == 'puntos_grandes') {
+      for (double x = 0; x < size.width; x += 50) {
+        for (double y = 0; y < size.height; y += 50) {
+          canvas.drawCircle(Offset(x, y), 4.0, paint);
+        }
+      }
+    } else if (tipo == 'estrellas') {
+      const step = 60.0;
+      paint.style = PaintingStyle.stroke;
+      for (double x = 0; x < size.width + step; x += step) {
+        for (double y = 0; y < size.height + step; y += step) {
+          canvas.drawLine(Offset(x - 5, y), Offset(x + 5, y), paint);
+          canvas.drawLine(Offset(x, y - 5), Offset(x, y + 5), paint);
+        }
       }
     }
   }

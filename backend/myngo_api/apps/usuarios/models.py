@@ -160,6 +160,7 @@ class Perfil(models.Model):
             ('OCUPADO', 'Ocupado'),
         ],
     )
+    orden_comunidades = models.JSONField(null=True, blank=True, default=list)
 
     def recalcular_puntos(self):
         """Añade puntos acumulados por los días de inactividad desde el último login.

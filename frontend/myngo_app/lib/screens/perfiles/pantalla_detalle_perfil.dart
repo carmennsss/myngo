@@ -15,6 +15,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../utils/mejoras_notifier.dart';
 import '../../providers/post_provider.dart';
+import '../../providers/chat_provider.dart';
 
 import '../../widgets/dialogo_crear_post.dart';
 import '../../widgets/selector_estrellas.dart';
@@ -591,6 +592,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     if (_usuario == null) return;
     final sala = await ServicioMensajeria().crearSala(idOtroUsuario: _usuario!.id);
     if (sala != null && mounted) {
+      // Notificar al provider para que se refresquen las listas de chats
+      context.read<ChatProvider>().notificarNuevaSala();
+      
       Navigator.push(
           context,
           MaterialPageRoute(

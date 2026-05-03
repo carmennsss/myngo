@@ -29,6 +29,10 @@ class SalaChat(models.Model):
         Usuario, related_name='salas_pertenecientes', through='SalaChatMiembro', blank=True
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    # Customización colaborativa
+    avatar_s3 = models.CharField(max_length=500, null=True, blank=True)
+    configuracion = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
         return self.nombre
@@ -47,6 +51,42 @@ class SalaChatMiembro(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, db_column='usuario_id')
 
 
+class PersonalizacionChat(models.Model):
+    """Configuración visual compartida de una sala de chat."""
+    
+    class Meta:
+        db_table = 'chat_personalizacion'
+        
+    sala = models.OneToOneField(SalaChat, on_delete=models.CASCADE, related_name='personalizacion_v2')
+    color_fondo = models.CharField(max_length=50, null=True, blank=True)
+    color_burbuja_mio = models.CharField(max_length=50, null=True, blank=True)
+    color_burbuja_otro = models.CharField(max_length=50, null=True, blank=True)
+    color_texto_mio = models.CharField(max_length=50, null=True, blank=True)
+    color_texto_otro = models.CharField(max_length=50, null=True, blank=True)
+    imagen_fondo_s3 = models.CharField(max_length=500, null=True, blank=True)
+    forma_burbuja = models.CharField(max_length=50, default='redondeada')
+    font_size = models.IntegerField(default=14)
+    tema = models.CharField(max_length=20, default='claro')
+    
+    def __str__(self):
+        return f"Personalización de {self.sala.nombre}"
+
+
+class ApodoPersonalizado(models.Model):
+    """Apodo que un usuario le asigna a otro dentro de una sala específica."""
+    
+    class Meta:
+        db_table = 'chat_apodos'
+        unique_together = ('sala', 'asignador', 'asignado')
+        
+    sala = models.ForeignKey(SalaChat, on_delete=models.CASCADE, related_name='apodos_personalizados')
+    asignador = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='apodos_dados')
+    asignado = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='apodos_recibidos')
+    apodo = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.asignador} llama '{self.apodo}' a {self.asignado} en {self.sala}"
+
 
 class ParticipanteChat(models.Model):
     """Relación de pertenencia de un usuario a una sala de chat."""
@@ -57,6 +97,7 @@ class ParticipanteChat(models.Model):
     sala = models.ForeignKey(SalaChat, on_delete=models.CASCADE)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha_union = models.DateTimeField(auto_now_add=True)
+    apodo = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return f"{self.usuario.nombre_usuario} en {self.sala.nombre}"
@@ -65,9 +106,14 @@ class ParticipanteChat(models.Model):
 class MensajeChat(models.Model):
     """Mensaje individual enviado dentro de una sala de chat.
 
-    Soporta texto y referencias a archivos almacenados en S3.
-    Mantiene el estado de lectura del mensaje.
+    Soporta texto, imágenes, vídeos y mensajes de sistema.
     """
+    TIPO_CHOICES = (
+        ('TEXTO', 'Texto'),
+        ('IMAGEN', 'Imagen'),
+        ('VIDEO', 'Vídeo'),
+        ('SISTEMA', 'Sistema'),
+    )
 
     class Meta:
         db_table = 'mensajes_chat'
@@ -85,6 +131,8 @@ class MensajeChat(models.Model):
     fecha_edicion = models.DateTimeField(null=True, blank=True)
     borrado_para_todos = models.BooleanField(default=False)
     borrado_para = models.ManyToManyField(Usuario, related_name='mensajes_borrados_localmente', blank=True)
+    
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='TEXTO')
 
     def __str__(self):
-        return f"Mensaje #{self.id} en {self.sala.nombre}"
+        return f"Mensaje #{self.id} ({self.tipo}) en {self.sala.nombre}"

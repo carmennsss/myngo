@@ -32,11 +32,26 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     super.initState();
     _cargar();
     _searchController.addListener(_filtrarSalas);
+    
+    // Escuchar trigger de refresco desde el provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatProvider>().addListener(_onChatProviderChanged);
+    });
+  }
+
+  void _onChatProviderChanged() {
+    if (!mounted) return;
+    // Podríamos comparar el trigger anterior si quisiéramos ser más específicos,
+    // pero refrescar al cambiar el provider (que incluye mensajes nuevos) es bueno.
+    _cargar();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    try {
+      context.read<ChatProvider>().removeListener(_onChatProviderChanged);
+    } catch (_) {}
     super.dispose();
   }
 

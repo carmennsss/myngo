@@ -53,7 +53,9 @@ class PantallaInicioState extends State<PantallaInicio> {
   String get miEstado => _miEstado;
 
   int? _miId;
+  int? _miPerfilId;
   int? _puntos;
+  List<int> _ordenGuardado = [];
   int _notificacionesSinLeer = 0;
   final ServicioMensajeria _servicioNotifChat = ServicioMensajeria();
   List<Comunidad>? _misComunidades;
@@ -82,8 +84,15 @@ class PantallaInicioState extends State<PantallaInicio> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     
+    // Cargar orden local primero para evitar saltos visuales
+    final ordenLocalString = prefs.getString('orden_comunidades_local');
+    if (ordenLocalString != null && ordenLocalString.isNotEmpty) {
+      try {
+        _ordenGuardado = ordenLocalString.split(',').map((e) => int.parse(e)).toList();
+      } catch (_) {}
+    }
+
     if (token != null) {
-      // Marcamos como logueado preventivamente para evitar flicker en la cabecera
       if (mounted) setState(() => _estaLogueado = true);
       
       final resDatos = await ServicioUsuarios().obtenerDatosPropios();
@@ -94,11 +103,17 @@ class PantallaInicioState extends State<PantallaInicio> {
           _miAvatar = resDatos.datos!.urlAvatar;
           _miMarco = resDatos.datos!.marco;
           _miId = resDatos.datos!.id;
+          _miPerfilId = resDatos.datos!.perfilId;
           _puntos = resDatos.datos!.puntos;
           _miEstado = resDatos.datos!.estado ?? 'DESCONECTADO';
+          
+          // El orden del servidor tiene prioridad si no está vacío
+          if (resDatos.datos!.ordenComunidades.isNotEmpty) {
+            _ordenGuardado = resDatos.datos!.ordenComunidades;
+            prefs.setString('orden_comunidades_local', _ordenGuardado.join(','));
+          }
         });
         
-        // Conectar a presencia global
         _servicioChat.conectarPresencia((datos) {
           if (!mounted) return;
           final type = datos['type'];
@@ -106,16 +121,10 @@ class PantallaInicioState extends State<PantallaInicio> {
           if (type == 'status_change') {
             final userId = datos['user_id'];
             final newStatus = datos['status'];
-            
-            // 1. Actualizar mi propio estado si soy yo
             if (userId == _miId) {
               setState(() => _miEstado = newStatus);
             }
-            
-            // 2. Actualizar ChatProvider para que las pantallas de chat y perfil se enteren
             context.read<ChatProvider>().actualizarEstadoUsuario(userId, newStatus);
-            
-            // 3. Actualizar el estado en la lista del ranking si el usuario está ahí
             if (_rankingUsuarios != null) {
               final index = _rankingUsuarios!.indexWhere((u) => u.id == userId);
               if (index != -1) {
@@ -128,7 +137,6 @@ class PantallaInicioState extends State<PantallaInicio> {
           else if (type == 'presence_connection_established') {
             setState(() {
               _miEstado = datos['status'];
-              // Sincronizar también en el ranking si ya está cargado
               if (_rankingUsuarios != null && _miId != null) {
                 final index = _rankingUsuarios!.indexWhere((u) => u.id == _miId);
                 if (index != -1) {
@@ -136,7 +144,6 @@ class PantallaInicioState extends State<PantallaInicio> {
                 }
               }
             });
-            // Sincronizar lista de usuarios online inicial en ChatProvider
             if (datos['online_users'] != null) {
               context.read<ChatProvider>().setUsuariosOnline(
                 (datos['online_users'] as List).map((id) => (id as num).toInt()).toList()
@@ -148,12 +155,10 @@ class PantallaInicioState extends State<PantallaInicio> {
         _cargarComunidades();
         _cargarNotificacionesSinLeer();
         
-        // Inicializar ChatProvider
         final chatProvider = context.read<ChatProvider>();
         chatProvider.cargarConteosIniciales();
         _conectarNotificacionesChat(chatProvider);
       } else if (!resDatos.exito && mounted) {
-        // Si el token era inválido o expiró
         setState(() => _estaLogueado = false);
         await prefs.remove('auth_token');
       }
@@ -172,8 +177,6 @@ class PantallaInicioState extends State<PantallaInicio> {
       setState(() {
         _rankingUsuarios = res.datos ?? [];
         _cargandoRanking = false;
-        
-        // Sincronizar mi propio estado si estoy en el ranking
         if (_rankingUsuarios != null && _miId != null) {
           final index = _rankingUsuarios!.indexWhere((u) => u.id == _miId);
           if (index != -1) {
@@ -195,13 +198,15 @@ class PantallaInicioState extends State<PantallaInicio> {
       if (!mounted) return;
       if (data['type'] == 'new_message_notification') {
         chatProvider.procesarNuevaNotificacion(data);
-        // Mostrar Toast si no estamos en esa sala
         if (chatProvider.salaActivaId != (data['sala_id'] as num).toInt()) {
           _mostrarToastMensaje(data);
         }
+      } else if (data['type'] == 'new_chat_notification') {
+        chatProvider.notificarNuevaSala();
       }
     });
   }
+
   void _mostrarToastMensaje(Map<String, dynamic> data) {
     final salaId = data['sala_id'];
     final sender = data['sender_username'] ?? 'Alguien';
@@ -231,14 +236,34 @@ class PantallaInicioState extends State<PantallaInicio> {
   }
 
   Future<void> _cargarComunidades() async {
+    if (!mounted) return;
     setState(() {
       _cargandoComunidades = true;
-      _misComunidades = null; // Reiniciar a null según la nueva lógica
+      _misComunidades = null;
     });
+    
     final res = await ServicioComunidades().listarComunidadesPropias();
+    
     if (mounted) {
       setState(() {
-        _misComunidades = res.datos ?? [];
+        List<Comunidad> lista = res.datos ?? [];
+        
+        if (_ordenGuardado.isNotEmpty) {
+          final Map<int, Comunidad> mapaComunidades = {
+            for (var c in lista) c.id: c
+          };
+          
+          List<Comunidad> listaOrdenada = [];
+          for (var id in _ordenGuardado) {
+            if (mapaComunidades.containsKey(id)) {
+              listaOrdenada.add(mapaComunidades.remove(id)!);
+            }
+          }
+          listaOrdenada.addAll(mapaComunidades.values);
+          lista = listaOrdenada;
+        }
+        
+        _misComunidades = lista;
         _cargandoComunidades = false;
       });
     }
@@ -283,25 +308,36 @@ class PantallaInicioState extends State<PantallaInicio> {
     if (mounted) setState(() => _puntos = nuevosPuntos);
   }
 
-
-  void _reordenarComunidades(int oldIndex, int newIndex) {
+  void _reordenarComunidades(int oldIndex, int newIndex) async {
     if (_misComunidades == null) return;
+    
     setState(() {
       if (newIndex > oldIndex) {
         newIndex -= 1;
       }
       final Comunidad item = _misComunidades!.removeAt(oldIndex);
       _misComunidades!.insert(newIndex, item);
+      _ordenGuardado = _misComunidades!.map((c) => c.id).toList();
     });
-  }
 
+    // Guardar localmente de inmediato para que sea persistente ante recargas rápidas
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('orden_comunidades_local', _ordenGuardado.join(','));
+
+    // Guardar en el servidor de forma asíncrona
+    if (_miPerfilId != null) {
+      try {
+        await ServicioUsuarios().actualizarOrdenComunidades(_miPerfilId!, _ordenGuardado);
+      } catch (e) {
+        debugPrint('Error guardando orden en servidor: $e');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
-    final location = GoRouterState.of(context).uri.toString();
-    final bool esSalaChat = location.contains('/mensajes/sala/');
     
     return Scaffold(
       key: _scaffoldKey,
@@ -350,12 +386,9 @@ class PantallaInicioState extends State<PantallaInicio> {
                       ),
                       Expanded(
                         flex: 5,
-                        child: Container(
-                          padding: EdgeInsets.zero, // Eliminado el padding que causaba el hueco blanco
-                          child: (widget.navigationShell != null)
-                                    ? widget.navigationShell!
-                                    : const Center(child: Text('Error de Navegación 🐾', style: TextStyle(color: Colors.white))),
-                        ),
+                        child: (widget.navigationShell != null)
+                                  ? widget.navigationShell!
+                                  : const Center(child: Text('Error de Navegación 🐾', style: TextStyle(color: Colors.white))),
                       ),
                   ],
                 ),
@@ -363,7 +396,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOutCubic,
-                    left: _isSidebarOpen ? 308.0 : -12.0, // Centrado sobre el borde
+                    left: _isSidebarOpen ? 308.0 : -12.0,
                     top: 24.0, 
                     child: GestureDetector(
                       onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
@@ -404,7 +437,7 @@ class PantallaInicioState extends State<PantallaInicio> {
     
     return Drawer(
       child: Container(
-        color: const Color(0xFFFEF5F1), // Fondo a juego con la app
+        color: const Color(0xFFFEF5F1),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -453,24 +486,12 @@ class PantallaInicioState extends State<PantallaInicio> {
               onTap: () { Navigator.pop(context); _alPulsarNav(4); },
             ),
             ListTile(
-              leading: Consumer<ChatProvider>(
-                builder: (context, chat, child) => Badge(
-                  label: chat.totalNoLeidos > 0 ? Text('${chat.totalNoLeidos}') : null,
-                  isLabelVisible: chat.totalNoLeidos > 0,
-                  backgroundColor: const Color(0xFFD95F43),
-                  child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
-                ),
-              ),
+              leading: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
               title: Text('Chats', style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(3); },
             ),
             ListTile(
-              leading: Badge(
-                label: _notificacionesSinLeer > 0 ? Text('$_notificacionesSinLeer') : null,
-                isLabelVisible: _notificacionesSinLeer > 0,
-                backgroundColor: const Color(0xFFD95F43),
-                child: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
-              ),
+              leading: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
               title: Text('Notificaciones', style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(2); },
             ),
@@ -501,7 +522,6 @@ class PantallaInicioState extends State<PantallaInicio> {
   }
 }
 
-/// Toast overlay in-app para notificaciones de mensajes nuevos.
 class _ToastMensaje extends StatefulWidget {
   final String sender;
   final String preview;
@@ -541,7 +561,6 @@ class _ToastMensajeState extends State<_ToastMensaje>
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _ctrl.forward();
     
-    // Auto-desvanecer después de 5 segundos
     Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
         _ctrl.reverse().then((_) {
@@ -592,7 +611,6 @@ class _ToastMensajeState extends State<_ToastMensaje>
                     ),
                     child: Row(
                       children: [
-                        // Avatar circular con diseño premium
                         Container(
                           width: 48,
                           height: 48,
@@ -628,7 +646,6 @@ class _ToastMensajeState extends State<_ToastMensaje>
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Contenido del texto
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,7 +686,6 @@ class _ToastMensajeState extends State<_ToastMensaje>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // Botón de cierre sutil
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -693,4 +709,3 @@ class _ToastMensajeState extends State<_ToastMensaje>
     );
   }
 }
-
