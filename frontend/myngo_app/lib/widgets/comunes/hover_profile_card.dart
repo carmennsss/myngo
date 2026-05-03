@@ -144,12 +144,18 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                                     child: CircleAvatar(
                                       radius: 28,
                                       backgroundColor: Colors.white,
-                                      backgroundImage: (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
-                                          ? CachedNetworkImageProvider(widget.avatarUrl!)
-                                          : null,
-                                      child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
-                                          ? const Icon(Icons.person, color: Color(0xFFC35E34), size: 30)
-                                          : null,
+                                      child: (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
+                                          ? ClipOval(
+                                              child: CachedNetworkImage(
+                                                imageUrl: widget.avatarUrl!,
+                                                width: 56,
+                                                height: 56,
+                                                fit: BoxFit.cover,
+                                                placeholder: (context, url) => Container(color: Colors.grey.shade100),
+                                                errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey, size: 30),
+                                              ),
+                                            )
+                                          : const Icon(Icons.person, color: Color(0xFFC35E34), size: 30),
                                     ),
                                   ),
                                   Builder(

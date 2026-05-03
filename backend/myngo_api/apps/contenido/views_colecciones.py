@@ -54,12 +54,12 @@ class ColeccionViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Solo el propietario puede eliminar esta colección.')
         instance.delete()
 
-    @action(detail=True, methods=['post'], url_path='gestionar-imagenes')
+    @action(detail=True, methods=['post'], url_path='gestionar_imagen')
     def gestionar_imagenes(self, request, pk=None):
         """Añade o elimina una imagen de la colección.
 
         Args:
-            request: Petición POST con ``imagen_id`` y ``accion`` ('add' o 'remove').
+            request: Petición POST con ``imagen_id`` y ``accion`` ('add'/'agregar' o 'remove'/'quitar').
             pk: ID de la colección.
 
         Returns:
@@ -74,11 +74,11 @@ class ColeccionViewSet(viewsets.ModelViewSet):
         except ImagenGaleria.DoesNotExist:
             return Response({'error': 'Imagen no encontrada'}, status=404)
 
-        if accion == 'add':
+        if accion in ['add', 'agregar']:
             coleccion.imagenes.add(imagen)
             return Response({'status': 'Imagen añadida'})
 
-        if accion == 'remove':
+        if accion in ['remove', 'quitar', 'remove']:
             if coleccion.comunidad:
                 es_gestor = coleccion.comunidad.creador == request.user or MiembrosComunidad.objects.filter(
                     usuario=request.user,

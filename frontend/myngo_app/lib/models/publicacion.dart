@@ -137,7 +137,7 @@ class Publicacion {
                   final url = e.toString();
                   String tipo = 'I';
                   final lowerUrl = url.toLowerCase();
-                  if (lowerUrl.contains(RegExp(r'\.(mp4|mov|avi|quicktime|mkv|webm)(\?|$)'))) {
+                  if (lowerUrl.contains(RegExp(r'\.(mp4|mov|avi|quicktime|mkv|webm|flv|3gp|wmv)(\?|$)'))) {
                     tipo = 'V';
                   }
                   return {'url': url, 'tipo': tipo};

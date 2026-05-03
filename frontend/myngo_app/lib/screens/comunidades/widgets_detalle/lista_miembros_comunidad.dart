@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -130,27 +131,8 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
               
               return BotonTactil(
                 onTap: () {
-                  // Navegar al perfil del usuario
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                      builder: (c) => PantallaDetallePerfil(
-                        usuario: Usuario(
-                          id: userId ?? 0,
-                          perfilId: m['perfil_id'] ?? 0,
-                          nombreUsuario: nombre,
-                          urlAvatar: avatar,
-                          email: '',
-                          biografia: '',
-                          ratingActual: 0.0,
-                          fechaRegistro: DateTime.now(),
-                          esVerificado: false,
-                          esPublico: true,
-                          estado: estaOnline ? 'ACTIVO' : 'DESCONECTADO',
-                        )
-                      )
-                    )
-                  );
+                  // Navegar al perfil del usuario de forma segura con GoRouter
+                  context.push('/inicio/perfiles/$userId');
                 },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -171,53 +153,24 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                               String? urlAvatar = avatar;
                               if (urlAvatar != null && urlAvatar.isNotEmpty) {
                                 if (!urlAvatar.startsWith('http')) {
-                                  urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}$urlAvatar';
+                                  urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}${urlAvatar.startsWith('media/') ? urlAvatar : 'media/$urlAvatar'}';
                                 }
                               }
-                              // Si no hay avatar, mostrar placeholder directamente
-                              if (urlAvatar == null || urlAvatar.isEmpty) {
-                                return CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors.grey.shade200,
-                                  child: Text(
-                                    nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return CachedNetworkImage(
-                                imageUrl: urlAvatar,
-                                imageBuilder: (context, imageProvider) => CircleAvatar(
-                                  radius: 26,
-                                  backgroundImage: imageProvider,
-                                ),
-                                placeholder: (context, url) => CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors.grey.shade200,
-                                  child: Text(
-                                    nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors.grey.shade200,
-                                  child: Text(
-                                    nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
+                              
+                              return CircleAvatar(
+                                radius: 26,
+                                backgroundColor: Colors.white,
+                                child: ClipOval(
+                                  child: (urlAvatar != null && urlAvatar.isNotEmpty)
+                                    ? CachedNetworkImage(
+                                        imageUrl: urlAvatar,
+                                        fit: BoxFit.cover,
+                                        width: 52,
+                                        height: 52,
+                                        placeholder: (context, url) => Container(color: Colors.grey.shade100),
+                                        errorWidget: (context, url, error) => _buildPlaceholderAvatar(nombre),
+                                      )
+                                    : _buildPlaceholderAvatar(nombre),
                                 ),
                               );
                             },
@@ -301,5 +254,30 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
       default:
         return Colors.grey.shade600;
     }
+  }
+
+  Widget _buildPlaceholderAvatar(String nombre) {
+    return Container(
+      width: 52,
+      height: 52,
+      color: Colors.grey.shade200,
+      child: Center(
+        child: Text(
+          nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildPlaceholder(String nombre) {
+    return Text(
+      nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+      style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 12),
+    );
   }
 }
