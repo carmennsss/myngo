@@ -22,6 +22,7 @@ class TarjetaPost extends StatefulWidget {
   final VoidCallback? onJoin;
   final bool estaEnComunidad;
   final VoidCallback? onEliminado;
+  final String? fuente;
 
   const TarjetaPost({
     super.key,
@@ -31,6 +32,7 @@ class TarjetaPost extends StatefulWidget {
     this.onJoin,
     this.estaEnComunidad = false,
     this.onEliminado,
+    this.fuente,
   });
 
   @override
@@ -226,7 +228,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                     fechaCreacion: DateTime.now(), 
                                     ratingMedio: 0.0,
                                     creadorId: widget.post.creadorComunidadId ?? 0)) : null,
-                                  child: Text(widget.post.comunidadNombre, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
+                                  child: Text(widget.post.comunidadNombre, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
                                 ),
                                 GestureDetector(
                                   onTap: () {
@@ -258,7 +260,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                         ),
                                       ],
                                     ),
-                                    style: GoogleFonts.outfit(fontSize: 13),
+                                    style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 13),
                                   ),
                                 ),
                               ],
@@ -278,12 +280,12 @@ class _TarjetaPostState extends State<TarjetaPost> {
                       ),
                       const SizedBox(height: 4),
                       if (widget.post.titulo.isNotEmpty)
-                        Text(widget.post.titulo, style: GoogleFonts.outfit(color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
+                        Text(widget.post.titulo, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
                       if (widget.post.contenidoTexto.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
                           widget.post.contenidoTexto,
-                          style: GoogleFonts.outfit(color: subTextColor, fontSize: 15),
+                          style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: subTextColor, fontSize: 15),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -292,7 +294,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               'Leer más...',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
                                 color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -317,6 +319,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             label: '$_likesCount',
                             onTap: _toggleLike,
                             textColor: textColor,
+                            fuente: widget.fuente,
                           ),
                           const SizedBox(width: 16),
                           _IconoAccion(
@@ -325,6 +328,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             label: '${widget.post.comentariosCount}',
                             onTap: () => _mostrarDetalles(context),
                             textColor: textColor,
+                            fuente: widget.fuente,
                           ),
                           const Spacer(),
                           _IconoAccion(
@@ -333,6 +337,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             label: '',
                             onTap: _toggleGuardado,
                             textColor: textColor,
+                            fuente: widget.fuente,
                           ),
                         ],
                       ),
@@ -366,6 +371,7 @@ class _IconoAccion extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final Color textColor;
+  final String? fuente;
 
   const _IconoAccion({
     required this.icon,
@@ -373,6 +379,7 @@ class _IconoAccion extends StatelessWidget {
     required this.label,
     required this.onTap,
     required this.textColor,
+    this.fuente,
   });
 
   @override
@@ -386,7 +393,7 @@ class _IconoAccion extends StatelessWidget {
           children: [
             Icon(icon, size: 20, color: color),
             const SizedBox(width: 4),
-            Text(label, style: GoogleFonts.outfit(color: textColor, fontSize: 13, fontWeight: FontWeight.bold)),
+            Text(label, style: GoogleFonts.getFont(fuente ?? 'Outfit', color: textColor, fontSize: 13, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

@@ -34,6 +34,21 @@ class ComunidadSerializer(serializers.ModelSerializer):
             'tienda_habilitada',
         ]
         extra_kwargs = {'creador': {'read_only': True}}
+        
+    def to_internal_value(self, data):
+        """Maneja la conversión de campos JSON enviados como string en multipart.
+        
+        Si fondo_posts_config llega como string (típico en subidas de archivos),
+        se intenta parsear a diccionario para que el modelo lo valide correctamente.
+        """
+        if 'fondo_posts_config' in data and isinstance(data['fondo_posts_config'], str):
+            import json
+            try:
+                data = data.copy()
+                data['fondo_posts_config'] = json.loads(data['fondo_posts_config'])
+            except (ValueError, TypeError):
+                pass
+        return super().to_internal_value(data)
 
     def get_es_miembro(self, obj):
         """Indica si el usuario de la petición es miembro de esta comunidad.

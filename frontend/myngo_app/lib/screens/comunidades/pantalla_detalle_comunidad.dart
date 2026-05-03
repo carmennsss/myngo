@@ -307,7 +307,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                     comunidad: _comunidad!,
                     miId: _miId,
                     onCerrar: widget.onBack ?? () => Navigator.pop(context),
-                    onComunidadActualizada: (c) => setState(() {}),
+                    onComunidadActualizada: (c) {
+                      setState(() {
+                        _comunidad = c;
+                        _cachedBackground = null;
+                      });
+                    },
                   ),
                 ),
               ),
@@ -340,6 +345,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           estaCargando: _estaCargandoDatos,
           onRefresh: () => _cargarDatosSeccion(0),
           esAppClara: _esAppClara(context),
+          fuente: _comunidad?.fuenteComunidad,
         );
       case 1:
         return _buildStore();
@@ -568,23 +574,114 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Widget _buildBackgroundFeed() {
+    if (_comunidad == null) return Container();
+    
+    final config = _comunidad!.fondoPostsConfig;
     final urlFondo = _comunidad!.urlFondo;
-    return Container(
-      color: _colorPagina(context),
-      child: (urlFondo != null && urlFondo.isNotEmpty)
-          ? Opacity(
-              opacity: _esAppClara(context) ? 0.4 : 0.2,
-              child: CachedNetworkImage(
-                imageUrl: urlFondo.startsWith('http') 
-                    ? urlFondo 
-                    : Uri.encodeFull('${Configuracion.baseUrl}${urlFondo.startsWith('/') ? '' : '/'}$urlFondo'), 
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => const SizedBox(),
-              ),
-            )
-          : null,
-    );
+    final esClaro = _esAppClara(context);
+    
+    // 1. Si hay una imagen de fondo global, prima sobre el color
+    if (urlFondo != null && urlFondo.isNotEmpty) {
+      return Container(
+        color: _colorPagina(context),
+        child: Opacity(
+          opacity: esClaro ? 0.4 : 0.2,
+          child: CachedNetworkImage(
+            imageUrl: urlFondo.startsWith('http') 
+                ? urlFondo 
+                : Uri.encodeFull('${Configuracion.baseUrl}${urlFondo.startsWith('/') ? '' : '/'}$urlFondo'), 
+            fit: BoxFit.cover,
+            errorWidget: (context, url, error) => const SizedBox(),
+          ),
+        ),
+      );
+    }
+
+    // 2. Si no hay imagen, usamos la configuración de fondo de posts
+    if (config == null) return Container(color: _colorPagina(context));
+
+    final tipo = config['tipo'] ?? 'solido';
+    final color1Hex = config['color1']?.toString() ?? (esClaro ? '#FFFFFF' : '#121212');
+    final color2Hex = config['color2']?.toString();
+    final patron = config['patron']?.toString() ?? 'puntos';
+
+    final color1 = _parseHex(color1Hex);
+    final color2 = _parseHex(color2Hex) ?? color1.withOpacity(0.8);
+
+    if (tipo == 'gradiente') {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color1, color2],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      );
+    }
+
+    if (tipo == 'patron') {
+      return Container(
+        color: color1,
+        child: CustomPaint(
+          painter: _PatronPainter(
+            tipo: patron,
+            color: (color1.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.05),
+          ),
+          child: Container(),
+        ),
+      );
+    }
+
+    return Container(color: color1);
   }
+
+  Color _parseHex(String? hex) {
+    if (hex == null || hex.isEmpty) return Colors.white;
+    try {
+      String h = hex.replaceAll('#', '');
+      if (h.length == 6) h = 'FF$h';
+      return Color(int.parse(h, radix: 16));
+    } catch (_) {
+      return Colors.white;
+    }
+  }
+}
+
+class _PatronPainter extends CustomPainter {
+  final String tipo;
+  final Color color;
+
+  _PatronPainter({required this.tipo, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0;
+
+    if (tipo == 'puntos') {
+      for (double x = 0; x < size.width; x += 20) {
+        for (double y = 0; y < size.height; y += 20) {
+          canvas.drawCircle(Offset(x, y), 1.5, paint);
+        }
+      }
+    } else if (tipo == 'lineas') {
+      for (double x = -size.height; x < size.width; x += 25) {
+        canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), paint);
+      }
+    } else if (tipo == 'cuadricula') {
+      for (double x = 0; x < size.width; x += 30) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      }
+      for (double y = 0; y < size.height; y += 30) {
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {

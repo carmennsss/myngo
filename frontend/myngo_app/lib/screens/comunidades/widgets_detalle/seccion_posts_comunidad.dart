@@ -11,6 +11,7 @@ class SeccionPostsComunidad extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final bool esAppClara;
   final bool comoSliver;
+  final String? fuente;
 
   const SeccionPostsComunidad({
     super.key,
@@ -19,6 +20,7 @@ class SeccionPostsComunidad extends StatelessWidget {
     required this.onRefresh,
     required this.esAppClara,
     this.comoSliver = false,
+    this.fuente,
   });
 
   @override
@@ -75,6 +77,7 @@ class SeccionPostsComunidad extends StatelessWidget {
             onJoin: () {}, 
             onEliminado: onRefresh,
             estaEnComunidad: true,
+            fuente: fuente,
           ),
         ),
       ),
