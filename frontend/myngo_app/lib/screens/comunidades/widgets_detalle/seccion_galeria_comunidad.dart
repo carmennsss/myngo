@@ -88,6 +88,7 @@ class _SeccionGaleriaComunidadState extends State<SeccionGaleriaComunidad> {
     final random = math.Random(1337);
 
     return GridView.builder(
+      primary: false,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,

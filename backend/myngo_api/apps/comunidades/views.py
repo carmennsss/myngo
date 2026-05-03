@@ -13,10 +13,26 @@ from rest_framework.views import APIView
 from notificaciones.models import Notificacion
 from usuarios.models import Seguimiento
 
-from .models import Comunidad, MiembrosComunidad
-from .serializers import ComunidadSerializer, MiembroComunidadSerializer
+from .models import Comunidad, MiembrosComunidad, TagComunidad
+from .serializers import ComunidadSerializer, MiembroComunidadSerializer, TagComunidadSerializer
 from mensajeria.models import SalaChat
 import uuid
+
+
+class TagComunidadList(generics.ListAPIView):
+    """Lista o busca etiquetas de comunidades."""
+    queryset = TagComunidad.objects.all()
+    serializer_class = TagComunidadSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['nombre']
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        """Opcionalmente filtra por los más usados o por búsqueda."""
+        qs = super().get_queryset()
+        if self.request.query_params.get('popular'):
+            qs = qs.annotate(num_comunidades=models.Count('comunidades')).order_by('-num_comunidades')
+        return qs
 
 
 class ComunidadListCreate(generics.ListCreateAPIView):
@@ -39,10 +55,18 @@ class ComunidadListCreate(generics.ListCreateAPIView):
         """
         from django.db.models import Count, Exists, OuterRef, Subquery
         usuario = self.request.user
-        queryset = Comunidad.objects.annotate(
-            anotado_miembros_count=Count('miembros_comunidades', distinct=True) + 1
+        queryset = Comunidad.objects.all()
+
+        # Filtrado por tags (OR)
+        tags_list = self.request.query_params.getlist('tags')
+        if tags_list:
+            queryset = queryset.filter(tags__slug__in=tags_list).distinct()
+
+        queryset = queryset.annotate(
+            anotado_miembros_count=models.Count('miembros_comunidades', distinct=True) + 1
         )
         if usuario and usuario.is_authenticated:
+            from django.db.models import Exists, OuterRef, Subquery
             queryset = queryset.annotate(
                 anotado_es_miembro=Exists(
                     MiembrosComunidad.objects.filter(

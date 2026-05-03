@@ -5,8 +5,29 @@ MiembrosComunidad que asocia usuarios a comunidades con un rol.
 """
 
 from django.db import models
+from django.utils.text import slugify
 
 from usuarios.models import Usuario
+
+
+class TagComunidad(models.Model):
+    """Categoría o etiqueta temática para clasificar comunidades."""
+
+    class Meta:
+        db_table = 'tags_comunidades'
+        verbose_name_plural = "Tags de Comunidades"
+
+    nombre = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=60, unique=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.nombre)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nombre
 
 
 class Comunidad(models.Model):
@@ -42,6 +63,7 @@ class Comunidad(models.Model):
     )
     color_tema = models.CharField(max_length=7, default='#C35E34')
     tienda_habilitada = models.BooleanField(default=False)
+    tags = models.ManyToManyField(TagComunidad, related_name='comunidades', blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -45,6 +45,39 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     Colors.teal, Colors.indigo, Colors.blueGrey, Colors.pinkAccent
   ];
 
+  final _controladorTag = TextEditingController();
+  final List<String> _tagsSeleccionados = [];
+  List<Map<String, dynamic>> _sugerenciasTags = [];
+  bool _mostrandoSugerencias = false;
+
+  Future<void> _buscarSugerencias(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _sugerenciasTags = [];
+        _mostrandoSugerencias = false;
+      });
+      return;
+    }
+    final respuesta = await _servicio.buscarTags(query: query);
+    if (respuesta.exito && mounted) {
+      setState(() {
+        _sugerenciasTags = respuesta.datos ?? [];
+        _mostrandoSugerencias = _sugerenciasTags.isNotEmpty;
+      });
+    }
+  }
+
+  void _anadirTag(String nombre) {
+    final limpio = nombre.trim().toLowerCase();
+    if (limpio.isNotEmpty && !_tagsSeleccionados.contains(limpio) && _tagsSeleccionados.length < 5) {
+      setState(() {
+        _tagsSeleccionados.add(limpio);
+        _controladorTag.clear();
+        _mostrandoSugerencias = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +98,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     } else {
       // Default to theme-aware if no config
       _colorPrimarioPosts = Colors.white; // We will handle dark mode adaptivity in the UI renderer
+    }
+
+    // Cargar tags existentes
+    for (var tag in widget.comunidad.tags) {
+      _tagsSeleccionados.add(tag['nombre']);
     }
   }
 
@@ -102,6 +140,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       fondo: _fondoGlobalSeleccionado,
       fondoPostsConfig: fondoConfig,
       fuenteComunidad: _fuenteSeleccionada,
+      tags: _tagsSeleccionados,
     );
 
     setState(() => _estaGuardando = false);
@@ -259,7 +298,61 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                 ),
                 const SizedBox(height: 24),
 
-                // 3. Fondo de Posts
+                // 3. Etiquetas de la Comunidad
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(color: esOscuro ? const Color(0xFF1E1E1E) : Colors.white, borderRadius: BorderRadius.circular(20)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Etiquetas Temáticas (máx. 5)', style: GoogleFonts.getFont(_fuenteSeleccionada, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _controladorTag,
+                        onChanged: _buscarSugerencias,
+                        onSubmitted: _anadirTag,
+                        style: GoogleFonts.getFont(_fuenteSeleccionada, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Añadir un tag...',
+                          filled: true,
+                          fillColor: esOscuro ? const Color(0xFF2A2A2A) : Colors.grey.shade50,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFF28B50)),
+                        ),
+                      ),
+                      if (_mostrandoSugerencias)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          decoration: BoxDecoration(
+                            color: esOscuro ? const Color(0xFF2A2A2A) : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: _sugerenciasTags.map((tag) => ListTile(
+                              title: Text(tag['nombre'], style: GoogleFonts.getFont(_fuenteSeleccionada, fontSize: 13)),
+                              onTap: () => _anadirTag(tag['nombre']),
+                              dense: true,
+                            )).toList(),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _tagsSeleccionados.map((tag) => Chip(
+                          label: Text(tag, style: GoogleFonts.getFont(_fuenteSeleccionada, fontSize: 11, color: Colors.white)),
+                          backgroundColor: const Color(0xFFC35E34),
+                          deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
+                          onDeleted: () => setState(() => _tagsSeleccionados.remove(tag)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        )).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // 4. Fondo de Posts
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(color: esOscuro ? const Color(0xFF1E1E1E) : Colors.white, borderRadius: BorderRadius.circular(20)),
@@ -268,23 +361,26 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     children: [
                       Text('Fondo del Feed (Posts)', style: GoogleFonts.getFont(_fuenteSeleccionada, fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
-                      SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(value: 'solido', label: Text('Sólido')),
-                          ButtonSegment(value: 'gradiente', label: Text('Gradiente')),
-                          ButtonSegment(value: 'patron', label: Text('Patrón')),
-                        ],
-                        selected: {_tipoFondoPosts},
-                        onSelectionChanged: (s) => setState(() => _tipoFondoPosts = s.first),
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) return const Color(0xFFF28B50);
-                            return Colors.transparent;
-                          }),
-                          foregroundColor: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) return Colors.white;
-                            return esOscuro ? Colors.white : Colors.black;
-                          }),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(value: 'solido', label: Text('Sólido')),
+                            ButtonSegment(value: 'gradiente', label: Text('Gradiente')),
+                            ButtonSegment(value: 'patron', label: Text('Patrón')),
+                          ],
+                          selected: {_tipoFondoPosts},
+                          onSelectionChanged: (s) => setState(() => _tipoFondoPosts = s.first),
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.resolveWith((states) {
+                              if (states.contains(WidgetState.selected)) return const Color(0xFFF28B50);
+                              return Colors.transparent;
+                            }),
+                            foregroundColor: WidgetStateProperty.resolveWith((states) {
+                              if (states.contains(WidgetState.selected)) return Colors.white;
+                              return esOscuro ? Colors.white : Colors.black;
+                            }),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

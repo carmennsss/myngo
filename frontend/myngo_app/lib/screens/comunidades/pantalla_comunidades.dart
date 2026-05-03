@@ -24,18 +24,31 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
   final ScrollController _scrollController = ScrollController();
   
   List<Comunidad> _comunidades = [];
+  List<Map<String, dynamic>> _tagsPopulares = [];
+  final List<String> _tagsSeleccionados = [];
   bool _estaCargando = true;
 
   @override
   void initState() {
     super.initState();
     _cargarDatos();
+    _cargarTags();
+  }
+
+  Future<void> _cargarTags() async {
+    final respuesta = await _servicioComunidades.buscarTags(popular: true);
+    if (respuesta.exito && mounted) {
+      setState(() => _tagsPopulares = respuesta.datos ?? []);
+    }
   }
 
   Future<void> _cargarDatos({String? filtro}) async {
     setState(() => _estaCargando = true);
     
-    final respuesta = await _servicioComunidades.listarComunidades(busqueda: filtro);
+    final respuesta = await _servicioComunidades.listarComunidades(
+      busqueda: filtro,
+      tags: _tagsSeleccionados.isNotEmpty ? _tagsSeleccionados : null,
+    );
     if (mounted) {
       setState(() {
         _comunidades = respuesta.datos ?? [];
@@ -112,6 +125,53 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
                         ),
                       ),
+                      const SizedBox(height: 12),
+
+                      // Filtros por Tags
+                      if (_tagsPopulares.isNotEmpty)
+                        SizedBox(
+                          height: 40,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _tagsPopulares.length,
+                            separatorBuilder: (context, index) => const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              final tag = _tagsPopulares[index];
+                              final slug = tag['slug'] as String;
+                              final estaSeleccionado = _tagsSeleccionados.contains(slug);
+                              return FilterChip(
+                                label: Text(
+                                  tag['nombre'],
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    color: estaSeleccionado ? Colors.white : const Color(0xFF4A4440),
+                                    fontWeight: estaSeleccionado ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                                selected: estaSeleccionado,
+                                onSelected: (seleccionado) {
+                                  setState(() {
+                                    if (seleccionado) {
+                                      _tagsSeleccionados.add(slug);
+                                    } else {
+                                      _tagsSeleccionados.remove(slug);
+                                    }
+                                  });
+                                  _cargarDatos(filtro: _controladorBusqueda.text);
+                                },
+                                selectedColor: const Color(0xFFC35E34),
+                                checkmarkColor: Colors.white,
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  side: BorderSide(
+                                    color: estaSeleccionado ? const Color(0xFFC35E34) : const Color(0xFFE0E0E0),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                     ],
                   ),
                 ),

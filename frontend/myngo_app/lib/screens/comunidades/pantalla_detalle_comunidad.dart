@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../utils/configuracion.dart';
@@ -67,6 +68,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   bool _estaCargandoPeticion = false;
   bool _estaCargandoDatos = false;
   bool _estaCargandoComunidad = false;
+  
+  // Paginación
+  int _paginaActual = 1;
+  bool _hayMasPosts = true;
+  bool _cargandoMasPosts = false;
   int? _miId;
   int _indiceSeccion = 0;
   String _miRol = 'Miembro';
@@ -157,6 +163,28 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (mounted) setState(() => _miId = id);
   }
 
+  Future<void> _cargarMasPosts() async {
+    if (_comunidad == null || _cargandoMasPosts || !_hayMasPosts) return;
+    
+    setState(() => _cargandoMasPosts = true);
+    final siguientePagina = _paginaActual + 1;
+    
+    final res = await _servicio.obtenerPublicacionesComunidad(_comunidad!.id, pagina: siguientePagina);
+    
+    if (mounted) {
+      setState(() {
+        if (res.exito && res.datos != null && res.datos!.isNotEmpty) {
+          _publicaciones!.addAll(res.datos!);
+          _paginaActual = siguientePagina;
+          _hayMasPosts = res.datos!.length >= 20;
+        } else {
+          _hayMasPosts = false;
+        }
+        _cargandoMasPosts = false;
+      });
+    }
+  }
+
   Future<void> _cargarColecciones() async {
     if (_comunidad == null) return;
     final res = await _servicioGaleria.obtenerColecciones(
@@ -166,37 +194,28 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   Future<void> _cargarDatosSeccion(int index) async {
-    if (!mounted) return;
-    setState(() {
-      _estaCargandoDatos = true;
-      if (index == 0) _publicaciones = null;
-      if (index == 3) _salasChat = null;
-    });
-
     if (_comunidad == null) return;
-    try {
-      if (index == 0) {
-        final res = await _servicio.obtenerPublicacionesComunidad(_comunidad!.id);
-        // Siempre asignamos (lista vacía si falla) para no dejar el spinner colgado
-        if (mounted) setState(() => _publicaciones = res.datos ?? []);
-      } else if (index == 2) {
-        setState(() => _galeriaKey = UniqueKey());
-        await _cargarColecciones();
-      } else if (index == 3) {
-        final res = await _servicio.obtenerSalasChat(_comunidad!.id);
-        if (mounted) setState(() => _salasChat = res.datos ?? []);
-      }
-    } catch (e) {
-      // Si algo falla inesperadamente, mostramos estado vacío en lugar de spinner infinito
-      debugPrint('[PantallaDetalleComunidad] Error cargando sección $index: $e');
+    
+    // Reset pagination when switching sections or refreshing
+    _paginaActual = 1;
+    _hayMasPosts = true;
+    
+    if (index == 0) {
+      setState(() => _estaCargandoDatos = true);
+      final res = await _servicio.obtenerPublicacionesComunidad(_comunidad!.id, pagina: _paginaActual);
       if (mounted) {
         setState(() {
-          if (index == 0) _publicaciones = [];
-          if (index == 3) _salasChat = [];
+          _publicaciones = res.datos ?? [];
+          _hayMasPosts = (res.datos?.length ?? 0) >= 20;
+          _estaCargandoDatos = false;
         });
       }
-    } finally {
-      if (mounted) setState(() => _estaCargandoDatos = false);
+    } else if (index == 2) {
+        setState(() => _galeriaKey = UniqueKey());
+        await _cargarColecciones();
+    } else if (index == 3) {
+        final res = await _servicio.obtenerSalasChat(_comunidad!.id);
+        if (mounted) setState(() => _salasChat = res.datos ?? []);
     }
   }
 
@@ -266,7 +285,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final esCreador = _miId != null && _miId == _comunidad!.creadorId;
     final esMiembro = _comunidad!.esMiembro || esCreador;
     
-    _cachedBackground ??= _buildBackgroundFeed();
+    _cachedBackground ??= _buildGlobalBackground();
 
     if (!esMiembro) {
       return PreviewComunidad(
@@ -344,8 +363,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           publicaciones: _publicaciones,
           estaCargando: _estaCargandoDatos,
           onRefresh: () => _cargarDatosSeccion(0),
+          onLoadMore: _cargarMasPosts,
+          hasMore: _hayMasPosts,
+          isLoadingMore: _cargandoMasPosts,
           esAppClara: _esAppClara(context),
           fuente: _comunidad?.fuenteComunidad,
+          backgroundConfig: _comunidad?.fondoPostsConfig,
         );
       case 1:
         return _buildStore();
@@ -573,14 +596,13 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
-  Widget _buildBackgroundFeed() {
+  Widget _buildGlobalBackground() {
     if (_comunidad == null) return Container();
     
-    final config = _comunidad!.fondoPostsConfig;
     final urlFondo = _comunidad!.urlFondo;
     final esClaro = _esAppClara(context);
     
-    // 1. Si hay una imagen de fondo global, prima sobre el color
+    // 1. Si hay una imagen de fondo global, prima
     if (urlFondo != null && urlFondo.isNotEmpty) {
       return Container(
         color: _colorPagina(context),
@@ -597,16 +619,26 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       );
     }
 
-    // 2. Si no hay imagen, usamos la configuración de fondo de posts
-    if (config == null) return Container(color: _colorPagina(context));
+    return Container(color: _colorPagina(context));
+  }
 
+  Widget _buildBackgroundFeed() {
+    // Este método ahora solo se usa si queremos renderizarlo en algún sitio específico
+    // Pero lo mantendremos por compatibilidad o lo moveremos a un helper
+    return _buildPostsBackgroundFromConfig(_comunidad?.fondoPostsConfig, context);
+  }
+
+  static Widget _buildPostsBackgroundFromConfig(Map<String, dynamic>? config, BuildContext context) {
+    if (config == null) return const SizedBox.shrink();
+
+    final esClaro = Theme.of(context).brightness == Brightness.light;
     final tipo = config['tipo'] ?? 'solido';
     final color1Hex = config['color1']?.toString() ?? (esClaro ? '#FFFFFF' : '#121212');
     final color2Hex = config['color2']?.toString();
     final patron = config['patron']?.toString() ?? 'puntos';
 
-    final color1 = _parseHex(color1Hex);
-    final color2 = _parseHex(color2Hex) ?? color1.withOpacity(0.8);
+    final color1 = _PantallaDetalleComunidadState._parseHex(color1Hex);
+    final color2 = _PantallaDetalleComunidadState._parseHex(color2Hex) ?? color1.withOpacity(0.8);
 
     if (tipo == 'gradiente') {
       return Container(
@@ -636,7 +668,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     return Container(color: color1);
   }
 
-  Color _parseHex(String? hex) {
+  static Color _parseHex(String? hex) {
     if (hex == null || hex.isEmpty) return Colors.white;
     try {
       String h = hex.replaceAll('#', '');
