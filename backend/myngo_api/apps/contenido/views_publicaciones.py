@@ -120,6 +120,27 @@ class PublicacionList(generics.ListAPIView):
                     return Publicacion.objects.none()
             return qs.filter(autor=perfil.usuario, comunidad__isnull=True).order_by('-fecha_creacion')
 
+        # Filtro por etiquetas (tags)
+        tags_query = self.request.query_params.get('tags')
+        if tags_query:
+            tags = [t.strip() for t in tags_query.split(',') if t.strip()]
+            search_mode = self.request.query_params.get('tag_mode', 'OR').upper()
+            
+            if search_mode == 'AND':
+                for tag in tags:
+                    qs = qs.filter(
+                        Q(titulo__icontains=tag) | 
+                        Q(contenido_texto__icontains=tag) | 
+                        Q(imagenes__etiquetas__icontains=tag)
+                    )
+            else: # OR por defecto
+                q_or = Q()
+                for tag in tags:
+                    q_or |= Q(titulo__icontains=tag)
+                    q_or |= Q(contenido_texto__icontains=tag)
+                    q_or |= Q(imagenes__etiquetas__icontains=tag)
+                qs = qs.filter(q_or)
+
         return qs.filter(
             Q(comunidad__es_publica=True) |
             Q(autor__perfil__es_publico=True, comunidad__isnull=True)

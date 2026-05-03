@@ -8,11 +8,12 @@ import '../../../widgets/comunes/detalle_publicacion_sheet.dart';
 import '../../../utils/estilo_post_helper.dart';
 
 /// Widget que muestra la grilla de publicaciones de un usuario.
-class SeccionPostsPerfil extends StatelessWidget {
+class SeccionPostsPerfil extends StatefulWidget {
   final List<Publicacion>? publicaciones;
   final bool estaCargando;
   final bool esPrivado;
   final VoidCallback onRefresh;
+  final Future<List<Publicacion>> Function(int) onLoadMore;
 
   const SeccionPostsPerfil({
     super.key,
@@ -20,23 +21,86 @@ class SeccionPostsPerfil extends StatelessWidget {
     required this.estaCargando,
     this.esPrivado = false,
     required this.onRefresh,
+    required this.onLoadMore,
   });
 
   @override
+  State<SeccionPostsPerfil> createState() => _SeccionPostsPerfilState();
+}
+
+class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
+  final ScrollController _scrollController = ScrollController();
+  bool _estaCargandoMas = false;
+  bool _hayMasPosts = true;
+  int _paginaActual = 1;
+  late List<Publicacion> _posts;
+
+  @override
+  void initState() {
+    super.initState();
+    _posts = widget.publicaciones ?? [];
+    _scrollController.addListener(_alHacerScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant SeccionPostsPerfil oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.publicaciones != oldWidget.publicaciones) {
+      _posts = widget.publicaciones ?? [];
+      _paginaActual = 1;
+      _hayMasPosts = true;
+    }
+  }
+
+  void _alHacerScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
+      if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
+        _cargarMasPosts();
+      }
+    }
+  }
+
+  Future<void> _cargarMasPosts() async {
+    setState(() => _estaCargandoMas = true);
+    _paginaActual++;
+    try {
+      final nuevos = await widget.onLoadMore(_paginaActual);
+      if (mounted) {
+        setState(() {
+          _estaCargandoMas = false;
+          if (nuevos.isEmpty) {
+            _hayMasPosts = false;
+          } else {
+            _posts.addAll(nuevos);
+          }
+        });
+      }
+    } catch (e) {
+      setState(() => _estaCargandoMas = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (esPrivado) {
+    if (widget.esPrivado) {
       return const EstadoVacioCargando(
         icon: Icons.lock_rounded,
         message: 'Esta cuenta es privada.\nSigue al usuario para ver sus miau-posts.',
       );
     }
 
-    if (estaCargando || publicaciones == null) {
+    if (widget.estaCargando) {
       return const Center(
           child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     }
 
-    if (publicaciones!.isEmpty) {
+    if (_posts.isEmpty) {
       return const EstadoVacioCargando(
         icon: Icons.grid_view_rounded,
         message: 'Aún no hay publicaciones compartidas.',
@@ -44,14 +108,18 @@ class SeccionPostsPerfil extends StatelessWidget {
     }
 
     return MasonryGridView.count(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       crossAxisCount: 2,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      itemCount: publicaciones!.length,
+      itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
       itemBuilder: (context, index) {
-        final post = publicaciones![index];
-        return _TarjetaPostPerfil(post: post, onUpdate: onRefresh);
+        if (index == _posts.length) {
+          return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+        }
+        final post = _posts[index];
+        return _TarjetaPostPerfil(post: post, onUpdate: widget.onRefresh);
       },
     );
   }

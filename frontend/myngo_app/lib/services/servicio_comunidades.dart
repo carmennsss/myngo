@@ -38,13 +38,16 @@ class ServicioComunidades {
     };
   }
 
-  /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda y tags.
-  Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda, List<String>? tags}) async {
+  /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda, tags y página.
+  Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda, List<String>? tags, int? pagina}) async {
     try {
       String query = '';
       if (busqueda != null && busqueda.isNotEmpty) query += 'search=$busqueda';
       if (tags != null && tags.isNotEmpty) {
         query += (query.isEmpty ? '' : '&') + 'tags=${tags.join(',')}';
+      }
+      if (pagina != null) {
+        query += (query.isEmpty ? '' : '&') + 'page=$pagina';
       }
       
       final fullQuery = query.isNotEmpty ? '?$query' : '';
@@ -118,20 +121,22 @@ class ServicioComunidades {
     }
   }
 
-  /// Obtiene la lista de miembros de una comunidad con sus roles.
-  Future<RespuestaApi<List<Map<String, dynamic>>>> obtenerMiembrosComunidad(int idComunidad) async {
+  /// Obtiene la lista de miembros de una comunidad con sus roles y paginación.
+  Future<RespuestaApi<List<Map<String, dynamic>>>> obtenerMiembrosComunidad(int idComunidad, {int? pagina}) async {
     try {
+      final query = pagina != null ? '?page=$pagina' : '';
       final respuesta = await http.get(
-        Uri.parse('$_urlComunidades$idComunidad/miembros/'),
+        Uri.parse('$_urlComunidades$idComunidad/miembros/$query'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         return RespuestaApi(
           exito: true,
           mensaje: 'Miembros cargados',
-          datos: List<Map<String, dynamic>>.from(datos),
+          datos: List<Map<String, dynamic>>.from(lista),
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar miembros');

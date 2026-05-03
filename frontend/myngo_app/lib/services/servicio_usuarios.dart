@@ -162,17 +162,18 @@ class ServicioUsuarios {
     return obtenerDatosUsuario(id);
   }
 
-  /// Obtiene una lista de todos los usuarios registrados en la plataforma.
-  Future<RespuestaApi<List<Usuario>>> listarUsuarios() async {
+  /// Obtiene una lista de todos los usuarios registrados en la plataforma con paginación.
+  Future<RespuestaApi<List<Usuario>>> listarUsuarios({int? pagina}) async {
     try {
+      final query = pagina != null ? '?page=$pagina' : '';
       final respuesta = await http.get(
-        Uri.parse('$_urlUsuarios/datos/'),
+        Uri.parse('$_urlUsuarios/datos/$query'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
         final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        final List<dynamic> lista = datosJson['datos'] ?? [];
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? datosJson['datos'] ?? []);
         return RespuestaApi(
           exito: true,
           mensaje: 'Usuarios recuperados',

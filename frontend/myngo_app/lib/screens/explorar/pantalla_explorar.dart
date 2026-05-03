@@ -34,11 +34,29 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   List<Usuario> _usuariosFiltrados = [];
   
   bool _estaCargando = true;
+  bool _estaCargandoMas = false;
+  bool _hayMasComunidades = true;
+  bool _hayMasUsuarios = true;
+  int _paginaActualComunidades = 1;
+  int _paginaActualUsuarios = 1;
 
   @override
   void initState() {
     super.initState();
     _cargarDatos();
+    _scrollController.addListener(_alHacerScroll);
+  }
+
+  void _alHacerScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
+      if (!_estaCargando && !_estaCargandoMas) {
+        if (_indicePestana == 0 && _hayMasComunidades) {
+          _cargarMasComunidades();
+        } else if (_indicePestana == 1 && _hayMasUsuarios) {
+          _cargarMasUsuarios();
+        }
+      }
+    }
   }
   
   @override
@@ -52,19 +70,21 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     setState(() => _estaCargando = true);
     
     if (_indicePestana == 0) {
-      final respuesta = await _servicioComunidades.listarComunidades(busqueda: filtro);
+      _paginaActualComunidades = 1;
+      final respuesta = await _servicioComunidades.listarComunidades(busqueda: filtro, pagina: _paginaActualComunidades);
       if (mounted) {
         setState(() {
           _comunidades = respuesta.datos ?? [];
+          _hayMasComunidades = (respuesta.datos?.length ?? 0) >= 20;
           _estaCargando = false;
         });
       }
     } else {
-      if (_usuariosOriginales.isEmpty) {
-        final respuesta = await _servicioUsuarios.listarUsuarios();
-        if (respuesta.exito && mounted) {
-          _usuariosOriginales = respuesta.datos ?? [];
-        }
+      _paginaActualUsuarios = 1;
+      final respuesta = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
+      if (respuesta.exito && mounted) {
+        _usuariosOriginales = respuesta.datos ?? [];
+        _hayMasUsuarios = (respuesta.datos?.length ?? 0) >= 20;
       }
       
       if (mounted) {
@@ -80,6 +100,62 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
           _estaCargando = false;
         });
       }
+    }
+  }
+
+  Future<void> _cargarMasComunidades() async {
+    if (_estaCargandoMas || !_hayMasComunidades) return;
+    setState(() => _estaCargandoMas = true);
+    
+    _paginaActualComunidades++;
+    final res = await _servicioComunidades.listarComunidades(
+      busqueda: _controladorBusqueda.text.isNotEmpty ? _controladorBusqueda.text : null,
+      pagina: _paginaActualComunidades
+    );
+    
+    if (mounted) {
+      setState(() {
+        _estaCargandoMas = false;
+        if (res.exito && res.datos != null) {
+          final nuevos = res.datos!;
+          _comunidades.addAll(nuevos);
+          _hayMasComunidades = nuevos.length >= 20;
+        } else {
+          _hayMasComunidades = false;
+        }
+      });
+    }
+  }
+
+  Future<void> _cargarMasUsuarios() async {
+    if (_estaCargandoMas || !_hayMasUsuarios) return;
+    setState(() => _estaCargandoMas = true);
+    
+    _paginaActualUsuarios++;
+    final res = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
+    
+    if (mounted) {
+      setState(() {
+        _estaCargandoMas = false;
+        if (res.exito && res.datos != null) {
+          final nuevos = res.datos!;
+          _usuariosOriginales.addAll(nuevos);
+          _hayMasUsuarios = nuevos.length >= 20;
+          
+          // Re-aplicar filtro si hay búsqueda activa
+          final filtro = _controladorBusqueda.text;
+          if (filtro.isNotEmpty) {
+             _usuariosFiltrados = _usuariosOriginales.where((u) => 
+                u.nombreUsuario.toLowerCase().contains(filtro.toLowerCase()) ||
+                u.email.toLowerCase().contains(filtro.toLowerCase())
+             ).toList();
+          } else {
+            _usuariosFiltrados = List.from(_usuariosOriginales);
+          }
+        } else {
+          _hayMasUsuarios = false;
+        }
+      });
     }
   }
 
@@ -168,6 +244,15 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                 _buildSliverGridComunidades()
               else
                 _buildSliverGridPerfiles(),
+              
+              if (_estaCargandoMas)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
         ),
