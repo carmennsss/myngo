@@ -448,6 +448,20 @@ class _PantallaChatState extends State<PantallaChat> {
           boxShadow: [BoxShadow(color: (esMio ? colorMio : colorOtro).withOpacity(0.3), blurRadius: 10, spreadRadius: 1)],
         );
         break;
+      case 'amor':
+        deco = BoxDecoration(
+          color: const Color(0xFFFCE4EC),
+          borderRadius: _getBorderRadius(esMio, radius),
+          border: Border.all(color: Colors.pinkAccent, width: 1.5),
+        );
+        break;
+      case 'vaquero':
+        deco = BoxDecoration(
+          color: const Color(0xFFD7CCC8),
+          borderRadius: _getBorderRadius(esMio, radius),
+          border: Border.all(color: const Color(0xFF5D4037), width: 2),
+        );
+        break;
       case 'bosque':
         deco = BoxDecoration(
           gradient: const LinearGradient(colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)]),
@@ -580,6 +594,20 @@ class _PantallaChatState extends State<PantallaChat> {
 
   Widget _buildDecoracionesBurbuja(String estilo, bool esMio) {
     switch (estilo) {
+      case 'amor':
+        return Positioned(
+          top: -12,
+          right: esMio ? -5 : null,
+          left: !esMio ? -5 : null,
+          child: const Text('💖', style: TextStyle(fontSize: 20)),
+        );
+      case 'vaquero':
+        return Positioned(
+          top: -18,
+          right: esMio ? -5 : null,
+          left: !esMio ? -5 : null,
+          child: const Text('🤠', style: TextStyle(fontSize: 22)),
+        );
       case 'bosque':
         return Positioned(
           top: -15,
