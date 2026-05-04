@@ -18,7 +18,8 @@ class PersonalizacionChatSerializer(serializers.ModelSerializer):
             'color_fondo', 'color_burbuja_mio', 'color_burbuja_otro',
             'color_texto_mio', 'color_texto_otro',
             'color_nombre_mio', 'color_nombre_otro',
-            'imagen_fondo_s3', 'forma_burbuja', 'font_size', 'tema'
+            'gradiente_fondo', 'patron_fondo', 'imagen_fondo_s3',
+            'forma_burbuja', 'estilo_burbuja', 'font_size', 'tema'
         ]
 
 
