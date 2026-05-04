@@ -24,11 +24,39 @@ class ServicioPerfiles {
     };
   }
 
-  /// Recupera la información detallada de un perfil por su NOMBRE DE USUARIO o ID.
-  Future<RespuestaApi<Perfil>> obtenerPerfil(String identifier) async {
+  /// Recupera la información detallada de un perfil de usuario por su ID o nombre de usuario.
+  Future<RespuestaApi<Perfil>> obtenerPerfil(dynamic identifier) async {
     try {
+      int? idFinal;
+      
+      // 1. Intentamos ver si es un ID numérico
+      if (identifier is int) {
+        idFinal = identifier;
+      } else {
+        idFinal = int.tryParse(identifier.toString());
+      }
+
+      // 2. Si no es un ID (es un nombre de usuario), lo buscamos primero
+      if (idFinal == null) {
+        final resBusqueda = await http.get(
+          Uri.parse('$_urlUsuarios/datos/?search=$identifier'),
+          headers: await _obtenerCabeceras(),
+        ).timeout(const Duration(seconds: 10));
+
+        if (resBusqueda.statusCode == 200) {
+          final decoded = jsonDecode(utf8.decode(resBusqueda.bodyBytes));
+          final List<dynamic> resultados = decoded is List ? decoded : (decoded['results'] ?? []);
+          if (resultados.isNotEmpty) {
+            idFinal = resultados.first['id'];
+          }
+        }
+      }
+
+      if (idFinal == null) return RespuestaApi(exito: false, mensaje: 'Usuario no encontrado 😿');
+
+      // 3. Ya con el ID real, pedimos el perfil completo
       final respuesta = await http.get(
-        Uri.parse('$_urlUsuarios/$identifier/'),
+        Uri.parse('$_urlUsuarios/perfiles/$idFinal/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 
@@ -39,17 +67,16 @@ class ServicioPerfiles {
           datos: Perfil.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al cargar el perfil');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar el perfil (${respuesta.statusCode})');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Obtiene las publicaciones asociadas a un perfil. Acepta String o int.
-  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(dynamic identifier, {int? pagina}) async {
+  /// Obtiene las publicaciones asociadas a un perfil específico con paginación.
+  Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(int perfilId, {int? pagina}) async {
     try {
-      final idStr = identifier.toString();
-      final url = '$_urlUsuarios/$idStr/publicaciones/${pagina != null ? '?page=$pagina' : ''}';
+      final url = '${Configuracion.baseUrl}/contenido/publicaciones/?perfil_id=$perfilId${pagina != null ? '&page=$pagina' : ''}';
       final respuesta = await http.get(
         Uri.parse(url),
         headers: await _obtenerCabeceras(),
@@ -69,24 +96,11 @@ class ServicioPerfiles {
     }
   }
 
-  /// Envía solicitud de seguimiento (devuelve el String del estado para la UI).
-  Future<RespuestaApi<String>> enviarSolicitudSeguimiento(String nombreUsuario) async {
-    final res = await alternarSeguimiento(nombreUsuario);
-    if (res.exito && res.datos != null) {
-      return RespuestaApi(
-        exito: true,
-        mensaje: res.mensaje,
-        datos: res.datos!['estado'] as String?,
-      );
-    }
-    return RespuestaApi(exito: false, mensaje: res.mensaje);
-  }
-
-  /// Alterna el estado de seguimiento.
-  Future<RespuestaApi<Map<String, dynamic>>> alternarSeguimiento(String nombreUsuario) async {
+  /// Alterna el estado de seguimiento entre el usuario actual y otro usuario.
+  Future<RespuestaApi<Map<String, dynamic>>> alternarSeguimiento(int userId) async {
     try {
       final respuesta = await http.post(
-        Uri.parse('$_urlUsuarios/$nombreUsuario/'),
+        Uri.parse('$_urlUsuarios/perfiles/$userId/seguir/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 
@@ -103,7 +117,29 @@ class ServicioPerfiles {
     }
   }
 
-  /// Acepta o rechaza una solicitud de seguimiento.
+  /// Método para enviar solicitud de seguimiento (usado en PantallaDetallePerfil).
+  Future<RespuestaApi<String>> enviarSolicitudSeguimiento(String nombreUsuario) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlUsuarios/$nombreUsuario/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200 || respuesta.statusCode == 201) {
+        final datos = jsonDecode(respuesta.body);
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Acción procesada',
+          datos: datos['estado'] as String?,
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al enviar solicitud');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Responde a una solicitud de seguimiento.
   Future<RespuestaApi<Map<String, dynamic>>> responderSolicitudSeguimiento(int peticionId, bool aceptar) async {
     try {
       final respuesta = await http.post(
@@ -113,40 +149,31 @@ class ServicioPerfiles {
       ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
-        return RespuestaApi(exito: true, mensaje: 'Respuesta enviada correctamente');
+        return RespuestaApi(exito: true, mensaje: 'Respuesta enviada');
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al responder la solicitud');
+      return RespuestaApi(exito: false, mensaje: 'Error al responder solicitud');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Actualiza la biografía (coincide con el nombre de parámetro esperado).
-  Future<RespuestaApi<Perfil>> editarBiografia({required String textoBiografia, required int perfilId}) async {
-    return actualizarPerfil({'biografia': textoBiografia});
-  }
-
-  /// Actualiza el perfil de forma genérica.
+  /// Actualiza los datos del perfil del usuario autenticado.
   Future<RespuestaApi<Perfil>> actualizarPerfil(Map<String, dynamic> datos) async {
     try {
       final idPerfil = await _servicioUsuarios.obtenerIdUsuario();
       if (idPerfil == null) return RespuestaApi(exito: false, mensaje: 'Sesión no válida');
 
       final respuesta = await http.patch(
-        Uri.parse('$_urlUsuarios/perfil/editar/'),
+        Uri.parse('$_urlUsuarios/perfiles/$idPerfil/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode({
-          ...datos,
-          'perfil_id': idPerfil,
-        }),
+        body: jsonEncode(datos),
       ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(respuesta.bodyBytes));
         return RespuestaApi(
           exito: true,
           mensaje: 'Perfil actualizado con éxito',
-          datos: Perfil.fromJson(decoded['datos']),
+          datos: Perfil.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar perfil');
@@ -155,15 +182,18 @@ class ServicioPerfiles {
     }
   }
 
+  /// Edita la biografía (compatibilidad).
+  Future<RespuestaApi<Perfil>> editarBiografia({required String textoBiografia, required int perfilId}) async {
+    return actualizarPerfil({'biografia': textoBiografia});
+  }
+
   /// Sube un nuevo avatar.
   Future<RespuestaApi<Perfil>> editarAvatarPerfil({required XFile imagen, required int perfilId}) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      final solicitud = http.MultipartRequest('PATCH', Uri.parse('$_urlUsuarios/perfil/editar/'));
+      final solicitud = http.MultipartRequest('PATCH', Uri.parse('$_urlUsuarios/perfiles/$perfilId/'));
       
       if (token != null) solicitud.headers['Authorization'] = 'Token $token';
-      solicitud.fields['perfil_id'] = perfilId.toString();
-      solicitud.fields['es_perfil'] = 'true';
 
       final mimeType = lookupMimeType(imagen.path) ?? 'image/jpeg';
       final typeParts = mimeType.split('/');
@@ -179,8 +209,7 @@ class ServicioPerfiles {
       final respuesta = await http.Response.fromStream(respuestaStream);
 
       if (respuesta.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        return RespuestaApi(exito: true, mensaje: 'Avatar actualizado', datos: Perfil.fromJson(decoded['datos']));
+        return RespuestaApi(exito: true, mensaje: 'Avatar actualizado', datos: Perfil.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))));
       }
       return RespuestaApi(exito: false, mensaje: 'Error al subir avatar');
     } catch (e) {
@@ -188,6 +217,7 @@ class ServicioPerfiles {
     }
   }
 
+  /// Publica un nuevo post (con soporte mejorado para vídeos).
   Future<RespuestaApi<Publicacion>> crearPublicacionPerfil({
     required String texto,
     List<XFile>? imagenes,
@@ -206,13 +236,24 @@ class ServicioPerfiles {
 
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var xfile in imagenes) {
-          final mimeType = lookupMimeType(xfile.path) ?? 'image/jpeg';
+          // Usamos el nombre para detectar el tipo real (mp4, mov...) en Web
+          final mimeType = lookupMimeType(xfile.name) ?? (xfile.name.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg');
           final typeParts = mimeType.split('/');
+          
           if (kIsWeb) {
             final bytes = await xfile.readAsBytes();
-            solicitud.files.add(http.MultipartFile.fromBytes('url_archivo_s3[]', bytes, filename: xfile.name, contentType: MediaType(typeParts[0], typeParts[1])));
+            solicitud.files.add(http.MultipartFile.fromBytes(
+              'url_archivo_s3[]', 
+              bytes, 
+              filename: xfile.name, 
+              contentType: MediaType(typeParts[0], typeParts[1])
+            ));
           } else {
-            solicitud.files.add(await http.MultipartFile.fromPath('url_archivo_s3[]', xfile.path, contentType: MediaType(typeParts[0], typeParts[1])));
+            solicitud.files.add(await http.MultipartFile.fromPath(
+              'url_archivo_s3[]', 
+              xfile.path, 
+              contentType: MediaType(typeParts[0], typeParts[1])
+            ));
           }
         }
       }

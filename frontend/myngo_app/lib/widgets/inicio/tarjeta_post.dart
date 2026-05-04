@@ -188,7 +188,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                         fondo: widget.post.autorFondo,
                       ));
                     } else {
-                      context.go('/inicio/perfiles/${widget.post.autorId}');
+                      context.go('/inicio/perfiles/${widget.post.autorNombre}');
                     }
                   },
                   child: SizedBox(
@@ -275,7 +275,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                         fechaRegistro: DateTime.now(),
                                       ));
                                     } else {
-                                      context.go('/inicio/perfiles/${widget.post.autorId}');
+                      context.go('/inicio/perfiles/${widget.post.autorNombre}');
                                     }
                                   },
                                   child: Text.rich(

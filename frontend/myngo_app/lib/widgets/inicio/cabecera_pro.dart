@@ -296,16 +296,10 @@ class _UserProfileHeader extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (marcoUrl != null && marcoUrl!.isNotEmpty)
-                    Positioned.fill(
-                      child: CachedNetworkImage(
-                        imageUrl: marcoUrl!,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+                  // 1. EL AVATAR (Capa inferior)
                   Container(
-                    width: 30,
-                    height: 30,
+                    width: 26, // Reducido para que el marco no lo pise
+                    height: 26,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
@@ -313,8 +307,19 @@ class _UserProfileHeader extends StatelessWidget {
                           ? DecorationImage(image: CachedNetworkImageProvider(avatarUrl!), fit: BoxFit.cover)
                           : null,
                     ),
-                    child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
+                    child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.grey, size: 16) : null,
                   ),
+
+                  // 2. EL MARCO (Capa superior - Overlay)
+                  if (marcoUrl != null && marcoUrl!.isNotEmpty)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CachedNetworkImage(
+                          imageUrl: marcoUrl!,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
                   Positioned(
                     bottom: 0,
                     right: 0,
