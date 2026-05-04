@@ -53,10 +53,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
 
   final List<Map<String, dynamic>> _estilosBurbuja = [
     {'id': 'solido', 'name': 'Sólido', 'desc': 'Clásico'},
-    {'id': 'cristal', 'name': 'Cristal', 'desc': 'Glass'},
-    {'id': 'neon', 'name': 'Neón', 'desc': 'Glow'},
-    {'id': 'bosque', 'name': 'Bosque', 'desc': 'Naturaleza'},
-    {'id': 'cyber', 'name': 'Cyber', 'desc': 'Futurista'},
+    {'id': 'cristal', 'name': 'Cristal', 'desc': 'Cristalino'},
+    {'id': 'neon', 'name': 'Neón', 'desc': 'Brillante'},
+    {'id': 'amor', 'name': 'Amor', 'desc': 'Corazones'},
+    {'id': 'vaquero', 'name': 'Vaquero', 'desc': 'Oeste'},
+    {'id': 'bosque', 'name': 'Bosque', 'desc': 'Bosque'},
+    {'id': 'cyber', 'name': 'Cyber', 'desc': 'Futuro'},
     {'id': 'kawaii', 'name': 'Kawaii', 'desc': 'Lindo'},
     {'id': 'aventura', 'name': 'Aventura', 'desc': 'Rol'},
   ];
@@ -381,18 +383,18 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     final color = const Color(0xFFF28B50);
     BoxDecoration deco;
     switch (estiloId) {
-      case 'cristal':
+      case 'amor':
         deco = BoxDecoration(
-          color: color.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          color: const Color(0xFFFCE4EC),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.pinkAccent, width: 1.5),
         );
         break;
-      case 'neon':
+      case 'vaquero':
         deco = BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color, width: 2),
+          color: const Color(0xFFD7CCC8),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF5D4037), width: 2),
         );
         break;
       case 'bosque':
@@ -405,7 +407,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
       case 'cyber':
         deco = BoxDecoration(
           color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: const Border(left: BorderSide(color: Color(0xFF00E5FF), width: 6)),
         );
         break;
@@ -443,6 +445,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
 
   Widget _buildPreviewDecoracionMini(String estiloId) {
     switch (estiloId) {
+      case 'amor': return const Positioned(top: -8, right: -5, child: Text('💖', style: TextStyle(fontSize: 14)));
+      case 'vaquero': return const Positioned(top: -12, left: 5, child: Text('🤠', style: TextStyle(fontSize: 16)));
       case 'bosque': return const Positioned(top: -8, left: -5, child: Text('🍃', style: TextStyle(fontSize: 12)));
       case 'kawaii': return const Positioned(bottom: -8, right: -5, child: Text('🎀', style: TextStyle(fontSize: 14)));
       case 'cyber': return Positioned(top: 4, right: 4, child: Container(width: 4, height: 4, color: const Color(0xFF00E5FF)));
@@ -773,6 +777,20 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
 
   Widget _buildPreviewDecoracion(String estilo, bool esMio) {
     switch (estilo) {
+      case 'amor':
+        return Positioned(
+          top: -12,
+          right: esMio ? -5 : null,
+          left: !esMio ? -5 : null,
+          child: const Text('💖', style: TextStyle(fontSize: 20)),
+        );
+      case 'vaquero':
+        return Positioned(
+          top: -18,
+          right: esMio ? -5 : null,
+          left: !esMio ? -5 : null,
+          child: const Text('🤠', style: TextStyle(fontSize: 22)),
+        );
       case 'bosque':
         return Positioned(
           top: -15,
