@@ -284,9 +284,9 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   void _seleccionarComunidad(Comunidad comunidad) {
     if ((widget.navigationShell?.currentIndex ?? _indiceSeleccionado) == 1) {
-      context.go('/explorar/comunidades/${comunidad.id}', extra: comunidad);
+      context.go('/explorar/comunidades/${comunidad.nombre}', extra: comunidad);
     } else {
-      context.go('/inicio/comunidades/${comunidad.id}', extra: comunidad);
+      context.go('/inicio/comunidades/${comunidad.nombre}', extra: comunidad);
     }
   }
 
@@ -294,9 +294,9 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   void _seleccionarUsuario(Usuario usuario) {
     if ((widget.navigationShell?.currentIndex ?? _indiceSeleccionado) == 1) {
-      context.go('/explorar/perfiles/${usuario.id}', extra: usuario);
+      context.go('/explorar/perfiles/${usuario.nombreUsuario}', extra: usuario);
     } else {
-      context.go('/inicio/perfiles/${usuario.id}', extra: usuario);
+      context.go('/inicio/perfiles/${usuario.nombreUsuario}', extra: usuario);
     }
   }
 

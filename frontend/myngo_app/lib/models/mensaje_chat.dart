@@ -39,14 +39,16 @@ class MensajeChat {
   /// Crea una instancia de [MensajeChat] a partir de un mapa JSON.
   factory MensajeChat.fromJson(Map<String, dynamic> json) {
     return MensajeChat(
-      id: json['id'] ?? 0,
-      salaId: json['sala'] ?? 0,
-      emisorId: json['emisor'] ?? 0,
+      id: json['id'] ?? json['message_id'] ?? 0,
+      salaId: json['sala'] ?? json['sala_id'] ?? 0,
+      emisorId: json['emisor'] ?? json['user_id'] ?? json['sender_id'] ?? 0,
       contenido: json['content']?.toString() ?? json['contenido']?.toString(),
       urlArchivoS3: json['url_archivo_s3']?.toString(),
       fechaEnvio: json['fecha_envio'] != null
           ? DateTime.parse(json['fecha_envio']).toLocal()
-          : DateTime.now(),
+          : (json['timestamp'] != null 
+              ? DateTime.parse(json['timestamp']).toLocal() 
+              : DateTime.now()),
       leidoPorIds: (json['leido_por_ids'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
       referenciaA: json['referencia_a'],
       referenciaADetalle: json['referencia_a_detalle'],
@@ -55,6 +57,40 @@ class MensajeChat {
       borradoParaTodos: json['borrado_para_todos'] ?? false,
       borradoParaMi: json['borrado_para_mi'] ?? false,
       tipo: json['tipo'] ?? 'TEXTO',
+    );
+  }
+
+  MensajeChat copyWith({
+    int? id,
+    int? salaId,
+    int? emisorId,
+    String? contenido,
+    String? urlArchivoS3,
+    DateTime? fechaEnvio,
+    List<int>? leidoPorIds,
+    int? referenciaA,
+    Map<String, dynamic>? referenciaADetalle,
+    bool? esEditado,
+    DateTime? fechaEdicion,
+    bool? borradoParaTodos,
+    bool? borradoParaMi,
+    String? tipo,
+  }) {
+    return MensajeChat(
+      id: id ?? this.id,
+      salaId: salaId ?? this.salaId,
+      emisorId: emisorId ?? this.emisorId,
+      contenido: contenido ?? this.contenido,
+      urlArchivoS3: urlArchivoS3 ?? this.urlArchivoS3,
+      fechaEnvio: fechaEnvio ?? this.fechaEnvio,
+      leidoPorIds: leidoPorIds ?? this.leidoPorIds,
+      referenciaA: referenciaA ?? this.referenciaA,
+      referenciaADetalle: referenciaADetalle ?? this.referenciaADetalle,
+      esEditado: esEditado ?? this.esEditado,
+      fechaEdicion: fechaEdicion ?? this.fechaEdicion,
+      borradoParaTodos: borradoParaTodos ?? this.borradoParaTodos,
+      borradoParaMi: borradoParaMi ?? this.borradoParaMi,
+      tipo: tipo ?? this.tipo,
     );
   }
 }

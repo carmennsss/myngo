@@ -195,6 +195,19 @@ class ServicioMensajeria {
     }
   }
 
+  Future<bool> borrarMensaje(int mensajeId, {bool paraTodos = false}) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlApi/mensajeria/mensajes/$mensajeId/borrar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'para_todos': paraTodos}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // --- WEBSOCKETS ---
 
   void conectarASala(int idSala, Function(Map<String, dynamic>) alRecibirMensaje, {VoidCallback? alConectar}) {

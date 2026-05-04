@@ -95,20 +95,20 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/inicio',
-              builder: (context, state) {
+                builder: (context, state) {
                 return FeedPublicaciones(
-                  onComunidadSelected: (c) => context.go('/inicio/comunidades/${c.id}', extra: c),
-                  onProfileSelected: (u) => context.go('/inicio/perfiles/${u.id}', extra: u),
+                  onComunidadSelected: (c) => context.go('/inicio/comunidades/${c.nombre}', extra: c),
+                  onProfileSelected: (u) => context.go('/inicio/perfiles/${u.nombreUsuario}', extra: u),
                 );
               },
               routes: [
                 GoRoute(
                   path: 'comunidades/:id',
                   builder: (context, state) {
-                    final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    final id = state.pathParameters['id'] ?? '';
                     return PantallaDetalleComunidad(
                       key: ValueKey('init-com-$id'),
-                      id: id,
+                      idOrName: id,
                       comunidad: state.extra as Comunidad?,
                       esIntegrada: true,
                       onBack: () => context.go('/inicio'),
@@ -133,10 +133,10 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'perfiles/:id',
                   builder: (context, state) {
-                    final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    final id = state.pathParameters['id'] ?? '';
                     return PantallaDetallePerfil(
                       key: ValueKey('init-perf-$id'),
-                      id: id,
+                      idOrUsername: id,
                       usuario: state.extra as Usuario?,
                       esIntegrada: true,
                       onBack: () => context.go('/inicio'),
@@ -155,7 +155,7 @@ final GoRouter appRouter = GoRouter(
               builder: (context, state) {
                 return PantallaExplorar(
                   onComunidadSelected: (c) =>
-                      context.go('/explorar/comunidades/${c.id}', extra: c),
+                      context.go('/explorar/comunidades/${c.nombre}', extra: c),
                   onComunidadCreada: () {
                     final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
                     inicioState?.cargarComunidades();
@@ -166,10 +166,10 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'comunidades/:id',
                   builder: (context, state) {
-                    final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    final id = state.pathParameters['id'] ?? '';
                     return PantallaDetalleComunidad(
                       key: ValueKey('expl-com-$id'),
-                      id: id,
+                      idOrName: id,
                       comunidad: state.extra as Comunidad?,
                       esIntegrada: true,
                       onBack: () => context.go('/explorar'),
@@ -194,10 +194,10 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'perfiles/:id',
                   builder: (context, state) {
-                    final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                    final id = state.pathParameters['id'] ?? '';
                     return PantallaDetallePerfil(
                       key: ValueKey('expl-perf-$id'),
-                      id: id,
+                      idOrUsername: id,
                       usuario: state.extra as Usuario?,
                       esIntegrada: true,
                       onBack: () => context.go('/explorar'),

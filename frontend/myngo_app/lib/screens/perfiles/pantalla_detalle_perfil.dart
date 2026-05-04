@@ -32,7 +32,7 @@ import '../../models/coleccion.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 class PantallaDetallePerfil extends StatefulWidget {
-  final int? id;
+  final dynamic idOrUsername;
   final Usuario? usuario;
   final int? comunidadIdContexto;
   final bool esIntegrada;
@@ -41,13 +41,13 @@ class PantallaDetallePerfil extends StatefulWidget {
 
   const PantallaDetallePerfil({
     super.key,
-    this.id,
+    this.idOrUsername,
     this.usuario,
     this.comunidadIdContexto,
     this.esIntegrada = false,
     this.onBack,
     this.onPerfilActualizado,
-  }) : assert(id != null || usuario != null, 'Debe proporcionarse id o usuario');
+  }) : assert(idOrUsername != null || usuario != null, 'Debe proporcionarse id o usuario');
 
   @override
   State<PantallaDetallePerfil> createState() => _PantallaDetallePerfilState();
@@ -91,7 +91,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   void initState() {
     super.initState();
     _usuario = widget.usuario;
-    if (_usuario == null && widget.id != null) {
+    if (_usuario == null && widget.idOrUsername != null) {
       _cargarPerfilInicial();
     } else if (_usuario != null) {
       _sincronizarEstadoLocal();
@@ -126,7 +126,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   Future<void> _cargarPerfilInicial() async {
     if (!mounted) return;
     setState(() => _cargandoPerfil = true);
-    final res = await ServicioUsuarios().obtenerDatosUsuario(widget.id!);
+    final res = await ServicioUsuarios().obtenerDatosUsuario(widget.idOrUsername!);
     if (mounted) {
       setState(() {
         _usuario = res.datos;
@@ -142,11 +142,11 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   @override
   void didUpdateWidget(PantallaDetallePerfil oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldId = oldWidget.id ?? oldWidget.usuario?.id;
-    final newId = widget.id ?? widget.usuario?.id;
+    final oldId = oldWidget.idOrUsername ?? oldWidget.usuario?.id;
+    final newId = widget.idOrUsername ?? widget.usuario?.id;
     if (oldId != newId) {
       _usuario = widget.usuario;
-      if (_usuario == null && widget.id != null) {
+      if (_usuario == null && widget.idOrUsername != null) {
         _cargarPerfilInicial();
       } else if (_usuario != null) {
         _sincronizarEstadoLocal();

@@ -22,11 +22,12 @@ class SalaChat(models.Model):
     )
     es_grupal = models.BooleanField(default=False)
     es_publica = models.BooleanField(default=False)
+    es_general = models.BooleanField(default=False) # Identifica la sala principal de una comunidad
     invite_token = models.CharField(
         max_length=100, unique=True, null=True, blank=True
     )
     miembros = models.ManyToManyField(
-        Usuario, related_name='salas_pertenecientes', through='SalaChatMiembro', blank=True
+        Usuario, related_name='salas_pertenecientes', through='ParticipanteChat', blank=True
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     
@@ -36,19 +37,6 @@ class SalaChat(models.Model):
 
     def __str__(self):
         return self.nombre
-
-
-class SalaChatMiembro(models.Model):
-    """
-    Modelo intermedio explícito para forzar el mapeo de la columna antigua 'salas_chat_id'.
-    Se usa managed=False para que Django no intente crear o alterar esta tabla.
-    """
-    class Meta:
-        db_table = 'salas_chat_miembros'
-        managed = False
-
-    salachat = models.ForeignKey(SalaChat, on_delete=models.CASCADE, db_column='salachat_id')
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, db_column='usuario_id')
 
 
 class PersonalizacionChat(models.Model):

@@ -36,6 +36,12 @@ class EstiloPostHelper {
       bgColor = parseHex(inicioHex) ?? Colors.white;
       bgColorFin = parseHex(finHex);
       borderColor = parseHex(bordeHex);
+      
+      // Si el color parseado es negro puro pero no hay otros datos, 
+      // probablemente sea un error de casteo o dato vacío.
+      if (bgColor == Colors.black && bgColorFin == null && estilo.length <= 1) {
+        bgColor = Colors.white;
+      }
     }
 
     final tieneGradiente = bgColorFin != null;
