@@ -5,6 +5,7 @@ from django.urls import path
 from .views import (
     MensajesChatList,
     SalaChatListCreate,
+    SalaChatDetail,
     agregar_miembro,
     conteo_no_leidos,
     marcar_leidos,
@@ -18,6 +19,7 @@ from .views import (
 urlpatterns = [
     # Gestión de Salas
     path('salas/', SalaChatListCreate.as_view(), name='lista_salas'),
+    path('salas/<int:pk>/', SalaChatDetail.as_view(), name='detalle_sala'),
     path('salas/<int:pk>/agregar_miembro/', agregar_miembro, name='agregar_miembro'),
     path('salas/<int:pk>/actualizar/', actualizar_sala, name='actualizar_sala'),
     path('salas/<int:sala_id>/participante/', actualizar_participante, name='actualizar_participante'),
