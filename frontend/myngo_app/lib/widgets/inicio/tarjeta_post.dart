@@ -197,13 +197,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
-                          Positioned.fill(
-                            child: CachedNetworkImage(
-                              imageUrl: widget.post.autorMarco!,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                        // 1. Avatar (Debajo)
                         Container(
                           width: 30,
                           height: 30,
@@ -228,6 +222,14 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                   ),
                                 ),
                         ),
+                        // 2. Marco (Encima)
+                        if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
+                          Positioned.fill(
+                            child: CachedNetworkImage(
+                              imageUrl: widget.post.autorMarco!,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                       ],
                     ),
                   ),

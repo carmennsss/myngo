@@ -77,6 +77,15 @@ class SalaChatListCreate(generics.ListCreateAPIView):
             except Usuario.DoesNotExist:
                 pass
 
+        if comunidad_id:
+            # Validar que el nombre sea único en esta comunidad para evitar confusión
+            existe_nombre = SalaChat.objects.filter(comunidad_id=comunidad_id, nombre=nombre).exists()
+            if existe_nombre:
+                return Response(
+                    {'error': f'Ya existe una sala llamada "{nombre}" en esta comunidad.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         sala = SalaChat.objects.create(
             nombre=nombre,
             es_grupal=es_grupal,

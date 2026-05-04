@@ -332,6 +332,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                   widget.onComunidadSelected!(_comunidades[index]);
                 } else {
                   Navigator.push(context, MaterialPageRoute(builder: (c) => PantallaDetalleComunidad(
+                    idOrName: _comunidades[index].nombre,
                     comunidad: _comunidades[index],
                     onMembershipChanged: () {
                       _cargarDatos();
@@ -419,7 +420,10 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                     } else {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (c) => PantallaDetallePerfil(usuario: usuario)),
+                        MaterialPageRoute(builder: (c) => PantallaDetallePerfil(
+                          idOrUsername: usuario.nombreUsuario,
+                          usuario: usuario,
+                        )),
                       );
                     }
                   });

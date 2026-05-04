@@ -105,17 +105,6 @@ class ComunidadListCreate(generics.ListCreateAPIView):
             comunidad=comunidad,
             rol='Administrador',
         )
-        
-        # Crear sala de chat general automáticamente
-        sala_general = SalaChat.objects.create(
-            nombre=f'General {comunidad.nombre} ✨',
-            comunidad=comunidad,
-            es_grupal=True,
-            es_publica=True,
-            invite_token=str(uuid.uuid4())
-        )
-        # Añadir al creador como miembro de la sala
-        sala_general.miembros.add(self.request.user)
 
 
 class MisComunidadesList(generics.ListAPIView):
@@ -251,10 +240,6 @@ class UnirseComunidad(APIView):
             )
         else:
             MiembrosComunidad.objects.create(usuario=usuario, comunidad=comunidad)
-            # UNIÓN AUTOMÁTICA AL CHAT GENERAL
-            sala_general = SalaChat.objects.filter(comunidad=comunidad, nombre__icontains='General').first()
-            if sala_general:
-                sala_general.miembros.add(usuario)
 
         mensaje = (
             'Te has unido a la comunidad'
@@ -296,11 +281,6 @@ class ResponderPeticionUnion(APIView):
             MiembrosComunidad.objects.get_or_create(
                 usuario=peticion.seguidor, comunidad=peticion.seguida_comunidad
             )
-            # UNIÓN AUTOMÁTICA AL CHAT GENERAL (Al aceptar petición)
-            comunidad = peticion.seguida_comunidad
-            sala_general = SalaChat.objects.filter(comunidad=comunidad, nombre__icontains='General').first()
-            if sala_general:
-                sala_general.miembros.add(peticion.seguidor)
 
             Notificacion.objects.create(
                 usuario=peticion.seguidor,
@@ -459,6 +439,28 @@ class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comunidad.objects.all()
     serializer_class = ComunidadSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_object(self):
+        """Busca la comunidad por PK o por Nombre."""
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        val = self.kwargs[lookup_url_kwarg]
+
+        # Intentar por ID
+        if str(val).isdigit():
+            obj = queryset.filter(pk=val).first()
+            if obj:
+                self.check_object_permissions(self.request, obj)
+                return obj
+        
+        # Intentar por Nombre
+        obj = queryset.filter(nombre=val).first()
+        if obj:
+            self.check_object_permissions(self.request, obj)
+            return obj
+
+        from django.http import Http404
+        raise Http404("No se encontró ninguna comunidad con ese identificador.")
 
     def perform_update(self, serializer):
         """Valida permisos de gestión antes de actualizar la comunidad.

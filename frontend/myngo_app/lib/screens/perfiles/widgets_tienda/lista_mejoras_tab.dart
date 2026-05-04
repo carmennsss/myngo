@@ -127,15 +127,63 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
   }
 
   Future<void> _equipar(CatalogoMejoras mejora) async {
-    final res = await _servicioMejoras.equiparMejora(mejora.id);
+    String? destino;
+
+    // Si es un fondo, preguntamos dónde quiere equiparlo
+    if (mejora.tipo.toLowerCase() == 'fondo') {
+      destino = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('¿Dónde quieres equipar este fondo? 🐾',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _OpcionDestino(
+                titulo: 'Banner del Perfil',
+                descripcion: 'Se verá en la parte superior de tus posts y perfil.',
+                icono: Icons.view_headline_rounded,
+                onTap: () => Navigator.pop(ctx, 'banner'),
+              ),
+              const SizedBox(height: 12),
+              _OpcionDestino(
+                titulo: 'Fondo de Pantalla',
+                descripcion: 'Cambia el fondo completo de tu feed personal.',
+                icono: Icons.fullscreen_rounded,
+                onTap: () => Navigator.pop(ctx, 'fondo_feed'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey)),
+            ),
+          ],
+        ),
+      );
+
+      if (destino == null) return; // Canceló el diálogo
+    }
+
+    final res = await _servicioMejoras.equiparMejora(mejora.id, destino: destino);
     if (mounted) {
       if (res.exito) {
         notificarMejoraEquipada();
         widget.onRefresh();
         widget.onPuntosActualizados?.call(widget.usuarioActual?.puntos ?? 0);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.mensaje),
+            backgroundColor: const Color(0xFF248EA6),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(res.mensaje)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
+        );
       }
     }
   }
@@ -546,6 +594,66 @@ class _DialogoCompra extends StatelessWidget {
             onPressed: () => Navigator.pop(context, true),
             child: const Text('COMPRAR')),
       ],
+    );
+  }
+}
+
+class _OpcionDestino extends StatelessWidget {
+  final String titulo;
+  final String descripcion;
+  final IconData icono;
+  final VoidCallback onTap;
+
+  const _OpcionDestino({
+    required this.titulo,
+    required this.descripcion,
+    required this.icono,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFBE9E0).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC35E34).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icono, color: const Color(0xFFC35E34), size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: const Color(0xFF4A4440)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    descripcion,
+                    style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+          ],
+        ),
+      ),
     );
   }
 }

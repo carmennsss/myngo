@@ -223,11 +223,11 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene la información detallada de un usuario específico por su ID.
-  Future<RespuestaApi<Usuario>> obtenerDatosUsuario(int idUsuario) async {
+  /// Obtiene la información detallada de un usuario específico por su ID o Nombre de Usuario.
+  Future<RespuestaApi<Usuario>> obtenerDatosUsuario(dynamic identifier) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('$_urlUsuarios/datos/$idUsuario/'),
+        Uri.parse('$_urlUsuarios/datos/$identifier/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
 

@@ -63,12 +63,7 @@ class ProfilePreview extends StatelessWidget {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // 1. Marco (detrás)
-                        if (marcoUrl != null && marcoUrl!.isNotEmpty)
-                          Positioned.fill(
-                            child: Image.network(marcoUrl!, fit: BoxFit.contain),
-                          ),
-                        // 2. Avatar (encima)
+                        // 1. Avatar (debajo)
                         Container(
                           padding: const EdgeInsets.all(3),
                           decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
@@ -83,6 +78,11 @@ class ProfilePreview extends StatelessWidget {
                                 : null,
                           ),
                         ),
+                        // 2. Marco (encima)
+                        if (marcoUrl != null && marcoUrl!.isNotEmpty)
+                          Positioned.fill(
+                            child: Image.network(marcoUrl!, fit: BoxFit.contain),
+                          ),
                       ],
                     ),
                   ),

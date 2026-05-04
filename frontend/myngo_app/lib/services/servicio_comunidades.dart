@@ -101,11 +101,11 @@ class ServicioComunidades {
     }
   }
 
-  /// Recupera la información detallada de una comunidad por su ID.
-  Future<RespuestaApi<Comunidad>> obtenerComunidad(int idComunidad) async {
+  /// Recupera la información detallada de una comunidad por su ID o Nombre.
+  Future<RespuestaApi<Comunidad>> obtenerComunidad(dynamic identifier) async {
     try {
       final respuesta = await http.get(
-        Uri.parse('$_urlComunidades$idComunidad/'),
+        Uri.parse('$_urlComunidades$identifier/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 

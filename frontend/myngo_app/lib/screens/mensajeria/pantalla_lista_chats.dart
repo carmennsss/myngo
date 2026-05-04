@@ -122,10 +122,11 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         otro = miembros.first;
       }
       
-      sala['_otro_usuario_id'] = otro['id'];
+      final interlocutor = otro!;
+      sala['_otro_usuario_id'] = interlocutor['id'];
       return {
-        'nombre': '@${otro['nombre_usuario'] ?? sala['nombre']}',
-        'avatar': otro['url_avatar'],
+        'nombre': '@${interlocutor['nombre_usuario'] ?? sala['nombre']}',
+        'avatar': interlocutor['url_avatar'],
       };
     }
     return {'nombre': sala['nombre'] ?? 'Chat', 'avatar': null};

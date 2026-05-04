@@ -37,7 +37,7 @@ import 'widgets_detalle/dialogos_comunidad.dart';
 
 /// Pantalla principal de detalle de una comunidad.
 class PantallaDetalleComunidad extends StatefulWidget {
-  final int? id;
+  final dynamic idOrName;
   final Comunidad? comunidad;
   final bool esIntegrada;
   final VoidCallback? onBack;
@@ -46,13 +46,13 @@ class PantallaDetalleComunidad extends StatefulWidget {
 
   const PantallaDetalleComunidad({
     super.key,
-    this.id,
+    this.idOrName,
     this.comunidad,
     this.esIntegrada = false,
     this.onBack,
     this.onMembershipChanged,
     this.initialIndex = 0,
-  }) : assert(id != null || comunidad != null, 'Debe proporcionarse id o comunidad');
+  }) : assert(idOrName != null || comunidad != null, 'Debe proporcionarse id o comunidad');
 
   @override
   State<PantallaDetalleComunidad> createState() =>
@@ -96,7 +96,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final comunidadIncompleta = _comunidad != null && 
         (_comunidad!.urlPortada.isEmpty && _comunidad!.creadorNombre == 'Sistema');
     
-    if (_comunidad == null && widget.id != null) {
+    if (_comunidad == null && widget.idOrName != null) {
       _cargarComunidadInicial();
     } else if (comunidadIncompleta) {
       _cargarComunidadInicial(idOverride: _comunidad!.id);
@@ -105,10 +105,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
-  Future<void> _cargarComunidadInicial({int? idOverride}) async {
+  Future<void> _cargarComunidadInicial({dynamic idOverride}) async {
     if (!mounted) return;
     setState(() => _estaCargandoComunidad = true);
-    final idACargar = idOverride ?? widget.id!;
+    final idACargar = idOverride ?? widget.idOrName!;
     try {
       final res = await _servicio.obtenerComunidad(idACargar);
       if (mounted) {
@@ -138,7 +138,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   @override
   void didUpdateWidget(PantallaDetalleComunidad oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.comunidad?.id != widget.comunidad?.id) {
+    final oldId = oldWidget.idOrName ?? oldWidget.comunidad?.id;
+    final newId = widget.idOrName ?? widget.comunidad?.id;
+    if (oldId != newId) {
       _indiceSeccion = 0;
       _publicaciones = null;
       _salasChat = null;
