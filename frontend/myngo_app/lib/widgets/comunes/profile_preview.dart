@@ -1,123 +1,130 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfilePreview extends StatelessWidget {
-  final String? fondoUrl;
   final String? avatarUrl;
   final String? marcoUrl;
-  final String nombreUsuario;
-  final int puntos;
+  final String? fondoUrl;
+  final String? nombreUsuario;
+  final int? puntos;
+  final String? estado;
+  final double size;
+  final VoidCallback? onAvatarTap;
 
   const ProfilePreview({
     super.key,
-    this.fondoUrl,
     this.avatarUrl,
     this.marcoUrl,
-    this.nombreUsuario = 'Usuario',
-    this.puntos = 0,
+    this.fondoUrl,
+    this.nombreUsuario,
+    this.puntos,
+    this.estado,
+    this.size = 120,
+    this.onAvatarTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFC35E34).withOpacity(0.08),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+    // Si hay fondo, mostramos un diseño de "Cabecera de Perfil"
+    if (fondoUrl != null && fondoUrl!.isNotEmpty) {
+      return Container(
+        width: size * 2.5, 
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Cabecera de Perfil (Fondo)
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
+                // 1. BANNER RECTANGULAR
                 Container(
-                  height: 100,
-                  width: double.infinity,
+                  width: size * 2.5,
+                  height: size * 0.8,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFBE9E0),
-                    image: (fondoUrl != null && fondoUrl!.isNotEmpty)
-                        ? DecorationImage(
-                            image: CachedNetworkImageProvider(fondoUrl!), 
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ),
-                Positioned(
-                  bottom: -35,
-                  child: SizedBox(
-                    width: 90,
-                    height: 90,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // 1. Avatar (debajo)
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: CircleAvatar(
-                            radius: 32,
-                            backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty) 
-                                ? CachedNetworkImageProvider(avatarUrl!) 
-                                : null,
-                            backgroundColor: const Color(0xFFFBE9E0),
-                            child: (avatarUrl == null || avatarUrl!.isEmpty) 
-                                ? const Icon(Icons.person, color: Color(0xFFC35E34), size: 28) 
-                                : null,
-                          ),
-                        ),
-                        // 2. Marco (encima)
-                        if (marcoUrl != null && marcoUrl!.isNotEmpty)
-                          Positioned.fill(
-                            child: Image.network(marcoUrl!, fit: BoxFit.contain),
-                          ),
-                      ],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: CachedNetworkImage(
+                      imageUrl: fondoUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(color: Colors.grey[300]),
+                      errorWidget: (context, url, error) => const Icon(Icons.image),
                     ),
                   ),
                 ),
+                
+                // 2. AVATAR + MARCO (Posicionado encima)
+                Positioned(
+                  top: size * 0.3,
+                  child: _buildAvatarWithFrame(),
+                ),
               ],
             ),
-            const SizedBox(height: 45),
-            // Nombre y Puntos
-            Text(
-              nombreUsuario,
-              style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF4A4440)),
-            ),
-            if (puntos > 0) ...[
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.stars_rounded, color: Color(0xFFF29C50), size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$puntos Puntos',
-                    style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFFC35E34)),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 16),
+            SizedBox(height: size * 0.6), 
           ],
         ),
+      );
+    }
+
+    return _buildAvatarWithFrame();
+  }
+
+  Widget _buildAvatarWithFrame() {
+    // REDUCCIÓN CRÍTICA: El avatar al 50% para que el marco (100%) luzca todos sus detalles por encima
+    final double avatarSize = size * 0.50; 
+    final double marcoSize = size;
+
+    return Container(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // 1. EL AVATAR (Capa inferior del pequeño stack)
+          GestureDetector(
+            onTap: onAvatarTap,
+            child: Container(
+              width: avatarSize,
+              height: avatarSize,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              child: ClipOval(
+                child: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                    ? CachedNetworkImage(
+                        imageUrl: avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) => const Icon(Icons.person, size: 25),
+                      )
+                    : const Icon(Icons.person, size: 25, color: Colors.grey),
+              ),
+            ),
+          ),
+
+          // 2. EL MARCO (CAPA SUPERIOR - OVERLAY)
+          if (marcoUrl != null && marcoUrl!.isNotEmpty)
+            IgnorePointer(
+              child: Container(
+                width: marcoSize,
+                height: marcoSize,
+                child: CachedNetworkImage(
+                  imageUrl: marcoUrl!,
+                  fit: BoxFit.contain, // Para que las alas se vean perfectas
+                  placeholder: (context, url) => const SizedBox.shrink(),
+                  errorWidget: (context, url, error) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

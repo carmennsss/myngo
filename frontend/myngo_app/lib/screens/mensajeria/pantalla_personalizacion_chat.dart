@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/sala_chat.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../widgets/comunes/boton_tactil.dart';
@@ -17,7 +19,9 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
   final _servicio = ServicioMensajeria();
   late String _nombre;
   late PersonalizacionChat _perso;
+  String? _avatarUrl;
   bool _estaGuardando = false;
+  bool _estaSubiendoImagen = false;
 
   final List<Color> _paletaColores = [
     const Color(0xFFF28B50), // Naranja Myngo
@@ -43,6 +47,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     super.initState();
     _nombre = widget.sala.nombre;
     _perso = widget.sala.personalizacion ?? PersonalizacionChat();
+    _avatarUrl = widget.sala.avatarS3;
   }
 
   void _guardar() async {
@@ -68,6 +73,31 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     }
   }
 
+  Future<void> _cambiarAvatar() async {
+    final picker = ImagePicker();
+    final imagen = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    
+    if (imagen != null) {
+      setState(() => _estaSubiendoImagen = true);
+      final nuevaUrl = await _servicio.subirAvatarSala(widget.sala.id, imagen);
+      
+      if (mounted) {
+        setState(() {
+          _estaSubiendoImagen = false;
+          if (nuevaUrl != null) {
+            _avatarUrl = nuevaUrl;
+          }
+        });
+        
+        if (nuevaUrl == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al subir la imagen'))
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,6 +118,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildAvatarPicker(),
+            const SizedBox(height: 32),
             _buildPreview(),
             const SizedBox(height: 32),
             _buildSectionTitle('Identidad del Chat'),
@@ -155,6 +187,61 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     return Text(
       title.toUpperCase(),
       style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey),
+    );
+  }
+
+  Widget _buildAvatarPicker() {
+    return Center(
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFF28B50), width: 3),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFFF28B50).withOpacity(0.2), blurRadius: 15)
+                  ],
+                ),
+                child: ClipOval(
+                  child: _estaSubiendoImagen
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
+                    : (_avatarUrl != null)
+                      ? CachedNetworkImage(
+                          imageUrl: _avatarUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                        )
+                      : Container(
+                          color: const Color(0xFFFBE9E0),
+                          child: const Icon(Icons.group_outlined, size: 40, color: Color(0xFFF28B50)),
+                        ),
+                ),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: BotonTactil(
+                  onTap: _cambiarAvatar,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(color: Color(0xFFF28B50), shape: BoxShape.circle),
+                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.sala.esGrupal ? 'Cambiar foto del grupo' : 'Cambiar foto del chat',
+            style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey[600]),
+          ),
+        ],
+      ),
     );
   }
 

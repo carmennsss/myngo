@@ -55,6 +55,7 @@ class _PantallaChatState extends State<PantallaChat> {
   int _miembrosOnline = 0;
   
   bool _mostrarEmojiPicker = false;
+  MensajeChat? _mensajeRespuesta;
   final FocusNode _focusNode = FocusNode();
 
   @override
@@ -161,15 +162,74 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   void _enviarMensaje() async {
-    if (_mensajeController.text.trim().isEmpty || _sala == null) return;
     final texto = _mensajeController.text.trim();
+    if (texto.isEmpty || _sala == null) return;
+    
     _mensajeController.clear();
     setState(() => _mostrarEmojiPicker = false);
+    
     try {
-      _servicio.enviarMensajeChat(texto);
+      _servicio.enviarMensajeChat(
+        texto, 
+        referenciaA: _mensajeRespuesta?.id,
+      );
+      
+      if (mounted) {
+        setState(() => _mensajeRespuesta = null);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+  Widget _buildBarraRespuesta() {
+    if (_mensajeRespuesta == null) return const SizedBox.shrink();
+
+    String emisorNombre = 'Usuario';
+    if (_sala != null) {
+      try {
+        final part = _sala!.participantes.firstWhere((p) => p.usuarioId == _mensajeRespuesta!.emisorId);
+        emisorNombre = part.nombreAMostrar;
+      } catch (_) {}
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        border: const Border(left: BorderSide(color: Color(0xFFC35E34), width: 4)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Respondiendo a $emisorNombre',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFC35E34),
+                  ),
+                ),
+                Text(
+                  _mensajeRespuesta!.contenido ?? 'Archivo',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(fontSize: 13, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 20),
+            onPressed: () => setState(() => _mensajeRespuesta = null),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -409,6 +469,8 @@ class _PantallaChatState extends State<PantallaChat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    if (msg.referenciaADetalle != null) 
+                      _buildCitaMensaje(msg.referenciaADetalle!, esMio),
                     Text(
                       texto,
                       style: GoogleFonts.outfit(
@@ -431,6 +493,45 @@ class _PantallaChatState extends State<PantallaChat> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCitaMensaje(Map<String, dynamic> cita, bool esMio) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: esMio ? Colors.black.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          left: BorderSide(
+            color: esMio ? Colors.white70 : const Color(0xFFC35E34),
+            width: 3,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            cita['emisor_nombre'] ?? 'Usuario',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: esMio ? Colors.white : const Color(0xFFC35E34),
+            ),
+          ),
+          Text(
+            cita['contenido'] ?? 'Archivo',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: esMio ? Colors.white.withOpacity(0.8) : Colors.black54,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -477,7 +578,8 @@ class _PantallaChatState extends State<PantallaChat> {
                 title: const Text('Responder'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Implementar respuesta
+                  setState(() => _mensajeRespuesta = msg);
+                  _focusNode.requestFocus();
                 },
               ),
               if (esMio) ...[
@@ -494,10 +596,18 @@ class _PantallaChatState extends State<PantallaChat> {
                   title: const Text('Borrar para todos', style: TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
-                    _eliminarMensaje(msg);
+                    _eliminarMensaje(msg, paraTodos: true);
                   },
                 ),
               ],
+              ListTile(
+                leading: const Icon(Icons.delete_sweep_outlined),
+                title: const Text('Borrar para mí'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _eliminarMensaje(msg, paraTodos: false);
+                },
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -545,25 +655,34 @@ class _PantallaChatState extends State<PantallaChat> {
     );
   }
 
-  void _eliminarMensaje(MensajeChat msg) async {
+  void _eliminarMensaje(MensajeChat msg, {required bool paraTodos}) async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('¿Borrar mensaje?'),
-        content: const Text('Esta acción eliminará el mensaje para todos los miembros del chat.'),
+        title: Text(paraTodos ? '¿Borrar para todos?' : '¿Borrar para mí?'),
+        content: Text(paraTodos 
+          ? 'Esta acción eliminará el mensaje para todos los miembros del chat.' 
+          : 'Esta acción ocultará el mensaje de tu historial personal.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           TextButton(
             onPressed: () => Navigator.pop(context, true), 
-            child: const Text('Borrar', style: TextStyle(color: Colors.red)),
+            child: Text('Borrar', style: TextStyle(color: paraTodos ? Colors.red : Colors.blue)),
           ),
         ],
       ),
     );
 
     if (confirmar == true) {
-      final exito = await _servicio.borrarMensaje(msg.id, paraTodos: true);
-      if (!exito) {
+      final exito = await _servicio.borrarMensaje(msg.id, paraTodos: paraTodos);
+      if (exito) {
+        if (!paraTodos) {
+          // Si es borrado local, lo quitamos de la lista manualmente
+          setState(() {
+            _mensajes.removeWhere((m) => m.id == msg.id);
+          });
+        }
+      } else {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al borrar el mensaje')));
       }
     }
@@ -571,83 +690,89 @@ class _PantallaChatState extends State<PantallaChat> {
 
   Widget _buildInputArea() {
     final esOscuro = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: esOscuro ? Colors.grey[900] : Colors.white,
-        border: const Border(top: BorderSide(color: Colors.black12)),
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: esOscuro ? Colors.white10 : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _mostrarEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        if (_mostrarEmojiPicker) {
-                          _focusNode.requestFocus();
-                        } else {
-                          _focusNode.unfocus();
-                          setState(() => _mostrarEmojiPicker = true);
-                        }
-                      },
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildBarraRespuesta(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: esOscuro ? Colors.grey[900] : Colors.white,
+            border: const Border(top: BorderSide(color: Colors.black12)),
+          ),
+          child: SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: esOscuro ? Colors.white10 : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                    Expanded(
-                      child: RawKeyboardListener(
-                        focusNode: FocusNode(),
-                        onKey: (event) {
-                          if (event is RawKeyDownEvent && 
-                              event.logicalKey == LogicalKeyboardKey.enter && 
-                              !event.isShiftPressed) {
-                            _enviarMensaje();
-                          }
-                        },
-                        child: TextField(
-                          controller: _mensajeController,
-                          focusNode: _focusNode,
-                          maxLines: null,
-                          textInputAction: TextInputAction.newline,
-                          style: GoogleFonts.outfit(fontSize: 15),
-                          decoration: InputDecoration(
-                            hintText: 'Escribe un mensaje...',
-                            hintStyle: GoogleFonts.outfit(color: Colors.grey),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            _mostrarEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
+                            color: Colors.grey,
                           ),
-                          onSubmitted: (_) => _enviarMensaje(),
+                          onPressed: () {
+                            if (_mostrarEmojiPicker) {
+                              _focusNode.requestFocus();
+                            } else {
+                              _focusNode.unfocus();
+                              setState(() => _mostrarEmojiPicker = true);
+                            }
+                          },
                         ),
-                      ),
+                        Expanded(
+                          child: RawKeyboardListener(
+                            focusNode: FocusNode(),
+                            onKey: (event) {
+                              if (event is RawKeyDownEvent && 
+                                  event.logicalKey == LogicalKeyboardKey.enter && 
+                                  !event.isShiftPressed) {
+                                _enviarMensaje();
+                              }
+                            },
+                            child: TextField(
+                              controller: _mensajeController,
+                              focusNode: _focusNode,
+                              maxLines: null,
+                              textInputAction: TextInputAction.newline,
+                              style: GoogleFonts.outfit(fontSize: 15),
+                              decoration: InputDecoration(
+                                hintText: 'Escribe un mensaje...',
+                                hintStyle: GoogleFonts.outfit(color: Colors.grey),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              onSubmitted: (_) => _enviarMensaje(),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            BotonTactil(
-              onTap: _enviarMensaje,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFC35E34),
-                  shape: BoxShape.circle,
+                const SizedBox(width: 8),
+                BotonTactil(
+                  onTap: _enviarMensaje,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFC35E34),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  ),
                 ),
-                child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -670,12 +795,22 @@ class _PantallaChatState extends State<PantallaChat> {
             gridPadding: EdgeInsets.zero,
             buttonMode: emoji.ButtonMode.MATERIAL,
             backgroundColor: const Color(0xFFF2F2F2),
+            noRecents: const Text(
+              'No hay recientes',
+              style: TextStyle(fontSize: 16, color: Colors.black26),
+              textAlign: TextAlign.center,
+            ),
           ),
           categoryViewConfig: const emoji.CategoryViewConfig(
             initCategory: emoji.Category.RECENT,
             indicatorColor: Color(0xFFC35E34),
             iconColorSelected: Color(0xFFC35E34),
             backspaceColor: Color(0xFFC35E34),
+          ),
+          searchViewConfig: const emoji.SearchViewConfig(
+            backgroundColor: Color(0xFFF2F2F2),
+            buttonIconColor: Colors.grey,
+            hintText: 'Buscar emoji...',
           ),
           bottomActionBarConfig: const emoji.BottomActionBarConfig(
             buttonColor: Color(0xFFF2F2F2),
