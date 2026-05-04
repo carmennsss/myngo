@@ -51,6 +51,8 @@ class PersonalizacionChat(models.Model):
     color_burbuja_otro = models.CharField(max_length=50, null=True, blank=True)
     color_texto_mio = models.CharField(max_length=50, null=True, blank=True)
     color_texto_otro = models.CharField(max_length=50, null=True, blank=True)
+    color_nombre_mio = models.CharField(max_length=50, null=True, blank=True)
+    color_nombre_otro = models.CharField(max_length=50, null=True, blank=True)
     imagen_fondo_s3 = models.CharField(max_length=500, null=True, blank=True)
     forma_burbuja = models.CharField(max_length=50, default='redondeada')
     font_size = models.IntegerField(default=14)

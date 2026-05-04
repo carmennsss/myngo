@@ -7,6 +7,8 @@ class PersonalizacionChat {
   final String? colorBurbujaOtro;
   final String? colorTextoMio;
   final String? colorTextoOtro;
+  final String? colorNombreMio;
+  final String? colorNombreOtro;
   final String? imagenFondoS3;
   final String formaBurbuja;
   final int fontSize;
@@ -18,6 +20,8 @@ class PersonalizacionChat {
     this.colorBurbujaOtro,
     this.colorTextoMio,
     this.colorTextoOtro,
+    this.colorNombreMio,
+    this.colorNombreOtro,
     this.imagenFondoS3,
     this.formaBurbuja = 'redondeada',
     this.fontSize = 14,
@@ -31,6 +35,8 @@ class PersonalizacionChat {
       colorBurbujaOtro: json['color_burbuja_otro']?.toString(),
       colorTextoMio: json['color_texto_mio']?.toString(),
       colorTextoOtro: json['color_texto_otro']?.toString(),
+      colorNombreMio: json['color_nombre_mio']?.toString(),
+      colorNombreOtro: json['color_nombre_otro']?.toString(),
       imagenFondoS3: json['imagen_fondo_s3']?.toString(),
       formaBurbuja: json['forma_burbuja']?.toString() ?? 'redondeada',
       fontSize: int.tryParse(json['font_size']?.toString() ?? '') ?? 14,
@@ -44,6 +50,8 @@ class PersonalizacionChat {
     'color_burbuja_otro': colorBurbujaOtro,
     'color_texto_mio': colorTextoMio,
     'color_texto_otro': colorTextoOtro,
+    'color_nombre_mio': colorNombreMio,
+    'color_nombre_otro': colorNombreOtro,
     'imagen_fondo_s3': imagenFondoS3,
     'forma_burbuja': formaBurbuja,
     'font_size': fontSize,
