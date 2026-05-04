@@ -278,17 +278,7 @@ class _PantallaChatState extends State<PantallaChat> {
             ),
           ],
         ),
-        body: _estaCargando 
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
-          : Column(
-              children: [
-                Expanded(
-                  child: _buildListaMensajes(),
-                ),
-                _buildInputArea(),
-                if (_mostrarEmojiPicker) _buildEmojiPicker(),
-              ],
-            ),
+        body: _buildBody(),
       ),
     );
   }
@@ -429,11 +419,82 @@ class _PantallaChatState extends State<PantallaChat> {
     final texto = borrado ? 'Este mensaje fue eliminado' : (msg.contenido ?? '');
     final perso = _sala?.personalizacion;
     final forma = perso?.formaBurbuja ?? 'redondeada';
+    final estilo = perso?.estiloBurbuja ?? 'solido';
     final fontSize = (perso?.fontSize ?? 14).toDouble();
     
     final colorMio = _colorFromHex(perso?.colorBurbujaMio) ?? const Color(0xFFF28B50);
     final colorOtro = _colorFromHex(perso?.colorBurbujaOtro) ?? const Color(0xFFEEEEEE);
     
+    final colorNombreMio = _colorFromHex(perso?.colorNombreMio) ?? const Color(0xFFF28B50);
+    final colorNombreOtro = _colorFromHex(perso?.colorNombreOtro) ?? const Color(0xFF4A4440);
+    
+    final radius = forma == 'redondeada' ? 18.0 : 4.0;
+    
+    BoxDecoration deco;
+    switch (estilo) {
+      case 'cristal':
+        deco = BoxDecoration(
+          color: (esMio ? colorMio : colorOtro).withOpacity(0.4),
+          borderRadius: _getBorderRadius(esMio, radius),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        );
+        break;
+      case 'neon':
+        deco = BoxDecoration(
+          color: (esMio ? colorMio : colorOtro).withOpacity(0.1),
+          borderRadius: _getBorderRadius(esMio, radius),
+          border: Border.all(color: esMio ? colorMio : colorOtro, width: 2),
+          boxShadow: [BoxShadow(color: (esMio ? colorMio : colorOtro).withOpacity(0.3), blurRadius: 10, spreadRadius: 1)],
+        );
+        break;
+      case 'bosque':
+        deco = BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)]),
+          borderRadius: _getBorderRadius(esMio, radius),
+          border: Border.all(color: const Color(0xFF4CAF50), width: 1.5),
+        );
+        break;
+      case 'cyber':
+        deco = BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: _getBorderRadius(esMio, radius),
+          border: const Border(
+            top: BorderSide(color: Color(0xFF00E5FF), width: 2),
+            bottom: BorderSide(color: Color(0xFF00E5FF), width: 2),
+            left: BorderSide(color: Color(0xFF00E5FF), width: 8),
+          ),
+          boxShadow: [BoxShadow(color: const Color(0xFF00E5FF).withOpacity(0.3), blurRadius: 10)],
+        );
+        break;
+      case 'kawaii':
+        deco = BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFFF3E5F5), Color(0xFFE1BEE7)]),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.1), blurRadius: 10)],
+        );
+        break;
+      case 'aventura':
+        deco = BoxDecoration(
+          color: const Color(0xFFF5E6CA),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: const Color(0xFF8D6E63), width: 2),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), offset: const Offset(2, 2))],
+        );
+        break;
+      case 'retro':
+      default: // solido
+        deco = BoxDecoration(
+          color: esMio ? colorMio : colorOtro,
+          borderRadius: _getBorderRadius(esMio, radius),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2)],
+        );
+    }
+
+    final bubbleColor = esMio ? colorMio : colorOtro;
+    final textColor = estilo == 'neon' ? bubbleColor : (bubbleColor.computeLuminance() > 0.5 ? Colors.black : Colors.white);
+
     String displayName = '';
     if (!esMio && _sala != null) {
       try {
@@ -450,51 +511,134 @@ class _PantallaChatState extends State<PantallaChat> {
         child: Column(
           crossAxisAlignment: esMio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            if (!esMio && displayName.isNotEmpty) 
+            if (!esMio && displayName.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 2),
-                child: Text(displayName, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+                child: Text(
+                  displayName, 
+                  style: GoogleFonts.outfit(
+                    fontSize: 11, 
+                    fontWeight: FontWeight.bold, 
+                    color: colorNombreOtro
+                  )
+                ),
+              ),
+            if (esMio)
+              Padding(
+                padding: const EdgeInsets.only(right: 8, bottom: 2),
+                child: Text(
+                  'Tú', 
+                  style: GoogleFonts.outfit(
+                    fontSize: 11, 
+                    fontWeight: FontWeight.bold, 
+                    color: colorNombreMio
+                  )
+                ),
               ),
             GestureDetector(
               onLongPress: () => _mostrarMenuMensaje(msg),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: esMio ? colorMio : colorOtro,
-                  borderRadius: forma == 'redondeada' 
-                    ? BorderRadius.circular(18)
-                    : BorderRadius.circular(4),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2)],
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (msg.referenciaADetalle != null) 
-                      _buildCitaMensaje(msg.referenciaADetalle!, esMio),
-                    Text(
-                      texto,
-                      style: GoogleFonts.outfit(
-                        color: esMio ? Colors.white : Colors.black87,
-                        fontSize: fontSize,
-                        fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
-                      ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: deco,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (msg.referenciaADetalle != null) 
+                          _buildCitaMensaje(msg.referenciaADetalle!, esMio),
+                        Text(
+                          texto,
+                          style: GoogleFonts.inter(
+                            color: textColor,
+                            fontSize: fontSize,
+                            fontWeight: (estilo == 'neon' || estilo == 'robot') ? FontWeight.bold : FontWeight.normal,
+                            fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
+                          ),
+                        ),
+                        if (esMio && !borrado) ...[
+                          const SizedBox(height: 2),
+                          Icon(
+                            msg.leidoPorIds.isNotEmpty ? Icons.done_all : Icons.done,
+                            size: 14,
+                            color: estilo == 'neon' ? colorMio : (colorMio.computeLuminance() > 0.5 ? Colors.black54 : Colors.white70),
+                          ),
+                        ],
+                      ],
                     ),
-                    if (esMio && !borrado) ...[
-                      const SizedBox(height: 2),
-                      Icon(
-                        msg.leidoPorIds.isNotEmpty ? Icons.done_all : Icons.done,
-                        size: 14,
-                        color: msg.leidoPorIds.isNotEmpty ? Colors.blue[200] : Colors.white70,
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                  _buildDecoracionesBurbuja(estilo, esMio),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDecoracionesBurbuja(String estilo, bool esMio) {
+    switch (estilo) {
+      case 'bosque':
+        return Positioned(
+          top: -15,
+          left: esMio ? -10 : null,
+          right: !esMio ? -10 : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Text('🍃', style: TextStyle(fontSize: 18)),
+              Text('🌸', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        );
+      case 'cyber':
+        return Positioned(
+          top: 5,
+          right: esMio ? 5 : null,
+          left: !esMio ? 5 : null,
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(color: Color(0xFF00E5FF), shape: BoxShape.circle),
+          ),
+        );
+      case 'kawaii':
+        return Stack(
+          children: [
+            Positioned(top: -15, left: -5, child: const Text('✨', style: TextStyle(fontSize: 18))),
+            Positioned(bottom: -10, right: -5, child: const Text('🎀', style: TextStyle(fontSize: 22))),
+            Positioned(top: -5, right: 10, child: const Text('⭐', style: TextStyle(fontSize: 12))),
+          ],
+        );
+      case 'aventura':
+        return Positioned(
+          top: -18,
+          right: 0,
+          child: const Text('📜', style: TextStyle(fontSize: 24)),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  BorderRadius _getBorderRadius(bool esMio, double radius) {
+    if (esMio) {
+      return BorderRadius.only(
+        topLeft: Radius.circular(radius),
+        topRight: Radius.circular(radius),
+        bottomLeft: Radius.circular(radius),
+        bottomRight: const Radius.circular(4),
+      );
+    } else {
+      return BorderRadius.only(
+        topLeft: Radius.circular(radius),
+        topRight: Radius.circular(radius),
+        bottomRight: Radius.circular(radius),
+        bottomLeft: const Radius.circular(4),
+      );
+    }
   }
 
   Widget _buildCitaMensaje(Map<String, dynamic> cita, bool esMio) {
@@ -833,6 +977,75 @@ class _PantallaChatState extends State<PantallaChat> {
       debugPrint('Error parsing color $hex: $e');
       return null;
     }
+  }
+
+  Widget _buildBody() {
+    if (_estaCargando && _mensajes.isEmpty) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    }
+
+    final perso = _sala?.personalizacion;
+    final colorFondo = _colorFromHex(perso?.colorFondo) ?? Colors.white;
+    
+    // Gradientes predefinidos
+    final Map<String, List<Color>> gradientes = {
+      'sunset': [const Color(0xFFFF512F), const Color(0xFFDD2476)],
+      'ocean': [const Color(0xFF2193B0), const Color(0xFF6DD5ED)],
+      'forest': [const Color(0xFF11998E), const Color(0xFF38EF7D)],
+      'purple': [const Color(0xFF8E2DE2), const Color(0xFF4A00E0)],
+      'dark': [const Color(0xFF232526), const Color(0xFF414345)],
+      'peach': [const Color(0xFFED4264), const Color(0xFFFFEDBC)],
+      'lavender': [const Color(0xFFEECDA3), const Color(0xFFEF629F)],
+    };
+
+    final gradColors = perso?.gradienteFondo != null ? gradientes[perso!.gradienteFondo] : null;
+
+    return Stack(
+      children: [
+        // Fondo base
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: gradColors == null ? colorFondo : null,
+            gradient: gradColors != null ? LinearGradient(colors: gradColors, begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+          ),
+        ),
+        // Patrón geométrico
+        if (perso?.patronFondo != null)
+          Opacity(
+            opacity: 0.05,
+            child: _buildPatternBackground(perso!.patronFondo!),
+          ),
+        // Contenido
+        Column(
+          children: [
+            Expanded(child: _buildListaMensajes()),
+            _buildBarraRespuesta(),
+            _buildInputArea(),
+            if (_mostrarEmojiPicker) _buildEmojiPicker(),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPatternBackground(String id) {
+    IconData icon;
+    switch (id) {
+      case 'dots': icon = Icons.circle; break;
+      case 'stars': icon = Icons.star; break;
+      case 'triangles': icon = Icons.change_history; break;
+      case 'waves': icon = Icons.waves; break;
+      case 'lines': icon = Icons.reorder; break;
+      default: icon = Icons.circle;
+    }
+    
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6),
+      itemBuilder: (context, index) => Icon(icon, size: 40, color: Colors.white),
+    );
   }
 
   @override

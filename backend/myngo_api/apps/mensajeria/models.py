@@ -53,8 +53,11 @@ class PersonalizacionChat(models.Model):
     color_texto_otro = models.CharField(max_length=50, null=True, blank=True)
     color_nombre_mio = models.CharField(max_length=50, null=True, blank=True)
     color_nombre_otro = models.CharField(max_length=50, null=True, blank=True)
+    gradiente_fondo = models.CharField(max_length=200, null=True, blank=True) # Formato JSON o string de CSS
+    patron_fondo = models.CharField(max_length=50, null=True, blank=True) # ID del patrón
     imagen_fondo_s3 = models.CharField(max_length=500, null=True, blank=True)
     forma_burbuja = models.CharField(max_length=50, default='redondeada')
+    estilo_burbuja = models.CharField(max_length=50, default='solido') # solido, cristal, neon
     font_size = models.IntegerField(default=14)
     tema = models.CharField(max_length=20, default='claro')
     
