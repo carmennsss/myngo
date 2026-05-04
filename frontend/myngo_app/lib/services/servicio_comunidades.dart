@@ -42,7 +42,9 @@ class ServicioComunidades {
   Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda, List<String>? tags, int? pagina}) async {
     try {
       List<String> queryParts = [];
-      if (busqueda != null && busqueda.isNotEmpty) queryParts.add('search=$busqueda');
+      if (busqueda != null && busqueda.isNotEmpty) {
+        queryParts.add('search=${Uri.encodeComponent(busqueda)}');
+      }
       if (tags != null && tags.isNotEmpty) {
         queryParts.add('tags=${tags.join(',')}');
       }

@@ -169,12 +169,19 @@ class ServicioUsuarios {
     return obtenerDatosUsuario(id);
   }
 
-  /// Obtiene una lista de todos los usuarios registrados en la plataforma con paginación.
-  Future<RespuestaApi<List<Usuario>>> listarUsuarios({int? pagina}) async {
+  /// Obtiene una lista de todos los usuarios registrados en la plataforma con paginación y búsqueda.
+  Future<RespuestaApi<List<Usuario>>> listarUsuarios({int? pagina, String? busqueda}) async {
     try {
-      final query = pagina != null ? '?page=$pagina' : '';
+      String query = '';
+      if (pagina != null) query += 'page=$pagina';
+      if (busqueda != null && busqueda.isNotEmpty) {
+        query += (query.isEmpty ? '' : '&') + 'search=$busqueda';
+      }
+      
+      final url = query.isEmpty ? '$_urlUsuarios/datos/' : '$_urlUsuarios/datos/?$query';
+      
       final respuesta = await http.get(
-        Uri.parse('$_urlUsuarios/datos/$query'),
+        Uri.parse(url),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
 

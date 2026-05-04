@@ -202,16 +202,23 @@ class _PantallaChatState extends State<PantallaChat> {
         avatarUrl = _sala!.avatarS3;
       } else {
         // DM: Buscamos al otro usuario
+        // DM: Buscamos al otro usuario de forma segura
         final otroId = _sala!.otroUsuarioId;
-        final otroParticipante = _sala!.participantes.firstWhere(
-          (p) => p.usuarioId == otroId,
-          orElse: () => _sala!.participantes.firstWhere(
-            (p) => p.usuarioId != _miId,
-            orElse: () => _sala!.participantes.first,
-          ),
-        );
+        ParticipanteChat? otroParticipante;
         
-        avatarUrl = otroParticipante.usuario?.urlAvatar;
+        if (_sala!.participantes.isNotEmpty) {
+          try {
+            otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId == otroId);
+          } catch (_) {
+            try {
+              otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId != _miId);
+            } catch (_) {
+              otroParticipante = _sala!.participantes.first;
+            }
+          }
+        }
+        
+        avatarUrl = otroParticipante?.usuario?.urlAvatar;
         final estado = _estadosPresencia[otroId] ?? 'DESCONECTADO';
         subtitulo = estado == 'ACTIVO' ? 'En línea' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado');
       }

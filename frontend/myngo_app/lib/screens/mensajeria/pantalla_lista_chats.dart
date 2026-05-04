@@ -114,11 +114,14 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
 
   Map<String, String?> _datosInterlocutor(Map<String, dynamic> sala) {
     final miembros = (sala['miembros_detalle'] as List?) ?? [];
-    if (!sala['es_grupal'] && miembros.length == 2) {
-      final otro = miembros.firstWhere(
-        (m) => m['id'] != _miId,
-        orElse: () => miembros.first,
-      );
+    if (!sala['es_grupal'] && miembros.isNotEmpty) {
+      Map<String, dynamic>? otro;
+      try {
+        otro = miembros.firstWhere((m) => m['id'] != _miId);
+      } catch (_) {
+        otro = miembros.first;
+      }
+      
       sala['_otro_usuario_id'] = otro['id'];
       return {
         'nombre': '@${otro['nombre_usuario'] ?? sala['nombre']}',

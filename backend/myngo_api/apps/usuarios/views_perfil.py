@@ -24,6 +24,8 @@ class DatosUsuarios(generics.ListAPIView):
 
     serializer_class = UsuarioSerializer
     permission_classes = [AllowAny]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['nombre_usuario', 'email']
     pagination_class = PageNumberPagination
 
     def get_queryset(self):

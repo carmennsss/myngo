@@ -88,7 +88,10 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
       }
     } else {
       _paginaActualUsuarios = 1;
-      final respuesta = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
+      final respuesta = await _servicioUsuarios.listarUsuarios(
+        pagina: _paginaActualUsuarios,
+        busqueda: filtro,
+      );
       if (mounted) {
         if (respuesta.exito) {
           _usuariosOriginales = respuesta.datos ?? [];
@@ -134,7 +137,10 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     setState(() => _estaCargandoMas = true);
     
     _paginaActualUsuarios++;
-    final res = await _servicioUsuarios.listarUsuarios(pagina: _paginaActualUsuarios);
+    final res = await _servicioUsuarios.listarUsuarios(
+      pagina: _paginaActualUsuarios,
+      busqueda: _controladorBusqueda.text.isNotEmpty ? _controladorBusqueda.text : null,
+    );
     
     if (mounted) {
       setState(() {
