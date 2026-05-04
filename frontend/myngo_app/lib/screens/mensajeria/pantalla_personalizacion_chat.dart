@@ -156,6 +156,57 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                 colorBurbujaOtro: hex,
                 colorTextoMio: _perso.colorTextoMio,
                 colorTextoOtro: _perso.colorTextoOtro,
+                colorNombreMio: _perso.colorNombreMio,
+                colorNombreOtro: _perso.colorNombreOtro,
+                formaBurbuja: _perso.formaBurbuja,
+                fontSize: _perso.fontSize,
+                tema: _perso.tema,
+              ));
+            }),
+            const SizedBox(height: 32),
+            _buildSectionTitle('Colores de Nombres'),
+            const SizedBox(height: 16),
+            _buildColorPicker('Mi nombre', _perso.colorNombreMio, (hex) {
+              setState(() => _perso = PersonalizacionChat(
+                colorFondo: _perso.colorFondo,
+                colorBurbujaMio: _perso.colorBurbujaMio,
+                colorBurbujaOtro: _perso.colorBurbujaOtro,
+                colorTextoMio: _perso.colorTextoMio,
+                colorTextoOtro: _perso.colorTextoOtro,
+                colorNombreMio: hex,
+                colorNombreOtro: _perso.colorNombreOtro,
+                formaBurbuja: _perso.formaBurbuja,
+                fontSize: _perso.fontSize,
+                tema: _perso.tema,
+              ));
+            }),
+            const SizedBox(height: 16),
+            _buildColorPicker('Nombres de otros', _perso.colorNombreOtro, (hex) {
+              setState(() => _perso = PersonalizacionChat(
+                colorFondo: _perso.colorFondo,
+                colorBurbujaMio: _perso.colorBurbujaMio,
+                colorBurbujaOtro: _perso.colorBurbujaOtro,
+                colorTextoMio: _perso.colorTextoMio,
+                colorTextoOtro: _perso.colorTextoOtro,
+                colorNombreMio: _perso.colorNombreMio,
+                colorNombreOtro: hex,
+                formaBurbuja: _perso.formaBurbuja,
+                fontSize: _perso.fontSize,
+                tema: _perso.tema,
+              ));
+            }),
+            const SizedBox(height: 32),
+            _buildSectionTitle('Fondo del Chat'),
+            const SizedBox(height: 16),
+            _buildColorPicker('Color de fondo', _perso.colorFondo, (hex) {
+              setState(() => _perso = PersonalizacionChat(
+                colorFondo: hex,
+                colorBurbujaMio: _perso.colorBurbujaMio,
+                colorBurbujaOtro: _perso.colorBurbujaOtro,
+                colorTextoMio: _perso.colorTextoMio,
+                colorTextoOtro: _perso.colorTextoOtro,
+                colorNombreMio: _perso.colorNombreMio,
+                colorNombreOtro: _perso.colorNombreOtro,
                 formaBurbuja: _perso.formaBurbuja,
                 fontSize: _perso.fontSize,
                 tema: _perso.tema,
@@ -246,8 +297,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
   }
 
   Widget _buildPreview() {
+    final colorFondo = _colorFromHex(_perso.colorFondo) ?? Colors.white;
     final colorMio = _colorFromHex(_perso.colorBurbujaMio) ?? const Color(0xFFF28B50);
     final colorOtro = _colorFromHex(_perso.colorBurbujaOtro) ?? const Color(0xFFEEEEEE);
+    final colorNombreMio = _colorFromHex(_perso.colorNombreMio) ?? const Color(0xFFF28B50);
+    final colorNombreOtro = _colorFromHex(_perso.colorNombreOtro) ?? const Color(0xFF4A4440);
+    
     final borderRadius = _perso.formaBurbuja == 'redondeada' ? 20.0 : 4.0;
     
     // Obtener avatar del otro si es DM
@@ -263,7 +318,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorFondo,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: const Color(0xFFFBE9E0)),
         boxShadow: [
@@ -279,7 +334,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFFBE9E0).withOpacity(0.5),
+              color: (colorFondo.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -287,7 +342,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
               style: GoogleFonts.outfit(
                 fontSize: 9, 
                 fontWeight: FontWeight.w900, 
-                color: const Color(0xFFC35E34),
+                color: colorFondo.computeLuminance() > 0.5 ? const Color(0xFFC35E34) : Colors.white,
                 letterSpacing: 1.0,
               )
             ),
@@ -308,27 +363,39 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                   ),
                 ),
               Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: colorOtro,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(borderRadius),
-                      topRight: Radius.circular(borderRadius),
-                      bottomRight: Radius.circular(borderRadius),
-                      bottomLeft: const Radius.circular(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 2),
+                      child: Text(
+                        'Amigo', 
+                        style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: colorNombreOtro)
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    '¡Oye! ¿Has visto los nuevos estilos? 🐾', 
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFF4A4440), 
-                      fontSize: _perso.fontSize.toDouble(),
-                    )
-                  ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: colorOtro,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(borderRadius),
+                          topRight: Radius.circular(borderRadius),
+                          bottomRight: Radius.circular(borderRadius),
+                          bottomLeft: const Radius.circular(4),
+                        ),
+                      ),
+                      child: Text(
+                        '¡Oye! ¿Has visto los nuevos estilos? 🐾', 
+                        style: GoogleFonts.inter(
+                          color: colorOtro.computeLuminance() > 0.5 ? const Color(0xFF4A4440) : Colors.white, 
+                          fontSize: _perso.fontSize.toDouble(),
+                        )
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 40), // Espacio para que no ocupe todo
+              const SizedBox(width: 40),
             ],
           ),
           const SizedBox(height: 12),
@@ -339,25 +406,37 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
             children: [
               const SizedBox(width: 40),
               Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: colorMio,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(borderRadius),
-                      topRight: Radius.circular(borderRadius),
-                      bottomLeft: Radius.circular(borderRadius),
-                      bottomRight: const Radius.circular(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4, bottom: 2),
+                      child: Text(
+                        'Tú', 
+                        style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: colorNombreMio)
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    '¡Sí! Se ven increíbles. Voy a probar este. ✨', 
-                    style: GoogleFonts.inter(
-                      color: Colors.white, 
-                      fontSize: _perso.fontSize.toDouble(),
-                      fontWeight: FontWeight.w500,
-                    )
-                  ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: colorMio,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(borderRadius),
+                          topRight: Radius.circular(borderRadius),
+                          bottomLeft: Radius.circular(borderRadius),
+                          bottomRight: const Radius.circular(4),
+                        ),
+                      ),
+                      child: Text(
+                        '¡Sí! Se ven increíbles. Voy a probar este. ✨', 
+                        style: GoogleFonts.inter(
+                          color: colorMio.computeLuminance() > 0.5 ? Colors.black : Colors.white, 
+                          fontSize: _perso.fontSize.toDouble(),
+                          fontWeight: FontWeight.w500,
+                        )
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -433,6 +512,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
             colorBurbujaOtro: _perso.colorBurbujaOtro,
             colorTextoMio: _perso.colorTextoMio,
             colorTextoOtro: _perso.colorTextoOtro,
+            colorNombreMio: _perso.colorNombreMio,
+            colorNombreOtro: _perso.colorNombreOtro,
             formaBurbuja: value,
             fontSize: _perso.fontSize,
             tema: _perso.tema,
@@ -480,6 +561,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                     colorBurbujaOtro: _perso.colorBurbujaOtro,
                     colorTextoMio: _perso.colorTextoMio,
                     colorTextoOtro: _perso.colorTextoOtro,
+                    colorNombreMio: _perso.colorNombreMio,
+                    colorNombreOtro: _perso.colorNombreOtro,
                     formaBurbuja: _perso.formaBurbuja,
                     fontSize: v.toInt(),
                     tema: _perso.tema,
