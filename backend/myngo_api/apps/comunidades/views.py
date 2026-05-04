@@ -44,7 +44,7 @@ class ComunidadListCreate(generics.ListCreateAPIView):
 
     serializer_class = ComunidadSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['nombre', 'descripcion']
+    search_fields = ['nombre', 'descripcion', 'tags__nombre']
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = pagination.PageNumberPagination
 
@@ -59,8 +59,12 @@ class ComunidadListCreate(generics.ListCreateAPIView):
         queryset = Comunidad.objects.all()
 
         # Filtrado por tags (OR)
-        tags_list = self.request.query_params.getlist('tags')
-        if tags_list:
+        tags_param = self.request.query_params.get('tags')
+        if tags_param:
+            # Soportar tanto ?tags=a&tags=b como ?tags=a,b
+            tags_list = []
+            for t in self.request.query_params.getlist('tags'):
+                tags_list.extend(t.split(','))
             queryset = queryset.filter(tags__slug__in=tags_list).distinct()
 
         queryset = queryset.annotate(
@@ -247,6 +251,10 @@ class UnirseComunidad(APIView):
             )
         else:
             MiembrosComunidad.objects.create(usuario=usuario, comunidad=comunidad)
+            # UNIÓN AUTOMÁTICA AL CHAT GENERAL
+            sala_general = SalaChat.objects.filter(comunidad=comunidad, nombre__icontains='General').first()
+            if sala_general:
+                sala_general.miembros.add(usuario)
 
         mensaje = (
             'Te has unido a la comunidad'
@@ -288,6 +296,12 @@ class ResponderPeticionUnion(APIView):
             MiembrosComunidad.objects.get_or_create(
                 usuario=peticion.seguidor, comunidad=peticion.seguida_comunidad
             )
+            # UNIÓN AUTOMÁTICA AL CHAT GENERAL (Al aceptar petición)
+            comunidad = peticion.seguida_comunidad
+            sala_general = SalaChat.objects.filter(comunidad=comunidad, nombre__icontains='General').first()
+            if sala_general:
+                sala_general.miembros.add(peticion.seguidor)
+
             Notificacion.objects.create(
                 usuario=peticion.seguidor,
                 tipo='PETICION_ACEPTADA',

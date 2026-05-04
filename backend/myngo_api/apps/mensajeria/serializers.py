@@ -99,6 +99,7 @@ class SalaChatSerializer(serializers.ModelSerializer):
     ultimo_mensaje = serializers.SerializerMethodField()
     mensajes_no_leidos = serializers.SerializerMethodField()
     participantes_data = serializers.SerializerMethodField()
+    otro_usuario_id = serializers.SerializerMethodField()
     personalizacion = PersonalizacionChatSerializer(source='personalizacion_v2', read_only=True)
 
     class Meta:
@@ -107,8 +108,18 @@ class SalaChatSerializer(serializers.ModelSerializer):
             'id', 'nombre', 'es_grupal', 'es_publica', 'invite_token',
             'miembros', 'miembros_detalle', 'ultimo_mensaje',
             'mensajes_no_leidos', 'fecha_creacion', 'avatar_s3', 
-            'configuracion', 'participantes_data', 'personalizacion'
+            'configuracion', 'participantes_data', 'personalizacion',
+            'otro_usuario_id'
         ]
+
+    def get_otro_usuario_id(self, obj):
+        """Para DMs, obtiene el ID del interlocutor."""
+        if obj.es_grupal: return None
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            otro = obj.miembros.exclude(id=request.user.id).first()
+            return otro.id if otro else None
+        return None
 
     def get_participantes_data(self, obj):
         """Obtiene los participantes con sus apodos (usando el contexto para los personalizados)."""

@@ -35,7 +35,17 @@ class SeccionChatComunidad extends StatelessWidget {
       return comoSliver ? SliverFillRemaining(child: loading) : loading;
     }
 
-    final salasFiltradas = (salasChat ?? []).where((s) => s.esGrupal).toList();
+    // Buscamos cuál es la sala general para no repetirla en la lista de abajo
+    SalaChat? salaGeneral;
+    try {
+      salaGeneral = (salasChat ?? []).firstWhere((s) => s.nombre.toLowerCase().contains('general'));
+    } catch (_) {
+      try {
+        salaGeneral = (salasChat ?? []).firstWhere((s) => s.esGrupal);
+      } catch (_) {}
+    }
+
+    final salasFiltradas = (salasChat ?? []).where((s) => s.esGrupal && s.id != salaGeneral?.id).toList();
     final itemCount = (salasChat != null) ? salasFiltradas.length + 2 : 1;
 
     if (comoSliver) {
