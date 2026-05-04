@@ -135,16 +135,10 @@ class HeaderDetallePerfil extends StatelessWidget {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          if (marcoLocal != null && marcoLocal!.isNotEmpty)
-                            Positioned.fill(
-                              child: IgnorePointer(
-                                child: Image.network(marcoLocal!,
-                                    fit: BoxFit.contain),
-                              ),
-                            ),
+                          // 1. EL AVATAR (Capa inferior)
                           Container(
-                            width: 120,
-                            height: 120,
+                            width: 110, // Reducido un poco para que el marco respire
+                            height: 110,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.white,
@@ -172,13 +166,26 @@ class HeaderDetallePerfil extends StatelessWidget {
                                     child: Text(
                                       inicial,
                                       style: const TextStyle(
-                                        fontSize: 54,
+                                        fontSize: 50,
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF248EA6),
                                       ),
                                     ),
                                   ),
                           ),
+
+                          // 2. EL MARCO (Capa superior - Overlay)
+                          if (marcoLocal != null && marcoLocal!.isNotEmpty)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: Image.network(
+                                  marcoLocal!,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+
+                          // 3. INDICADOR DE ESTADO
                           _StatusIndicator(
                             usuario: usuario,
                             currentUserId: currentUserId,
