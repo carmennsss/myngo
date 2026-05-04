@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'package:mime/mime.dart';
 import '../providers/post_provider.dart';
 
 class DialogoCrearPost extends StatefulWidget {
@@ -102,9 +103,8 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                   spacing: 8,
                   runSpacing: 8,
                   children: _archivosSeleccionados.map((file) {
-                    final esVideo = file.name.toLowerCase().endsWith('.mp4') || 
-                                   file.name.toLowerCase().endsWith('.mov') ||
-                                   file.name.toLowerCase().endsWith('.avi');
+                    final mimeType = lookupMimeType(file.name) ?? (file.path.contains('video') ? 'video/mp4' : 'image/jpeg');
+                    final esVideo = mimeType.startsWith('video/');
                     return Stack(
                       children: [
                         Container(

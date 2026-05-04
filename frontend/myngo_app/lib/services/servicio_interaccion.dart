@@ -85,12 +85,15 @@ class ServicioInteraccion {
   }
 
   /// Publica un nuevo comentario en la plataforma.
-  Future<RespuestaApi<Comentario>> crearComentario(int publicacionId, String texto) async {
+  Future<RespuestaApi<Comentario>> crearComentario(int publicacionId, String texto, {int? padreId}) async {
     try {
       final respuesta = await http.post(
         Uri.parse('$_urlBase/publicaciones/$publicacionId/comentarios/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode({'contenido': texto}),
+        body: jsonEncode({
+          'contenido': texto,
+          if (padreId != null) 'padre': padreId,
+        }),
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 201) {

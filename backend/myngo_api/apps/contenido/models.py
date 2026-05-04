@@ -153,6 +153,7 @@ class Comentario(models.Model):
 
     publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE)
     autor = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    padre = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='respuestas')
     contenido = models.TextField()
     es_valido_ia = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)

@@ -441,21 +441,39 @@ class MeGustaSerializer(serializers.ModelSerializer):
 
 
 class ComentarioSerializer(serializers.ModelSerializer):
-    """Serializador de comentarios con metadatos del autor."""
+    """Serializador de comentarios con metadatos del autor y soporte para respuestas."""
 
     autor_nombre = serializers.SerializerMethodField()
     autor_foto = serializers.SerializerMethodField()
     autor_marco = serializers.SerializerMethodField()
     autor_fondo = serializers.SerializerMethodField()
+    respuestas = serializers.SerializerMethodField()
 
     class Meta:
         """Configuración del modelo y campos."""
         model = Comentario
         fields = [
             'id', 'publicacion', 'autor', 'autor_nombre', 'autor_foto',
-            'autor_marco', 'autor_fondo', 'contenido', 'fecha_creacion'
+            'autor_marco', 'autor_fondo', 'contenido', 'padre',
+            'respuestas', 'fecha_creacion'
         ]
         read_only_fields = ['autor', 'publicacion']
+
+    def get_respuestas(self, obj):
+        """Obtiene las respuestas anidadas del comentario.
+        
+        Args:
+            obj: Instancia de Comentario.
+            
+        Returns:
+            list: Lista de comentarios serializados.
+        """
+        # Solo serializamos respuestas para comentarios de primer nivel
+        # para evitar recursión infinita (aunque en Myngo solo permitimos 1 nivel extra)
+        if obj.padre is None:
+            respuestas = obj.respuestas.all().order_by('fecha_creacion')
+            return ComentarioSerializer(respuestas, many=True, context=self.context).data
+        return []
 
     def get_autor_nombre(self, obj):
         """Nombre de usuario del autor.

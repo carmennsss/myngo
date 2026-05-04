@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/publicacion.dart';
 import '../../models/comentario.dart';
 import '../../services/servicio_interaccion.dart';
@@ -26,6 +25,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
   final ServicioInteraccion _servicioInteraccion = ServicioInteraccion();
   final ServicioUsuarios _servicioUsuarios = ServicioUsuarios();
   final TextEditingController _comentarioController = TextEditingController();
+  final FocusNode _comentarioFocus = FocusNode();
 
   List<Comentario> _comentarios = [];
   bool _cargandoComentarios = true;
@@ -35,6 +35,8 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
   bool _mostrandoInputComentario = false;
   int _offset = 0;
   final int _limit = 10;
+
+  Comentario? _comentarioPadre;
 
   late bool _dioLike;
   late int _likesCount;
@@ -49,6 +51,13 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     _comentariosCount = widget.post.comentariosCount;
     _estaGuardado = widget.post.usuarioGuardoPost;
     _cargarComentarios(reiniciar: true);
+  }
+
+  @override
+  void dispose() {
+    _comentarioController.dispose();
+    _comentarioFocus.dispose();
+    super.dispose();
   }
 
   Future<void> _cargarComentarios({bool reiniciar = false}) async {
@@ -89,41 +98,6 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     }
   }
 
-  Future<void> _toggleLike() async {
-    final token = await _servicioUsuarios.obtenerToken();
-    if (token == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inicia sesión para dar like')),
-        );
-      }
-      return;
-    }
-
-    setState(() {
-      _dioLike = !_dioLike;
-      _likesCount += _dioLike ? 1 : -1;
-      widget.post.usuarioDioLike = _dioLike;
-      widget.post.likesCount = _likesCount;
-    });
-
-    final respuesta = await _servicioInteraccion.alternarMeGusta(widget.post.id);
-    
-    if (!respuesta.exito) {
-      if (mounted) {
-        setState(() {
-          _dioLike = !_dioLike;
-          _likesCount += _dioLike ? 1 : -1;
-          widget.post.usuarioDioLike = _dioLike;
-          widget.post.likesCount = _likesCount;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(respuesta.mensaje)),
-        );
-      }
-    }
-  }
-
   Future<void> _enviarComentario() async {
     if (_comentarioController.text.trim().isEmpty) return;
 
@@ -131,12 +105,19 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     final respuesta = await _servicioInteraccion.crearComentario(
       widget.post.id,
       _comentarioController.text.trim(),
+      padreId: _comentarioPadre?.id,
     );
 
     if (respuesta.exito && respuesta.datos != null) {
       setState(() {
-        _comentarios.insert(0, respuesta.datos!);
+        if (_comentarioPadre != null) {
+          // Si es respuesta, recargamos para verla anidada o la insertamos localmente
+          _cargarComentarios(reiniciar: true);
+        } else {
+          _comentarios.insert(0, respuesta.datos!);
+        }
         _comentarioController.clear();
+        _comentarioPadre = null;
         _mostrandoInputComentario = false;
         _enviandoComentario = false;
         _comentariosCount++;
@@ -152,34 +133,12 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     }
   }
 
-  Future<void> _mostrarMenuGuardado() async {
-    final token = await _servicioUsuarios.obtenerToken();
-    if (token == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inicia sesión para guardar contenido')),
-        );
-      }
-      return;
-    }
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => BottomSheetColecciones(
-        postId: widget.post.id,
-        estaGuardadoPost: _estaGuardado,
-        imagenId: widget.post.imagenId,
-        imagenUrl: widget.post.urlImagen,
-      ),
-    );
-    
-    if (mounted) {
-      setState(() {
-        _estaGuardado = widget.post.usuarioGuardoPost;
-      });
-    }
+  void _prepararRespuesta(Comentario padre) {
+    setState(() {
+      _comentarioPadre = padre;
+      _mostrandoInputComentario = true;
+    });
+    _comentarioFocus.requestFocus();
   }
 
   @override
@@ -197,7 +156,18 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 color: _dioLike ? Colors.red : widget.colorTexto.withOpacity(0.7),
                 label: _likesCount.toString(),
                 textColor: widget.colorTexto,
-                onTap: _toggleLike,
+                onTap: () async {
+                  final token = await _servicioUsuarios.obtenerToken();
+                  if (token == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inicia sesión para dar like')));
+                    return;
+                  }
+                  setState(() {
+                    _dioLike = !_dioLike;
+                    _likesCount += _dioLike ? 1 : -1;
+                  });
+                  await _servicioInteraccion.alternarMeGusta(widget.post.id);
+                },
               ),
               _ActionIcon(
                 icon: Icons.chat_bubble_outline_rounded,
@@ -207,6 +177,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 onTap: () {
                   setState(() {
                     _mostrandoInputComentario = !_mostrandoInputComentario;
+                    if (!_mostrandoInputComentario) _comentarioPadre = null;
                   });
                 },
               ),
@@ -216,7 +187,20 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 color: _estaGuardado ? const Color(0xFFF28B50) : widget.colorTexto.withOpacity(0.7),
                 label: '',
                 textColor: widget.colorTexto,
-                onTap: _mostrarMenuGuardado,
+                onTap: () async {
+                  await showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (ctx) => BottomSheetColecciones(
+                      postId: widget.post.id,
+                      estaGuardadoPost: _estaGuardado,
+                      imagenId: widget.post.imagenId,
+                      imagenUrl: widget.post.urlImagen,
+                    ),
+                  );
+                  setState(() => _estaGuardado = widget.post.usuarioGuardoPost);
+                },
               ),
             ],
           ),
@@ -225,37 +209,66 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
         if (_mostrandoInputComentario)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                if (_comentarioPadre != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: widget.colorTexto.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: widget.colorTexto.withOpacity(0.2)),
+                      color: const Color(0xFFF28B50).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: TextField(
-                      controller: _comentarioController,
-                      style: GoogleFonts.inter(color: widget.colorTexto, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: 'Añadir un comentario...',
-                        hintStyle: GoogleFonts.inter(color: widget.colorTexto.withOpacity(0.5), fontSize: 14),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      maxLines: null,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Respondiendo a @${_comentarioPadre!.autorNombre}',
+                          style: GoogleFonts.inter(color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () => setState(() => _comentarioPadre = null),
+                          child: const Icon(Icons.close, size: 14, color: Color(0xFFF28B50)),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                _enviandoComentario
-                    ? const SizedBox(width: 36, height: 36, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
-                    : IconButton(
-                        icon: const Icon(Icons.send_rounded, color: Color(0xFF248EA6)),
-                        onPressed: _enviarComentario,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: widget.colorTexto.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: widget.colorTexto.withOpacity(0.2)),
+                        ),
+                        child: TextField(
+                          controller: _comentarioController,
+                          focusNode: _comentarioFocus,
+                          style: GoogleFonts.inter(color: widget.colorTexto, fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: _comentarioPadre != null ? 'Escribe tu respuesta...' : 'Añadir un comentario...',
+                            hintStyle: GoogleFonts.inter(color: widget.colorTexto.withOpacity(0.5), fontSize: 14),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          maxLines: null,
+                        ),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    _enviandoComentario
+                        ? const SizedBox(width: 36, height: 36, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+                        : IconButton(
+                            icon: const Icon(Icons.send_rounded, color: Color(0xFF248EA6)),
+                            onPressed: _enviarComentario,
+                          ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -292,6 +305,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 comentario: _comentarios[index],
                 textColor: widget.colorTexto,
                 subTextColor: subColor,
+                onReply: _prepararRespuesta,
               );
             },
           ),

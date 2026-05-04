@@ -1,7 +1,7 @@
 /// Modelo que representa un comentario en una publicación.
 ///
 /// Incluye el contenido del comentario, metadatos del autor y la fecha
-/// de creación.
+/// de creación. Soportas respuestas anidadas.
 class Comentario {
   final int id;
   final int publicacionId;
@@ -11,6 +11,8 @@ class Comentario {
   final String? autorMarco;
   final String? autorFondo;
   final String contenido;
+  final int? padreId;
+  final List<Comentario> respuestas;
 
   /// Indica si el comentario ha pasado el filtro de seguridad de la IA.
   final bool esValidoIa;
@@ -26,6 +28,8 @@ class Comentario {
     this.autorMarco,
     this.autorFondo,
     required this.contenido,
+    this.padreId,
+    this.respuestas = const [],
     required this.esValidoIa,
     required this.fechaCreacion,
   });
@@ -41,6 +45,12 @@ class Comentario {
       autorMarco: json['autor_marco']?.toString(),
       autorFondo: json['autor_fondo']?.toString(),
       contenido: json['contenido']?.toString() ?? '',
+      padreId: json['padre'] != null ? int.tryParse(json['padre'].toString()) : null,
+      respuestas: json['respuestas'] != null
+          ? (json['respuestas'] as List)
+              .map((r) => Comentario.fromJson(r))
+              .toList()
+          : [],
       esValidoIa: json['es_valido_ia'] ?? true,
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.tryParse(json['fecha_creacion'].toString()) ??

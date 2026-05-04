@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../utils/configuracion.dart';
 import '../models/sala_chat.dart';
@@ -176,6 +178,40 @@ class ServicioMensajeria {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Sube una imagen para usarla como avatar de la sala.
+  Future<String?> subirAvatarSala(int idSala, dynamic imagen) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      final uri = Uri.parse('$_urlApi/mensajeria/salas/$idSala/actualizar/');
+      var solicitud = http.MultipartRequest('PATCH', uri);
+
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+
+      if (imagen is XFile) {
+        if (kIsWeb) {
+          final bytes = await imagen.readAsBytes();
+          solicitud.files.add(http.MultipartFile.fromBytes(
+            'avatar_s3',
+            bytes,
+            filename: imagen.name,
+            contentType: MediaType('image', 'jpeg'),
+          ));
+        } else {
+          solicitud.files.add(await http.MultipartFile.fromPath('avatar_s3', imagen.path));
+        }
+      }
+
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
+      final respuesta = await http.Response.fromStream(respuestaStream);
+
+      if (respuesta.statusCode == 200) {
+        final datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return datos['avatar_s3'];
+      }
+    } catch (_) {}
+    return null;
   }
 
   /// Establece un apodo personalizado (privado) para otro usuario en un chat.
