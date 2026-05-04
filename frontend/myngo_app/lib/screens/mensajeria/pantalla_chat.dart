@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as emoji;
 import 'package:flutter/foundation.dart' as foundation;
 import '../../utils/configuracion.dart';
 import '../../services/servicio_mensajeria.dart';
@@ -654,41 +654,33 @@ class _PantallaChatState extends State<PantallaChat> {
   Widget _buildEmojiPicker() {
     return SizedBox(
       height: 250,
-      child: EmojiPicker(
-        onEmojiSelected: (category, emoji) {
-          // El controlador se actualiza automáticamente si usamos el constructor por defecto de EmojiPicker
-          // Pero aquí lo hacemos manualmente para asegurar compatibilidad
-          _mensajeController.text = _mensajeController.text + emoji.emoji;
+      child: emoji.EmojiPicker(
+        onEmojiSelected: (category, emojiData) {
+          _mensajeController.text = _mensajeController.text + emojiData.emoji;
           _mensajeController.selection = TextSelection.fromPosition(
             TextPosition(offset: _mensajeController.text.length),
           );
         },
-        config: Config(
-          columns: 7,
-          emojiSizeMax: 32 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.30 : 1.0),
-          verticalSpacing: 0,
-          horizontalSpacing: 0,
-          gridPadding: EdgeInsets.zero,
-          initCategory: Category.RECENT,
-          bgColor: const Color(0xFFF2F2F2),
-          indicatorColor: const Color(0xFFC35E34),
-          iconColor: Colors.grey,
-          iconColorSelected: const Color(0xFFC35E34),
-          backspaceColor: const Color(0xFFC35E34),
-          skinToneDialogBgColor: Colors.white,
-          skinToneIndicatorColor: Colors.grey,
-          enableSkinTones: true,
-          recentTabBehavior: RecentTabBehavior.RECENT,
-          recentsLimit: 28,
-          noRecents: const Text(
-            'No Recents',
-            style: TextStyle(fontSize: 20, color: Colors.black26),
-            textAlign: TextAlign.center,
-          ), // Avoid empty recent tab
-          loadingIndicator: const SizedBox.shrink(), // Avoid automatic loading indicator
-          tabIndicatorAnimDuration: kTabScrollDuration,    
-          categoryIcons: const CategoryIcons(),
-          buttonMode: ButtonMode.MATERIAL,
+        config: emoji.Config(
+          emojiViewConfig: emoji.EmojiViewConfig(
+            columns: 7,
+            emojiSizeMax: 32 * (foundation.defaultTargetPlatform == TargetPlatform.iOS ? 1.30 : 1.0),
+            verticalSpacing: 0,
+            horizontalSpacing: 0,
+            gridPadding: EdgeInsets.zero,
+            buttonMode: emoji.ButtonMode.MATERIAL,
+            backgroundColor: const Color(0xFFF2F2F2),
+          ),
+          categoryViewConfig: const emoji.CategoryViewConfig(
+            initCategory: emoji.Category.RECENT,
+            indicatorColor: Color(0xFFC35E34),
+            iconColorSelected: Color(0xFFC35E34),
+            backspaceColor: Color(0xFFC35E34),
+          ),
+          bottomActionBarConfig: const emoji.BottomActionBarConfig(
+            buttonColor: Color(0xFFF2F2F2),
+            buttonIconColor: Colors.grey,
+          ),
         ),
       ),
     );
