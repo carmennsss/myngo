@@ -119,6 +119,16 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         )
 
 
+class SalaChatDetail(generics.RetrieveAPIView):
+    """Recupera los detalles de una sala de chat específica."""
+    serializer_class = SalaChatSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Aseguramos que el usuario solo pueda ver salas de las que es miembro
+        return SalaChat.objects.filter(miembros=self.request.user)
+
+
 class MensajesChatPagination(pagination.PageNumberPagination):
     page_size = 30
 
