@@ -50,30 +50,40 @@ class ComunidadSerializer(serializers.ModelSerializer):
         Si los datos vienen de un formulario (QueryDict), extraemos y limpiamos
         los campos que requieren procesamiento especial.
         """
-        from django.http import QueryDict
         import json
-
-        if isinstance(data, QueryDict):
+        
+        # Trabajamos sobre una copia mutable para no alterar el original de la request
+        if hasattr(data, 'copy'):
             data = data.copy()
+        else:
+            data = dict(data)
             
-            # 1. Parsear JSON de fondo si viene como string
-            if 'fondo_posts_config' in data:
-                val = data['fondo_posts_config']
-                if isinstance(val, str) and val.strip():
+        # 1. Parsear JSON de fondo si viene como string (común en multipart)
+        if 'fondo_posts_config' in data:
+            val = data['fondo_posts_config']
+            if isinstance(val, str):
+                val_stripped = val.strip()
+                if not val_stripped or val_stripped == 'null' or val_stripped == 'undefined':
+                    data['fondo_posts_config'] = None
+                else:
                     try:
-                        data['fondo_posts_config'] = json.loads(val)
+                        data['fondo_posts_config'] = json.loads(val_stripped)
                     except (ValueError, TypeError):
+                        # Si no es JSON válido, dejamos que DRF lance su propio error descriptivo
                         pass
-            
-            # 2. Manejo de booleanos en Multipart (vienen como strings "true"/"false")
-            for bool_field in ['es_publica', 'es_verificada', 'tienda_habilitada']:
-                if bool_field in data:
-                    val = str(data[bool_field]).lower()
-                    data[bool_field] = val == 'true'
+        
+        # 2. Manejo de booleanos en Multipart (vienen como strings "true"/"false")
+        for bool_field in ['es_publica', 'es_verificada', 'tienda_habilitada']:
+            if bool_field in data:
+                val = str(data[bool_field]).lower()
+                data[bool_field] = (val == 'true' or val == '1' or val == 'yes')
 
-            # 3. Los tags vienen como nombres, pero DRF espera PKs (IDs).
-            # Los eliminamos de la data de validación para procesarlos manualmente en create/update.
-            if 'tags' in data:
+        # 3. Los tags vienen como nombres, pero DRF espera PKs (IDs).
+        # Los eliminamos de la data de validación para procesarlos manualmente en create/update.
+        if 'tags' in data:
+            # Solo los quitamos si no son ya enteros (IDs válidos para DRF)
+            tags_val = data.get('tags')
+            if isinstance(tags_val, str) or (isinstance(tags_val, list) and len(tags_val) > 0 and isinstance(tags_val[0], str)):
                 data.pop('tags')
 
         return super().to_internal_value(data)

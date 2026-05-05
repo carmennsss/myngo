@@ -98,26 +98,22 @@ class HeaderDetallePerfil extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Fondo de pantalla (usa fondoPerfilLocal primero, luego fondoLocal como fallback)
+            // Fondo de pantalla (usa fondoPerfilLocal si existe, si no, deja ver el fondo global)
             if (fondoPerfilLocal != null && fondoPerfilLocal!.isNotEmpty)
               Image.network(
                 fondoPerfilLocal!,
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => Container(color: colorGradTop),
-              )
-            else if (fondoLocal != null && fondoLocal!.isNotEmpty)
-              Image.network(
-                fondoLocal!,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => Container(color: colorGradTop),
+                errorBuilder: (_, __, ___) => Container(color: Colors.transparent),
               )
             else
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [colorGradTop, colorGradTop.withOpacity(0.3)],
+                    colors: [
+                      colorGradTop.withOpacity(0.8),
+                      colorGradTop.withOpacity(0.2)
+                    ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),

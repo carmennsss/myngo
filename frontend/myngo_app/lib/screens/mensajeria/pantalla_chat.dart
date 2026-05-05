@@ -52,7 +52,6 @@ class _PantallaChatState extends State<PantallaChat> {
   
   // Estados de presencia
   Map<int, String> _estadosPresencia = {};
-  int _miembrosOnline = 0;
   
   bool _mostrarEmojiPicker = false;
   MensajeChat? _mensajeRespuesta;
@@ -73,7 +72,6 @@ class _PantallaChatState extends State<PantallaChat> {
     _miId = await ServicioUsuarios().obtenerIdUsuario();
     await _cargarDatos();
     _conectarWebSocket();
-    _conectarPresencia();
   }
 
   Future<void> _cargarDatos() async {
@@ -89,6 +87,11 @@ class _PantallaChatState extends State<PantallaChat> {
       if (_sala != null) {
         final msgsData = await _servicio.obtenerMensajesSala(_sala!.id);
         _mensajes = msgsData.map((m) => MensajeChat.fromJson(m)).toList();
+        
+        // Marcamos la sala como activa para que se limpien los no leídos
+        if (mounted) {
+          Provider.of<ChatProvider>(context, listen: false).setSalaActiva(_sala!.id);
+        }
       }
     } catch (e) {
       debugPrint('Error cargando chat: $e');
@@ -130,35 +133,6 @@ class _PantallaChatState extends State<PantallaChat> {
         }
       });
     });
-  }
-
-  void _conectarPresencia() {
-    _servicio.conectarPresencia((datos) {
-      if (!mounted) return;
-      if (datos['type'] == 'status_change') {
-        setState(() {
-          _estadosPresencia[datos['user_id']] = datos['status'];
-          _actualizarConteoOnline();
-        });
-      } else if (datos['type'] == 'presence_connection_established') {
-        final onlineUsers = List<int>.from(datos['online_users'] ?? []);
-        setState(() {
-          for (var id in onlineUsers) {
-            _estadosPresencia[id] = 'ACTIVO';
-          }
-          // Aseguramos que yo mismo salgo como activo si estoy conectado
-          if (_miId != null) _estadosPresencia[_miId!] = 'ACTIVO';
-          _actualizarConteoOnline();
-        });
-      }
-    });
-  }
-
-  void _actualizarConteoOnline() {
-    if (_sala == null) return;
-    _miembrosOnline = _sala!.participantes.where((p) => 
-      _estadosPresencia[p.usuarioId] == 'ACTIVO' || _estadosPresencia[p.usuarioId] == 'OCUPADO'
-    ).length;
   }
 
   void _enviarMensaje() async {
@@ -294,81 +268,85 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   Widget _buildAppBarTitle() {
-    final nombre = _sala?.nombre ?? widget.nombreSala ?? 'Chat';
-    String subtitulo = '';
-    String? avatarUrl;
-    bool esDM = _sala != null && !_sala!.esGrupal;
-    
-    if (_sala != null) {
-      if (_sala!.esGrupal) {
-        subtitulo = '${_sala!.participantes.length} miembros • $_miembrosOnline en línea';
-        avatarUrl = _sala!.avatarS3;
-      } else {
-        // DM: Buscamos al otro usuario
-        // DM: Buscamos al otro usuario de forma segura
-        final otroId = _sala!.otroUsuarioId;
-        ParticipanteChat? otroParticipante;
+    return Consumer<ChatProvider>(
+      builder: (context, chatProvider, _) {
+        final nombre = _sala?.nombre ?? widget.nombreSala ?? 'Chat';
+        String subtitulo = '';
+        String? avatarUrl;
+        bool esDM = _sala != null && !_sala!.esGrupal;
         
-        if (_sala!.participantes.isNotEmpty) {
-          try {
-            otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId == otroId);
-          } catch (_) {
-            try {
-              otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId != _miId);
-            } catch (_) {
-              otroParticipante = _sala!.participantes.first;
+        if (_sala != null) {
+          if (_sala!.esGrupal) {
+            final onlineCount = _sala!.participantes.where((p) => 
+              chatProvider.isUsuarioOnline(p.usuarioId)
+            ).length;
+            subtitulo = '${_sala!.participantes.length} miembros • $onlineCount en línea';
+            avatarUrl = _sala!.avatarS3;
+          } else {
+            final otroId = _sala!.otroUsuarioId;
+            final estado = chatProvider.getEstadoUsuario(otroId ?? 0);
+            subtitulo = estado == 'ACTIVO' ? 'En línea' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado');
+            
+            ParticipanteChat? otroParticipante;
+            if (_sala!.participantes.isNotEmpty) {
+              try {
+                otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId == otroId);
+              } catch (_) {
+                try {
+                  otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId != _miId);
+                } catch (_) {
+                  otroParticipante = _sala!.participantes.first;
+                }
+              }
             }
+            avatarUrl = otroParticipante?.usuario?.urlAvatar;
           }
         }
-        
-        avatarUrl = otroParticipante?.usuario?.urlAvatar;
-        final estado = _estadosPresencia[otroId] ?? 'DESCONECTADO';
-        subtitulo = estado == 'ACTIVO' ? 'En línea' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado');
-      }
-    }
 
-    return Row(
-      children: [
-        Stack(
+        return Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundImage: (avatarUrl != null)
-                ? CachedNetworkImageProvider(avatarUrl)
-                : null,
-              backgroundColor: const Color(0xFFF28B50).withOpacity(0.2),
-              child: (avatarUrl == null) 
-                ? Icon(esDM ? Icons.person_outline : Icons.chat_bubble_outline, 
-                    size: 20, color: const Color(0xFFF28B50)) 
-                : null,
-            ),
-            if (esDM && _sala != null)
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: _getColorEstado(_estadosPresencia[_sala!.otroUsuarioId] ?? 'DESCONECTADO'),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundImage: (avatarUrl != null)
+                    ? CachedNetworkImageProvider(avatarUrl)
+                    : null,
+                  backgroundColor: const Color(0xFFF28B50).withOpacity(0.2),
+                  child: (avatarUrl == null) 
+                    ? Icon(esDM ? Icons.person_outline : Icons.chat_bubble_outline, 
+                        size: 20, color: const Color(0xFFF28B50)) 
+                    : null,
                 ),
+                if (esDM && _sala != null)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: _getColorEstado(chatProvider.getEstadoUsuario(_sala!.otroUsuarioId ?? 0)),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(nombre, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(subtitulo, style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey)),
+                ],
               ),
+            ),
           ],
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(nombre, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text(subtitulo, style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey)),
-            ],
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -837,6 +815,11 @@ class _PantallaChatState extends State<PantallaChat> {
 
   @override
   void dispose() {
+    // Al salir de la pantalla, ya no hay sala activa
+    try {
+      Provider.of<ChatProvider>(context, listen: false).setSalaActiva(null);
+    } catch (_) {}
+    
     _mensajeController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();

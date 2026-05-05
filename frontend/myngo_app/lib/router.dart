@@ -78,7 +78,6 @@ final GoRouter appRouter = GoRouter(
       path: '/recuperar_contrasena',
       builder: (context, state) => const PantallaRecuperarContrasena(),
     ),
-    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return PantallaInicio(navigationShell: navigationShell);
@@ -89,7 +88,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/inicio',
-                builder: (context, state) {
+              builder: (context, state) {
                 return FeedPublicaciones(
                   onComunidadSelected: (c) => context.go('/inicio/comunidades/${c.nombre}', extra: c),
                   onProfileSelected: (u) => context.go('/inicio/perfiles/${u.nombreUsuario}', extra: u),
@@ -139,7 +138,7 @@ final GoRouter appRouter = GoRouter(
                 ),
                 GoRoute(
                   path: 'inventario',
-                  builder: (context, state) => const ProtectedRoute(
+                  builder: (context, state) => ProtectedRoute(
                     title: 'Mi Inventario',
                     child: PantallaPersonalizarPerfil(),
                   ),
@@ -234,7 +233,7 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/mensajes',
               builder: (context, state) {
-                return const ProtectedRoute(
+                return ProtectedRoute(
                   title: 'Tus Chats',
                   child: PantallaListaChats(),
                 );

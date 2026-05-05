@@ -188,7 +188,15 @@ def marcar_leidos(request, sala_id):
 @permission_classes([permissions.IsAuthenticated])
 def conteo_no_leidos(request):
     salas = SalaChat.objects.filter(miembros=request.user)
-    no_leidos = MensajeChat.objects.filter(sala__in=salas).exclude(leido_por=request.user).exclude(emisor=request.user)
+    no_leidos = MensajeChat.objects.filter(
+        sala__in=salas
+    ).exclude(
+        leido_por=request.user
+    ).exclude(
+        emisor=request.user
+    ).exclude(
+        tipo='SISTEMA'
+    )
     total = no_leidos.count()
     por_sala = no_leidos.values('sala_id').annotate(count=Count('id'))
     return Response({'total': total, 'por_sala': list(por_sala)})

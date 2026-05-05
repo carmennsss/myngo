@@ -62,8 +62,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             _puntos = u.puntos ?? 0;
             _previewAvatar = u.urlAvatar;
             _previewMarco = u.marco;
-            _previewFondo = u.fondo;
-            _previewFondoPerfil = u.fondoPerfil;
+            _previewFondo = u.fondo; // Banner
+            _previewFondoPerfil = u.fondoPerfil; // Feed
             _previewEstilo = u.estiloPost;
             _perfilId = u.perfilId;
           }
@@ -82,10 +82,9 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       } else if (t == 'marco') {
         _previewMarco = detalles['url_recurso'];
       } else if (t == 'fondo') {
-        // Por defecto actualizamos banner, pero si viene de equipar se maneja ahí
-        _previewFondo = detalles['url_recurso'];
-      } else if (t == 'fondo_feed') {
-        _previewFondoPerfil = detalles['url_recurso'];
+        _previewFondo = detalles['url_recurso']; // Banner
+      } else if (t == 'fondo_perfil' || t == 'banner') {
+        _previewFondoPerfil = detalles['url_recurso']; // Feed
       } else if (t.contains('estilo')) {
         _previewEstilo = detalles['datos_extra'];
       }

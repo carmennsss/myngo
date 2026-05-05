@@ -161,6 +161,19 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                 tema: _perso.tema,
               ));
             }),
+            const SizedBox(height: 16),
+            _buildColorPicker('Color de fondo del chat', _perso.colorFondo, (hex) {
+              setState(() => _perso = PersonalizacionChat(
+                colorFondo: hex,
+                colorBurbujaMio: _perso.colorBurbujaMio,
+                colorBurbujaOtro: _perso.colorBurbujaOtro,
+                colorTextoMio: _perso.colorTextoMio,
+                colorTextoOtro: _perso.colorTextoOtro,
+                formaBurbuja: _perso.formaBurbuja,
+                fontSize: _perso.fontSize,
+                tema: _perso.tema,
+              ));
+            }),
             const SizedBox(height: 32),
             _buildSectionTitle('Apariencia Visual'),
             const SizedBox(height: 16),
@@ -263,7 +276,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _colorFromHex(_perso.colorFondo) ?? Colors.white,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: const Color(0xFFFBE9E0)),
         boxShadow: [

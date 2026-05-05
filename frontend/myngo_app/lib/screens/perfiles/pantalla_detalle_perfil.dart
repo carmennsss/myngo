@@ -360,7 +360,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     }
 
     return material.Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       floatingActionButton: _currentUserId == _usuario!.id
           ? FloatingActionButton.extended(
               onPressed: _mostrarDialogoCrearPost,
@@ -371,108 +371,120 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                       fontWeight: FontWeight.bold, color: Colors.white)),
             )
           : null,
-      body: Scrollbar(
-        controller: _scrollController,
-        thumbVisibility: true,
-        thickness: 8,
-        radius: const Radius.circular(4),
-        child: NestedScrollView(
+      body: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          image: (_fondoPerfilLocal != null && _fondoPerfilLocal!.isNotEmpty)
+              ? DecorationImage(
+                  image: NetworkImage(_fondoPerfilLocal!),
+                  fit: BoxFit.cover,
+                  opacity: 0.6, // Un poco de opacidad para que se vea el contenido
+                )
+              : null,
+        ),
+        child: Scrollbar(
           controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            HeaderDetallePerfil(
-              usuario: _usuario!,
-              avatarLocal: _avatarLocal,
-              fondoLocal: _fondoLocal,
-              fondoPerfilLocal: _fondoPerfilLocal,
-              marcoLocal: _marcoLocal,
-              currentUserId: _currentUserId,
-              onEditarAvatar: _editarAvatar,
-              onEditarPerfil: _irAInventario,
-              onBack: widget.onBack ?? () => Navigator.pop(context),
-              esIntegrada: widget.esIntegrada,
-            ),
-            SliverToBoxAdapter(
-              child: InfoPerfil(
-                usuario: _usuario!,
-                currentUserId: _currentUserId,
-                biografiaLocal: _biografiaLocal,
-                estadoSeguimiento: _estadoSeguimiento,
-                isLoading: _isLoading,
-                rolEnComunidad: _rolEnComunidad,
-                ratingLocal: _ratingLocal,
-                haVotadoHoy: _haVotadoHoy,
-                tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
-                onManejarSeguimiento: _manejarSeguimiento,
-                onMostrarVoto: _mostrarSelectorVoto,
-                onEditarBio: _mostrarDialogoEditarBio,
-                onChat: _iniciarChat,
-              ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverTabsDelegate(
-                tabBar: TabBar(
-                  controller: _tabController,
-                  tabs: [
-                    const Tab(text: 'Posts'),
-                    Tab(text: _currentUserId == _usuario!.id ? 'Favoritos' : 'Colecciones'),
-                  ],
-                  labelStyle: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold, fontSize: 16),
-                  indicatorColor: const Color(0xFFF28B50),
+          thumbVisibility: true,
+          thickness: 8,
+          radius: const Radius.circular(4),
+          child: NestedScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                HeaderDetallePerfil(
+                  usuario: _usuario!,
+                  avatarLocal: _avatarLocal,
+                  fondoLocal: _fondoPerfilLocal,
+                  fondoPerfilLocal: _fondoLocal,
+                  marcoLocal: _marcoLocal,
+                  currentUserId: _currentUserId,
+                  onEditarAvatar: _editarAvatar,
+                  onEditarPerfil: _irAInventario,
+                  onBack: widget.onBack ?? () => Navigator.pop(context),
+                  esIntegrada: widget.esIntegrada,
                 ),
-              ),
+                SliverToBoxAdapter(
+                  child: InfoPerfil(
+                    usuario: _usuario!,
+                    currentUserId: _currentUserId,
+                    biografiaLocal: _biografiaLocal,
+                    estadoSeguimiento: _estadoSeguimiento,
+                    isLoading: _isLoading,
+                    rolEnComunidad: _rolEnComunidad,
+                    ratingLocal: _ratingLocal,
+                    haVotadoHoy: _haVotadoHoy,
+                    tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
+                    onManejarSeguimiento: _manejarSeguimiento,
+                    onMostrarVoto: _mostrarSelectorVoto,
+                    onEditarBio: _mostrarDialogoEditarBio,
+                    onChat: _iniciarChat,
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverTabsDelegate(
+                    tabBar: TabBar(
+                      controller: _tabController,
+                      tabs: [
+                        const Tab(text: 'Posts'),
+                        Tab(text: _currentUserId == _usuario!.id ? 'Favoritos' : 'Colecciones'),
+                      ],
+                      labelStyle: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                      indicatorColor: const Color(0xFFF28B50),
+                    ),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                SeccionPostsPerfil(
+                  publicaciones: _publicaciones,
+                  estaCargando: _cargandoPublicaciones,
+                  onRefresh: _cargarPublicaciones,
+                  onLoadMore: (pagina) async {
+                    final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
+                    return res.datos ?? [];
+                  },
+                ),
+                if (_currentUserId == _usuario!.id)
+                  SeccionGuardadosPerfil(
+                    publicaciones: _publicacionesGuardadas,
+                    colecciones: _misColecciones,
+                    estaCargando: _cargandoGuardados,
+                    estaCargandoColecciones: _cargandoColecciones,
+                    comunidadesFiltro: _comunidadesFiltro,
+                    filtroComunidadId: _filtroComunidadId,
+                    onFiltroChanged: (id) {
+                      setState(() => _filtroComunidadId = id);
+                      _cargarGuardados(comunidadId: id);
+                    },
+                    onRefresh: () => _cargarGuardados(force: true),
+                    onRefreshColecciones: () => _cargarColecciones(force: true),
+                    onLoadMore: (pagina) async {
+                      final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
+                        comunidadId: _filtroComunidadId,
+                        pagina: pagina,
+                      );
+                      return res.datos ?? [];
+                    },
+                  )
+                else
+                  SeccionColeccionesPerfil(
+                    colecciones: _misColecciones,
+                    estaCargando: _cargandoColecciones,
+                    onRefresh: () => _cargarColecciones(force: true),
+                    esPropietario: false,
+                  ),
+              ],
             ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            SeccionPostsPerfil(
-              publicaciones: _publicaciones,
-              estaCargando: _cargandoPublicaciones,
-              onRefresh: _cargarPublicaciones,
-              onLoadMore: (pagina) async {
-                final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
-                return res.datos ?? [];
-              },
-            ),
-            if (_currentUserId == _usuario!.id)
-              SeccionGuardadosPerfil(
-                publicaciones: _publicacionesGuardadas,
-                colecciones: _misColecciones,
-                estaCargando: _cargandoGuardados,
-                estaCargandoColecciones: _cargandoColecciones,
-                comunidadesFiltro: _comunidadesFiltro,
-                filtroComunidadId: _filtroComunidadId,
-                onFiltroChanged: (id) {
-                  setState(() => _filtroComunidadId = id);
-                  _cargarGuardados(comunidadId: id);
-                },
-                onRefresh: () => _cargarGuardados(force: true),
-                onRefreshColecciones: () => _cargarColecciones(force: true),
-                onLoadMore: (pagina) async {
-                  final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
-                    comunidadId: _filtroComunidadId,
-                    pagina: pagina,
-                  );
-                  return res.datos ?? [];
-                },
-              )
-            else
-              SeccionColeccionesPerfil(
-                colecciones: _misColecciones,
-                estaCargando: _cargandoColecciones,
-                onRefresh: () => _cargarColecciones(force: true),
-                esPropietario: false,
-              ),
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
 }
 
   // --- MÉTODOS DE ACCIÓN ---
@@ -658,7 +670,7 @@ class _SliverTabsDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.8),
       child: tabBar,
     );
   }
