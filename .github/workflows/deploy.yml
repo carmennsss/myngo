@@ -17,20 +17,24 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # Variables de entorno desde GitHub Secrets
+            # Instalar Node.js si no está presente (necesario para npx)
+            if ! command -v node &> /dev/null; then
+              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+              sudo apt install -y nodejs
+            fi
+
+            # Variables de entorno para Tolgee
             export TOLGEE_API_KEY="${{ secrets.TOLGEE_API_KEY }}"
-            export TOLGEE_PROJECT_ID="${{ secrets.TOLGEE_PROJECT_ID }}"
             export TOLGEE_API_URL="http://127.0.0.1:8085"
+            # Si tu proyecto Tolgee necesita projectId (opcional si usas sólo push/pull)
+            export TOLGEE_PROJECT_ID="${{ secrets.TOLGEE_PROJECT_ID }}"
 
-            # Autenticar Tolgee CLI (una sola vez por despliegue)
-            tolgee auth --apiKey "$TOLGEE_API_KEY"
-            tolgee config:set projectId "$TOLGEE_PROJECT_ID"
-            tolgee config:set apiUrl "$TOLGEE_API_URL"
-
-            # Tu deploy actual
+            # Actualizar código del backend (frontend no está aquí)
             cd /home/ubuntu/myngo
             git fetch origin
             git reset --hard origin/main
+
+            # Backend Django
             cd backend/myngo_api
             source venv/bin/activate
             pip install -r requirements.txt
@@ -38,7 +42,9 @@ jobs:
             python manage.py collectstatic --noinput
             sudo systemctl restart daphne
 
-            # Ejecutar tu script de sincronización
+            # Sincronizar traducciones (solo backend)
             cd /home/ubuntu/myngo
             chmod +x ./sync_translations.sh
-            ./sync_translations.sh
+            # Normalmente después del deploy quieres traer las últimas traducciones:
+            ./sync_translations.sh pull
+            # Si en cambio subes cambios desde el backend (raro en CI), usar push
