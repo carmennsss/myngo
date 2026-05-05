@@ -259,6 +259,19 @@ class ServicioMensajeria {
     }
   }
 
+  Future<bool> editarMensaje(int mensajeId, String nuevoContenido) async {
+    try {
+      final respuesta = await http.patch(
+        Uri.parse('$_urlApi/mensajeria/mensajes/$mensajeId/editar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'contenido': nuevoContenido}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // --- WEBSOCKETS ---
 
   void conectarASala(int idSala, Function(Map<String, dynamic>) alRecibirMensaje, {VoidCallback? alConectar}) {

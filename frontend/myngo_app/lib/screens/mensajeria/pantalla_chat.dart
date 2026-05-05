@@ -56,6 +56,7 @@ class _PantallaChatState extends State<PantallaChat> {
   
   bool _mostrarEmojiPicker = false;
   MensajeChat? _mensajeRespuesta;
+  MensajeChat? _mensajeEdicion;
   final FocusNode _focusNode = FocusNode();
 
   @override
@@ -140,17 +141,24 @@ class _PantallaChatState extends State<PantallaChat> {
     final texto = _mensajeController.text.trim();
     if (texto.isEmpty || _sala == null) return;
     
+    final edicionId = _mensajeEdicion?.id;
+    final respuestaId = _mensajeRespuesta?.id;
+
     _mensajeController.clear();
-    setState(() => _mostrarEmojiPicker = false);
+    setState(() {
+      _mostrarEmojiPicker = false;
+      _mensajeRespuesta = null;
+      _mensajeEdicion = null;
+    });
     
     try {
-      _servicio.enviarMensajeChat(
-        texto, 
-        referenciaA: _mensajeRespuesta?.id,
-      );
-      
-      if (mounted) {
-        setState(() => _mensajeRespuesta = null);
+      if (edicionId != null) {
+        await _servicio.editarMensaje(edicionId, texto);
+      } else {
+        _servicio.enviarMensajeChat(
+          texto, 
+          referenciaA: respuestaId,
+        );
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -158,12 +166,15 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   Widget _buildBarraRespuesta() {
-    if (_mensajeRespuesta == null) return const SizedBox.shrink();
+    if (_mensajeRespuesta == null && _mensajeEdicion == null) return const SizedBox.shrink();
+
+    final esEdicion = _mensajeEdicion != null;
+    final msg = esEdicion ? _mensajeEdicion! : _mensajeRespuesta!;
 
     String emisorNombre = 'Usuario';
     if (_sala != null) {
       try {
-        final part = _sala!.participantes.firstWhere((p) => p.usuarioId == _mensajeRespuesta!.emisorId);
+        final part = _sala!.participantes.firstWhere((p) => p.usuarioId == msg.emisorId);
         emisorNombre = part.nombreAMostrar;
       } catch (_) {}
     }
@@ -171,8 +182,8 @@ class _PantallaChatState extends State<PantallaChat> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        border: const Border(left: BorderSide(color: Color(0xFFC35E34), width: 4)),
+        color: esEdicion ? Colors.blue.withOpacity(0.1) : Colors.grey[200],
+        border: Border(left: BorderSide(color: esEdicion ? Colors.blue : const Color(0xFFC35E34), width: 4)),
       ),
       child: Row(
         children: [
@@ -182,15 +193,15 @@ class _PantallaChatState extends State<PantallaChat> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Respondiendo a $emisorNombre',
+                  esEdicion ? 'Editando mensaje' : 'Respondiendo a $emisorNombre',
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFC35E34),
+                    color: esEdicion ? Colors.blue : const Color(0xFFC35E34),
                   ),
                 ),
                 Text(
-                  _mensajeRespuesta!.contenido ?? 'Archivo',
+                  msg.contenido ?? 'Archivo',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.outfit(fontSize: 13, color: Colors.black54),
@@ -200,7 +211,11 @@ class _PantallaChatState extends State<PantallaChat> {
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 20),
-            onPressed: () => setState(() => _mensajeRespuesta = null),
+            onPressed: () => setState(() {
+              _mensajeRespuesta = null;
+              _mensajeEdicion = null;
+              if (esEdicion) _mensajeController.clear();
+            }),
           ),
         ],
       ),
@@ -813,7 +828,19 @@ class _PantallaChatState extends State<PantallaChat> {
                   _focusNode.requestFocus();
                 },
               ),
-              if (esMio) ...[
+              if (esMio && msg.tipo != 'SISTEMA') ...[
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Editar mensaje'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _mensajeEdicion = msg;
+                      _mensajeController.text = msg.contenido ?? '';
+                    });
+                    _focusNode.requestFocus();
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.info_outline),
                   title: const Text('Info del mensaje'),
@@ -855,7 +882,7 @@ class _PantallaChatState extends State<PantallaChat> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('Info del mensaje', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: SizedBox(
@@ -899,7 +926,10 @@ class _PantallaChatState extends State<PantallaChat> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext), 
+            child: const Text('Cerrar')
+          ),
         ],
       ),
     );
@@ -1152,6 +1182,7 @@ class _PantallaChatState extends State<PantallaChat> {
     }
     
     return GridView.builder(
+      itemCount: 100,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6),
       itemBuilder: (context, index) => Icon(icon, size: 40, color: Colors.white),
