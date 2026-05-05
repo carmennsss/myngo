@@ -7,6 +7,7 @@ import '../../services/servicio_usuarios.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/boton_idioma.dart';
+import 'package:tolgee/tolgee.dart';
 
 class PantallaLogin extends StatefulWidget {
   const PantallaLogin({super.key});
@@ -33,168 +34,170 @@ class _PantallaLoginState extends State<PantallaLogin> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onHover: (evento) {
-        setState(() {
-          _posicionMouse = evento.position;
-        });
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFEF5F1),
-        body: ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-          child: SizedBox.expand(
-            child: Container(
-              color: const Color(0xFFFEF5F1),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Stack(
-                    children: [
-                      _buildContenido(context, constraints),
-                      const Positioned(
-                        top: 20,
-                        right: 20,
-                        child: BotonIdioma(),
-                      ),
-                    ],
-                  );
-                },
+    return TranslationWidget(
+      builder: (context, tr) {
+        return MouseRegion(
+          onHover: (evento) {
+            setState(() {
+              _posicionMouse = evento.position;
+            });
+          },
+          child: Scaffold(
+            backgroundColor: const Color(0xFFFEF5F1),
+            body: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SizedBox.expand(
+                child: Container(
+                  color: const Color(0xFFFEF5F1),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Stack(
+                        children: [
+                          _buildContenido(context, constraints, tr),
+                          const Positioned(
+                            top: 20,
+                            right: 20,
+                            child: BotonIdioma(),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContenido(BuildContext context, BoxConstraints constraints, dynamic tr) {
+    final isDesktop = constraints.maxWidth > 900;
+    
+    if (isDesktop) {
+      return Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFC35E34).withOpacity(0.02),
+                border: Border(right: BorderSide(color: const Color(0xFFC35E34).withOpacity(0.05))),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    top: 40,
+                    left: 60,
+                    child: _BurbujaDecorativa(size: 180, color: const Color(0xFF248EA6).withOpacity(0.08)),
+                  ),
+                  Positioned(
+                    bottom: 100,
+                    right: 80,
+                    child: _BurbujaDecorativa(size: 240, color: const Color(0xFFC35E34).withOpacity(0.08)),
+                  ),
+                  Positioned(
+                    top: 200,
+                    right: 40,
+                    child: _BurbujaDecorativa(size: 120, color: const Color(0xFFF29C50).withOpacity(0.05)),
+                  ),
+                  
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 48.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC35E34).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.pets, color: Color(0xFFC35E34), size: 48),
+                        ),
+                        const SizedBox(height: 32),
+                        GatosAnimados(
+                          estado: _estadoGatos,
+                          ratioMirada: _ratioMirada,
+                          posicionMouseGlobal: _posicionMouse,
+                        ),
+                        const SizedBox(height: 32),
+                        Text(
+                          'MYNGO',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFFC35E34),
+                            fontSize: 64,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 8.0,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: TarjetaLogin(
+                    posicionMouse: _posicionMouse,
+                    onGatosChange: _onGatosChange,
+                    tr: tr,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Center(
+      child: SingleChildScrollView(
+        primary: false,
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.pets, color: Color(0xFFC35E34), size: 32),
+                  const SizedBox(width: 12),
+                  Text(
+                    'MYNGO',
+                    style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 2),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              GatosAnimados(
+                estado: _estadoGatos,
+                ratioMirada: _ratioMirada,
+                posicionMouseGlobal: _posicionMouse,
+              ),
+              const SizedBox(height: 32),
+              TarjetaLogin(
+                posicionMouse: _posicionMouse,
+                onGatosChange: _onGatosChange,
+                tr: tr,
+              ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildContenido(BuildContext context, BoxConstraints constraints) {
-    final isDesktop = constraints.maxWidth > 900;
-    
-    if (isDesktop) {
-                    return Row(
-                      children: [
-                        // Lado Izquierdo: Visual/Fun Premium
-                        Expanded(
-                          flex: 4,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFC35E34).withOpacity(0.02),
-                              border: Border(right: BorderSide(color: const Color(0xFFC35E34).withOpacity(0.05))),
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Positioned(
-                                  top: 40,
-                                  left: 60,
-                                  child: _BurbujaDecorativa(size: 180, color: const Color(0xFF248EA6).withOpacity(0.08)),
-                                ),
-                                Positioned(
-                                  bottom: 100,
-                                  right: 80,
-                                  child: _BurbujaDecorativa(size: 240, color: const Color(0xFFC35E34).withOpacity(0.08)),
-                                ),
-                                Positioned(
-                                  top: 200,
-                                  right: 40,
-                                  child: _BurbujaDecorativa(size: 120, color: const Color(0xFFF29C50).withOpacity(0.05)),
-                                ),
-                                
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 48.0),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(24),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFC35E34).withOpacity(0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.pets, color: Color(0xFFC35E34), size: 48),
-                                      ),
-                                      const SizedBox(height: 32),
-                                      // Los Gatos a la izquierda
-                                      GatosAnimados(
-                                        estado: _estadoGatos,
-                                        ratioMirada: _ratioMirada,
-                                        posicionMouseGlobal: _posicionMouse,
-                                      ),
-                                      const SizedBox(height: 32),
-                                      Text(
-                                        'MYNGO',
-                                        style: GoogleFonts.outfit(
-                                          color: const Color(0xFFC35E34),
-                                          fontSize: 64,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 8.0,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 32),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Lado Derecho: Formulario
-                        Expanded(
-                          flex: 5,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 460),
-                                child: TarjetaLogin(
-                                  posicionMouse: _posicionMouse,
-                                  onGatosChange: _onGatosChange,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-    
-                  // Vista Móvil
-                  return Center(
-                    child: SingleChildScrollView(
-                      primary: false,
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 420),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.pets, color: Color(0xFFC35E34), size: 32),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'MYNGO',
-                                  style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 2),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            GatosAnimados(
-                              estado: _estadoGatos,
-                              ratioMirada: _ratioMirada,
-                              posicionMouseGlobal: _posicionMouse,
-                            ),
-                            const SizedBox(height: 32),
-                            TarjetaLogin(
-                              posicionMouse: _posicionMouse,
-                              onGatosChange: _onGatosChange,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
   }
 }
 
@@ -223,13 +226,12 @@ class _BurbujaDecorativa extends StatelessWidget {
   }
 }
 
-/// Componente visual principal que contiene el formulario de inicio de sesión.
 class TarjetaLogin extends StatefulWidget {
-  /// Posición del ratón para sincronizar la mirada de los gatos.
   final Offset posicionMouse;
   final Function(EstadoMonstruo, double)? onGatosChange;
+  final dynamic tr;
   
-  const TarjetaLogin({super.key, this.posicionMouse = Offset.zero, this.onGatosChange});
+  const TarjetaLogin({super.key, this.posicionMouse = Offset.zero, this.onGatosChange, required this.tr});
 
   @override
   State<TarjetaLogin> createState() => _TarjetaLoginState();
@@ -241,23 +243,12 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   final _controladorEmail = TextEditingController();
   final _controladorPassword = TextEditingController();
 
-  /// Estado observable para manejar la visibilidad del indicador de carga.
   final _estaCargando = ValueNotifier<bool>(false);
   final _llaveFormulario = GlobalKey<FormState>();
-  
-  /// Instancia del servicio para la autenticación con el backend.
   final _servicioUsuarios = ServicioUsuarios();
-
-  /// Estado actual que determina la animación y expresión de los gatos.
   EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
-
-  /// Factor que suaviza el movimiento de la mirada de los gatos (0.0 a 1.0).
   double _ratioMirada = 0.5;
-
-  /// Controla la visibilidad enmascarada del campo de contraseña.
   bool _esPasswordVisible = false;
-
-  /// Estado de la casilla "Recuérdame"
   bool _recordarme = false;
 
   @override
@@ -272,7 +263,6 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   Future<void> _checkExistingTokenAndRedirect() async {
     final token = await _servicioUsuarios.obtenerToken();
     if (token != null && mounted) {
-      // Si ya hay token, vamos directo a inicio
       context.go('/inicio');
     }
   }
@@ -311,7 +301,6 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     super.dispose();
   }
 
-  /// Gestiona el cambio de estado de los gatos al enfocar los campos de texto.
   void _alCambiarEnfoque() {
     if (_nodoEnfoquePassword.hasFocus) {
       _estadoGatos = _esPasswordVisible ? EstadoMonstruo.escondido : EstadoMonstruo.mirando;
@@ -329,7 +318,6 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     widget.onGatosChange?.call(_estadoGatos, _ratioMirada);
   }
 
-  /// Alterna la visibilidad del texto en el campo de contraseña.
   void _alCambiarVisibilidadPassword(bool esVisible) {
     setState(() {
       _esPasswordVisible = esVisible;
@@ -340,7 +328,6 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
-  /// Calcula el ratio de la mirada según la longitud del texto ingresado.
   void _actualizarPosicionMirada(String valor) {
     if (_nodoEnfoqueEmail.hasFocus) {
       setState(() {
@@ -350,7 +337,6 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
-  /// Procesa el intento de inicio de sesión conectando con el servicio de usuarios.
   Future<void> _iniciarSesion() async {
     _nodoEnfoqueEmail.unfocus();
     _nodoEnfoquePassword.unfocus();
@@ -428,7 +414,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Error de conexión. Inténtalo de nuevo.'),
+            content: Text(widget.tr('authConnectionError')),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -503,7 +489,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
               child: Column(
                 children: [
                   CampoTextoPersonalizado(
-                    etiqueta: 'Email',
+                    etiqueta: widget.tr('formEmailLabel'),
                     icono: Icons.alternate_email_rounded,
                     controlador: _controladorEmail,
                     nodoEnfoque: _nodoEnfoqueEmail,
@@ -512,13 +498,13 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                     autofillHints: const [AutofillHints.email],
                     validador: (valor) {
                       if (valor == null || valor.isEmpty) return '¿Tu email? 🐾';
-                      if (!valor.contains('@')) return 'Email no válido';
+                      if (!valor.contains('@')) return widget.tr('errorInvalidEmail');
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   CampoTextoPersonalizado(
-                    etiqueta: 'Contraseña',
+                    etiqueta: widget.tr('formPasswordLabel'),
                     icono: Icons.lock_open_rounded,
                     controlador: _controladorPassword,
                     nodoEnfoque: _nodoEnfoquePassword,
@@ -561,9 +547,9 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pushNamed(context, '/recuperar_contrasena'),
+                  onPressed: () => context.push('/recuperar_contrasena'),
                   style: TextButton.styleFrom(foregroundColor: const Color(0xFFF29C50)),
-                  child: const Text('¿Perdiste tu clave?'),
+                  child: Text(widget.tr('authForgotPassword')),
                 ),
               ],
             ),
@@ -578,15 +564,15 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '¿No eres parte?',
+                  widget.tr('authRegisterLink'),
                   style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
                 ),
                 TextButton(
                   onPressed: () => context.push('/registro'),
-                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF28B50)),
-                  child: const Text(
-                    'Únete ahora',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF29C50)),
+                  child: Text(
+                    widget.tr('authRegisterButton').replaceAll(' 🐾', ''),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
               ],
@@ -597,4 +583,3 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     );
   }
 }
-

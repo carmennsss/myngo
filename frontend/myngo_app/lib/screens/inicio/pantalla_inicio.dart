@@ -13,6 +13,7 @@ import '../../services/servicio_mensajeria.dart';
 import '../../providers/chat_provider.dart';
 import '../../utils/mejoras_notifier.dart';
 import 'package:provider/provider.dart';
+import 'package:tolgee/tolgee.dart';
 import '../comunidades/pantalla_comunidades.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
 import '../explorar/pantalla_explorar.dart';
@@ -24,7 +25,6 @@ import '../galeria/pantalla_mis_cosas.dart';
 import '../../widgets/comunes/vista_requerir_login.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../models/publicacion.dart';
-// Widgets de inicio
 import '../../widgets/inicio/cabecera_pro.dart';
 import '../../widgets/inicio/sidebar_izquierdo.dart';
 import '../../widgets/inicio/feed_publicaciones.dart';
@@ -84,7 +84,6 @@ class PantallaInicioState extends State<PantallaInicio> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     
-    // Cargar orden local primero para evitar saltos visuales
     final ordenLocalString = prefs.getString('orden_comunidades_local');
     if (ordenLocalString != null && ordenLocalString.isNotEmpty) {
       try {
@@ -107,17 +106,14 @@ class PantallaInicioState extends State<PantallaInicio> {
           _puntos = resDatos.datos!.puntos;
           _miEstado = resDatos.datos!.estado ?? 'DESCONECTADO';
           
-          // Sincronizar ID con el provider de chat
           context.read<ChatProvider>().setUserId(_miId);
           
-          // El orden del servidor tiene prioridad si no está vacío
           if (resDatos.datos!.ordenComunidades.isNotEmpty) {
             _ordenGuardado = resDatos.datos!.ordenComunidades;
             prefs.setString('orden_comunidades_local', _ordenGuardado.join(','));
           }
         });
 
-        // Cargar chats recientes para el sidebar
         _cargarChatsRecientes();
         
         _servicioChat.conectarPresencia((datos) {
@@ -178,7 +174,6 @@ class PantallaInicioState extends State<PantallaInicio> {
   }
 
   Future<void> _cargarRanking() async {
-    setState(() => _cargandoRanking = true);
     final res = await ServicioUsuarios().obtenerRanking();
     if (mounted) {
       setState(() {
@@ -333,11 +328,9 @@ class PantallaInicioState extends State<PantallaInicio> {
       _ordenGuardado = _misComunidades!.map((c) => c.id).toList();
     });
 
-    // Guardar localmente de inmediato para que sea persistente ante recargas rápidas
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('orden_comunidades_local', _ordenGuardado.join(','));
 
-    // Guardar en el servidor de forma asíncrona
     if (_miPerfilId != null) {
       try {
         await ServicioUsuarios().actualizarOrdenComunidades(_miPerfilId!, _ordenGuardado);
@@ -349,101 +342,106 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      drawer: isMobile && _estaLogueado ? _construirDrawerMobile() : null,
-      body: Column(
-        children: [
-          CabeceraPro(
-            estaLogueado: _estaLogueado,
-            nombreUsuario: _miNombre,
-            avatarUrl: _miAvatar,
-            marcoUrl: _miMarco,
-            miId: _miId,
-            estado: _miEstado,
-            indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
-            puntos: _puntos,
-            notificacionesSinLeer: _notificacionesSinLeer,
-            mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
-            onNavSelected: _alPulsarNav,
-            onProfileSelected: _seleccionarUsuario,
-            onStatusChanged: cambiarEstado,
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return TranslationWidget(
+      builder: (context, tr) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isMobile = screenWidth < 800;
+
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          drawer: isMobile && _estaLogueado ? _construirDrawerMobile(tr) : null,
+          body: Column(
+            children: [
+              CabeceraPro(
+                estaLogueado: _estaLogueado,
+                nombreUsuario: _miNombre,
+                avatarUrl: _miAvatar,
+                marcoUrl: _miMarco,
+                miId: _miId,
+                estado: _miEstado,
+                indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
+                puntos: _puntos,
+                notificacionesSinLeer: _notificacionesSinLeer,
+                mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
+                onNavSelected: _alPulsarNav,
+                onProfileSelected: _seleccionarUsuario,
+                onStatusChanged: cambiarEstado,
+              ),
+              Expanded(
+                child: Stack(
                   children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!isMobile)
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOutCubic,
+                            width: _isSidebarOpen ? 320.0 : 0.0,
+                            height: double.infinity,
+                            child: SidebarIzquierdo(
+                              estaLogueado: _estaLogueado == true,
+                              cargando: _cargandoComunidades == true,
+                              comunidades: _misComunidades,
+                              rankingUsuarios: _rankingUsuarios,
+                              cargandoRanking: _cargandoRanking == true,
+                              onComunidadSelected: _seleccionarComunidad,
+                              onUsuarioSelected: _seleccionarUsuario,
+                              onReorder: _reordenarComunidades,
+                              misPuntos: _puntos,
+                            ),
+                          ),
+                        Expanded(
+                          flex: 5,
+                          child: (widget.navigationShell != null)
+                              ? widget.navigationShell!
+                              : const Center(child: Text('Error de Navegación 🐾', style: TextStyle(color: Colors.white))),
+                        ),
+                      ],
+                    ),
                     if (!isMobile)
-                      AnimatedContainer(
+                      AnimatedPositioned(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOutCubic,
-                        width: _isSidebarOpen ? 320.0 : 0.0,
-                        height: double.infinity,
-                        child: SidebarIzquierdo(
-                          estaLogueado: _estaLogueado == true,
-                          cargando: _cargandoComunidades == true,
-                          comunidades: _misComunidades,
-                          rankingUsuarios: _rankingUsuarios,
-                          cargandoRanking: _cargandoRanking == true,
-                          onComunidadSelected: _seleccionarComunidad,
-                          onUsuarioSelected: _seleccionarUsuario,
-                          onReorder: _reordenarComunidades,
-                          misPuntos: _puntos,
+                        left: _isSidebarOpen ? 308.0 : -12.0,
+                        top: 24.0, 
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
+                          child: Tooltip(
+                            message: _isSidebarOpen ? tr('commonClose') : tr('commonShow'),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              height: 24.0,
+                              width: 24.0,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, spreadRadius: 1)
+                                ],
+                                border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 1),
+                              ),
+                              child: Icon(
+                                _isSidebarOpen ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                                color: const Color(0xFFC35E34),
+                                size: 18,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        flex: 5,
-                        child: (widget.navigationShell != null)
-                                  ? widget.navigationShell!
-                                  : const Center(child: Text('Error de Navegación 🐾', style: TextStyle(color: Colors.white))),
                       ),
                   ],
                 ),
-                if (!isMobile)
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOutCubic,
-                    left: _isSidebarOpen ? 308.0 : -12.0,
-                    top: 24.0, 
-                    child: GestureDetector(
-                      onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
-                      child: Tooltip(
-                        message: _isSidebarOpen ? 'Contraer menú' : 'Expandir menú',
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          height: 24.0,
-                          width: 24.0,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, spreadRadius: 1)
-                            ],
-                            border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 1),
-                          ),
-                          child: Icon(
-                            _isSidebarOpen ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
-                            color: const Color(0xFFC35E34),
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _construirDrawerMobile() {
+  Widget _construirDrawerMobile(dynamic tr) {
     final currentIndex = widget.navigationShell?.currentIndex ?? _indiceSeleccionado;
     final colorPrincipal = const Color(0xFFC35E34);
     
@@ -484,27 +482,27 @@ class PantallaInicioState extends State<PantallaInicio> {
             const SizedBox(height: 8),
             ListTile(
               leading: Icon(Icons.home_rounded, color: currentIndex == 0 ? colorPrincipal : Colors.grey),
-              title: Text('Inicio', style: GoogleFonts.outfit(fontWeight: currentIndex == 0 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 0 ? colorPrincipal : Colors.black87)),
+              title: Text(tr('navigationHome'), style: GoogleFonts.outfit(fontWeight: currentIndex == 0 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 0 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(0); },
             ),
             ListTile(
               leading: Icon(Icons.explore_rounded, color: currentIndex == 1 ? colorPrincipal : Colors.grey),
-              title: Text('Explorar', style: GoogleFonts.outfit(fontWeight: currentIndex == 1 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 1 ? colorPrincipal : Colors.black87)),
+              title: Text(tr('navigationExplore'), style: GoogleFonts.outfit(fontWeight: currentIndex == 1 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 1 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(1); },
             ),
             ListTile(
               leading: Icon(Icons.storefront_rounded, color: currentIndex == 4 ? colorPrincipal : Colors.grey),
-              title: Text('Tienda', style: GoogleFonts.outfit(fontWeight: currentIndex == 4 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 4 ? colorPrincipal : Colors.black87)),
+              title: Text(tr('navigationShop'), style: GoogleFonts.outfit(fontWeight: currentIndex == 4 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 4 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(4); },
             ),
             ListTile(
               leading: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
-              title: Text('Chats', style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
+              title: Text(tr('navigationChats'), style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(3); },
             ),
             ListTile(
               leading: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
-              title: Text('Notificaciones', style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
+              title: Text(tr('navigationNotifications'), style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(2); },
             ),
             const Divider(height: 32, indent: 20, endIndent: 20),

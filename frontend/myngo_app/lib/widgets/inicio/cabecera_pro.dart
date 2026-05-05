@@ -6,6 +6,7 @@ import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import '../../widgets/boton_idioma.dart';
+import 'package:tolgee/tolgee.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
 
 /// Cabecera superior de la pantalla de inicio con logo, navegación y perfil de usuario.
@@ -43,122 +44,126 @@ class CabeceraPro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 800;
-    final isSmallMobile = screenWidth < 500;
+    return TranslationWidget(
+      builder: (context, tr) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isMobile = screenWidth < 800;
+        final isSmallMobile = screenWidth < 500;
 
-    return Container(
-      height: 70,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFC35E34),
-            const Color(0xFFD95F43).withOpacity(0.95),
-            const Color(0xFFE89A6A).withOpacity(0.9),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          if (isMobile && estaLogueado) ...[
-            IconButton(
-              icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 28),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
+        return Container(
+          height: 70,
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFFC35E34),
+                const Color(0xFFD95F43).withOpacity(0.95),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(width: 4),
-          ],
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: BotonTactil(
-              onTap: () => onNavSelected(0),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo_myngo.png',
-                    height: isMobile ? 50 : 64,
-                    width: isMobile ? 50 : 64,
-                    fit: BoxFit.contain,
-                  ),
-                  if (!isSmallMobile) ...[
-                    const SizedBox(width: 14),
-                    Text(
-                      'MYNGO',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: isMobile ? 22 : 28,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2.0,
-                        shadows: [
-                          Shadow(color: Colors.black26, offset: const Offset(0, 2), blurRadius: 4),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFC35E34).withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
               ),
-            ),
+            ],
           ),
-          SizedBox(width: isMobile ? 8 : 16),
-          const Spacer(),
-          if (estaLogueado && !isMobile) ...[
-            Flexible(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _CircularNavItem(icon: Icons.explore_rounded, title: 'Explorar', isActive: indiceSeleccionado == 1, onTap: () => onNavSelected(1)),
-                    const SizedBox(width: 8),
-                    _CircularNavItem(icon: Icons.storefront_rounded, title: 'Tienda', isActive: indiceSeleccionado == 4, onTap: () => onNavSelected(4)),
-                    const SizedBox(width: 8),
-                    _CircularNavItem(
-                      icon: Icons.chat_bubble_rounded,
-                      title: 'Chats',
-                      isActive: indiceSeleccionado == 3,
-                      onTap: () => onNavSelected(3),
-                      badge: estaLogueado && mensajesSinLeer > 0 ? mensajesSinLeer.toString() : null,
-                    ),
-                    const SizedBox(width: 8),
-                    _CircularNavItem(
-                      icon: Icons.notifications_rounded,
-                      title: 'Notificaciones',
-                      isActive: indiceSeleccionado == 2,
-                      onTap: () => onNavSelected(2),
-                      badge: estaLogueado && notificacionesSinLeer > 0 ? notificacionesSinLeer.toString() : null,
-                    ),
-                  ],
+          child: Row(
+            children: [
+              if (isMobile && estaLogueado) ...[
+                IconButton(
+                  icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 28),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                ),
+                const SizedBox(width: 4),
+              ],
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: BotonTactil(
+                  onTap: () => onNavSelected(0),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/logo_myngo.png',
+                        height: isMobile ? 50 : 64,
+                        width: isMobile ? 50 : 64,
+                        fit: BoxFit.contain,
+                      ),
+                      if (!isSmallMobile) ...[
+                        const SizedBox(width: 14),
+                        Text(
+                          tr('appTitle'),
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: isMobile ? 22 : 28,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2.0,
+                            shadows: [
+                              Shadow(color: Colors.black26, offset: const Offset(0, 2), blurRadius: 4),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            SizedBox(width: isMobile ? 16 : 24),
-          ],
-          const BotonIdioma(),
-          _UserProfileHeader(
-            name: nombreUsuario,
-            avatarUrl: avatarUrl,
-            marcoUrl: marcoUrl,
-            estaLogueado: estaLogueado,
-            miId: miId,
-            estado: estado,
-            onProfileSelected: onProfileSelected,
-            onStatusChanged: onStatusChanged,
-            puntos: puntos,
-            isMobile: isMobile,
+              SizedBox(width: isMobile ? 8 : 16),
+              const Spacer(),
+              if (estaLogueado && !isMobile) ...[
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _CircularNavItem(icon: Icons.explore_rounded, title: tr('navigationExplore'), isActive: indiceSeleccionado == 1, onTap: () => onNavSelected(1)),
+                        const SizedBox(width: 8),
+                        _CircularNavItem(icon: Icons.storefront_rounded, title: tr('navigationShop'), isActive: indiceSeleccionado == 4, onTap: () => onNavSelected(4)),
+                        const SizedBox(width: 8),
+                        _CircularNavItem(
+                          icon: Icons.chat_bubble_rounded,
+                          title: tr('navigationChats'),
+                          isActive: indiceSeleccionado == 3,
+                          onTap: () => onNavSelected(3),
+                          badge: estaLogueado && mensajesSinLeer > 0 ? mensajesSinLeer.toString() : null,
+                        ),
+                        const SizedBox(width: 8),
+                        _CircularNavItem(
+                          icon: Icons.notifications_rounded,
+                          title: tr('navigationNotifications'),
+                          isActive: indiceSeleccionado == 2,
+                          onTap: () => onNavSelected(2),
+                          badge: estaLogueado && notificacionesSinLeer > 0 ? notificacionesSinLeer.toString() : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(width: isMobile ? 16 : 24),
+              ],
+              const BotonIdioma(),
+              _UserProfileHeader(
+                name: nombreUsuario,
+                avatarUrl: avatarUrl,
+                marcoUrl: marcoUrl,
+                estaLogueado: estaLogueado,
+                miId: miId,
+                estado: estado,
+                onProfileSelected: onProfileSelected,
+                onStatusChanged: onStatusChanged,
+                puntos: puntos,
+                isMobile: isMobile,
+                tr: tr,
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -221,6 +226,7 @@ class _UserProfileHeader extends StatelessWidget {
   final Function(Usuario)? onProfileSelected;
   final Function(String)? onStatusChanged;
   final bool isMobile;
+  final dynamic tr;
 
   const _UserProfileHeader({
     this.name, 
@@ -233,6 +239,7 @@ class _UserProfileHeader extends StatelessWidget {
     this.puntos,
     this.estado = 'DESCONECTADO',
     this.isMobile = false,
+    required this.tr,
   });
 
   @override
@@ -249,7 +256,7 @@ class _UserProfileHeader extends StatelessWidget {
               children: [
                 const Icon(Icons.account_circle_outlined, color: Colors.white, size: 20),
                 const SizedBox(width: 10),
-                Text('INICIAR SESIÓN', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5)),
+                Text(tr('authLoginButton').toUpperCase(), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5)),
               ],
             ),
           ),
@@ -274,17 +281,17 @@ class _UserProfileHeader extends StatelessWidget {
             }
           }
         } else if (value == 'config') {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ajustes próximamente 🐾')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('settingsAdjustmentsSoon'))));
         } else if (value == 'logout') {
           await ServicioUsuarios().cerrarSesion();
           if (context.mounted) context.go('/login');
         }
       },
       itemBuilder: (context) => [
-        PopupMenuItem(value: 'perfil', child: Row(children: [const Icon(Icons.person_rounded, color: Color(0xFFC35E34), size: 22), const SizedBox(width: 12), Text('Mi Perfil', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)))])),
-        PopupMenuItem(value: 'config', child: Row(children: [const Icon(Icons.settings_suggest_rounded, color: Color(0xFFC35E34), size: 22), const SizedBox(width: 12), Text('Configuración', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)))])),
+        PopupMenuItem(value: 'perfil', child: Row(children: [const Icon(Icons.person_rounded, color: Color(0xFFC35E34), size: 22), const SizedBox(width: 12), Text(tr('navigationProfile'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)))])),
+        PopupMenuItem(value: 'config', child: Row(children: [const Icon(Icons.settings_suggest_rounded, color: Color(0xFFC35E34), size: 22), const SizedBox(width: 12), Text(tr('navigationSettings'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)))])),
         const PopupMenuDivider(),
-        PopupMenuItem(value: 'logout', child: Row(children: [const Icon(Icons.logout_rounded, color: Color(0xFFD95F43), size: 22), const SizedBox(width: 12), Text('Cerrar Miau-Sesión', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFFD95F43)))])),
+        PopupMenuItem(value: 'logout', child: Row(children: [const Icon(Icons.logout_rounded, color: Color(0xFFD95F43), size: 22), const SizedBox(width: 12), Text(tr('navigationLogout'), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFFD95F43)))])),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -298,9 +305,8 @@ class _UserProfileHeader extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // 1. EL AVATAR (Capa inferior)
                   Container(
-                    width: 26, // Reducido para que el marco no lo pise
+                    width: 26,
                     height: 26,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -311,8 +317,6 @@ class _UserProfileHeader extends StatelessWidget {
                     ),
                     child: (avatarUrl == null || avatarUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.grey, size: 16) : null,
                   ),
-
-                  // 2. EL MARCO (Capa superior - Overlay)
                   if (marcoUrl != null && marcoUrl!.isNotEmpty)
                     Positioned.fill(
                       child: Center(
@@ -373,7 +377,7 @@ class _UserProfileHeader extends StatelessWidget {
                                     children: [
                                       const Icon(Icons.circle, color: Colors.greenAccent, size: 12),
                                       const SizedBox(width: 8),
-                                      Text('Activo', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                      Text(tr('statusActive'), style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
                                     ],
                                   ),
                                 ),
@@ -383,7 +387,7 @@ class _UserProfileHeader extends StatelessWidget {
                                     children: [
                                       const Icon(Icons.circle, color: Colors.redAccent, size: 12),
                                       const SizedBox(width: 8),
-                                      Text('Ocupado', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                                      Text(tr('statusBusy'), style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
                                     ],
                                   ),
                                 ),
@@ -404,7 +408,7 @@ class _UserProfileHeader extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  estado == 'ACTIVO' ? 'Activo' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                                  estado == 'ACTIVO' ? tr('statusActive') : (estado == 'OCUPADO' ? tr('statusBusy') : tr('statusOffline')),
                                   style: GoogleFonts.outfit(
                                     color: Colors.white, 
                                     fontSize: 10, 
@@ -423,7 +427,7 @@ class _UserProfileHeader extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
-                    child: Text('${puntos ?? 0} Puntos', style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: Text(tr('rankPoints', {'count': puntos?.toString() ?? '0'}), style: GoogleFonts.outfit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
