@@ -1,5 +1,24 @@
-
-  "apiUrl": "http://localhost:8085",
-  "pull": { "path": "./lib/l10n", "format": "FLUTTER_ARB" },
-  "push": { "path": "./lib/l10n", "format": "FLUTTER_ARB" }
+{
+  "apiUrl": "http://127.0.0.1:8085",
+  "apiKey": "tgpak_gjpwo3temfwgmztcnmzwq3jxobxg2m3cne2gs3diha4gi",
+  "push": {
+    "files": [
+      {
+        "path": "lib/tolgee/es.json",
+        "language": "es-ES",
+        "format": "JSON_TOLGEE"
+      },
+      {
+        "path": "lib/tolgee/en.json",
+        "language": "en",
+        "format": "JSON_TOLGEE"
+      }
+    ]
+  },
+  "pull": {
+    "path": "lib/tolgee",
+    "format": "JSON_TOLGEE",
+    "states": ["UNTRANSLATED", "TRANSLATED", "REVIEWED"],
+    "fileStructureTemplate": "{languageTag}.json"
+  }
 }

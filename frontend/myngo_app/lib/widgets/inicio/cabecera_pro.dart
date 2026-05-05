@@ -158,7 +158,6 @@ class CabeceraPro extends StatelessWidget {
                 onStatusChanged: onStatusChanged,
                 puntos: puntos,
                 isMobile: isMobile,
-                tr: tr,
               ),
             ],
           ),
@@ -226,7 +225,6 @@ class _UserProfileHeader extends StatelessWidget {
   final Function(Usuario)? onProfileSelected;
   final Function(String)? onStatusChanged;
   final bool isMobile;
-  final dynamic tr;
 
   const _UserProfileHeader({
     this.name, 
@@ -239,11 +237,16 @@ class _UserProfileHeader extends StatelessWidget {
     this.puntos,
     this.estado = 'DESCONECTADO',
     this.isMobile = false,
-    required this.tr,
   });
 
   @override
   Widget build(BuildContext context) {
+    return TranslationWidget(
+      builder: (context, tr) => _buildContent(context, tr),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, dynamic tr) {
     if (!estaLogueado) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
