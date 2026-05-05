@@ -7,8 +7,13 @@ class PersonalizacionChat {
   final String? colorBurbujaOtro;
   final String? colorTextoMio;
   final String? colorTextoOtro;
+  final String? colorNombreMio;
+  final String? colorNombreOtro;
+  final String? gradienteFondo;
+  final String? patronFondo;
   final String? imagenFondoS3;
   final String formaBurbuja;
+  final String estiloBurbuja;
   final int fontSize;
   final String tema;
 
@@ -18,8 +23,13 @@ class PersonalizacionChat {
     this.colorBurbujaOtro,
     this.colorTextoMio,
     this.colorTextoOtro,
+    this.colorNombreMio,
+    this.colorNombreOtro,
+    this.gradienteFondo,
+    this.patronFondo,
     this.imagenFondoS3,
     this.formaBurbuja = 'redondeada',
+    this.estiloBurbuja = 'solido',
     this.fontSize = 14,
     this.tema = 'claro',
   });
@@ -31,8 +41,13 @@ class PersonalizacionChat {
       colorBurbujaOtro: json['color_burbuja_otro']?.toString(),
       colorTextoMio: json['color_texto_mio']?.toString(),
       colorTextoOtro: json['color_texto_otro']?.toString(),
+      colorNombreMio: json['color_nombre_mio']?.toString(),
+      colorNombreOtro: json['color_nombre_otro']?.toString(),
+      gradienteFondo: json['gradiente_fondo']?.toString(),
+      patronFondo: json['patron_fondo']?.toString(),
       imagenFondoS3: json['imagen_fondo_s3']?.toString(),
       formaBurbuja: json['forma_burbuja']?.toString() ?? 'redondeada',
+      estiloBurbuja: json['estilo_burbuja']?.toString() ?? 'solido',
       fontSize: int.tryParse(json['font_size']?.toString() ?? '') ?? 14,
       tema: json['tema']?.toString() ?? 'claro',
     );
@@ -44,8 +59,13 @@ class PersonalizacionChat {
     'color_burbuja_otro': colorBurbujaOtro,
     'color_texto_mio': colorTextoMio,
     'color_texto_otro': colorTextoOtro,
+    'color_nombre_mio': colorNombreMio,
+    'color_nombre_otro': colorNombreOtro,
+    'gradiente_fondo': gradienteFondo,
+    'patron_fondo': patronFondo,
     'imagen_fondo_s3': imagenFondoS3,
     'forma_burbuja': formaBurbuja,
+    'estilo_burbuja': estiloBurbuja,
     'font_size': fontSize,
     'tema': tema,
   };
