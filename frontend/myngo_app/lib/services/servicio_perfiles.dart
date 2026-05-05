@@ -24,39 +24,11 @@ class ServicioPerfiles {
     };
   }
 
-  /// Recupera la información detallada de un perfil de usuario por su ID o nombre de usuario.
-  Future<RespuestaApi<Perfil>> obtenerPerfil(dynamic identifier) async {
+  /// Recupera la información detallada de un perfil de usuario por su ID.
+  Future<RespuestaApi<Perfil>> obtenerPerfil(int userId) async {
     try {
-      int? idFinal;
-      
-      // 1. Intentamos ver si es un ID numérico
-      if (identifier is int) {
-        idFinal = identifier;
-      } else {
-        idFinal = int.tryParse(identifier.toString());
-      }
-
-      // 2. Si no es un ID (es un nombre de usuario), lo buscamos primero
-      if (idFinal == null) {
-        final resBusqueda = await http.get(
-          Uri.parse('$_urlUsuarios/datos/?search=$identifier'),
-          headers: await _obtenerCabeceras(),
-        ).timeout(const Duration(seconds: 10));
-
-        if (resBusqueda.statusCode == 200) {
-          final decoded = jsonDecode(utf8.decode(resBusqueda.bodyBytes));
-          final List<dynamic> resultados = decoded is List ? decoded : (decoded['results'] ?? []);
-          if (resultados.isNotEmpty) {
-            idFinal = resultados.first['id'];
-          }
-        }
-      }
-
-      if (idFinal == null) return RespuestaApi(exito: false, mensaje: 'Usuario no encontrado 😿');
-
-      // 3. Ya con el ID real, pedimos el perfil completo
       final respuesta = await http.get(
-        Uri.parse('$_urlUsuarios/perfiles/$idFinal/'),
+        Uri.parse('$_urlUsuarios/perfiles/$userId/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 
@@ -67,7 +39,7 @@ class ServicioPerfiles {
           datos: Perfil.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes))),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al cargar el perfil (${respuesta.statusCode})');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar el perfil');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
@@ -76,18 +48,18 @@ class ServicioPerfiles {
   /// Obtiene las publicaciones asociadas a un perfil específico con paginación.
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(int perfilId, {int? pagina}) async {
     try {
-      final url = '${Configuracion.baseUrl}/contenido/publicaciones/?perfil_id=$perfilId${pagina != null ? '&page=$pagina' : ''}';
-      final respuesta = await http.get(
-        Uri.parse(url),
-        headers: await _obtenerCabeceras(),
-      ).timeout(const Duration(seconds: 15));
+      String query = 'perfil_id=$perfilId';
+      if (pagina != null) query += '&page=$pagina';
+      final uri = Uri.parse('${Configuracion.baseUrl}/contenido/publicaciones/?$query');
+      final respuesta = await http.get(uri, headers: await _obtenerCabeceras()).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
         return RespuestaApi(
           exito: true,
           mensaje: 'Publicaciones recuperadas',
-          datos: datosJson.map((p) => Publicacion.fromJson(p)).toList(),
+          datos: lista.map((p) => Publicacion.fromJson(p)).toList(),
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar publicaciones');

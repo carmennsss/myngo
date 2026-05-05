@@ -45,9 +45,16 @@ class DatosUsuarios(generics.ListAPIView):
         return usuarios.order_by('id')
 
     def get(self, request, usuario_id=None):
-        """Obtiene los datos de un usuario por ID, o lista todos los usuarios con paginación."""
+        """Obtiene los datos de un usuario por ID o nombre de usuario, o lista todos los usuarios con paginación."""
         if usuario_id:
-            usuario = Usuario.objects.filter(id=usuario_id).first()
+            # Intenta primero como ID numérico
+            try:
+                usuario_id_int = int(usuario_id)
+                usuario = Usuario.objects.filter(id=usuario_id_int).first()
+            except (ValueError, TypeError):
+                # Si falla, intenta como nombre de usuario
+                usuario = Usuario.objects.filter(nombre_usuario=usuario_id).first()
+            
             if usuario:
                 serializer = self.get_serializer(usuario, context={'request': request})
                 return Response({
@@ -56,7 +63,7 @@ class DatosUsuarios(generics.ListAPIView):
                     'datos': serializer.data,
                 })
             return Response(
-                {'exito': False, 'mensaje': f'No existe el usuario con id {usuario_id}'},
+                {'exito': False, 'mensaje': f'No existe el usuario con id o nombre {usuario_id}'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 

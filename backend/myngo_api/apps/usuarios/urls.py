@@ -24,7 +24,7 @@ urlpatterns = [
 
     # Perfiles y Datos de Usuario
     path('datos/', DatosUsuarios.as_view(), name="listar_datos_usuarios"),
-    path('datos/<int:usuario_id>/', DatosUsuarios.as_view(), name="detalle_datos_usuario"),
+    path('datos/<str:usuario_id>/', DatosUsuarios.as_view(), name="detalle_datos_usuario"),
     path('actualizar_usuario/', DatosUsuarios.as_view(), name="actualizar_usuario"),
     path('perfil/editar/', EditarPerfil.as_view(), name='editar_perfil'),
     path('ranking/', RankingUsuarios.as_view(), name='ranking_usuarios'),
