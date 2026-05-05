@@ -245,6 +245,7 @@ DEFAULT_FROM_EMAIL = f"Myngo <{EMAIL_HOST_USER}>"
 # Hugging Face - Moderación de contenido con IA
 HUGGING_FACE_TOKEN = env('HUGGING_FACE_TOKEN', default='')
 
-# Límites de subida de archivos (100 MB)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
-FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600
+# Límites de subida de archivos (200 MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 209715200
+FILE_UPLOAD_MAX_MEMORY_SIZE = 209715200
+

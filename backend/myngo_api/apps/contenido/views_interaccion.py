@@ -195,7 +195,10 @@ class ComentarioListCreate(generics.ListCreateAPIView):
             QuerySet: Comentarios de la publicación.
         """
         publicacion_id = self.kwargs.get('pk')
-        return Comentario.objects.filter(publicacion_id=publicacion_id).order_by('fecha_creacion')
+        return Comentario.objects.filter(
+            publicacion_id=publicacion_id,
+            padre__isnull=True
+        ).order_by('fecha_creacion')
 
     def perform_create(self, serializer):
         """Crea un nuevo comentario tras validar membresía si aplica.
@@ -215,7 +218,14 @@ class ComentarioListCreate(generics.ListCreateAPIView):
             if not es_miembro:
                 raise permissions.PermissionDenied('Debes ser miembro de la comunidad para comentar 🐾')
 
-        serializer.save(autor=self.request.user, publicacion=publicacion)
+        # Aseguramos que el padre se asigne correctamente si viene en los datos
+        padre_id = self.request.data.get('padre')
+        serializer.save(
+            autor=self.request.user, 
+            publicacion=publicacion,
+            padre_id=padre_id
+        )
+        
         if publicacion.autor != self.request.user:
             Notificacion.objects.create(
                 usuario=publicacion.autor,
@@ -223,6 +233,7 @@ class ComentarioListCreate(generics.ListCreateAPIView):
                 mensaje=f'{self.request.user.nombre_usuario} ha comentado tu miau-post 🐾',
                 referencia_id=publicacion.id,
             )
+
 
 
 class TogglePostGuardadoView(APIView):

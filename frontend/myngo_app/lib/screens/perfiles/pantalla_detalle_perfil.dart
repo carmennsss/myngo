@@ -63,6 +63,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   String? _estadoSeguimiento;
   List<Publicacion>? _publicaciones;
   bool _cargandoPublicaciones = true;
+  final ScrollController _scrollController = ScrollController();
 
   List<Publicacion>? _publicacionesGuardadas;
   bool _cargandoGuardados = false;
@@ -176,6 +177,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     mejoraEquipadaNotifier.removeListener(_onMejoraEquipada);
     _timerReinicio?.cancel();
     _tabController?.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -370,9 +372,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
             )
           : null,
       body: Scrollbar(
+        controller: _scrollController,
         thumbVisibility: true,
+        thickness: 8,
+        radius: const Radius.circular(4),
         child: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             HeaderDetallePerfil(
               usuario: _usuario!,
