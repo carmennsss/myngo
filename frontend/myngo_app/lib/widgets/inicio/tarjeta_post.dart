@@ -275,7 +275,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                         fechaRegistro: DateTime.now(),
                                       ));
                                     } else {
-                      context.go('/inicio/perfiles/${widget.post.autorNombre}');
+                                      context.go('/inicio/perfiles/${widget.post.autorNombre}');
                                     }
                                   },
                                   child: Text.rich(
