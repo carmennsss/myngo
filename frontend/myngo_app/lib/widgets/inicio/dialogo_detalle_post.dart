@@ -160,7 +160,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                 userId: widget.post.autorId,
                                 onTap: () {
                                   Navigator.pop(context);
-                                  context.go('/inicio/perfiles/${widget.post.autorId}');
+                                  context.go('/inicio/perfiles/${widget.post.autorNombre}');
                                 },
                                 child: SizedBox(
                                   width: 44,

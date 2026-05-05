@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
@@ -151,35 +152,42 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Autor y Fecha
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF248EA6).withOpacity(0.2),
-                  shape: BoxShape.circle,
+          GestureDetector(
+            onTap: () {
+              if (widget.imagen.propietarioNombre != null && widget.imagen.propietarioNombre!.isNotEmpty) {
+                context.go('/explorar/perfiles/${widget.imagen.propietarioNombre}');
+              }
+            },
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF248EA6).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_rounded, color: Color(0xFF248EA6), size: 20),
                 ),
-                child: const Icon(Icons.person_rounded, color: Color(0xFF248EA6), size: 20),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '@${widget.imagen.propietarioNombre ?? 'Desconocido'}',
-                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
-                  ),
-                  Text(
-                    'Subido el ${widget.imagen.fechaSubida.toLocal().toString().split(' ')[0]}',
-                    style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 12),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              // Community Tag
-              if (widget.imagen.comunidadNombre != null)
-                _buildCommunityTag(),
-            ],
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '@${widget.imagen.propietarioNombre ?? 'Desconocido'}',
+                      style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                    ),
+                    Text(
+                      'Subido el ${widget.imagen.fechaSubida.toLocal().toString().split(' ')[0]}',
+                      style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                // Community Tag
+                if (widget.imagen.comunidadNombre != null)
+                  _buildCommunityTag(),
+              ],
+            ),
           ),
           
           const SizedBox(height: 24),

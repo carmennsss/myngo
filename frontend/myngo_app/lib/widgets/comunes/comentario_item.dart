@@ -61,7 +61,7 @@ class ComentarioItem extends StatelessWidget {
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
                   }
-                  context.go('/inicio/perfiles/${comentario.autorId}');
+                  context.go('/inicio/perfiles/${comentario.autorNombre}');
                 },
                 child: SizedBox(
                   width: esRespuesta ? 32 : 44,
