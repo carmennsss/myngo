@@ -635,16 +635,28 @@ class ObtenerRolUsuarioEnComunidad(APIView):
         """
         usuario_id = request.query_params.get('usuario_id')
         if not usuario_id:
-            return Response({'error': 'usuario_id es requerido'}, status=status.HTTP_400_BAD_REQUEST)
+            # Si no se pasa usuario_id, usamos el del usuario autenticado
+            usuario_id = request.user.id
+            
         try:
+            # 1. Verificar si es el creador (tiene prioridad sobre la tabla de miembros)
+            comunidad = Comunidad.objects.filter(id=pk).first()
+            if not comunidad:
+                # Intentar por nombre si pk es un string
+                comunidad = Comunidad.objects.filter(nombre=pk).first()
+            
+            if comunidad and str(comunidad.creador_id) == str(usuario_id):
+                return Response({'rol': 'Administrador'})
+
+            # 2. Buscar en la tabla de miembros
             miembro = MiembrosComunidad.objects.filter(
-                comunidad_id=pk, usuario_id=usuario_id
+                comunidad=comunidad, usuario_id=usuario_id
             ).first()
+            
             if miembro:
                 return Response({'rol': miembro.rol})
-            comunidad = Comunidad.objects.get(id=pk)
-            if str(comunidad.creador_id) == str(usuario_id):
-                return Response({'rol': 'Administrador'})
+                
             return Response({'rol': 'Visitante'})
-        except Exception:
-            return Response({'rol': 'Visitante'})
+        except Exception as e:
+            return Response({'rol': 'Visitante', 'debug': str(e)})
+

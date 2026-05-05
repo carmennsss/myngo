@@ -107,12 +107,18 @@ class PantallaInicioState extends State<PantallaInicio> {
           _puntos = resDatos.datos!.puntos;
           _miEstado = resDatos.datos!.estado ?? 'DESCONECTADO';
           
+          // Sincronizar ID con el provider de chat
+          context.read<ChatProvider>().setUserId(_miId);
+          
           // El orden del servidor tiene prioridad si no está vacío
           if (resDatos.datos!.ordenComunidades.isNotEmpty) {
             _ordenGuardado = resDatos.datos!.ordenComunidades;
             prefs.setString('orden_comunidades_local', _ordenGuardado.join(','));
           }
         });
+
+        // Cargar chats recientes para el sidebar
+        _cargarChatsRecientes();
         
         _servicioChat.conectarPresencia((datos) {
           if (!mounted) return;
@@ -158,9 +164,10 @@ class PantallaInicioState extends State<PantallaInicio> {
         final chatProvider = context.read<ChatProvider>();
         chatProvider.cargarConteosIniciales();
         _conectarNotificacionesChat(chatProvider);
-      } else if (!resDatos.exito && mounted) {
+      } else if (!resDatos.exito && resDatos.mensaje.contains('401') && mounted) {
         setState(() => _estaLogueado = false);
         await prefs.remove('auth_token');
+        await prefs.remove('usuario_id');
       }
     }
     _cargarRanking();
@@ -266,6 +273,12 @@ class PantallaInicioState extends State<PantallaInicio> {
         _misComunidades = lista;
         _cargandoComunidades = false;
       });
+    }
+  }
+
+  void _cargarChatsRecientes() {
+    if (_estaLogueado) {
+      context.read<ChatProvider>().cargarSalas();
     }
   }
 

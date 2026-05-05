@@ -554,7 +554,13 @@ class ServicioComunidades {
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var img in imagenes) {
           final bytes = await img.readAsBytes();
-          final mimeType = lookupMimeType(img.name, headerBytes: bytes) ?? 'application/octet-stream';
+          String mimeType = lookupMimeType(img.name, headerBytes: bytes) ?? 'application/octet-stream';
+          
+          // Fallback para videos MP4 si el lookup falla (común en web)
+          if (mimeType == 'application/octet-stream' && img.name.toLowerCase().endsWith('.mp4')) {
+            mimeType = 'video/mp4';
+          }
+          
           final typeParts = mimeType.split('/');
           
           datosFormulario.files.add(MapEntry(

@@ -19,8 +19,6 @@ class PantallaListaChats extends StatefulWidget {
 }
 
 class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTickerProviderStateMixin {
-  List<Map<String, dynamic>> _salas = [];
-  List<Map<String, dynamic>> _salasFiltradas = [];
   bool _cargando = true;
   int? _miId;
   final TextEditingController _searchController = TextEditingController();
@@ -31,7 +29,6 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   void initState() {
     super.initState();
     _cargar();
-    _searchController.addListener(_filtrarSalas);
     
     // Escuchar trigger de refresco desde el provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,46 +54,30 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
 
   Future<void> _cargar() async {
     if (!mounted) return;
+    
     setState(() => _cargando = true);
     
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    final id = prefs.getInt('usuario_id');
-
-    if (token == null) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getInt('usuario_id');
+      
+      // Delegamos la carga al provider
+      await context.read<ChatProvider>().cargarSalas();
+      
       if (mounted) {
         setState(() {
-          _cargando = false;
-          _salas = [];
-          _salasFiltradas = [];
+          _miId = id;
         });
       }
-      return;
-    }
-    
-    // Obtener salas (el backend ya está optimizado con prefetch)
-    final salas = await _servicioMensajeria.obtenerSalasChat();
-    
-    if (mounted) {
-      setState(() {
-        _miId = id;
-        _salas = salas;
-        _salasFiltradas = salas;
-        _cargando = false;
-      });
+    } catch (e) {
+      debugPrint('Error cargando chats: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _cargando = false);
+      }
     }
   }
 
-  void _filtrarSalas() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _salasFiltradas = _salas.where((sala) {
-        final datos = _datosInterlocutor(sala);
-        final nombre = (datos['nombre'] ?? '').toLowerCase();
-        return nombre.contains(query);
-      }).toList();
-    });
-  }
 
   String _formatearFecha(String? isoStr) {
     if (isoStr == null) return '';
@@ -113,17 +94,25 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   }
 
   Map<String, String?> _datosInterlocutor(Map<String, dynamic> sala) {
+    final myId = context.read<ChatProvider>().userId;
     final miembros = (sala['miembros_detalle'] as List?) ?? [];
+    
     if (!sala['es_grupal'] && miembros.isNotEmpty) {
       Map<String, dynamic>? otro;
       try {
-        otro = miembros.firstWhere((m) => m['id'] != _miId);
+        // Buscamos al otro usuario que no soy yo
+        otro = miembros.firstWhere(
+          (m) => m['id'] != myId,
+          orElse: () => miembros.first,
+        );
       } catch (_) {
         otro = miembros.first;
       }
       
       final interlocutor = otro!;
+      // Guardamos el ID del otro usuario para usarlo al abrir el chat
       sala['_otro_usuario_id'] = interlocutor['id'];
+      
       return {
         'nombre': '@${interlocutor['nombre_usuario'] ?? sala['nombre']}',
         'avatar': interlocutor['url_avatar'],
@@ -170,6 +159,17 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final chatProvider = context.watch<ChatProvider>();
+    final salas = chatProvider.salas;
+    
+    // Aplicamos el filtro de búsqueda localmente sobre las salas del provider
+    final query = _searchController.text.toLowerCase();
+    final salasFiltradas = salas.where((sala) {
+      final datos = _datosInterlocutor(sala);
+      final nombre = (datos['nombre'] ?? '').toLowerCase();
+      return nombre.contains(query);
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F8),
       floatingActionButton: FloatingActionButton.extended(
@@ -184,7 +184,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xFFC35E34),
-          onRefresh: _cargar,
+          onRefresh: () => chatProvider.cargarSalas(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -227,6 +227,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 14),
                           ),
+                          onChanged: (_) => setState(() {}), // Forzar rebuild para filtrar
                         ),
                       ),
                     ],
@@ -235,11 +236,11 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
               ),
 
               // Lista de Chats
-              if (_cargando)
+              if (_cargando && salas.isEmpty)
                 SliverFillRemaining(
                   child: _buildCargando(),
                 )
-              else if (_salasFiltradas.isEmpty)
+              else if (salasFiltradas.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: _buildEstadoVacio(),
@@ -250,9 +251,9 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        return _buildSalaItem(_salasFiltradas[index], index);
+                        return _buildSalaItem(salasFiltradas[index], index);
                       },
-                      childCount: _salasFiltradas.length,
+                      childCount: salasFiltradas.length,
                     ),
                   ),
                 ),
@@ -262,6 +263,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       ),
     );
   }
+
 
   Widget _buildCargando() {
     return ListView.builder(

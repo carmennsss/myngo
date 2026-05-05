@@ -31,7 +31,7 @@ class ServicioUsuarios {
       final respuesta = await http.post(
         Uri.parse('$_urlUsuarios/login/'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': correo, 'password': contrasena}),
+        body: jsonEncode({'email': correo.trim(), 'password': contrasena.trim()}),
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.body.contains('<!DOCTYPE') || respuesta.body.contains('<html')) {
@@ -83,9 +83,9 @@ class ServicioUsuarios {
         Uri.parse('$_urlUsuarios/registrar/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'nombre_usuario': nombreUsuario,
-          'email': correo,
-          'password': contrasena,
+          'nombre_usuario': nombreUsuario.trim(),
+          'email': correo.trim(),
+          'password': contrasena.trim(),
         }),
       ).timeout(const Duration(seconds: 20));
 

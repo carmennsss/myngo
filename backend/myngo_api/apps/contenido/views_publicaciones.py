@@ -30,8 +30,9 @@ def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
             rel_aspecto = 1.0
 
         for i, archivo in enumerate(archivos[:4]):
-            if archivo.size > 100 * 1024 * 1024:
-                raise Exception(f"El archivo {archivo.name} supera el límite de 100MB.")
+            if archivo.size > 200 * 1024 * 1024:
+                raise Exception(f"El archivo {archivo.name} supera el límite de 200MB.")
+
 
             tipo = 'I'
             content_type = archivo.content_type or ''

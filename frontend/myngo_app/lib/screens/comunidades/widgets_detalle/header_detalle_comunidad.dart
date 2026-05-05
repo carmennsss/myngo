@@ -39,7 +39,7 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
   @override
   void didUpdateWidget(HeaderDetalleComunidad oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.comunidad.id != widget.comunidad.id) {
+    if (oldWidget.comunidad.id != widget.comunidad.id || oldWidget.miId != widget.miId) {
       _obtenerRol();
     }
   }

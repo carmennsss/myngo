@@ -74,8 +74,12 @@ class ServicioMensajeria {
 
       if (respuesta.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(utf8.decode(respuesta.bodyBytes)));
+      } else {
+        debugPrint('Error en obtenerSalasChat: ${respuesta.statusCode} - ${respuesta.body}');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Excepción en obtenerSalasChat: $e');
+    }
     return [];
   }
 
@@ -87,9 +91,13 @@ class ServicioMensajeria {
       ).timeout(const Duration(seconds: 10));
 
       if (respuesta.statusCode == 200) {
-        return jsonDecode(respuesta.body) as Map<String, dynamic>;
+        return jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>;
+      } else {
+        debugPrint('Error en obtenerConteoMensajesNoLeidos: ${respuesta.statusCode} - ${respuesta.body}');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Excepción en obtenerConteoMensajesNoLeidos: $e');
+    }
     return {'total': 0, 'por_sala': []};
   }
 

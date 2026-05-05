@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/usuario.dart';
 import '../../inicio/pantalla_inicio.dart';
+import '../../../widgets/boton_idioma.dart';
 
 /// Widget que muestra la cabecera visual de un perfil (fondo, avatar, marco y estado).
 class HeaderDetallePerfil extends StatelessWidget {
@@ -90,6 +91,8 @@ class HeaderDetallePerfil extends StatelessWidget {
               tooltip: 'Personalizar Perfil',
             ),
           ),
+        const BotonIdioma(),
+        const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,

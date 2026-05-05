@@ -5,13 +5,22 @@ import '../services/servicio_notificaciones_locales.dart';
 class ChatProvider extends ChangeNotifier {
   final ServicioMensajeria _servicioChat = ServicioMensajeria();
   
+  int? _userId;
   int _totalNoLeidos = 0;
   Map<int, int> _noLeidosPorSala = {};
   int? _salaActivaId;
   Map<int, String> _estadosUsuarios = {};
+  List<Map<String, dynamic>> _salas = [];
 
+  int? get userId => _userId;
   int get totalNoLeidos => _totalNoLeidos;
   int? get salaActivaId => _salaActivaId;
+  List<Map<String, dynamic>> get salas => _salas;
+
+  void setUserId(int? id) {
+    _userId = id;
+    notifyListeners();
+  }
 
   String getEstadoUsuario(int userId) => _estadosUsuarios[userId] ?? 'DESCONECTADO';
   bool isUsuarioOnline(int userId) => getEstadoUsuario(userId) != 'DESCONECTADO';
@@ -57,6 +66,17 @@ class ChatProvider extends ChangeNotifier {
     };
     
     notifyListeners();
+  }
+
+  /// Carga la lista completa de salas de chat.
+  Future<void> cargarSalas() async {
+    try {
+      final salas = await _servicioChat.obtenerSalasChat();
+      _salas = salas;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error en ChatProvider.cargarSalas: $e');
+    }
   }
 
   /// Procesa una notificación de nuevo mensaje recibida por WebSocket.
