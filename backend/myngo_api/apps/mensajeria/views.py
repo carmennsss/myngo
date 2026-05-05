@@ -302,8 +302,10 @@ def actualizar_sala(request, pk):
                 'color_fondo': 'el fondo del chat',
                 'color_burbuja_mio': 'el color de sus burbujas',
                 'color_burbuja_otro': 'el color de las burbujas de los demás',
+                'color_texto_mio': 'el color del texto propio',
+                'color_texto_otro': 'el color del texto de otros',
                 'color_nombre_mio': 'el color de su nombre',
-                'color_nombre_otro': 'el color de los nombres de los demás',
+                'color_nombre_otro': 'el color del nombre de los demás',
                 'gradiente_fondo': 'el gradiente de fondo',
                 'patron_fondo': 'el patrón de fondo',
                 'forma_burbuja': 'la forma de las burbujas',
@@ -411,3 +413,60 @@ def actualizar_participante(request, sala_id):
         return Response({'status': 'ok', 'apodo': apodo})
     except ParticipanteChat.DoesNotExist:
         return Response({'error': 'Participante no encontrado'}, status=404)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def obtener_sala_general_comunidad(request, comunidad_id):
+    """Obtiene la sala marcada como general o principal de una comunidad."""
+    try:
+        # Priorizar sala marcada como es_general
+        sala = SalaChat.objects.filter(comunidad_id=comunidad_id, es_general=True).first()
+        
+        if not sala:
+            # Fallback por nombre
+            sala = SalaChat.objects.filter(
+                comunidad_id=comunidad_id,
+                es_grupal=True
+            ).filter(Q(nombre__icontains='General') | Q(nombre__icontains='Chat de')).first()
+        
+        if not sala:
+            # Fallback final: cualquier sala grupal
+            sala = SalaChat.objects.filter(comunidad_id=comunidad_id, es_grupal=True).first()
+            
+        if sala:
+            return Response(SalaChatSerializer(sala, context={'request': request}).data)
+        return Response({'error': 'No se encontró sala para esta comunidad'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def subir_avatar_sala(request, pk):
+    """Sube una imagen a S3 y la establece como avatar de la sala."""
+    try:
+        sala = SalaChat.objects.get(pk=pk, miembros=request.user)
+        imagen = request.FILES.get('avatar')
+        
+        if not imagen:
+            return Response({'error': 'No se proporcionó ninguna imagen'}, status=400)
+            
+        # Usamos ImagenGaleria como almacén temporal/permanente para S3
+        from contenido.models import ImagenGaleria
+        img_instancia = ImagenGaleria.objects.create(
+            propietario=request.user,
+            url_s3=imagen,
+            comunidad_id=sala.comunidad_id,
+            tipo_archivo='I'
+        )
+        
+        sala.avatar_s3 = img_instancia.url_s3.url
+        sala.save()
+        
+        return Response({
+            'status': 'ok',
+            'url_avatar': sala.avatar_s3
+        })
+    except SalaChat.DoesNotExist:
+        return Response({'error': 'Sala no encontrada'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
