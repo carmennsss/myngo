@@ -641,7 +641,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   void _irAInventario() {
-    context.push('/inventario');
+    context.push('/inicio/inventario');
   }
 }
 

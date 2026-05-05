@@ -215,17 +215,31 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFEF5F1),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFEF5F1),
-        title: Text('Personalizar Perfil', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
-        centerTitle: true,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header integrado (Sustituye al AppBar)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF4A4440)),
+                  onPressed: () => Navigator.maybePop(context),
+                  tooltip: 'Volver',
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Personalizar Perfil',
+                  style: GoogleFonts.outfit(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF4A4440),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(

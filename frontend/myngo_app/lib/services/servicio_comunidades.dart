@@ -349,7 +349,17 @@ class ServicioComunidades {
     } catch (e) {
       String msg = 'Error de conexión: $e';
       if (e is dio.DioException) {
-        msg = e.response?.data?['error']?.toString() ?? e.message ?? msg;
+        final resData = e.response?.data;
+        if (resData is Map) {
+          msg = resData['error']?.toString() ?? 
+                resData['mensaje']?.toString() ?? 
+                resData.values.firstWhere((v) => v is List, orElse: () => null)?.toString() ??
+                resData.toString();
+        } else if (resData != null) {
+          msg = resData.toString();
+        } else {
+          msg = e.message ?? msg;
+        }
       }
       return RespuestaApi(exito: false, mensaje: msg);
     }
