@@ -1,0 +1,6 @@
+{
+  "projectId": "YOUR_PROJECT_ID",
+  "apiUrl": "http://localhost:8085",
+  "pull": { "path": "./locale", "format": "PO" },
+  "push": { "path": "./locale", "format": "PO" }
+}

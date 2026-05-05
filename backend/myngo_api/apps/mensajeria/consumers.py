@@ -74,8 +74,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if message_type == 'message':
             content = data.get('content')
-            if content:
-                msg = await self.save_message(self.user, self.room_id, content, referencia_id=data.get('referencia_a'))
+            url_archivo_s3 = data.get('url_archivo_s3')
+            tipo = data.get('tipo', 'TEXTO')
+            if content is not None or url_archivo_s3 is not None:
+                msg = await self.save_message(
+                    self.user, self.room_id, content, 
+                    url_archivo_s3=url_archivo_s3, 
+                    tipo=tipo,
+                    referencia_id=data.get('referencia_a')
+                )
+
+                preview_text = '📷 Foto' if tipo == 'IMAGEN' else (content[:60] + ('...' if len(content or '') > 60 else '') if content else 'Mensaje')
 
                 await self.channel_layer.group_send(
                     self.room_group_name,
@@ -84,20 +93,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'message_id': msg.id,
                         'client_id': data.get('client_id'),
                         'content': content,
+                        'url_archivo_s3': url_archivo_s3,
+                        'tipo': tipo,
                         'user_id': self.user.id,
                         'username': self.user.nombre_usuario,
                         'timestamp': msg.fecha_envio.isoformat(),
                         'leido_por_ids': [],
                         'referencia_a': data.get('referencia_a'),
                         'referencia_a_detalle': await self.get_msg_detail(data.get('referencia_a')),
-                        'tipo': msg.tipo,
                     }
                 )
 
                 miembros_ids = await self.get_miembros_ids(self.room_id, exclude_user_id=self.user.id)
                 sala_nombre = await self.get_sala_nombre(self.room_id)
                 sender_avatar = await self.get_user_avatar(self.user.id)
-                preview = content[:60] + ('...' if len(content) > 60 else '')
 
                 for miembro_id in miembros_ids:
                     await self.channel_layer.group_send(
@@ -109,7 +118,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             'sender_id': self.user.id,
                             'sender_username': self.user.nombre_usuario,
                             'sender_avatar': sender_avatar,
-                            'preview': preview,
+                            'preview': preview_text,
                         }
                     )
 
@@ -181,18 +190,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def is_member(self, user, room_id):
         return SalaChat.objects.filter(id=room_id, miembros=user).exists()
 
-    @database_sync_to_async
+@database_sync_to_async
     def is_community_room(self, room_id):
         try:
             return SalaChat.objects.get(id=room_id).comunidad is not None
         except: return False
 
     @database_sync_to_async
-    def save_message(self, user, room_id, content, referencia_id=None):
+    def save_message(self, user, room_id, content=None, url_archivo_s3=None, tipo='TEXTO', referencia_id=None):
         room = SalaChat.objects.get(id=room_id)
         return MensajeChat.objects.create(
-            sala=room, emisor=user, contenido=content,
-            referencia_a_id=referencia_id, tipo='TEXTO'
+            sala=room, emisor=user, contenido=content, 
+            url_archivo_s3=url_archivo_s3,
+            tipo=tipo,
+            referencia_a_id=referencia_id
         )
 
     @database_sync_to_async

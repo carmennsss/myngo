@@ -16,6 +16,7 @@ from .views import (
     actualizar_apodo_personalizado,
     obtener_sala_general_comunidad,
     subir_avatar_sala,
+    upload_chat_image,
 )
 
 urlpatterns = [
@@ -26,6 +27,7 @@ urlpatterns = [
     path('salas/<int:pk>/actualizar/', actualizar_sala, name='actualizar_sala'),
     path('salas/comunidad/<int:comunidad_id>/general/', obtener_sala_general_comunidad, name='sala_general_comunidad'),
     path('salas/<int:pk>/subir-avatar/', subir_avatar_sala, name='subir_avatar_sala'),
+    path('salas/<int:sala_id>/upload-image/', upload_chat_image, name='upload_chat_image'),
     path('salas/<int:sala_id>/participante/', actualizar_participante, name='actualizar_participante'),
     path('salas/<int:sala_id>/apodo-personalizado/', actualizar_apodo_personalizado, name='actualizar_apodo_personalizado'),
 

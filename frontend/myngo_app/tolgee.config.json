@@ -1,0 +1,5 @@
+
+  "apiUrl": "http://localhost:8085",
+  "pull": { "path": "./lib/l10n", "format": "FLUTTER_ARB" },
+  "push": { "path": "./lib/l10n", "format": "FLUTTER_ARB" }
+}

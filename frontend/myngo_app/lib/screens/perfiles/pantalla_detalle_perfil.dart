@@ -29,6 +29,7 @@ import 'widgets_detalle/seccion_guardados_perfil.dart';
 import 'widgets_detalle/seccion_colecciones_perfil.dart';
 import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
+import 'package:myngo_app/l10n/app_localizations.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -345,10 +346,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               const CircularProgressIndicator(color: Color(0xFFF28B50)),
               if (_cargandoPerfil) ...[
                 const SizedBox(height: 16),
-                Text('Cargando perfil...', style: GoogleFonts.inter(color: Colors.grey)),
+                Text(AppLocalizations.of(context)!.profileLoadingSubtitle, style: GoogleFonts.inter(color: Colors.grey)),
               ] else if (_usuario == null && !_cargandoPerfil) ...[
                 const SizedBox(height: 16),
-                Text('Usuario no encontrado 😿', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('${AppLocalizations.of(context)!.profileNotFoundTitle} ${AppLocalizations.of(context)!.profileNotFoundEmoji}', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: const Text('Volver'))
               ]
@@ -428,7 +429,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                       controller: _tabController,
                       tabs: [
                         const Tab(text: 'Posts'),
-                        Tab(text: _currentUserId == _usuario!.id ? 'Favoritos' : 'Colecciones'),
+                        Tab(text: AppLocalizations.of(context)!.profileTabsPosts),
+                        Tab(text: _currentUserId == _usuario!.id ? AppLocalizations.of(context)!.profileTabsFavorites : AppLocalizations.of(context)!.profileTabsCollections),
                       ],
                       labelStyle: GoogleFonts.inter(
                           fontWeight: FontWeight.bold, fontSize: 16),
@@ -510,9 +512,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 20),
-            Text(
-              _haVotadoHoy ? '¿Qué quieres hacer con tu voto?' : '¡Vota a este Michi!',
-              style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                _haVotadoHoy ? AppLocalizations.of(context)!.profileVoteTitleChange : AppLocalizations.of(context)!.profileVoteTitleNew,
+                style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(

@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:myngo_app/l10n/app_localizations.dart';
 import 'screens/login/pantalla_login.dart';
 import 'screens/registro/pantalla_registro.dart';
 import 'screens/recuperar_contrasena/pantalla_recuperar_contrasena.dart';
@@ -12,6 +14,7 @@ import 'screens/comunidades/pantalla_comunidades.dart';
 import 'package:provider/provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/locale_notifier.dart';
 import 'services/servicio_notificaciones_locales.dart';
 import 'router.dart';
 
@@ -28,6 +31,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleNotifier()),
       ],
       child: const MiAplicacion(),
     ),
@@ -39,20 +43,26 @@ class MiAplicacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      scrollBehavior: const MaterialScrollBehavior().copyWith(
-        scrollbars: true,
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-        },
-      ),
-      theme: ThemeData(
-        useMaterial3: true,
+    return Consumer<LocaleNotifier>(
+      builder: (context, localeNotifier, child) => MaterialApp.router(
+        locale: localeNotifier.locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        debugShowCheckedModeBanner: false,
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+          scrollbars: true,
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+          },
+        ),
+        theme: ThemeData(
+          useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFC35E34),
+        ),
           seedColor: const Color(0xFFC35E34),
           brightness: Brightness.light,
           primary: const Color(0xFFC35E34),   // Terracotta Orange

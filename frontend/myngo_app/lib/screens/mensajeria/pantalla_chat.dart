@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:provider/provider.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as emoji;
 import 'package:flutter/foundation.dart' as foundation;
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/configuracion.dart';
 import '../../services/servicio_mensajeria.dart';
@@ -20,6 +22,86 @@ import '../../widgets/comunes/boton_tactil.dart';
 import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
+
+// Painter eficiente para patrones de fondo
+class PatternPainter extends CustomPainter {
+  final String patternType;
+  
+  PatternPainter({required this.patternType});
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white;
+    const spacing = 60.0;
+    
+    switch (patternType) {
+      case 'dots':
+        for (double x = 0; x < size.width; x += spacing) {
+          for (double y = 0; y < size.height; y += spacing) {
+            canvas.drawCircle(Offset(x, y), 3, paint);
+          }
+        }
+        break;
+      case 'stars':
+        for (double x = 0; x < size.width; x += spacing) {
+          for (double y = 0; y < size.height; y += spacing) {
+            _drawStar(canvas, Offset(x, y), 6, paint);
+          }
+        }
+        break;
+      case 'triangles':
+        for (double x = 0; x < size.width; x += spacing) {
+          for (double y = 0; y < size.height; y += spacing) {
+            _drawTriangle(canvas, Offset(x, y), 8, paint);
+          }
+        }
+        break;
+      case 'waves':
+        for (double y = 0; y < size.height; y += 40) {
+          for (double x = 0; x <= size.width; x += 5) {
+            final nextX = x + 5;
+            final nextY = y + (y.toInt() % 2 == 0 ? 3 : -3);
+            if (nextX <= size.width) {
+              canvas.drawLine(Offset(x, y), Offset(nextX, nextY), paint..strokeWidth = 0.5);
+            }
+          }
+        }
+        break;
+      case 'lines':
+        for (double x = 0; x < size.width; x += spacing) {
+          canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint..strokeWidth = 1);
+        }
+        break;
+    }
+  }
+  
+  void _drawStar(Canvas canvas, Offset center, double size, Paint paint) {
+    const angles = [0, 72, 144, 216, 288];
+    final points = <Offset>[];
+    for (final angle in angles) {
+      final rad = (angle * 3.14159 / 180);
+      points.add(Offset(
+        center.dx + size * 0.5 * (0.809 * cos(rad - 1.571) + 0.309 * cos(rad - 1.571)),
+        center.dy + size * 0.5 * (0.809 * sin(rad - 1.571) + 0.309 * sin(rad - 1.571)),
+      ));
+    }
+    
+    // Dibujar un punto simple en lugar de una estrella compleja para mantener performance
+    canvas.drawCircle(center, 3, paint);
+  }
+  
+  void _drawTriangle(Canvas canvas, Offset center, double size, Paint paint) {
+    final path = Path();
+    path.moveTo(center.dx, center.dy - size / 2);
+    path.lineTo(center.dx + size / 2, center.dy + size / 2);
+    path.lineTo(center.dx - size / 2, center.dy + size / 2);
+    path.close();
+    canvas.drawPath(path, paint..style = PaintingStyle.stroke..strokeWidth = 1);
+  }
+  
+  @override
+  bool shouldRepaint(PatternPainter oldDelegate) => oldDelegate.patternType != patternType;
+}
 
 class PantallaChat extends StatefulWidget {
   final int? salaId;
@@ -74,6 +156,32 @@ class _PantallaChatState extends State<PantallaChat> {
     _miId = await ServicioUsuarios().obtenerIdUsuario();
     await _cargarDatos();
     _conectarWebSocket();
+  }
+
+  Future<void> _enviarFoto() async {
+    if (_sala == null) return;
+    
+    final ImagePicker picker = ImagePicker();
+    final XFile? imagen = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    
+    if (imagen != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Subiendo imagen...'))
+      );
+      
+      final url = await _servicio.uploadChatImage(_sala!.id, imagen);
+      
+      if (url != null && mounted) {
+        _servicio.enviarMensajeChat('', tipo: 'IMAGEN', url_archivo_s3: url);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Imagen enviada! 📷'))
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al subir imagen'))
+        );
+      }
+    }
   }
 
   Future<void> _cargarDatos() async {
@@ -1042,6 +1150,18 @@ class _PantallaChatState extends State<PantallaChat> {
                 ),
                 const SizedBox(width: 8),
                 BotonTactil(
+                  onTap: _enviarFoto,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.image_outlined, color: Colors.white, size: 20),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                BotonTactil(
                   onTap: _enviarMensaje,
                   child: Container(
                     padding: const EdgeInsets.all(10),
@@ -1171,21 +1291,9 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   Widget _buildPatternBackground(String id) {
-    IconData icon;
-    switch (id) {
-      case 'dots': icon = Icons.circle; break;
-      case 'stars': icon = Icons.star; break;
-      case 'triangles': icon = Icons.change_history; break;
-      case 'waves': icon = Icons.waves; break;
-      case 'lines': icon = Icons.reorder; break;
-      default: icon = Icons.circle;
-    }
-    
-    return GridView.builder(
-      itemCount: 100,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6),
-      itemBuilder: (context, index) => Icon(icon, size: 40, color: Colors.white),
+    return CustomPaint(
+      painter: PatternPainter(patternType: id),
+      child: Container(),
     );
   }
 
