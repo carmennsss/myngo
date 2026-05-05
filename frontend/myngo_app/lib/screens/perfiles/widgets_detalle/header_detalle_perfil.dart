@@ -91,7 +91,6 @@ class HeaderDetallePerfil extends StatelessWidget {
               tooltip: 'Personalizar Perfil',
             ),
           ),
-        const BotonIdioma(),
         const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(

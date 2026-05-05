@@ -32,25 +32,24 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         return context
 
     def get_queryset(self):
-        no_leidos_subquery = MensajeChat.objects.filter(
-            sala=OuterRef('pk'),
-        ).exclude(leido_por=self.request.user).exclude(emisor=self.request.user).values('sala').annotate(cnt=Count('id')).values('cnt')
-
-        queryset = SalaChat.objects.all()
+        from django.db.models.functions import Coalesce
+        
+        # Filtramos salas donde el usuario es miembro
+        queryset = SalaChat.objects.filter(miembros=self.request.user)
+        
         comunidad_id = self.request.query_params.get('comunidad_id')
-
         if comunidad_id:
             queryset = queryset.filter(comunidad_id=comunidad_id)
-        else:
-            queryset = queryset.filter(miembros=self.request.user)
 
+        # Anotamos la fecha de última actividad (mensaje más reciente o creación de la sala)
+        # Usamos distinct() antes de la anotación para evitar duplicados por el join de miembros
         return queryset.distinct().annotate(
-            fecha_ultimo_mensaje=Max('mensajes__fecha_envio'),
-            count_no_leidos=Subquery(no_leidos_subquery)
+            ultima_actividad=Coalesce(Max('mensajes__fecha_envio'), 'fecha_creacion')
         ).prefetch_related(
             'miembros',
-            'miembros__perfil'
-        ).order_by('-fecha_ultimo_mensaje', '-fecha_creacion')
+            'miembros__perfil',
+            'personalizacion_v2'
+        ).order_by('-ultima_actividad')
 
     def create(self, request, *args, **kwargs):
         nombre = request.data.get('nombre', f'Sala_{request.user.nombre_usuario}')

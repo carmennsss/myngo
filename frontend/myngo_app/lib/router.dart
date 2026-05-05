@@ -78,12 +78,6 @@ final GoRouter appRouter = GoRouter(
       path: '/recuperar_contrasena',
       builder: (context, state) => const PantallaRecuperarContrasena(),
     ),
-    GoRoute(
-      path: '/inventario',
-      builder: (context, state) => const ProtectedRoute(
-        title: 'Mi Inventario',
-        child: PantallaPersonalizarPerfil(),
-      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
@@ -142,6 +136,13 @@ final GoRouter appRouter = GoRouter(
                       onBack: () => context.go('/inicio'),
                     );
                   },
+                ),
+                GoRoute(
+                  path: 'inventario',
+                  builder: (context, state) => const ProtectedRoute(
+                    title: 'Mi Inventario',
+                    child: PantallaPersonalizarPerfil(),
+                  ),
                 ),
               ],
             ),

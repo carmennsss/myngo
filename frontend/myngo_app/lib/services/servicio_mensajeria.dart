@@ -73,7 +73,16 @@ class ServicioMensajeria {
       ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
-        return List<Map<String, dynamic>>.from(jsonDecode(utf8.decode(respuesta.bodyBytes)));
+        final body = utf8.decode(respuesta.bodyBytes);
+        final decoded = jsonDecode(body);
+        if (decoded is List) {
+          return List<Map<String, dynamic>>.from(decoded);
+        } else if (decoded is Map && decoded.containsKey('results')) {
+          // Soporte preventivo para paginación si se activara en el futuro
+          return List<Map<String, dynamic>>.from(decoded['results']);
+        }
+        debugPrint('Formato de respuesta inesperado en obtenerSalasChat: $decoded');
+        return [];
       } else {
         debugPrint('Error en obtenerSalasChat: ${respuesta.statusCode} - ${respuesta.body}');
       }
