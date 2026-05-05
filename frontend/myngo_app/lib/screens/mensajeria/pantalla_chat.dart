@@ -172,7 +172,7 @@ class _PantallaChatState extends State<PantallaChat> {
       final url = await _servicio.uploadChatImage(_sala!.id, imagen);
       
       if (url != null && mounted) {
-        _servicio.enviarMensajeChat('', tipo: 'IMAGEN', url_archivo_s3: url);
+_servicio.enviarMensajeChat('', tipo: 'IMAGEN', urlArchivoS3: url);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Imagen enviada! 📷'))
         );

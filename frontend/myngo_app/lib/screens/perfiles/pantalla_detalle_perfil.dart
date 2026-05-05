@@ -29,7 +29,7 @@ import 'widgets_detalle/seccion_guardados_perfil.dart';
 import 'widgets_detalle/seccion_colecciones_perfil.dart';
 import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
-import 'package:myngo_app/l10n/app_localizations.dart';
+import 'package:tolgee/tolgee.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -186,8 +186,6 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final id = await ServicioUsuarios().obtenerIdUsuario();
     if (mounted) setState(() => _currentUserId = id);
 
-    // Si el usuario está incompleto (ej: viene de una lista con solo nombre/avatar)
-    // Forzamos la carga completa del perfil
     bool incompleto = _usuario != null && (_usuario!.biografia?.isEmpty ?? true) && _usuario!.ratingActual == 0.0;
     
     if (incompleto) {
@@ -336,160 +334,161 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   @override
   Widget build(BuildContext context) {
-    if (_cargandoPerfil || _usuario == null) {
-      final loading = material.Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(color: Color(0xFFF28B50)),
-              if (_cargandoPerfil) ...[
-                const SizedBox(height: 16),
-                Text(AppLocalizations.of(context)!.profileLoadingSubtitle, style: GoogleFonts.inter(color: Colors.grey)),
-              ] else if (_usuario == null && !_cargandoPerfil) ...[
-                const SizedBox(height: 16),
-                Text('${AppLocalizations.of(context)!.profileNotFoundTitle} ${AppLocalizations.of(context)!.profileNotFoundEmoji}', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: const Text('Volver'))
-              ]
-            ],
-          ),
-        ),
-      );
-      return widget.esIntegrada ? loading : loading;
-    }
+    return TranslationWidget(
+      builder: (context, tr) {
+        if (_cargandoPerfil || _usuario == null) {
+          final loading = material.Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Color(0xFFF28B50)),
+                  if (_cargandoPerfil) ...[
+                    const SizedBox(height: 16),
+                    Text(tr('profileLoadingSubtitle'), style: GoogleFonts.inter(color: Colors.grey)),
+                  ] else if (_usuario == null && !_cargandoPerfil) ...[
+                    const SizedBox(height: 16),
+                    Text('${tr('profileNotFoundTitle')} ${tr('profileNotFoundEmoji')}', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: Text(tr('commonBack')))
+                  ]
+                ],
+              ),
+            ),
+          );
+          return loading;
+        }
 
-    return material.Scaffold(
-      backgroundColor: Colors.transparent,
-      floatingActionButton: _currentUserId == _usuario!.id
-          ? FloatingActionButton.extended(
-              onPressed: _mostrarDialogoCrearPost,
-              backgroundColor: const Color(0xFFF28B50),
-              icon: const Icon(Icons.add_box_rounded, color: Colors.white),
-              label: Text('Subir Post',
-                  style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold, color: Colors.white)),
-            )
-          : null,
-      body: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          image: (_fondoPerfilLocal != null && _fondoPerfilLocal!.isNotEmpty)
-              ? DecorationImage(
-                  image: NetworkImage(_fondoPerfilLocal!),
-                  fit: BoxFit.cover,
-                  opacity: 0.6, // Un poco de opacidad para que se vea el contenido
+        return material.Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: _currentUserId == _usuario!.id
+              ? FloatingActionButton.extended(
+                  onPressed: _mostrarDialogoCrearPost,
+                  backgroundColor: const Color(0xFFF28B50),
+                  icon: const Icon(Icons.add_box_rounded, color: Colors.white),
+                  label: Text('Subir Post',
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold, color: Colors.white)),
                 )
               : null,
-        ),
-        child: Scrollbar(
-          controller: _scrollController,
-          thumbVisibility: true,
-          thickness: 8,
-          radius: const Radius.circular(4),
-          child: NestedScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                HeaderDetallePerfil(
-                  usuario: _usuario!,
-                  avatarLocal: _avatarLocal,
-                  fondoLocal: _fondoPerfilLocal,
-                  fondoPerfilLocal: _fondoLocal,
-                  marcoLocal: _marcoLocal,
-                  currentUserId: _currentUserId,
-                  onEditarAvatar: _editarAvatar,
-                  onEditarPerfil: _irAInventario,
-                  onBack: widget.onBack ?? () => Navigator.pop(context),
-                  esIntegrada: widget.esIntegrada,
-                ),
-                SliverToBoxAdapter(
-                  child: InfoPerfil(
-                    usuario: _usuario!,
-                    currentUserId: _currentUserId,
-                    biografiaLocal: _biografiaLocal,
-                    estadoSeguimiento: _estadoSeguimiento,
-                    isLoading: _isLoading,
-                    rolEnComunidad: _rolEnComunidad,
-                    ratingLocal: _ratingLocal,
-                    haVotadoHoy: _haVotadoHoy,
-                    tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
-                    onManejarSeguimiento: _manejarSeguimiento,
-                    onMostrarVoto: _mostrarSelectorVoto,
-                    onEditarBio: _mostrarDialogoEditarBio,
-                    onChat: _iniciarChat,
-                  ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SliverTabsDelegate(
-                    tabBar: TabBar(
-                      controller: _tabController,
-                      tabs: [
-                        const Tab(text: 'Posts'),
-                        Tab(text: AppLocalizations.of(context)!.profileTabsPosts),
-                        Tab(text: _currentUserId == _usuario!.id ? AppLocalizations.of(context)!.profileTabsFavorites : AppLocalizations.of(context)!.profileTabsCollections),
-                      ],
-                      labelStyle: GoogleFonts.inter(
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                      indicatorColor: const Color(0xFFF28B50),
+          body: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              image: (_fondoPerfilLocal != null && _fondoPerfilLocal!.isNotEmpty)
+                  ? DecorationImage(
+                      image: NetworkImage(_fondoPerfilLocal!),
+                      fit: BoxFit.cover,
+                      opacity: 0.6,
+                    )
+                  : null,
+            ),
+            child: Scrollbar(
+              controller: _scrollController,
+              thumbVisibility: true,
+              thickness: 8,
+              radius: const Radius.circular(4),
+              child: NestedScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    HeaderDetallePerfil(
+                      usuario: _usuario!,
+                      avatarLocal: _avatarLocal,
+                      fondoLocal: _fondoPerfilLocal,
+                      fondoPerfilLocal: _fondoLocal,
+                      marcoLocal: _marcoLocal,
+                      currentUserId: _currentUserId,
+                      onEditarAvatar: _editarAvatar,
+                      onEditarPerfil: _irAInventario,
+                      onBack: widget.onBack ?? () => Navigator.pop(context),
+                      esIntegrada: widget.esIntegrada,
                     ),
-                  ),
+                    SliverToBoxAdapter(
+                      child: InfoPerfil(
+                        usuario: _usuario!,
+                        currentUserId: _currentUserId,
+                        biografiaLocal: _biografiaLocal,
+                        estadoSeguimiento: _estadoSeguimiento,
+                        isLoading: _isLoading,
+                        rolEnComunidad: _rolEnComunidad,
+                        ratingLocal: _ratingLocal,
+                        haVotadoHoy: _haVotadoHoy,
+                        tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
+                        onManejarSeguimiento: _manejarSeguimiento,
+                        onMostrarVoto: _mostrarSelectorVoto,
+                        onEditarBio: _mostrarDialogoEditarBio,
+                        onChat: _iniciarChat,
+                      ),
+                    ),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _SliverTabsDelegate(
+                        tabBar: TabBar(
+                          controller: _tabController,
+                          tabs: [
+                            const Tab(text: 'Posts'),
+                            Tab(text: _currentUserId == _usuario!.id ? tr('profileTabsFavorites') : tr('profileTabsCollections')),
+                          ],
+                          labelStyle: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                          indicatorColor: const Color(0xFFF28B50),
+                        ),
+                      ),
+                    ),
+                  ];
+                },
+                body: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    SeccionPostsPerfil(
+                      publicaciones: _publicaciones,
+                      estaCargando: _cargandoPublicaciones,
+                      onRefresh: _cargarPublicaciones,
+                      onLoadMore: (pagina) async {
+                        final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
+                        return res.datos ?? [];
+                      },
+                    ),
+                    if (_currentUserId == _usuario!.id)
+                      SeccionGuardadosPerfil(
+                        publicaciones: _publicacionesGuardadas,
+                        colecciones: _misColecciones,
+                        estaCargando: _cargandoGuardados,
+                        estaCargandoColecciones: _cargandoColecciones,
+                        comunidadesFiltro: _comunidadesFiltro,
+                        filtroComunidadId: _filtroComunidadId,
+                        onFiltroChanged: (id) {
+                          setState(() => _filtroComunidadId = id);
+                          _cargarGuardados(comunidadId: id);
+                        },
+                        onRefresh: () => _cargarGuardados(force: true),
+                        onRefreshColecciones: () => _cargarColecciones(force: true),
+                        onLoadMore: (pagina) async {
+                          final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
+                            comunidadId: _filtroComunidadId,
+                            pagina: pagina,
+                          );
+                          return res.datos ?? [];
+                        },
+                      )
+                    else
+                      SeccionColeccionesPerfil(
+                        colecciones: _misColecciones,
+                        estaCargando: _cargandoColecciones,
+                        onRefresh: () => _cargarColecciones(force: true),
+                        esPropietario: false,
+                      ),
+                  ],
                 ),
-              ];
-            },
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                SeccionPostsPerfil(
-                  publicaciones: _publicaciones,
-                  estaCargando: _cargandoPublicaciones,
-                  onRefresh: _cargarPublicaciones,
-                  onLoadMore: (pagina) async {
-                    final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
-                    return res.datos ?? [];
-                  },
-                ),
-                if (_currentUserId == _usuario!.id)
-                  SeccionGuardadosPerfil(
-                    publicaciones: _publicacionesGuardadas,
-                    colecciones: _misColecciones,
-                    estaCargando: _cargandoGuardados,
-                    estaCargandoColecciones: _cargandoColecciones,
-                    comunidadesFiltro: _comunidadesFiltro,
-                    filtroComunidadId: _filtroComunidadId,
-                    onFiltroChanged: (id) {
-                      setState(() => _filtroComunidadId = id);
-                      _cargarGuardados(comunidadId: id);
-                    },
-                    onRefresh: () => _cargarGuardados(force: true),
-                    onRefreshColecciones: () => _cargarColecciones(force: true),
-                    onLoadMore: (pagina) async {
-                      final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
-                        comunidadId: _filtroComunidadId,
-                        pagina: pagina,
-                      );
-                      return res.datos ?? [];
-                    },
-                  )
-                else
-                  SeccionColeccionesPerfil(
-                    colecciones: _misColecciones,
-                    estaCargando: _cargandoColecciones,
-                    onRefresh: () => _cargarColecciones(force: true),
-                    esPropietario: false,
-                  ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
-}
-
-  // --- MÉTODOS DE ACCIÓN ---
+  }
 
   void _mostrarSelectorVoto() {
     if (_usuario == null || _currentUserId == _usuario!.id) return;
@@ -497,66 +496,68 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-            ),
-            const SizedBox(height: 20),
+      builder: (context) => TranslationWidget(
+        builder: (context, tr) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 20),
               Text(
-                _haVotadoHoy ? AppLocalizations.of(context)!.profileVoteTitleChange : AppLocalizations.of(context)!.profileVoteTitleNew,
+                _haVotadoHoy ? tr('profileVoteTitleChange') : tr('profileVoteTitleNew'),
                 style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _haVotadoHoy ? 'Puedes cambiar tu puntuación o eliminar el voto.' : 'Dalle amor con tus estrellas 🐾',
-              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 24),
-            SelectorEstrellas(
-              initialRating: _miVotoHoy,
-              onRatingChanged: (puntos) async {
-                final res = await ServicioMejoras().votar(
-                  idReceptorUsuario: _usuario!.id,
-                  cantidadEstrellas: puntos,
-                );
-                if (res.exito) {
-                  _cargarEstadoVoto();
-                  _recargarUsuarioActualizado();
-                  if (mounted) Navigator.pop(context);
-                }
-              },
-            ),
-            if (_haVotadoHoy) ...[
-              const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: () async {
-                  final res = await ServicioMejoras().eliminarVoto(idReceptorUsuario: _usuario!.id);
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _haVotadoHoy ? tr('profileVoteDescChange') : tr('profileVoteDescNew'),
+                style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              SelectorEstrellas(
+                initialRating: _miVotoHoy,
+                onRatingChanged: (puntos) async {
+                  final res = await ServicioMejoras().votar(
+                    idReceptorUsuario: _usuario!.id,
+                    cantidadEstrellas: puntos,
+                  );
                   if (res.exito) {
-                    setState(() {
-                      _haVotadoHoy = false;
-                      _miVotoHoy = 0;
-                    });
                     _cargarEstadoVoto();
                     _recargarUsuarioActualizado();
                     if (mounted) Navigator.pop(context);
                   }
                 },
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                label: Text('Eliminar mi voto', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
               ),
+              if (_haVotadoHoy) ...[
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: () async {
+                    final res = await ServicioMejoras().eliminarVoto(idReceptorUsuario: _usuario!.id);
+                    if (res.exito) {
+                      setState(() {
+                        _haVotadoHoy = false;
+                        _miVotoHoy = 0;
+                      });
+                      _cargarEstadoVoto();
+                      _recargarUsuarioActualizado();
+                      if (mounted) Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                  label: Text('Eliminar mi voto', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                ),
+              ],
+              const SizedBox(height: 12),
             ],
-            const SizedBox(height: 12),
-          ],
+          ),
         ),
       ),
     );
@@ -626,14 +627,13 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     if (_usuario == null) return;
     final sala = await ServicioMensajeria().crearSala(idOtroUsuario: _usuario!.id);
     if (sala != null && mounted) {
-      // Notificar al provider para que se refresquen las listas de chats
       context.read<ChatProvider>().notificarNuevaSala();
       
       Navigator.push(
           context,
           MaterialPageRoute(
               builder: (ctx) => PantallaChat(
-                  salaId: sala['id'], nombreSala: _usuario!.nombreUsuario, otroUsuarioId: _usuario!.id)));
+                  salaId: (sala['id'] as num).toInt(), nombreSala: _usuario!.nombreUsuario, otroUsuarioId: _usuario!.id)));
     }
   }
 

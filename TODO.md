@@ -1,23 +1,40 @@
-# TFG MyNgo - Send Photos in Chat
-Status: ✅ Backend Complete
+# TODO: Fix Flutter Compilation Errors - Tolgee i18n Migration
 
-## Breakdown Steps (Sequential)
+## Status: 🚀 In Progress
 
-### 1. Backend Updates ✅ Done
-- [x] Edit `backend/myngo_api/apps/mensajeria/views.py`: Add `upload_chat_image` view using `ImagenGaleria` with S3 'chats/contenido'
-- [x] Edit `backend/myngo_api/apps/mensajeria/urls.py`: Add route for upload
-- [x] Edit `backend/myngo_api/apps/mensajeria/consumers.py`: Update `save_message` for `tipo`, `url_archivo_s3`, WS receive/group_send
+### Breakdown of Approved Plan:
 
-### 2. Frontend Service
-- [ ] Edit `frontend/myngo_app/lib/services/servicio_mensajeria.dart`: Add `uploadChatImage`
+**✅ Step 1: Fix main.dart syntax errors (Priority - blocks everything)**
+- [x] Fix Consumer<LocaleNotifier>( missing )
+- [x] Fix CardTheme → CardThemeData
+- [x] Add Tolgee import and delegates
+- [x] Complete ThemeData structure (colorScheme, scrollbar, routerConfig)
+- Edit via edit_file on d:/TFG/myngo/frontend/myngo_app/lib/main.dart
 
-### 3. Frontend UI/Model
-- [ ] Edit `frontend/myngo_app/lib/models/mensaje_chat.dart`: Ensure image fields
-- [ ] Edit `frontend/myngo_app/lib/screens/mensajeria/pantalla_chat.dart`: Add image button, upload+WS send, image display UI
+**Next:** Step 2 cabecera_pro.dart
 
-### 4. Testing & Polish
-- [ ] Test full flow: pick → upload → WS → display
-- [ ] Add l10n: 'Send photo', 'Image uploaded'
-- [ ] Backend restart, Flutter hot reload
+**Step 2: cabecera_pro.dart**
+- [ ] Ensure TranslationFunction import/definition
+- [ ] Minor Tolgee adjustments
 
-Next step auto-tracked here.
+**Step 3: sidebar_izquierdo.dart (Major)**
+- [ ] Remove all AppLocalizations.of
+- [ ] Fix _obtenerRango call with Tolgee.t()
+- [ ] Replace l10n.* with tr()
+
+**Step 4: pantalla_inicio.dart**
+- [ ] Replace AppLocalizations.of with Tolgee.t()
+
+**Step 5: pantalla_detalle_perfil.dart**
+- [ ] Add Tolgee import
+- [ ] Define/replace tr() calls
+
+**Step 6: Global verification**
+- [ ] Search for remaining AppLocalizations
+- [ ] Test: cd frontend/myngo_app && flutter pub get && flutter analyze && flutter run -d chrome
+
+**Step 7: Complete**
+- [ ] attempt_completion
+
+**Next Action:** Fix main.dart first (syntax blocker)
+

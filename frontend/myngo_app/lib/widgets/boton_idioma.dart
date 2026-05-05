@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../providers/locale_notifier.dart';
-import '../l10n/app_localizations.dart';
+import 'package:tolgee/tolgee.dart';
 
 class BotonIdioma extends StatelessWidget {
   final double iconSize;
@@ -22,11 +22,12 @@ class BotonIdioma extends StatelessWidget {
       builder: (context, localeNotifier, child) {
         final locale = localeNotifier.locale;
         final isSpanish = locale.languageCode == 'es';
-        final label = AppLocalizations.of(context)!.languageSpanish;
 
         return GestureDetector(
           onTap: localeNotifier.cycleLocale,
-          onLongPress: onLongPress,
+          onLongPress: onLongPress ?? () {
+            Tolgee.highlightTolgeeWidgets();
+          },
           child: Container(
             margin: margin ?? EdgeInsets.zero,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
