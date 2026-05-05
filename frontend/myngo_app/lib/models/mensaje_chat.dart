@@ -16,6 +16,7 @@ class MensajeChat {
   final bool borradoParaTodos;
   final bool borradoParaMi;
   final String tipo; // TEXTO, IMAGEN, VIDEO, SISTEMA
+  final Map<int, DateTime> infoLectura; // userId -> fechaLectura
 
   MensajeChat({
     required this.id,
@@ -32,6 +33,7 @@ class MensajeChat {
     this.borradoParaTodos = false,
     this.borradoParaMi = false,
     this.tipo = 'TEXTO',
+    this.infoLectura = const {},
   });
 
   bool get esSistema => tipo == 'SISTEMA';
@@ -57,6 +59,9 @@ class MensajeChat {
       borradoParaTodos: json['borrado_para_todos'] ?? false,
       borradoParaMi: json['borrado_para_mi'] ?? false,
       tipo: json['tipo'] ?? 'TEXTO',
+      infoLectura: (json['info_lectura'] as Map<String, dynamic>?)?.map(
+        (key, value) => MapEntry(int.parse(key), DateTime.parse(value).toLocal())
+      ) ?? {},
     );
   }
 
@@ -75,6 +80,7 @@ class MensajeChat {
     bool? borradoParaTodos,
     bool? borradoParaMi,
     String? tipo,
+    Map<int, DateTime>? infoLectura,
   }) {
     return MensajeChat(
       id: id ?? this.id,
@@ -91,6 +97,7 @@ class MensajeChat {
       borradoParaTodos: borradoParaTodos ?? this.borradoParaTodos,
       borradoParaMi: borradoParaMi ?? this.borradoParaMi,
       tipo: tipo ?? this.tipo,
+      infoLectura: infoLectura ?? this.infoLectura,
     );
   }
 }

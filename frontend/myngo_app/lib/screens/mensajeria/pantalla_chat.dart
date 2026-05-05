@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as emoji;
 import 'package:flutter/foundation.dart' as foundation;
+import 'package:go_router/go_router.dart';
 import '../../utils/configuracion.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../services/servicio_usuarios.dart';
@@ -549,12 +550,27 @@ class _PantallaChatState extends State<PantallaChat> {
                             fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
                           ),
                         ),
-                        if (esMio && !borrado) ...[
-                          const SizedBox(height: 2),
-                          Icon(
-                            msg.leidoPorIds.isNotEmpty ? Icons.done_all : Icons.done,
-                            size: 14,
-                            color: estilo == 'neon' ? colorMio : (colorMio.computeLuminance() > 0.5 ? Colors.black54 : Colors.white70),
+                        if (!borrado) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _formatHora(msg.fechaEnvio),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  color: esMio ? (colorMio.computeLuminance() > 0.5 ? Colors.black54 : Colors.white70) : Colors.black45,
+                                ),
+                              ),
+                              if (esMio) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  msg.leidoPorIds.isNotEmpty ? Icons.done_all : Icons.done,
+                                  size: 14,
+                                  color: msg.leidoPorIds.isNotEmpty ? const Color(0xFF248EA6) : (estilo == 'neon' ? colorMio : (colorMio.computeLuminance() > 0.5 ? Colors.black54 : Colors.white70)),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ],
@@ -687,19 +703,84 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   void _mostrarMiembros(BuildContext context) {
-    if (_sala == null && widget.comunidadId == null) return;
+    if (_sala == null) return;
+    
+    // Si es un chat de comunidad, mostramos el componente existente
+    if (_sala!.esGrupal && _sala!.comunidadId != null) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white, 
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32))
+          ),
+          child: ListaMiembrosComunidad(comunidad: Comunidad(
+            id: _sala!.comunidadId!, 
+            nombre: _sala!.nombre ?? '', 
+            descripcion: '', creadorNombre: '', urlPortada: '', esPublica: true, esVerificada: false, esMiembro: true, ratingMedio: 0.0, fechaCreacion: DateTime.now(), miRol: 'Miembro'
+          )),
+        ),
+      );
+      return;
+    }
+
+    // Si es un chat privado (DM), mostramos los participantes directamente
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-        child: ListaMiembrosComunidad(comunidad: Comunidad(
-          id: _sala?.comunidadId ?? widget.comunidadId!, 
-          nombre: _sala?.nombre ?? '', 
-          descripcion: '', creadorNombre: '', urlPortada: '', esPublica: true, esVerificada: false, esMiembro: true, ratingMedio: 0.0, fechaCreacion: DateTime.now(), miRol: 'Miembro'
-        )),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text(
+              'Participantes del Chat',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)),
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(bottom: 20),
+                itemCount: _sala!.participantes.length,
+                itemBuilder: (context, index) {
+                  final p = _sala!.participantes[index];
+                  final esYo = p.usuarioId == _miId;
+                  
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: p.usuario?.urlAvatar != null 
+                        ? CachedNetworkImageProvider(p.usuario!.urlAvatar!) 
+                        : null,
+                      child: p.usuario?.urlAvatar == null ? const Icon(Icons.person) : null,
+                    ),
+                    title: Text(
+                      esYo ? '${p.nombreAMostrar} (Tú)' : p.nombreAMostrar,
+                      style: GoogleFonts.outfit(fontWeight: esYo ? FontWeight.bold : FontWeight.normal),
+                    ),
+                    subtitle: Text(esYo ? 'Conectado' : 'Participante'),
+                    trailing: !esYo ? IconButton(
+                      icon: const Icon(Icons.person_outline),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.push('/perfil/${p.usuarioId}');
+                      },
+                    ) : null,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -775,34 +856,57 @@ class _PantallaChatState extends State<PantallaChat> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Leído por', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text('Info del mensaje', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: SizedBox(
           width: double.maxFinite,
-          child: lectores.isEmpty
-            ? const Text('Nadie ha leído este mensaje todavía.')
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: lectores.length,
-                itemBuilder: (context, index) {
-                  final lector = lectores[index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: lector.usuario?.urlAvatar != null 
-                        ? CachedNetworkImageProvider(lector.usuario!.urlAvatar!) 
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Enviado el ${_formatFechaCompleta(msg.fechaEnvio)}', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
+              const Divider(height: 24),
+              Text('Leído por:', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+              const SizedBox(height: 8),
+              if (lectores.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text('Nadie ha leído este mensaje todavía.'),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: lectores.length,
+                  itemBuilder: (context, index) {
+                    final lector = lectores[index];
+                    final fechaLectura = msg.infoLectura[lector.usuarioId];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundImage: lector.usuario?.urlAvatar != null 
+                          ? CachedNetworkImageProvider(lector.usuario!.urlAvatar!) 
+                          : null,
+                        child: lector.usuario?.urlAvatar == null ? const Icon(Icons.person) : null,
+                      ),
+                      title: Text(lector.nombreAMostrar, style: GoogleFonts.outfit(fontSize: 14)),
+                      subtitle: fechaLectura != null 
+                        ? Text('Leído el ${_formatFechaCompleta(fechaLectura)}', style: GoogleFonts.outfit(fontSize: 12))
                         : null,
-                      child: lector.usuario?.urlAvatar == null ? const Icon(Icons.person) : null,
-                    ),
-                    title: Text(lector.nombreAMostrar),
-                  );
-                },
-              ),
+                    );
+                  },
+                ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar')),
         ],
       ),
     );
+  }
+
+  String _formatFechaCompleta(DateTime fecha) {
+    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} a las ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
   }
 
   void _eliminarMensaje(MensajeChat msg, {required bool paraTodos}) async {
@@ -1052,6 +1156,10 @@ class _PantallaChatState extends State<PantallaChat> {
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6),
       itemBuilder: (context, index) => Icon(icon, size: 40, color: Colors.white),
     );
+  }
+
+  String _formatHora(DateTime fecha) {
+    return '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
   }
 
   @override

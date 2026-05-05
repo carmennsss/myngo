@@ -203,7 +203,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ids = list(mensajes.values_list('id', flat=True))
         if ids:
             for msg in mensajes:
-                msg.leido_por.add(self.user)
+                from .models import LecturaMensaje
+                LecturaMensaje.objects.get_or_create(mensaje=msg, usuario=self.user)
         return ids
 
     @database_sync_to_async
@@ -235,6 +236,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except: return None
 
 
+from django.core.cache import cache
+
 class PresenceConsumer(AsyncWebsocketConsumer):
     """Consumidor global para gestionar el estado de presencia (online/offline)."""
 
@@ -245,10 +248,32 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             return
 
         self.group_name = 'online_users'
+        self.counter_key = f'presence_cnt_{self.user.id}'
+        
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        estado_actual = await self.establecer_usuario_online(True)
+        # Incrementar contador de conexiones activas
+        try:
+            # Intentamos incrementar, si falla (no existe), inicializamos
+            count = cache.get(self.counter_key, 0)
+            count += 1
+            cache.set(self.counter_key, count, timeout=3600) # 1h de margen
+        except:
+            count = 1
+            cache.set(self.counter_key, count, timeout=3600)
+
+        # Solo si es la primera conexión, marcamos como online oficialmente
+        if count == 1:
+            estado_actual = await self.establecer_usuario_online(True)
+            await self.channel_layer.group_send(
+                self.group_name,
+                {'type': 'status_change', 'user_id': self.user.id, 'status': estado_actual}
+            )
+        else:
+            # Si ya estaba conectado, simplemente obtenemos el estado actual
+            estado_actual = await self.get_user_status()
+
         online_ids = await self.get_online_user_ids()
         
         await self.send(text_data=json.dumps({
@@ -258,21 +283,27 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             'online_users': online_ids,
         }))
 
-        await self.channel_layer.group_send(
-            self.group_name,
-            {'type': 'status_change', 'user_id': self.user.id, 'status': estado_actual}
-        )
-
     async def disconnect(self, close_code):
         if not self.user.is_anonymous:
-            await self.establecer_usuario_online(False)
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    'type': 'status_change', 'user_id': self.user.id,
-                    'status': 'DESCONECTADO', 'last_seen': timezone.now().isoformat()
-                }
-            )
+            # Decrementar contador
+            try:
+                count = cache.get(self.counter_key, 1)
+                count = max(0, count - 1)
+                cache.set(self.counter_key, count, timeout=3600)
+            except:
+                count = 0
+
+            # Solo si no quedan conexiones activas, marcamos como offline
+            if count == 0:
+                await self.establecer_usuario_online(False)
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        'type': 'status_change', 'user_id': self.user.id,
+                        'status': 'DESCONECTADO', 'last_seen': timezone.now().isoformat()
+                    }
+                )
+            
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive(self, text_data):
@@ -280,6 +311,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
         message_type = data.get('type')
         if message_type == 'heartbeat':
             await self.actualizar_heartbeat()
+            # Opcional: limpiar fantasmas cada cierto tiempo o en cada heartbeat
             fantasmas_ids = await self.limpiar_fantasmas()
             for f_id in fantasmas_ids:
                 await self.channel_layer.group_send(
@@ -297,6 +329,11 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     async def status_change(self, event):
         await self.send(text_data=json.dumps(event))
+
+    @database_sync_to_async
+    def get_user_status(self):
+        try: return Perfil.objects.get(usuario=self.user).estado
+        except: return 'DESCONECTADO'
 
     @database_sync_to_async
     def actualizar_estado(self, new_status):
@@ -329,19 +366,21 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def limpiar_fantasmas(self):
         try:
+            # Los fantasmas son aquellos que NO se han desconectado limpiamente
+            # (su contador de cache podría ser > 0 o 0, pero no han enviado heartbeat)
             umbral = timezone.now() - timezone.timedelta(minutes=2)
             fantasmas = Perfil.objects.filter(esta_online=True, last_seen__lt=umbral)
             fantasmas_ids = list(fantasmas.values_list('usuario_id', flat=True))
-            if fantasmas_ids: fantasmas.update(esta_online=False, estado='DESCONECTADO')
+            if fantasmas_ids: 
+                fantasmas.update(esta_online=False, estado='DESCONECTADO')
+                # Limpiar contadores de cache de fantasmas
+                for f_id in fantasmas_ids:
+                    cache.delete(f'presence_cnt_{f_id}')
             return fantasmas_ids
         except: return []
 
     @database_sync_to_async
     def get_online_user_ids(self):
-        try:
-            umbral = timezone.now() - timezone.timedelta(minutes=2)
-            Perfil.objects.filter(esta_online=True, last_seen__lt=umbral).update(esta_online=False, estado='DESCONECTADO')
-        except: pass
         return list(Perfil.objects.filter(esta_online=True).values_list('usuario_id', flat=True))
 
 

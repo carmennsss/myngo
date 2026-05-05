@@ -7,7 +7,7 @@ incluyendo detalles de miembros y estados de lectura.
 from rest_framework import serializers
 
 from usuarios.serializers import UsuarioSerializer
-from .models import MensajeChat, SalaChat, ParticipanteChat, PersonalizacionChat, ApodoPersonalizado
+from .models import MensajeChat, SalaChat, ParticipanteChat, PersonalizacionChat, ApodoPersonalizado, LecturaMensaje
 
 
 class PersonalizacionChatSerializer(serializers.ModelSerializer):
@@ -32,6 +32,7 @@ class MensajeChatSerializer(serializers.ModelSerializer):
     leido_por_ids = serializers.PrimaryKeyRelatedField(source='leido_por', many=True, read_only=True)
     referencia_a_detalle = serializers.SerializerMethodField()
     borrado_para_mi = serializers.SerializerMethodField()
+    info_lectura = serializers.SerializerMethodField()
 
     class Meta:
         model = MensajeChat
@@ -40,7 +41,7 @@ class MensajeChatSerializer(serializers.ModelSerializer):
             'content', 'url_archivo_s3', 'fecha_envio', 'leido_por_ids',
             'referencia_a', 'referencia_a_detalle', 'es_editado', 
             'fecha_edicion', 'borrado_para_todos', 'borrado_para_mi',
-            'tipo'
+            'tipo', 'info_lectura'
         ]
 
     def get_referencia_a_detalle(self, obj):
@@ -64,6 +65,11 @@ class MensajeChatSerializer(serializers.ModelSerializer):
             from django.core.files.storage import default_storage
             return default_storage.url(obj.emisor.perfil.avatar.lstrip('/'))
         return None
+
+    def get_info_lectura(self, obj):
+        """Obtiene un mapa de ID de usuario y fecha de lectura."""
+        lecturas = LecturaMensaje.objects.filter(mensaje=obj)
+        return {l.usuario_id: l.fecha_lectura.isoformat() for l in lecturas}
 
 
 class ParticipanteChatSerializer(serializers.ModelSerializer):
