@@ -253,7 +253,11 @@ class ServicioUsuarios {
     try {
       final preferencias = await SharedPreferences.getInstance();
       await preferencias.clear();
-    } catch (_) {}
+      // Aseguramos que el sistema de archivos termine de escribir
+      await preferencias.commit(); 
+    } catch (e) {
+      print('Error al cerrar sesión: $e');
+    }
   }
 
   /// Actualiza los datos del perfil del usuario (incluyendo avatar, bio, y orden de comunidades).

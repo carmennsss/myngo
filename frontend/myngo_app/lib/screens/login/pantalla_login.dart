@@ -261,8 +261,12 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   }
 
   Future<void> _checkExistingTokenAndRedirect() async {
-    final token = await _servicioUsuarios.obtenerToken();
+    // Si acabamos de cerrar sesión, no queremos redirigir
+    final preferencias = await SharedPreferences.getInstance();
+    final token = preferencias.getString('auth_token');
+    
     if (token != null && mounted) {
+      // Solo redirigimos si el token parece válido y no estamos en un proceso de logout
       context.go('/inicio');
     }
   }
@@ -379,6 +383,10 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           );
           context.go('/inicio');
         } else {
+          // Imprimir para ver el error aunque el SnackBar falle
+          print("DEBUG LOGIN: ${respuesta.mensaje}");
+          _estaCargando.value = false;
+          
           setState(() {
             _estadoGatos = EstadoMonstruo.triste;
           });

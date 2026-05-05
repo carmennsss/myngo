@@ -1,7 +1,7 @@
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:tolgee/tolgee.dart';
 import '../../models/comunidad.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import '../../models/usuario.dart';
@@ -16,7 +16,6 @@ class SidebarIzquierdo extends StatelessWidget {
   final Function(Comunidad) onComunidadSelected;
   final Function(Usuario) onUsuarioSelected;
   final Function(int, int) onReorder;
-  final bool embeddedInDrawer;
 
   const SidebarIzquierdo({
     super.key,
@@ -29,143 +28,77 @@ class SidebarIzquierdo extends StatelessWidget {
     required this.onComunidadSelected,
     required this.onUsuarioSelected,
     required this.onReorder,
-    this.embeddedInDrawer = false,
   });
 
-  String _obtenerRango(int puntos, String Function(String, String, [Map<String, Object>?]) tr) {
-    if (puntos < 500) return tr('rankMichiBronze', 'Michi de Bronce');
-    if (puntos < 1500) return tr('rankMichiSilver', 'Michi de Plata');
-    if (puntos < 3000) return tr('rankMichiGold', 'Michi de Oro');
-    return tr('rankMichiDiamond', 'Michi de Diamante');
+  String _obtenerRango(int puntos) {
+    if (puntos < 500) return 'Michi de Bronce';
+    if (puntos < 1500) return 'Michi de Plata';
+    if (puntos < 3000) return 'Michi de Oro';
+    return 'Michi de Diamante';
   }
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
-        // Función de seguridad para evitar que Tolgee rompa la app
-        String safeTr(String key, String fallback, [Map<String, Object>? params]) {
-          try {
-            final result = tr(key, params);
-            return result ?? fallback;
-          } catch (e) {
-            return fallback;
-          }
-        }
-
-        final content = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _TarjetaSidebar(
-              titulo: safeTr('myGatosTitle', 'Mis Michi-Grupos'),
-              contenido: (cargando || comunidades == null) 
-               ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
-               : comunidades!.isEmpty 
-                 ? Text(safeTr('emptyStateCommunitiesList', 'Únete a una comunidad 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-                 : Wrap(
-                   spacing: 12,
-                   runSpacing: 12,
-                   children: [
-                     ...comunidades!.take(7).map((c) => _ComunidadAvatarCompacto(
-                       comunidad: c, 
-                       onTap: () => onComunidadSelected(c)
-                     )),
-                     if (comunidades!.length > 7)
-                       _BotonVerMas(
-                         total: comunidades!.length,
-                         onTap: () => _mostrarDialogoComunidades(context, safeTr, comunidades!, onComunidadSelected, onReorder),
-                       ),
-                   ],
-                 ),
-            ),
-            const SizedBox(height: 12),
-            _TarjetaSidebar(
-              titulo: safeTr('sidebarRanking', 'Ranking Semanal'),
-              contenido: (cargandoRanking || rankingUsuarios == null)
-                ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
-                : rankingUsuarios!.isEmpty
-                  ? Text(safeTr('emptyStateRanking', 'Aún no hay ranking 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-                  : Column(
-                      children: rankingUsuarios!.take(3).toList().asMap().entries.map((entry) {
-                        int index = entry.key;
-                        Usuario u = entry.value;
-                        return _RankingItem(
-                          puesto: index + 1, 
-                          usuario: u,
-                          onTap: () => onUsuarioSelected(u),
-                        );
-                      }).toList(),
-                    ),
-            ),
-            const SizedBox(height: 12),
-            if (estaLogueado)
-            _TarjetaSidebar(
-              titulo: safeTr('sidebarMyPoints', 'Mis Puntos y Rango'),
-              contenido: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_obtenerRango(misPuntos ?? 0, safeTr), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
-                  const SizedBox(height: 6),
-                  Text(safeTr('rankPoints', '${misPuntos ?? 0} / 5000 Puntos', {'count': (misPuntos ?? 0).toString()}), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
-                ],
-              ),
-            ),
-          ],
-        );
-
-        if (embeddedInDrawer) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: content,
-          );
-        }
-
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro)
-          ),
-          child: Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _TarjetaSidebar(
+          titulo: 'Mis Michi-Grupos',
+          contenido: (cargando || comunidades == null) 
+           ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+           : comunidades!.isEmpty 
+             ? Text('├Ünete a una comunidad ­ƒÉ¥', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+             : Wrap(
+               spacing: 12,
+               runSpacing: 12,
+               children: [
+                 ...comunidades!.take(7).map((c) => _ComunidadAvatarCompacto(
+                   comunidad: c, 
+                   onTap: () => onComunidadSelected(c)
+                 )),
+                 if (comunidades!.length > 7)
+                   _BotonVerMas(
+                     total: comunidades!.length,
+                     onTap: () => _mostrarDialogoComunidades(context, comunidades!, onComunidadSelected, onReorder),
+                   ),
+               ],
+             ),
+        ),
+        const SizedBox(height: 12),
+        _TarjetaSidebar(
+          titulo: 'Ranking Semanal',
+          contenido: (cargandoRanking || rankingUsuarios == null)
+            ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+            : rankingUsuarios!.isEmpty
+              ? Text('A├║n no hay ranking ­ƒÉ¥', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+              : Column(
+                  children: rankingUsuarios!.take(3).toList().asMap().entries.map((entry) {
+                    int index = entry.key;
+                    Usuario u = entry.value;
+                    return _RankingItem(
+                      puesto: index + 1, 
+                      usuario: u,
+                      onTap: () => onUsuarioSelected(u),
+                    );
+                  }).toList(),
+                ),
+        ),
+        const SizedBox(height: 12),
+        if (estaLogueado)
+        _TarjetaSidebar(
+          titulo: 'Mis Puntos y Rango',
+          contenido: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Patrón de fondo (Patas de gato)
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.15,
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 30.0,
-                      crossAxisSpacing: 30.0,
-                    ),
-                    itemBuilder: (context, index) => Transform.rotate(
-                      angle: index % 2 == 0 ? 0.3 : -0.2,
-                      child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
-                    ),
-                  ),
-                ),
-              ),
-              // Contenido scrollable
-              Theme(
-                data: Theme.of(context).copyWith(
-                  scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
-                    thumbVisibility: WidgetStateProperty.all(false),
-                    trackVisibility: WidgetStateProperty.all(false),
-                  ),
-                ),
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                    child: content,
-                  ),
-                ),
-              ),
+              Text(_obtenerRango(misPuntos ?? 0), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
+              const SizedBox(height: 6),
+              Text('${misPuntos ?? 0} / 5000 Puntos', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
             ],
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
@@ -206,7 +139,7 @@ class _TarjetaSidebar extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
-            // Decoración sutil de fondo (Patrón de patas)
+            // Decoraci├│n sutil de fondo (Patr├│n de patas)
             Positioned(
               right: -30,
               bottom: -20,
@@ -273,6 +206,50 @@ class _TarjetaSidebar extends StatelessWidget {
   }
 }
 
+class _ComunidadAvatarSidebar extends StatelessWidget {
+  final Comunidad comunidad;
+  final VoidCallback onTap;
+  const _ComunidadAvatarSidebar({required this.comunidad, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return BotonTactil(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: comunidad.colorTema.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: comunidad.colorTema.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: comunidad.colorTema.withOpacity(0.3),
+              backgroundImage: comunidad.urlPortada.isNotEmpty ? CachedNetworkImageProvider(comunidad.urlPortada) : null,
+              child: comunidad.urlPortada.isEmpty ? Text(comunidad.nombre[0].toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, color: comunidad.colorTema, fontSize: 14)) : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(comunidad.nombre, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF4A4440))),
+                  const SizedBox(height: 4),
+                  Text('${comunidad.miembrosCount} Miembros', maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ComunidadAvatarCompacto extends StatelessWidget {
   final Comunidad comunidad;
   final VoidCallback onTap;
@@ -300,12 +277,12 @@ class _ComunidadAvatarCompacto extends StatelessWidget {
             ],
           ),
           child: CircleAvatar(
-            backgroundColor: Colors.white,
-            backgroundImage: (comunidad.urlPortada != null && comunidad.urlPortada!.isNotEmpty) 
-              ? CachedNetworkImageProvider(comunidad.urlPortada!) 
+            backgroundColor: comunidad.colorTema.withOpacity(0.1),
+            backgroundImage: comunidad.urlPortada.isNotEmpty 
+              ? CachedNetworkImageProvider(comunidad.urlPortada) 
               : null,
-            child: (comunidad.urlPortada == null || comunidad.urlPortada!.isEmpty) 
-              ? Text(comunidad.nombre.isNotEmpty ? comunidad.nombre[0].toUpperCase() : '?', 
+            child: comunidad.urlPortada.isEmpty 
+              ? Text(comunidad.nombre[0].toUpperCase(), 
                   style: TextStyle(color: comunidad.colorTema, fontWeight: FontWeight.bold, fontSize: 16)) 
               : null,
           ),
@@ -346,17 +323,13 @@ class _BotonVerMas extends StatelessWidget {
 
 void _mostrarDialogoComunidades(
     BuildContext context, 
-    String Function(String, String, [Map<String, Object>?]) tr,
     List<Comunidad> comunidades, 
     Function(Comunidad) onSelected,
     Function(int, int) onReorder) {
-  // Copia local para que el diálogo refleje cambios inmediatamente
-  final listLocal = List<Comunidad>.from(comunidades);
-  
   showGeneralDialog(
     context: context,
     barrierDismissible: true,
-    barrierLabel: tr('commonClose', 'Cerrar'),
+    barrierLabel: 'Cerrar',
     barrierColor: Colors.black.withOpacity(0.4),
     transitionDuration: const Duration(milliseconds: 350),
     pageBuilder: (context, anim1, anim2) {
@@ -404,7 +377,7 @@ void _mostrarDialogoComunidades(
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: Text(tr('myGatosTitle', 'Mis Michi-Grupos'), 
+                                child: Text('Mis Michi-Grupos', 
                                   style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 24, color: const Color(0xFF4A4440), letterSpacing: -0.5)
                                 ),
                               ),
@@ -421,7 +394,7 @@ void _mostrarDialogoComunidades(
                               const Icon(Icons.touch_app_rounded, color: Color(0xFF248EA6), size: 16),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(tr('sidebarDragToReorder', 'Mantén presionado y arrastra para reordenar tus favoritos 🐾'), 
+                                child: Text('Mant├®n presionado y arrastra para reordenar tus favoritos ­ƒÉ¥', 
                                   style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500)
                                 ),
                               ),
@@ -430,21 +403,16 @@ void _mostrarDialogoComunidades(
                         ],
                       ),
                     ),
-                    // Lista Reordenable con copia local
+                    // Lista Reordenable
                     Expanded(
                       child: ReorderableListView.builder(
                         buildDefaultDragHandles: false,
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        itemCount: listLocal.length,
+                        itemCount: comunidades.length,
                         onReorder: (oldIndex, newIndex) {
                           setDialogState(() {
-                            // Actualizar la lista local del diálogo inmediatamente
-                            final adjusted = newIndex > oldIndex ? newIndex - 1 : newIndex;
-                            final item = listLocal.removeAt(oldIndex);
-                            listLocal.insert(adjusted, item);
+                            onReorder(oldIndex, newIndex);
                           });
-                          // También notificar al padre para persistir
-                          onReorder(oldIndex, newIndex);
                         },
                         proxyDecorator: (child, index, animation) {
                           return Material(
@@ -472,7 +440,7 @@ void _mostrarDialogoComunidades(
                           );
                         },
                         itemBuilder: (context, index) {
-                          final c = listLocal[index];
+                          final c = comunidades[index];
                           return Container(
                             key: ValueKey('dialog_${c.id}'),
                             margin: const EdgeInsets.only(bottom: 12.0),
@@ -506,12 +474,12 @@ void _mostrarDialogoComunidades(
                                         ),
                                         child: CircleAvatar(
                                           radius: 26,
-                                          backgroundColor: Colors.white,
+                                          backgroundColor: c.colorTema.withOpacity(0.1),
                                           backgroundImage: (c.urlPortada != null && c.urlPortada!.isNotEmpty) 
                                             ? CachedNetworkImageProvider(c.urlPortada!) 
                                             : null,
                                           child: (c.urlPortada == null || c.urlPortada!.isEmpty) 
-                                            ? Text(c.nombre.isNotEmpty ? c.nombre[0].toUpperCase() : '?', style: TextStyle(color: c.colorTema, fontWeight: FontWeight.bold, fontSize: 18)) 
+                                            ? Text(c.nombre[0].toUpperCase(), style: TextStyle(color: c.colorTema, fontWeight: FontWeight.bold, fontSize: 18)) 
                                             : null,
                                         ),
                                       ),
@@ -526,7 +494,7 @@ void _mostrarDialogoComunidades(
                                               children: [
                                                 Icon(Icons.people_alt_rounded, size: 14, color: const Color(0xFF248EA6).withOpacity(0.7)),
                                                 const SizedBox(width: 4),
-                                                Text('${c.miembrosCount ?? 0} ${tr('sidebarMembers', 'miembros')}', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                                                Text('${c.miembrosCount ?? 0} miembros', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                                               ],
                                             ),
                                           ],
@@ -580,91 +548,79 @@ class _RankingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
-        String safeTr(String key, String fallback, [Map<String, Object>? params]) {
-          try {
-            return tr(key, params) ?? fallback;
-          } catch (e) {
-            return fallback;
-          }
-        }
-
-        return BotonTactil(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Row(
+    return BotonTactil(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              child: Text(
+                puesto.toString(), 
+                style: GoogleFonts.outfit(fontSize: 16, color: const Color(0xFFC35E34), fontWeight: FontWeight.w900)
+              ),
+            ),
+            Stack(
               children: [
-                SizedBox(
-                  width: 24,
-                  child: Text(
-                    puesto.toString(), 
-                    style: GoogleFonts.outfit(fontSize: 16, color: const Color(0xFFC35E34), fontWeight: FontWeight.w900)
-                  ),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                  backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
+                      ? CachedNetworkImageProvider(usuario.urlAvatar!)
+                      : null,
+                  child: (usuario.urlAvatar == null || usuario.urlAvatar!.isEmpty)
+                      ? const Icon(Icons.person, size: 18, color: Color(0xFFC35E34))
+                      : null,
                 ),
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.white,
-                      backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
-                          ? CachedNetworkImageProvider(usuario.urlAvatar!)
-                          : null,
-                      child: (usuario.urlAvatar == null || usuario.urlAvatar!.isEmpty)
-                          ? const Icon(Icons.person, size: 18, color: Color(0xFFC35E34))
-                          : null,
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        usuario.nombreUsuario, 
-                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)), 
-                        maxLines: 1, 
-                        overflow: TextOverflow.ellipsis
-                      ),
-                      Text(
-                        usuario.estado == 'ACTIVO' ? (safeTr('statusActive', 'Activo')) : (usuario.estado == 'OCUPADO' ? (safeTr('statusBusy', 'Ocupado')) : (safeTr('statusOffline', 'Desconectado'))),
-                        style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                      ),
-                    ],
                   ),
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE89A6A)),
-                    const SizedBox(width: 4),
-                    Text((usuario.ratingActual ?? 0.0).toStringAsFixed(1), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-                  ],
                 ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    usuario.nombreUsuario, 
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)), 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis
+                  ),
+                  Text(
+                    usuario.estado == 'ACTIVO' ? 'Activo' : (usuario.estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
+                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE89A6A)),
+                const SizedBox(width: 4),
+                Text(usuario.ratingActual.toStringAsFixed(1), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Color _getColorEstado(String estado) {
-    switch (estado.toUpperCase()) {
+    switch (estado) {
       case 'ACTIVO':
         return Colors.greenAccent;
       case 'OCUPADO':
