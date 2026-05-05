@@ -253,15 +253,8 @@ class PresenceConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        # Incrementar contador de conexiones activas
-        try:
-            # Intentamos incrementar, si falla (no existe), inicializamos
-            count = cache.get(self.counter_key, 0)
-            count += 1
-            cache.set(self.counter_key, count, timeout=3600) # 1h de margen
-        except:
-            count = 1
-            cache.set(self.counter_key, count, timeout=3600)
+        # Incrementar contador de conexiones activas de forma segura
+        count = await self.incrementar_contador_presencia()
 
         # Solo si es la primera conexión, marcamos como online oficialmente
         if count == 1:
@@ -285,13 +278,8 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if not self.user.is_anonymous:
-            # Decrementar contador
-            try:
-                count = cache.get(self.counter_key, 1)
-                count = max(0, count - 1)
-                cache.set(self.counter_key, count, timeout=3600)
-            except:
-                count = 0
+            # Decrementar contador de forma segura
+            count = await self.decrementar_contador_presencia()
 
             # Solo si no quedan conexiones activas, marcamos como offline
             if count == 0:
@@ -348,6 +336,24 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     def actualizar_heartbeat(self):
         try: Perfil.objects.filter(usuario=self.user).update(last_seen=timezone.now(), esta_online=True)
         except: pass
+
+    @database_sync_to_async
+    def incrementar_contador_presencia(self):
+        try:
+            count = cache.get(self.counter_key, 0)
+            count += 1
+            cache.set(self.counter_key, count, timeout=3600)
+            return count
+        except: return 1
+
+    @database_sync_to_async
+    def decrementar_contador_presencia(self):
+        try:
+            count = cache.get(self.counter_key, 1)
+            count = max(0, count - 1)
+            cache.set(self.counter_key, count, timeout=3600)
+            return count
+        except: return 0
 
     @database_sync_to_async
     def establecer_usuario_online(self, is_online):

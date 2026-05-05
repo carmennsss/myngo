@@ -151,7 +151,8 @@ class MensajesChatList(generics.ListAPIView):
         sala_id = self.kwargs['sala_id']
         if not SalaChat.objects.filter(id=sala_id, miembros=self.request.user).exists():
             return MensajeChat.objects.none()
-        return MensajeChat.objects.filter(sala_id=sala_id).order_by('-fecha_envio')
+        # Excluimos mensajes borrados localmente por el usuario
+        return MensajeChat.objects.filter(sala_id=sala_id).exclude(borrado_para=self.request.user).order_by('-fecha_envio')
 
 
 @api_view(['POST'])
@@ -276,6 +277,10 @@ def borrar_mensaje(request, mensaje_id):
                     'type': 'message_deleted', 'mensaje_id': mensaje.id, 'para_todos': True
                 }
             )
+        else:
+            # Borrado local (para mí)
+            mensaje.borrado_para.add(request.user)
+            
         return Response({'status': 'ok'})
     except MensajeChat.DoesNotExist:
         return Response({'error': 'Mensaje no encontrado'}, status=404)
