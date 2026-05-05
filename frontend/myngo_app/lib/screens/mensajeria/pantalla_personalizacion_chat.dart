@@ -2,9 +2,75 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:math';
 import '../../models/sala_chat.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:myngo_app/l10n/app_localizations.dart';
+
+// Painter eficiente para preview de patrones
+class _PatternPreviewPainter extends CustomPainter {
+  final String patternType;
+  
+  _PatternPreviewPainter({required this.patternType});
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white;
+    const spacing = 25.0;
+    
+    switch (patternType) {
+      case 'dots':
+        for (double x = 0; x < size.width; x += spacing) {
+          for (double y = 0; y < size.height; y += spacing) {
+            canvas.drawCircle(Offset(x, y), 2, paint);
+          }
+        }
+        break;
+      case 'stars':
+        for (double x = 0; x < size.width; x += spacing) {
+          for (double y = 0; y < size.height; y += spacing) {
+            canvas.drawCircle(Offset(x, y), 2, paint);
+          }
+        }
+        break;
+      case 'triangles':
+        for (double x = 0; x < size.width; x += spacing) {
+          for (double y = 0; y < size.height; y += spacing) {
+            _drawSmallTriangle(canvas, Offset(x, y), 4, paint);
+          }
+        }
+        break;
+      case 'waves':
+        for (double y = 0; y < size.height; y += 15) {
+          for (double x = 0; x <= size.width; x += 3) {
+            final nextX = x + 3;
+            if (nextX <= size.width) {
+              canvas.drawLine(Offset(x, y), Offset(nextX, y + 2), paint..strokeWidth = 0.5);
+            }
+          }
+        }
+        break;
+      case 'lines':
+        for (double x = 0; x < size.width; x += spacing) {
+          canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint..strokeWidth = 0.5);
+        }
+        break;
+    }
+  }
+  
+  void _drawSmallTriangle(Canvas canvas, Offset center, double size, Paint paint) {
+    final path = Path();
+    path.moveTo(center.dx, center.dy - size / 2);
+    path.lineTo(center.dx + size / 2, center.dy + size / 2);
+    path.lineTo(center.dx - size / 2, center.dy + size / 2);
+    path.close();
+    canvas.drawPath(path, paint..style = PaintingStyle.stroke..strokeWidth = 0.5);
+  }
+  
+  @override
+  bool shouldRepaint(_PatternPreviewPainter oldDelegate) => oldDelegate.patternType != patternType;
+}
 
 class PantallaPersonalizacionChat extends StatefulWidget {
   final SalaChat sala;
@@ -123,7 +189,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Personalizar Chat', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context)!.chatPersonalization, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         actions: [
           if (_estaGuardando)
             const Center(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))))
@@ -617,20 +683,9 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
   }
 
   Widget _buildPatternWidget(String id) {
-    IconData icon;
-    switch (id) {
-      case 'dots': icon = Icons.circle; break;
-      case 'stars': icon = Icons.star; break;
-      case 'triangles': icon = Icons.change_history; break;
-      case 'waves': icon = Icons.waves; break;
-      case 'lines': icon = Icons.reorder; break;
-      default: icon = Icons.circle;
-    }
-    
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
-      itemBuilder: (context, index) => Icon(icon, size: 20, color: Colors.white),
+    return CustomPaint(
+      painter: _PatternPreviewPainter(patternType: id),
+      child: Container(),
     );
   }
 

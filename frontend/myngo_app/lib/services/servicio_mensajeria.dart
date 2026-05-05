@@ -229,6 +229,40 @@ class ServicioMensajeria {
     return null;
   }
 
+  /// Sube imagen para mensaje de chat.
+  Future<String?> uploadChatImage(int idSala, XFile imagen) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      final uri = Uri.parse('$_urlApi/mensajeria/salas/$idSala/upload-image/');
+      var solicitud = http.MultipartRequest('POST', uri);
+
+      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+
+      if (kIsWeb) {
+        final bytes = await imagen.readAsBytes();
+        solicitud.files.add(http.MultipartFile.fromBytes(
+          'imagen',
+          bytes,
+          filename: imagen.name,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+      } else {
+        solicitud.files.add(await http.MultipartFile.fromPath('imagen', imagen.path));
+      }
+
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
+      final respuesta = await http.Response.fromStream(respuestaStream);
+
+      if (respuesta.statusCode == 200) {
+        final datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
+        return datos['url'];
+      }
+    } catch (e) {
+      debugPrint('Error uploadChatImage: $e');
+    }
+    return null;
+  }
+
   /// Establece un apodo personalizado (privado) para otro usuario en un chat.
   Future<bool> actualizarApodoPersonalizado(int idSala, int usuarioId, String? apodo) async {
     try {
@@ -381,12 +415,14 @@ class ServicioMensajeria {
     });
   }
 
-  void enviarMensajeChat(String contenido, {String? idCliente, int? referenciaA}) {
+  void enviarMensajeChat(String contenido, {String? clientId, int? referenciaA, String? tipo, String? urlArchivoS3}) {
     if (_estaConectadoChat && _canalChat != null) {
       _canalChat!.sink.add(jsonEncode({
         'type': 'message',
         'content': contenido,
-        'client_id': idCliente,
+        'client_id': clientId,
+        'tipo': tipo ?? 'TEXTO',
+        'url_archivo_s3': urlArchivoS3,
         if (referenciaA != null) 'referencia_a': referenciaA,
       }));
     }

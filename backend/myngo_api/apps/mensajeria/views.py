@@ -17,6 +17,7 @@ from rest_framework.response import Response
 
 from usuarios.models import Usuario
 from .models import MensajeChat, SalaChat, ParticipanteChat, PersonalizacionChat, ApodoPersonalizado
+from contenido.models import ImagenGaleria
 from .serializers import MensajeChatSerializer, SalaChatSerializer, ParticipanteChatSerializer
 
 
@@ -478,6 +479,37 @@ def subir_avatar_sala(request, pk):
         return Response({
             'status': 'ok',
             'url_avatar': sala.avatar_s3
+        })
+    except SalaChat.DoesNotExist:
+        return Response({'error': 'Sala no encontrada'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def upload_chat_image(request, sala_id):
+    """Sube imagen para mensaje de chat, S3 en chats/contenido."""
+    try:
+        sala = SalaChat.objects.get(id=sala_id, miembros=request.user)
+        imagen = request.FILES.get('imagen')
+        
+        if not imagen:
+            return Response({'error': 'No se proporcionó imagen'}, status=400)
+            
+        # Create with custom name for chats/contenido
+        filename = f"chats/contenido/{imagen.name}"
+        img_instance = ImagenGaleria(
+            propietario=request.user,
+            comunidad_id=sala.comunidad_id if sala.comunidad else None,
+        )
+        img_instance.url_s3.save(filename, imagen, save=False)
+        img_instance.tipo_archivo = 'I'
+        img_instance.save()
+        
+        return Response({
+            'status': 'ok',
+            'url': img_instance.url_s3.url
         })
     except SalaChat.DoesNotExist:
         return Response({'error': 'Sala no encontrada'}, status=404)

@@ -1,71 +1,69 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../providers/locale_notifier.dart';
+import '../l10n/app_localizations.dart';
 
 class BotonIdioma extends StatelessWidget {
-  const BotonIdioma({super.key});
+  final double iconSize;
+  final EdgeInsets? margin;
+  final VoidCallback? onLongPress;
+
+  const BotonIdioma({
+    super.key,
+    this.iconSize = 20.0,
+    this.margin,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: PopupMenuButton<String>(
-        tooltip: 'Cambiar idioma',
-        offset: const Offset(0, 45),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.language_rounded, size: 20, color: Color(0xFFC35E34)),
-              const SizedBox(width: 8),
-              Text(
-                'ES',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF4A4440),
+    return Consumer<LocaleNotifier>(
+      builder: (context, localeNotifier, child) {
+        final locale = localeNotifier.locale;
+        final isSpanish = locale.languageCode == 'es';
+        final label = AppLocalizations.of(context)!.languageSpanish;
+
+        return GestureDetector(
+          onTap: localeNotifier.cycleLocale,
+          onLongPress: onLongPress,
+          child: Container(
+            margin: margin ?? EdgeInsets.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: Colors.grey),
-            ],
-          ),
-        ),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'es',
+              ],
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🇪🇸', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 12),
-                Text('Español', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                const Spacer(),
-                const Icon(Icons.check_circle_rounded, color: Colors.green, size: 16),
+                FaIcon(
+                  isSpanish ? FontAwesomeIcons.language : FontAwesomeIcons.globe,
+                  size: iconSize * 0.8,
+                  color: const Color(0xFFC35E34),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isSpanish ? 'ES' : 'EN',
+                  style: TextStyle(
+                    fontSize: iconSize * 0.7,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFC35E34),
+                  ),
+                ),
               ],
             ),
           ),
-          PopupMenuItem(
-            value: 'en',
-            child: Row(
-              children: [
-                const Text('🇺🇸', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 12),
-                Text('English', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
+
