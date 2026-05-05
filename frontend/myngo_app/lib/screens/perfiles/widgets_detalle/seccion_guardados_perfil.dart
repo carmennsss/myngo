@@ -42,7 +42,6 @@ class SeccionGuardadosPerfil extends StatefulWidget {
 
 class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
   bool _mostrarCarpetas = false;
-  final ScrollController _scrollController = ScrollController();
   bool _estaCargandoMas = false;
   bool _hayMasPosts = true;
   int _paginaActual = 1;
@@ -52,7 +51,6 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
   void initState() {
     super.initState();
     _posts = widget.publicaciones ?? [];
-    _scrollController.addListener(_alHacerScroll);
   }
 
   @override
@@ -65,13 +63,6 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
     }
   }
 
-  void _alHacerScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
-      if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
-        _cargarMasPosts();
-      }
-    }
-  }
 
   Future<void> _cargarMasPosts() async {
     setState(() => _estaCargandoMas = true);
@@ -95,7 +86,6 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -155,20 +145,31 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
         message: 'No tienes publicaciones guardadas en esta sección.',
       );
     }
-    return MasonryGridView.count(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      crossAxisCount: 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _posts.length) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollEndNotification) {
+          if (notification.metrics.pixels >= notification.metrics.maxScrollExtent - 400) {
+            if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
+              _cargarMasPosts();
+            }
+          }
         }
-        final post = _posts[index];
-        return _TarjetaPostGuardado(post: post, onUpdate: widget.onRefresh);
+        return false;
       },
+      child: MasonryGridView.count(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == _posts.length) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+          }
+          final post = _posts[index];
+          return _TarjetaPostGuardado(post: post, onUpdate: widget.onRefresh);
+        },
+      ),
     );
   }
 

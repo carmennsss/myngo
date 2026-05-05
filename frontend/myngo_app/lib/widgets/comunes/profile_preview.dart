@@ -113,14 +113,17 @@ class ProfilePreview extends StatelessWidget {
           // 2. EL MARCO (CAPA SUPERIOR - OVERLAY)
           if (marcoUrl != null && marcoUrl!.isNotEmpty)
             IgnorePointer(
-              child: Container(
-                width: marcoSize,
-                height: marcoSize,
-                child: CachedNetworkImage(
-                  imageUrl: marcoUrl!,
-                  fit: BoxFit.contain, // Para que las alas se vean perfectas
-                  placeholder: (context, url) => const SizedBox.shrink(),
-                  errorWidget: (context, url, error) => const SizedBox.shrink(),
+              child: Center(
+                child: SizedBox(
+                  width: marcoSize,
+                  height: marcoSize,
+                  child: CachedNetworkImage(
+                    imageUrl: marcoUrl!,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.center,
+                    placeholder: (context, url) => const SizedBox.shrink(),
+                    errorWidget: (context, url, error) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),

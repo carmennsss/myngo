@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../utils/configuracion.dart';
+import '../../widgets/boton_idioma.dart';
 
 class PantallaRegistro extends StatefulWidget {
   const PantallaRegistro({super.key});
@@ -50,9 +51,27 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth > 900;
-              
-              if (isDesktop) {
+              return Stack(
+                children: [
+                  _buildContenido(context, constraints),
+                  const Positioned(
+                    top: 20,
+                    right: 20,
+                    child: BotonIdioma(),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContenido(BuildContext context, BoxConstraints constraints) {
+    final isDesktop = constraints.maxWidth > 900;
+    
+    if (isDesktop) {
                 return Row(
                   children: [
                     // Lado Izquierdo: Visual/Fun Premium
@@ -181,11 +200,6 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                   ),
                 ),
               );
-            },
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -458,9 +472,9 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     _notificarCambioGato();
 
     final respuesta = await _servicioUsuarios.registrarse(
-      _controladorNombre.text,
-      _controladorEmail.text,
-      _controladorPassword.text,
+      _controladorNombre.text.trim(),
+      _controladorEmail.text.trim(),
+      _controladorPassword.text.trim(),
     );
 
     _estaCargando.value = false;

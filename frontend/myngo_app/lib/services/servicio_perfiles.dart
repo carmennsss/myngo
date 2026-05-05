@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart' as http_dio;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
@@ -195,54 +196,73 @@ class ServicioPerfiles {
     List<XFile>? imagenes,
     String? etiquetas,
     int? comunidadId,
+    void Function(int, int)? alProgresar,
   }) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      final url = '${Configuracion.baseUrl}/contenido/publicaciones/';
-      final solicitud = http.MultipartRequest('POST', Uri.parse(url));
+      // URL corregida para coincidir con el backend: /contenido/publicaciones/crear/
+      final url = '${Configuracion.baseUrl}/contenido/publicaciones/crear/';
+      
+      final clienteDio = http_dio.Dio(http_dio.BaseOptions(
+        connectTimeout: const Duration(minutes: 5),
+        receiveTimeout: const Duration(minutes: 5),
+      ));
+      
+      final cabeceras = {
+        if (token != null) 'Authorization': 'Token $token',
+      };
 
-      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
-      solicitud.fields['contenido_texto'] = texto;
-      if (etiquetas != null && etiquetas.trim().isNotEmpty) solicitud.fields['etiquetas'] = etiquetas.trim();
-      if (comunidadId != null) solicitud.fields['comunidad'] = comunidadId.toString();
+      final datosFormulario = http_dio.FormData();
+      datosFormulario.fields.add(MapEntry('contenido_texto', texto));
+      if (etiquetas != null && etiquetas.trim().isNotEmpty) {
+        datosFormulario.fields.add(MapEntry('etiquetas', etiquetas.trim()));
+      }
+      if (comunidadId != null && comunidadId != 0) {
+        datosFormulario.fields.add(MapEntry('comunidad', comunidadId.toString()));
+      }
 
       if (imagenes != null && imagenes.isNotEmpty) {
         for (var xfile in imagenes) {
-          // Usamos el nombre para detectar el tipo real (mp4, mov...) en Web
-          final mimeType = lookupMimeType(xfile.name) ?? (xfile.name.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg');
+          final bytes = await xfile.readAsBytes();
+          // Detección de MIME robusta para Web
+          final mimeType = lookupMimeType(xfile.name, headerBytes: bytes) ?? 
+                          (xfile.name.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'image/jpeg');
           final typeParts = mimeType.split('/');
           
-          if (kIsWeb) {
-            final bytes = await xfile.readAsBytes();
-            solicitud.files.add(http.MultipartFile.fromBytes(
-              'url_archivo_s3[]', 
-              bytes, 
-              filename: xfile.name, 
-              contentType: MediaType(typeParts[0], typeParts[1])
-            ));
-          } else {
-            solicitud.files.add(await http.MultipartFile.fromPath(
-              'url_archivo_s3[]', 
-              xfile.path, 
-              contentType: MediaType(typeParts[0], typeParts[1])
-            ));
-          }
+          datosFormulario.files.add(MapEntry(
+            'url_archivo_s3[]',
+            http_dio.MultipartFile.fromBytes(
+              bytes,
+              filename: xfile.name,
+              contentType: MediaType(typeParts[0], typeParts[1]),
+            ),
+          ));
         }
       }
 
-      final respuestaStream = await solicitud.send().timeout(const Duration(minutes: 5));
-      final respuesta = await http.Response.fromStream(respuestaStream);
+      final respuesta = await clienteDio.post(
+        url,
+        data: datosFormulario,
+        options: http_dio.Options(headers: cabeceras),
+        onSendProgress: alProgresar,
+      );
 
-      if (respuesta.statusCode == 201) {
-        final datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
+      if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
+        final datosJson = respuesta.data is String ? jsonDecode(respuesta.data) : respuesta.data;
         final nuevaPublicacion = Publicacion.fromJson(datosJson);
-        if (!nuevaPublicacion.esValidoIa) return RespuestaApi(exito: false, mensaje: 'Contenido rechazado por la IA 🐾');
+        if (!nuevaPublicacion.esValidoIa) {
+          return RespuestaApi(exito: false, mensaje: 'Contenido rechazado por la IA 🐾');
+        }
         return RespuestaApi(exito: true, mensaje: '¡Publicación realizada!');
       }
       return RespuestaApi(exito: false, mensaje: 'Error al publicar (${respuesta.statusCode})');
     } catch (e) {
       debugPrint('Error en crearPublicacionPerfil: $e');
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+      String msg = 'Error de red: $e';
+      if (e is http_dio.DioException) {
+        msg = e.response?.data?['error']?.toString() ?? e.message ?? msg;
+      }
+      return RespuestaApi(exito: false, mensaje: msg);
     }
   }
 

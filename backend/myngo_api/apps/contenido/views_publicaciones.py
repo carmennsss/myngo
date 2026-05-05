@@ -11,9 +11,56 @@ from notificaciones.models import Notificacion
 from usuarios.models import Perfil, Seguimiento
 
 from .ia_service import validar_contenido_toxico
-from .models import Comentario, ImagenGaleria, MeGusta, PostGuardado, Publicacion, Reporte
+from .models import Comentario, ImagenGaleria, MeGusta, PostGuardado, Publicacion, PublicacionImagen, Reporte
 from .permissions import IsAuthorOrAdmin
 from .serializers import PublicacionSerializer
+
+
+def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
+    """Lógica compartida para crear una publicación con archivos adjuntos."""
+    archivos = request.FILES.getlist('url_archivo_s3[]') or request.FILES.getlist('url_archivo_s3')
+    
+    with transaction.atomic():
+        publicacion = serializer_instance.save(autor=request.user, es_valido_ia=es_valido_ia)
+        
+        # Obtener relación de aspecto de forma segura
+        try:
+            rel_aspecto = float(request.data.get('relacion_aspecto', 1.0))
+        except (TypeError, ValueError):
+            rel_aspecto = 1.0
+
+        for i, archivo in enumerate(archivos[:4]):
+            if archivo.size > 100 * 1024 * 1024:
+                raise Exception(f"El archivo {archivo.name} supera el límite de 100MB.")
+
+            tipo = 'I'
+            content_type = archivo.content_type or ''
+            extension = archivo.name.lower().split('.')[-1] if archivo.name else ''
+            
+            if content_type.startswith('video/') or extension in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
+                tipo = 'V'
+
+            img_instancia = ImagenGaleria.objects.create(
+                propietario=request.user,
+                url_s3=archivo,
+                comunidad_id=request.data.get('comunidad') or None,
+                relacion_aspecto=rel_aspecto,
+                etiquetas=request.data.get('etiquetas', ''),
+                tipo_archivo=tipo,
+            )
+            
+            PublicacionImagen.objects.create(
+                publicacion=publicacion,
+                imagengaleria=img_instancia,
+                orden=i
+            )
+            
+            if i == 0:
+                publicacion.imagen = img_instancia
+                publicacion.relacion_aspecto = rel_aspecto
+                publicacion.save()
+
+        return publicacion
 
 
 class PaginacionGaleria(pagination.LimitOffsetPagination):
@@ -23,7 +70,7 @@ class PaginacionGaleria(pagination.LimitOffsetPagination):
     max_limit = 100
 
 
-class PublicacionList(generics.ListAPIView):
+class PublicacionList(generics.ListCreateAPIView):
     """Lista publicaciones filtrando por comunidad, perfil o feed global.
 
     Aplica controles de privacidad y anota conteos de likes, comentarios
@@ -35,6 +82,11 @@ class PublicacionList(generics.ListAPIView):
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ['fecha_creacion']
     pagination_class = PaginacionGaleria
+
+    def create(self, request, *args, **kwargs):
+        """Procesa la creación de una publicación (soporte para POST en el listado)."""
+        # Delegamos en la lógica común
+        return PublicacionCreate().create(request, *args, **kwargs)
 
     def get_queryset(self):
         """Filtra y anota las publicaciones según los parámetros de la consulta.
@@ -147,6 +199,7 @@ class PublicacionList(generics.ListAPIView):
         ).distinct().order_by('-fecha_creacion')
 
 
+
 class PublicacionCreate(generics.CreateAPIView):
     """Crea una nueva publicación con hasta 4 imágenes adjuntas.
 
@@ -158,64 +211,27 @@ class PublicacionCreate(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        """Procesa la creación de una publicación y sus imágenes asociadas.
-
-        Args:
-            request: Petición con datos de post y archivos multimedia.
-            *args: Argumentos adicionales.
-            **kwargs: Argumentos de palabra clave.
-
-        Returns:
-            Response: Datos de la publicación creada o mensaje de error.
-        """
-        from django.db import transaction
-        archivos = request.FILES.getlist('url_archivo_s3[]') or request.FILES.getlist('url_archivo_s3')
+        """Procesa la creación de una publicación y sus imágenes asociadas."""
         titulo = request.data.get('titulo', '') or ''
         contenido_texto = request.data.get('contenido_texto', '') or ''
         texto = f"{titulo} {contenido_texto}".strip()
         es_valido = validar_contenido_toxico(texto)
+        
         try:
-            with transaction.atomic():
-                serializer = self.get_serializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                publicacion = serializer.save(autor=request.user, es_valido_ia=es_valido)
-                from .models import PublicacionImagen
-                for i, archivo in enumerate(archivos[:4]):
-                    # Validación de tamaño (100 MB = 100 * 1024 * 1024 bytes)
-                    if archivo.size > 100 * 1024 * 1024:
-                        raise Exception(f"El archivo {archivo.name} supera el límite de 100MB.")
-
-                    # Detección de tipo
-                    tipo = 'V' if (archivo.content_type and archivo.content_type.startswith('video/')) else 'I'
-
-                    img_instancia = ImagenGaleria.objects.create(
-                        propietario=request.user,
-                        url_s3=archivo,
-                        comunidad_id=request.data.get('comunidad') or None,
-                        relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0)),
-                        etiquetas=request.data.get('etiquetas', ''),
-                        tipo_archivo=tipo,
-                    )
-                    
-                    # Crear la relación con orden
-                    PublicacionImagen.objects.create(
-                        publicacion=publicacion,
-                        imagengaleria=img_instancia,
-                        orden=i
-                    )
-                    
-                    # Si es la primera, guardarla también como imagen principal
-                    if i == 0:
-                        publicacion.imagen = img_instancia
-                        publicacion.save()
-
-                return Response(
-                    PublicacionSerializer(publicacion, context={'request': request}).data,
-                    status=status.HTTP_201_CREATED,
-                )
-        except Exception as e:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            publicacion = procesar_creacion_publicacion(request, serializer, es_valido)
+            
             return Response(
-                {'error': f'Se ha cancelado la creación de la publicación debido a un error: {str(e)}'},
+                PublicacionSerializer(publicacion, context={'request': request}).data,
+                status=status.HTTP_201_CREATED,
+            )
+        except Exception as e:
+            import traceback
+            print(f"Error en PublicacionCreate: {str(e)}")
+            traceback.print_exc()
+            return Response(
+                {'error': f'Error al crear la publicación: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

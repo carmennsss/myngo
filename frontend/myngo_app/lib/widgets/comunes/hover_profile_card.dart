@@ -133,9 +133,16 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                                 children: [
                                   if (widget.marcoUrl != null && widget.marcoUrl!.isNotEmpty)
                                     Positioned.fill(
-                                      child: CachedNetworkImage(
-                                        imageUrl: widget.marcoUrl!,
-                                        fit: BoxFit.contain,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 70,
+                                          height: 70,
+                                          child: CachedNetworkImage(
+                                            imageUrl: widget.marcoUrl!,
+                                            fit: BoxFit.contain,
+                                            alignment: Alignment.center,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   Container(

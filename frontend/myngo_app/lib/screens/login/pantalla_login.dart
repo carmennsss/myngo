@@ -6,6 +6,7 @@ import '../../widgets/gatos_animados.dart';
 import '../../services/servicio_usuarios.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
+import '../../widgets/boton_idioma.dart';
 
 class PantallaLogin extends StatefulWidget {
   const PantallaLogin({super.key});
@@ -47,9 +48,29 @@ class _PantallaLoginState extends State<PantallaLogin> {
               color: const Color(0xFFFEF5F1),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final isDesktop = constraints.maxWidth > 900;
-                  
-                  if (isDesktop) {
+                  return Stack(
+                    children: [
+                      _buildContenido(context, constraints),
+                      const Positioned(
+                        top: 20,
+                        right: 20,
+                        child: BotonIdioma(),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContenido(BuildContext context, BoxConstraints constraints) {
+    final isDesktop = constraints.maxWidth > 900;
+    
+    if (isDesktop) {
                     return Row(
                       children: [
                         // Lado Izquierdo: Visual/Fun Premium
@@ -174,13 +195,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                       ),
                     ),
                   );
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -348,8 +362,8 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
 
       try {
         final respuesta = await _servicioUsuarios.iniciarSesion(
-          _controladorEmail.text,
-          _controladorPassword.text,
+          _controladorEmail.text.trim(),
+          _controladorPassword.text.trim(),
         );
 
         _estaCargando.value = false;
