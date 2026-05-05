@@ -162,23 +162,16 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
             }),
             const SizedBox(height: 16),
             _buildColorPicker('Mensajes de otros', _perso.colorBurbujaOtro, (hex) {
-              setState(() => _perso = _copyPerso(colorBurbujaOtro: hex));
-            }),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Colores de Nombres'),
-            const SizedBox(height: 16),
-            _buildColorPicker('Mi nombre', _perso.colorNombreMio, (hex) {
-              setState(() => _perso = _copyPerso(colorNombreMio: hex));
-            }),
-            const SizedBox(height: 16),
-            _buildColorPicker('Nombres de otros', _perso.colorNombreOtro, (hex) {
-              setState(() => _perso = _copyPerso(colorNombreOtro: hex));
-            }),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Fondo del Chat'),
-            const SizedBox(height: 16),
-            _buildColorPicker('Color de fondo', _perso.colorFondo, (hex) {
-              setState(() => _perso = _copyPerso(colorFondo: hex));
+              setState(() => _perso = PersonalizacionChat(
+                colorFondo: _perso.colorFondo,
+                colorBurbujaMio: _perso.colorBurbujaMio,
+                colorBurbujaOtro: hex,
+                colorTextoMio: _perso.colorTextoMio,
+                colorTextoOtro: _perso.colorTextoOtro,
+                formaBurbuja: _perso.formaBurbuja,
+                fontSize: _perso.fontSize,
+                tema: _perso.tema,
+              ));
             }),
             const SizedBox(height: 32),
             _buildSectionTitle('Patrón y Estilo de Fondo'),

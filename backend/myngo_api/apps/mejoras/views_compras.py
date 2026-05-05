@@ -108,7 +108,7 @@ class EquipacionMejorasGlobales(APIView):
             if va_a_equipar:
                 if tipo == 'fondo':
                     if destino == 'fondo_feed':
-                        # Desequipar solo el fondo que ocupa la ranura fondo_feed
+                        # El fondo del feed va a la ranura 'fondo_perfil' (según feedback usuario)
                         MejoraUsuario.objects.filter(
                             usuario=user,
                             esta_equipada=True,
@@ -118,7 +118,7 @@ class EquipacionMejorasGlobales(APIView):
                         ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
                         perfil.fondo_perfil = mejora_u.mejora.url_recurso.name
                     else:
-                        # Desequipar solo el fondo que ocupa la ranura banner
+                        # El banner va a la ranura 'fondo'
                         MejoraUsuario.objects.filter(
                             usuario=user,
                             esta_equipada=True,
@@ -145,6 +145,7 @@ class EquipacionMejorasGlobales(APIView):
                 # Desequipar: limpiar campo correspondiente del perfil
                 if tipo == 'fondo':
                     nombre_recurso = mejora_u.mejora.url_recurso.name
+                    # Limpiamos ambos campos si coinciden para evitar inconsistencias
                     if perfil.fondo == nombre_recurso:
                         perfil.fondo = None
                     if perfil.fondo_perfil == nombre_recurso:

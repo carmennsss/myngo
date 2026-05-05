@@ -50,6 +50,8 @@ class ChatProvider extends ChangeNotifier {
     _salaActivaId = salaId;
     if (salaId != null) {
       _limpiarNoLeidosSala(salaId);
+      // Notificamos al servidor que hemos leído los mensajes
+      _servicioChat.marcarMensajesComoLeidos(salaId);
     }
     notifyListeners();
   }

@@ -21,8 +21,7 @@ class VotoAPIView(APIView):
     (máximo 50 votos diarios por usuario).
     """
 
-    permission_classes = [permissions.AllowAny]
-    authentication_classes = []
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request):
         """Consulta el estado del voto del usuario actual hacia un receptor específico.

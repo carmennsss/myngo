@@ -82,13 +82,13 @@ class ProfilePreview extends StatelessWidget {
     final double avatarSize = size * 0.50; 
     final double marcoSize = size;
 
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 1. EL AVATAR (Capa inferior del pequeño stack)
+          // 1. EL AVATAR (Capa inferior)
           GestureDetector(
             onTap: onAvatarTap,
             child: Container(
@@ -112,18 +112,14 @@ class ProfilePreview extends StatelessWidget {
 
           // 2. EL MARCO (CAPA SUPERIOR - OVERLAY)
           if (marcoUrl != null && marcoUrl!.isNotEmpty)
-            IgnorePointer(
-              child: Center(
-                child: SizedBox(
-                  width: marcoSize,
-                  height: marcoSize,
-                  child: CachedNetworkImage(
-                    imageUrl: marcoUrl!,
-                    fit: BoxFit.contain,
-                    alignment: Alignment.center,
-                    placeholder: (context, url) => const SizedBox.shrink(),
-                    errorWidget: (context, url, error) => const SizedBox.shrink(),
-                  ),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CachedNetworkImage(
+                  imageUrl: marcoUrl!,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                  placeholder: (context, url) => const SizedBox.shrink(),
+                  errorWidget: (context, url, error) => const SizedBox.shrink(),
                 ),
               ),
             ),
