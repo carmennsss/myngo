@@ -29,7 +29,6 @@ class SeccionPostsPerfil extends StatefulWidget {
 }
 
 class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
-  final ScrollController _scrollController = ScrollController();
   bool _estaCargandoMas = false;
   bool _hayMasPosts = true;
   int _paginaActual = 1;
@@ -39,7 +38,6 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
   void initState() {
     super.initState();
     _posts = widget.publicaciones ?? [];
-    _scrollController.addListener(_alHacerScroll);
   }
 
   @override
@@ -62,13 +60,6 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
     }
   }
 
-  void _alHacerScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
-      if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
-        _cargarMasPosts();
-      }
-    }
-  }
 
   Future<void> _cargarMasPosts() async {
     setState(() => _estaCargandoMas = true);
@@ -97,7 +88,6 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -122,20 +112,31 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
       );
     }
 
-    return MasonryGridView.count(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _posts.length) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollEndNotification) {
+          if (notification.metrics.pixels >= notification.metrics.maxScrollExtent - 400) {
+            if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
+              _cargarMasPosts();
+            }
+          }
         }
-        final post = _posts[index];
-        return _TarjetaPostPerfil(post: post, onUpdate: widget.onRefresh);
+        return false;
       },
+      child: MasonryGridView.count(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == _posts.length) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+          }
+          final post = _posts[index];
+          return _TarjetaPostPerfil(post: post, onUpdate: widget.onRefresh);
+        },
+      ),
     );
   }
 }

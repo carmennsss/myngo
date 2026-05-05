@@ -369,7 +369,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                       fontWeight: FontWeight.bold, color: Colors.white)),
             )
           : null,
-      body: NestedScrollView(
+      body: Scrollbar(
+        thumbVisibility: true,
+        child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             HeaderDetallePerfil(
@@ -462,8 +464,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // --- MÉTODOS DE ACCIÓN ---
 

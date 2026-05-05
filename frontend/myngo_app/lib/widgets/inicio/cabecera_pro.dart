@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import '../../widgets/boton_idioma.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
 
 /// Cabecera superior de la pantalla de inicio con logo, navegación y perfil de usuario.
@@ -143,6 +144,7 @@ class CabeceraPro extends StatelessWidget {
             ),
             SizedBox(width: isMobile ? 16 : 24),
           ],
+          const BotonIdioma(),
           _UserProfileHeader(
             name: nombreUsuario,
             avatarUrl: avatarUrl,
@@ -313,10 +315,17 @@ class _UserProfileHeader extends StatelessWidget {
                   // 2. EL MARCO (Capa superior - Overlay)
                   if (marcoUrl != null && marcoUrl!.isNotEmpty)
                     Positioned.fill(
-                      child: IgnorePointer(
-                        child: CachedNetworkImage(
-                          imageUrl: marcoUrl!,
-                          fit: BoxFit.contain,
+                      child: Center(
+                        child: SizedBox(
+                          width: 38,
+                          height: 38,
+                          child: IgnorePointer(
+                            child: CachedNetworkImage(
+                              imageUrl: marcoUrl!,
+                              fit: BoxFit.contain,
+                              alignment: Alignment.center,
+                            ),
+                          ),
                         ),
                       ),
                     ),
