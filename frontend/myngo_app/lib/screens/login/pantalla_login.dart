@@ -397,10 +397,11 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             _estadoGatos = EstadoMonstruo.triste;
           });
           _notificarCambioGato();
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(respuesta.mensaje),
-              backgroundColor: const Color(0xFFD95F43),
+              backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -424,10 +425,11 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
         });
         _notificarCambioGato();
         
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Error de conexión. Inténtalo de nuevo.'),
-            backgroundColor: const Color(0xFFD95F43),
+            backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),

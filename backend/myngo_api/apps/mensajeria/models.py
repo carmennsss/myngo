@@ -118,7 +118,7 @@ class MensajeChat(models.Model):
     contenido = models.TextField(null=True, blank=True)
     url_archivo_s3 = models.CharField(max_length=500, null=True, blank=True)
     fecha_envio = models.DateTimeField(auto_now_add=True)
-    leido_por = models.ManyToManyField(Usuario, related_name='mensajes_leidos', blank=True)
+    leido_por = models.ManyToManyField(Usuario, through='LecturaMensaje', related_name='mensajes_leidos', blank=True)
     referencia_a = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='respuestas')
     es_editado = models.BooleanField(default=False)
     fecha_edicion = models.DateTimeField(null=True, blank=True)
@@ -129,3 +129,18 @@ class MensajeChat(models.Model):
 
     def __str__(self):
         return f"Mensaje #{self.id} ({self.tipo}) en {self.sala.nombre}"
+
+
+class LecturaMensaje(models.Model):
+    """Registro de cuándo un usuario leyó un mensaje específico."""
+    
+    class Meta:
+        db_table = 'chat_lecturas_mensajes'
+        unique_together = ('mensaje', 'usuario')
+
+    mensaje = models.ForeignKey(MensajeChat, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    fecha_lectura = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.usuario} leyó {self.mensaje.id} el {self.fecha_lectura}"
