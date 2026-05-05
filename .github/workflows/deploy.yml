@@ -17,6 +17,17 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
+            # Variables de entorno desde GitHub Secrets
+            export TOLGEE_API_KEY="${{ secrets.TOLGEE_API_KEY }}"
+            export TOLGEE_PROJECT_ID="${{ secrets.TOLGEE_PROJECT_ID }}"
+            export TOLGEE_API_URL="http://127.0.0.1:8085"
+
+            # Autenticar Tolgee CLI (una sola vez por despliegue)
+            tolgee auth --apiKey "$TOLGEE_API_KEY"
+            tolgee config:set projectId "$TOLGEE_PROJECT_ID"
+            tolgee config:set apiUrl "$TOLGEE_API_URL"
+
+            # Tu deploy actual
             cd /home/ubuntu/myngo
             git fetch origin
             git reset --hard origin/main
@@ -26,3 +37,8 @@ jobs:
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
             sudo systemctl restart daphne
+
+            # Ejecutar tu script de sincronización
+            cd /home/ubuntu/myngo
+            chmod +x ./sync_translations.sh
+            ./sync_translations.sh
