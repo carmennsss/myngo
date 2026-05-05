@@ -8,8 +8,6 @@ import '../../services/servicio_mejoras.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_usuarios.dart';
 import '../comunidades/pantalla_enviar_propuesta.dart';
-import '../inicio/pantalla_inicio.dart';
-import 'package:myngo_app/l10n/app_localizations.dart';
 
 // Widgets extraídos
 import 'widgets_tienda/tienda_preview_section.dart';

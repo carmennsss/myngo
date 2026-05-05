@@ -8,8 +8,6 @@ import '../../services/servicio_comunidades.dart';
 import '../../models/usuario.dart';
 import 'tarjeta_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../comunes/estado_vacio_cargando.dart';
-import 'package:myngo_app/l10n/app_localizations.dart';
 
 enum FeedMode { social, gallery }
 
