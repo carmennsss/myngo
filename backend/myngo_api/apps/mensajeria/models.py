@@ -2,8 +2,14 @@
 
 from django.db import models
 
+from django.utils import timezone
 from comunidades.models import Comunidad
 from usuarios.models import Usuario
+
+
+def chat_image_path(instance, filename):
+    """Genera la ruta de almacenamiento para imágenes de chat: chat/images/YYYY/MM/DD/filename"""
+    return f'chats/contenido/{timezone.now().strftime("%Y/%m/%d")}/{filename}'
 
 
 class SalaChat(models.Model):
@@ -116,7 +122,12 @@ class MensajeChat(models.Model):
     )
     emisor = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     contenido = models.TextField(null=True, blank=True)
-    url_archivo_s3 = models.CharField(max_length=500, null=True, blank=True)
+    url_archivo_s3 = models.ImageField(
+        upload_to=chat_image_path,
+        max_length=500,
+        null=True,
+        blank=True
+    )
     fecha_envio = models.DateTimeField(auto_now_add=True)
     leido_por = models.ManyToManyField(Usuario, through='LecturaMensaje', related_name='mensajes_leidos', blank=True)
     referencia_a = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='respuestas')

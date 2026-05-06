@@ -33,6 +33,7 @@ class MensajeChatSerializer(serializers.ModelSerializer):
     referencia_a_detalle = serializers.SerializerMethodField()
     borrado_para_mi = serializers.SerializerMethodField()
     info_lectura = serializers.SerializerMethodField()
+    url_archivo_s3 = serializers.SerializerMethodField()
 
     class Meta:
         model = MensajeChat
@@ -70,6 +71,29 @@ class MensajeChatSerializer(serializers.ModelSerializer):
         """Obtiene un mapa de ID de usuario y fecha de lectura."""
         lecturas = LecturaMensaje.objects.filter(mensaje=obj)
         return {l.usuario_id: l.fecha_lectura.isoformat() for l in lecturas}
+
+    def get_url_archivo_s3(self, obj):
+        """Retorna la URL absoluta de S3 para el archivo adjunto."""
+        if obj.url_archivo_s3:
+            return obj.url_archivo_s3.url
+        return None
+
+    def validate_url_archivo_s3(self, value):
+        """Valida tipo de archivo y tamaño máximo (10MB)."""
+        if not value:
+            return value
+            
+        # Validación de tipo de archivo
+        extensiones_validas = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        # Si es un archivo subido (InMemoryUploadedFile o TemporaryUploadedFile)
+        if hasattr(value, 'content_type') and value.content_type not in extensiones_validas:
+            raise serializers.ValidationError("Formato de imagen no permitido (usar JPG, PNG, WEBP o GIF).")
+        
+        # Validación de tamaño (10 MB)
+        if hasattr(value, 'size') and value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("La imagen es demasiado pesada (máximo 10MB).")
+            
+        return value
 
 
 class ParticipanteChatSerializer(serializers.ModelSerializer):

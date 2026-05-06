@@ -12,7 +12,8 @@ from channels.layers import get_channel_layer
 from django.db.models import Count, Max, OuterRef, Q, Subquery
 from django.utils import timezone
 from rest_framework import generics, pagination, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
 from usuarios.models import Usuario
@@ -488,30 +489,57 @@ def subir_avatar_sala(request, pk):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def upload_chat_image(request, sala_id):
-    """Sube imagen para mensaje de chat, S3 en chats/contenido."""
+    """Sube imagen para mensaje de chat, crea el mensaje y lo notifica vía WS."""
     try:
+        # 1. Validar pertenencia a la sala
         sala = SalaChat.objects.get(id=sala_id, miembros=request.user)
         imagen = request.FILES.get('imagen')
         
         if not imagen:
-            return Response({'error': 'No se proporcionó imagen'}, status=400)
+            return Response({'error': 'No se proporcionó imagen'}, status=status.HTTP_400_BAD_REQUEST)
             
-        # Create with custom name for chats/contenido
-        filename = f"chats/contenido/{imagen.name}"
-        img_instance = ImagenGaleria(
-            propietario=request.user,
-            comunidad_id=sala.comunidad_id if sala.comunidad else None,
-        )
-        img_instance.url_s3.save(filename, imagen, save=False)
-        img_instance.tipo_archivo = 'I'
-        img_instance.save()
+        # 2. Crear instancia de MensajeChat (la validación ocurre en el modelo/serializer si se usara uno)
+        # Aquí validamos manualmente o mediante el serializador para aprovechar las validaciones añadidas
+        serializer = MensajeChatSerializer(data={
+            'sala': sala.id,
+            'emisor': request.user.id,
+            'url_archivo_s3': imagen,
+            'tipo': 'IMAGEN'
+        }, context={'request': request})
         
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        mensaje = serializer.save()
+        
+        # 3. Notificar vía WebSocket a los miembros de la sala
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{sala_id}',
+            {
+                'type': 'chat_message',
+                'message_id': mensaje.id,
+                'content': '',
+                'url_archivo_s3': mensaje.url_archivo_s3.url,
+                'tipo': 'IMAGEN',
+                'user_id': request.user.id,
+                'username': request.user.nombre_usuario,
+                'timestamp': mensaje.fecha_envio.isoformat(),
+                'leido_por_ids': [],
+            }
+        )
+        
+        # 4. Responder al contrato solicitado por el frontend
         return Response({
-            'status': 'ok',
-            'url': img_instance.url_s3.url
-        })
+            'message_id': mensaje.id,
+            'image_url': mensaje.url_archivo_s3.url,
+            'room_id': sala.id,
+            'timestamp': mensaje.fecha_envio.isoformat()
+        }, status=status.HTTP_201_CREATED)
+        
     except SalaChat.DoesNotExist:
-        return Response({'error': 'Sala no encontrada'}, status=404)
+        return Response({'error': 'Sala no encontrada o no eres miembro'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
