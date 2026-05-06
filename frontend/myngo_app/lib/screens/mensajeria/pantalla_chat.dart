@@ -747,8 +747,33 @@ class _PantallaChatState extends State<PantallaChat> {
                       children: [
                         if (msg.referenciaADetalle != null) 
                           _buildCitaMensaje(msg.referenciaADetalle!, esMio),
+                        // DEBUG: Información cruda del mensaje
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ID: ${msg.id} | TIPO: ${msg.tipo} | ATTACH: ${msg.attachments.length}',
+                                style: const TextStyle(color: Colors.yellow, fontSize: 9, fontWeight: FontWeight.bold),
+                              ),
+                              if (msg.attachments.isEmpty)
+                                Text(
+                                  'S3 URL: ${msg.urlArchivoS3 ?? "NULL"}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 8),
+                                ),
+                            ],
+                          ),
+                        ),
+
                         if (msg.attachments.isNotEmpty)
                           ChatMediaGrid(attachments: msg.attachments, esMio: esMio),
+                        
                         if (texto.isNotEmpty)
                           Text(
                             texto,
