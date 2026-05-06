@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tolgee/tolgee.dart';
 
 import '../../utils/configuracion.dart';
 import '../../services/servicio_comunidades.dart';
@@ -266,7 +267,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   @override
   Widget build(BuildContext context) {
     if (_estaCargandoComunidad || _comunidad == null) {
-      return Scaffold(
+      return TranslationWidget(
+      builder: (context, tr) => Scaffold(
         backgroundColor: _colorPagina(context),
         body: Center(
           child: Column(
@@ -275,17 +277,18 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               const CircularProgressIndicator(color: Color(0xFFC35E34)),
               if (_estaCargandoComunidad) ...[
                 const SizedBox(height: 16),
-                Text('Cargando comunidad...', style: GoogleFonts.outfit(color: _colorTextoSecundario(context))),
+                Text(tr('communityLoading'), style: GoogleFonts.outfit(color: _colorTextoSecundario(context))),
               ] else if (_comunidad == null && !_estaCargandoComunidad) ...[
                 const SizedBox(height: 16),
-                Text('Comunidad no encontrada 😿', style: GoogleFonts.outfit(color: _colorTextoSecundario(context), fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(tr('communityNotFound'), style: GoogleFonts.outfit(color: _colorTextoSecundario(context), fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: const Text('Volver'))
+                ElevatedButton(onPressed: widget.onBack ?? () => Navigator.pop(context), child: Text(tr('commonBack')))
               ]
             ],
           ),
         ),
-      );
+      ),
+    );
     }
 
     final esCreador = _miId != null && _miId == _comunidad!.creadorId;
@@ -482,16 +485,18 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       children: [
         // Tabs — scrollables a la izquierda
         Expanded(
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            children: [
-              _buildNavItem(0, 'POSTS', Icons.grid_view_rounded),
-              _buildNavItem(1, 'TIENDA', Icons.shopping_bag_rounded),
-              _buildNavItem(2, 'GALERÍA', Icons.photo_library_rounded),
-              _buildNavItem(3, 'CHATS', Icons.chat_bubble_rounded),
-              _buildNavItem(4, 'MIEMBROS', Icons.people_alt_rounded),
-            ],
+          child: TranslationWidget(
+            builder: (context, tr) => ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              children: [
+                _buildNavItem(0, tr('communityTabPosts'), Icons.grid_view_rounded),
+                _buildNavItem(1, tr('communityTabStore'), Icons.shopping_bag_rounded),
+                _buildNavItem(2, tr('communityTabGallery'), Icons.photo_library_rounded),
+                _buildNavItem(3, tr('communityTabChats'), Icons.chat_bubble_rounded),
+                _buildNavItem(4, tr('communityTabMembers'), Icons.people_alt_rounded),
+              ],
+            ),
           ),
         ),
         // Identidad de la comunidad — fija a la derecha
@@ -596,14 +601,16 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       return Positioned(
         bottom: 24,
         right: 24,
-        child: FloatingActionButton.extended(
-          onPressed: () => _mostrarDialogoNuevoPost(context),
-          label: Text('Miau Post',
-              style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold, color: Colors.white)),
-          icon:
-              const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
-          backgroundColor: _comunidad!.colorTema,
+        child: TranslationWidget(
+          builder: (context, tr) => FloatingActionButton.extended(
+            onPressed: () => _mostrarDialogoNuevoPost(context),
+            label: Text(tr('communityFabPost'),
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold, color: Colors.white)),
+            icon:
+                const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
+            backgroundColor: _comunidad!.colorTema,
+          ),
         ),
       );
     }
@@ -611,13 +618,15 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       return Positioned(
         bottom: 24,
         right: 24,
-        child: FloatingActionButton.extended(
-          onPressed: () => _irAEnviarPropuesta(),
-          label: Text('Sugerir $_tipoMejoraSeleccionado',
-              style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold, color: Colors.white)),
-          icon: const Icon(Icons.palette_rounded, color: Colors.white),
-          backgroundColor: _comunidad!.colorTema,
+        child: TranslationWidget(
+          builder: (context, tr) => FloatingActionButton.extended(
+            onPressed: () => _irAEnviarPropuesta(),
+            label: Text(tr('communityFabSuggest', {'type': _tipoMejoraSeleccionado}),
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold, color: Colors.white)),
+            icon: const Icon(Icons.palette_rounded, color: Colors.white),
+            backgroundColor: _comunidad!.colorTema,
+          ),
         ),
       );
     }
@@ -625,13 +634,15 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       return Positioned(
         bottom: 24,
         right: 24,
-        child: FloatingActionButton.extended(
-          onPressed: () => _mostrarDialogoCrearSalaComunidad(context),
-          label: Text('Nueva Sala',
-              style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold, color: Colors.white)),
-          icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
-          backgroundColor: _comunidad!.colorTema,
+        child: TranslationWidget(
+          builder: (context, tr) => FloatingActionButton.extended(
+            onPressed: () => _mostrarDialogoCrearSalaComunidad(context),
+            label: Text(tr('communityFabNewRoom'),
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold, color: Colors.white)),
+            icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
+            backgroundColor: _comunidad!.colorTema,
+          ),
         ),
       );
     }
