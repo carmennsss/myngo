@@ -15,7 +15,10 @@ from rest_framework import generics, pagination, permissions, status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
-import magic
+try:
+    import magic
+except ImportError:
+    magic = None
 from django.core.exceptions import ValidationError
 
 from usuarios.models import Usuario
