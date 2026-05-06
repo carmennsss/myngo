@@ -253,9 +253,12 @@ class ServicioMensajeria {
 
       if (respuesta.statusCode == 201) {
         return jsonDecode(utf8.decode(respuesta.bodyBytes));
+      } else {
+        debugPrint('Error uploadMedia (Status ${respuesta.statusCode}): ${respuesta.body}');
+        return {'error_status': respuesta.statusCode, 'body': respuesta.body};
       }
     } catch (e) {
-      debugPrint('Error uploadMedia: $e');
+      debugPrint('Error uploadMedia Exception: $e');
     }
     return null;
   }

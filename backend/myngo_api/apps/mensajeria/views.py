@@ -637,17 +637,22 @@ class ChatMediaUploadView(generics.CreateAPIView):
             return Response({'error': 'Tipo de archivo no soportado'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 2. Crear ImagenGaleria
-        img_instancia = ImagenGaleria(
-            propietario=request.user,
-            url_s3=archivo,
-            tipo_archivo=tipo_archivo
-        )
-        img_instancia._es_chat = True # Forzamos ruta chat/contenido/
-        img_instancia.save()
+        try:
+            img_instancia = ImagenGaleria(
+                propietario=request.user,
+                url_s3=archivo,
+                tipo_archivo=tipo_archivo
+            )
+            img_instancia._es_chat = True # Forzamos ruta chat/contenido/
+            img_instancia.save()
 
-        return Response({
-            'file_url': img_instancia.url_s3.url,
-            'file_type': 'image' if tipo_archivo == 'I' else 'video',
-            'name': archivo.name,
-            'id': img_instancia.id
-        }, status=status.HTTP_201_CREATED)
+            return Response({
+                'file_url': img_instancia.url_s3.url,
+                'file_type': 'image' if tipo_archivo == 'I' else 'video',
+                'name': archivo.name,
+                'id': img_instancia.id
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({'error': f'Error al guardar en DB: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
