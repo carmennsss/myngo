@@ -324,6 +324,12 @@ class _PantallaChatState extends State<PantallaChat> {
                 'url': res['file_url'],
                 'tipo': res['file_type'] == 'video' ? 'V' : 'I',
               });
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error al subir el archivo: ${file.name}')),
+                );
+              }
             }
           }
           
@@ -767,6 +773,10 @@ class _PantallaChatState extends State<PantallaChat> {
                                   'S3 URL: ${msg.urlArchivoS3 ?? "NULL"}',
                                   style: const TextStyle(color: Colors.white, fontSize: 8),
                                 ),
+                              Text(
+                                'SEL: ${_archivosSeleccionados.length} | UPLOADING: $_estaSubiendoMedia',
+                                style: const TextStyle(color: Colors.greenAccent, fontSize: 8),
+                              ),
                             ],
                           ),
                         ),

@@ -78,7 +78,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             tipo = data.get('tipo', 'TEXTO')
             attachments_data = data.get('attachments', [])
             if content is not None or url_archivo_s3 is not None or attachments_data:
-                msg, _ = await self.save_message(
+                msg, saved_attachments = await self.save_message(
                     self.user, self.room_id, content, 
                     url_archivo_s3=url_archivo_s3, 
                     tipo=tipo,
@@ -89,6 +89,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 # Usamos el serializador para que los datos sean idénticos a la API REST
                 from .serializers import MensajeChatSerializer
                 serializer_data = await self.get_serializer_data(msg)
+
+                # FORZAMOS LA MEDIA: Si el serializador no la ve (por delay de M2M), la inyectamos
+                if not serializer_data.get('media') and saved_attachments:
+                    serializer_data['media'] = saved_attachments
 
                 # Añadimos client_id que no está en el serializador pero es útil para el frontend
                 serializer_data['client_id'] = data.get('client_id')
