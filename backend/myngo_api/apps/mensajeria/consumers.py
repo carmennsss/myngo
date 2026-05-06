@@ -93,7 +93,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'message_id': msg.id,
                         'client_id': data.get('client_id'),
                         'content': content,
-                        'url_archivo_s3': url_archivo_s3,
+                        'url_archivo_s3': msg.url_archivo_s3.url if msg.url_archivo_s3 else None,
                         'tipo': tipo,
                         'user_id': self.user.id,
                         'username': self.user.nombre_usuario,
@@ -200,6 +200,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def save_message(self, user, room_id, content=None, url_archivo_s3=None, tipo='TEXTO', referencia_id=None):
         room = SalaChat.objects.get(id=room_id)
+        # Note: url_archivo_s3 here would be a string if sent via WS, 
+        # but since we upload via REST, WS messages usually won't carry files.
+        # However, we keep it for compatibility or re-shares.
         return MensajeChat.objects.create(
             sala=room, emisor=user, contenido=content, 
             url_archivo_s3=url_archivo_s3,
