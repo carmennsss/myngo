@@ -18,10 +18,13 @@ from .serializers import PublicacionSerializer
 
 def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
     """Lógica compartida para crear una publicación con archivos adjuntos."""
+    print(">>>> INICIANDO PROCESAMIENTO DE PUBLICACIÓN <<<<")
     archivos = request.FILES.getlist('url_archivo_s3[]') or request.FILES.getlist('url_archivo_s3')
+    print(f">>>> ARCHIVOS RECIBIDOS: {len(archivos)}")
     
     with transaction.atomic():
         publicacion = serializer_instance.save(autor=request.user, es_valido_ia=es_valido_ia)
+        print(f">>>> PUBLICACIÓN GUARDADA ID: {publicacion.id}")
         
         # Obtener relación de aspecto de forma segura
         try:
@@ -30,9 +33,11 @@ def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
             rel_aspecto = 1.0
 
         for i, archivo in enumerate(archivos[:4]):
+            print(f">>>> PROCESANDO ARCHIVO {i+1}: {archivo.name} ({archivo.size} bytes)")
+            
             if archivo.size > 200 * 1024 * 1024:
+                print(f">>>> ERROR: Archivo demasiado grande: {archivo.name}")
                 raise Exception(f"El archivo {archivo.name} supera el límite de 200MB.")
-
 
             tipo = 'I'
             content_type = archivo.content_type or ''
@@ -40,27 +45,38 @@ def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
             
             if content_type.startswith('video/') or extension in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
                 tipo = 'V'
-
-            img_instancia = ImagenGaleria.objects.create(
-                propietario=request.user,
-                url_s3=archivo,
-                comunidad_id=request.data.get('comunidad') or None,
-                relacion_aspecto=rel_aspecto,
-                etiquetas=request.data.get('etiquetas', ''),
-                tipo_archivo=tipo,
-            )
             
-            PublicacionImagen.objects.create(
-                publicacion=publicacion,
-                imagengaleria=img_instancia,
-                orden=i
-            )
-            
-            if i == 0:
-                publicacion.imagen = img_instancia
-                publicacion.relacion_aspecto = rel_aspecto
-                publicacion.save()
+            print(f">>>> TIPO DETECTADO: {tipo} (Content-Type: {content_type})")
 
+            try:
+                img_instancia = ImagenGaleria.objects.create(
+                    propietario=request.user,
+                    url_s3=archivo,
+                    comunidad_id=request.data.get('comunidad') or None,
+                    relacion_aspecto=rel_aspecto,
+                    etiquetas=request.data.get('etiquetas', ''),
+                    tipo_archivo=tipo,
+                )
+                print(f">>>> INSTANCIA IMAGEN CREADA ID: {img_instancia.id}")
+                
+                PublicacionImagen.objects.create(
+                    publicacion=publicacion,
+                    imagengaleria=img_instancia,
+                    orden=i
+                )
+                
+                if i == 0:
+                    publicacion.imagen = img_instancia
+                    publicacion.relacion_aspecto = rel_aspecto
+                    publicacion.save()
+                    print(">>>> IMAGEN PRINCIPAL ASIGNADA")
+            except Exception as e:
+                print(f">>>> ERROR AL GUARDAR EN S3/DB: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                raise e
+
+        print(">>>> PROCESAMIENTO FINALIZADO CON ÉXITO")
         return publicacion
 
 
