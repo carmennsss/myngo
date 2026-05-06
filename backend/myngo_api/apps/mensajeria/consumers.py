@@ -190,11 +190,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def is_member(self, user, room_id):
         return SalaChat.objects.filter(id=room_id, miembros=user).exists()
 
-@database_sync_to_async
+    @database_sync_to_async
     def is_community_room(self, room_id):
         try:
             return SalaChat.objects.get(id=room_id).comunidad is not None
-        except: return False
+        except:
+            return False
 
     @database_sync_to_async
     def save_message(self, user, room_id, content=None, url_archivo_s3=None, tipo='TEXTO', referencia_id=None):
