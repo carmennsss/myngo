@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/campo_texto_personalizado.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/boton_carga.dart';
+import 'package:tolgee/tolgee.dart';
 
 class PantallaRecuperarContrasena extends StatefulWidget {
   const PantallaRecuperarContrasena({super.key});
@@ -58,7 +59,9 @@ class _PantallaRecuperarContrasenaState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: Container(
         width: double.infinity,
@@ -143,7 +146,7 @@ class _PantallaRecuperarContrasenaState
                                   const SizedBox(height: 32),
                                   
                                   Text(
-                                    '¿Olvidaste tu contraseña?',
+                                    tr('recoveryTitle'),
                                     style: GoogleFonts.outfit(
                                       fontSize: 27,
                                       fontWeight: FontWeight.w900,
@@ -155,7 +158,7 @@ class _PantallaRecuperarContrasenaState
                                   const SizedBox(height: 16),
                                   
                                   Text(
-                                    'Introduce tu email y te enviaremos un código miau-mágico de recuperación.',
+                                    tr('recoveryInstructions'),
                                     style: GoogleFonts.outfit(
                                       color: Colors.grey.shade400,
                                       fontSize: 15,
@@ -166,14 +169,14 @@ class _PantallaRecuperarContrasenaState
                                   const SizedBox(height: 48),
                                   
                                   CampoTextoPersonalizado(
-                                    etiqueta: 'Email de recuperación',
+                                    etiqueta: tr('recoveryEmailLabel'),
                                     icono: Icons.alternate_email_rounded,
                                     controlador: _controladorEmail,
                                     nodoEnfoque: _nodoEnfoqueEmail,
                                     tipoTeclado: TextInputType.emailAddress,
                                     validador: (valor) {
-                                      if (valor == null || valor.isEmpty) return 'Danos tu email 🐾';
-                                      if (!valor.contains('@')) return 'Email no válido';
+                                      if (valor == null || valor.isEmpty) return tr('recoveryEmailRequired');
+                                      if (!valor.contains('@')) return tr('errorInvalidEmail');
                                       return null;
                                     },
                                   ),
@@ -182,7 +185,7 @@ class _PantallaRecuperarContrasenaState
                                   BotonCarga(
                                     alPresionar: _procesarRecuperacion,
                                     notificadorCargando: _estaCargando,
-                                    texto: 'RECUPERAR MI ACCESO',
+                                    texto: tr('recoveryButton'),
                                   ),
                                   const SizedBox(height: 28),
                                   
@@ -190,7 +193,7 @@ class _PantallaRecuperarContrasenaState
                                     child: TextButton.icon(
                                       onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false),
                                       icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                                      label: Text('ME ACORDÉ, VOLVER', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.8)),
+                                      label: Text(tr('recoveryRemembered'), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.8)),
                                       style: TextButton.styleFrom(
                                         foregroundColor: const Color(0xFFF29C50),
                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -211,6 +214,8 @@ class _PantallaRecuperarContrasenaState
           ],
         ),
       ),
+    );
+      },
     );
   }
 

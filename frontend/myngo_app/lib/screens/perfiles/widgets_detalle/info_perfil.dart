@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:tolgee/tolgee.dart';
 import '../pantalla_personalizar_perfil.dart';
 import '../../../models/usuario.dart';
 import '../../../providers/chat_provider.dart';
@@ -120,79 +121,81 @@ class InfoPerfil extends StatelessWidget {
         final color = _getColorEstado(displayEstado);
         final bool esPropio = currentUserId == usuario.id;
 
-        return Builder(
-          builder: (statusContext) {
-            return GestureDetector(
-              onTapDown: esPropio
-                  ? (details) {
-                      final RenderBox box = statusContext.findRenderObject() as RenderBox;
-                      final RenderBox overlay = Overlay.of(statusContext).context.findRenderObject() as RenderBox;
-                      final RelativeRect position = RelativeRect.fromRect(
-                        Rect.fromPoints(
-                          box.localToGlobal(Offset.zero, ancestor: overlay),
-                          box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
-                        ),
-                        Offset.zero & overlay.size,
-                      );
+        return TranslationWidget(
+          builder: (context, tr) => Builder(
+            builder: (statusContext) {
+              return GestureDetector(
+                onTapDown: esPropio
+                    ? (details) {
+                        final RenderBox box = statusContext.findRenderObject() as RenderBox;
+                        final RenderBox overlay = Overlay.of(statusContext).context.findRenderObject() as RenderBox;
+                        final RelativeRect position = RelativeRect.fromRect(
+                          Rect.fromPoints(
+                            box.localToGlobal(Offset.zero, ancestor: overlay),
+                            box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
+                          ),
+                          Offset.zero & overlay.size,
+                        );
 
-                      showMenu<String>(
-                        context: statusContext,
-                        position: position,
-                        color: Colors.white,
-                        elevation: 10,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        items: [
-                          _buildStatusMenuItem('ACTIVO', 'Activo', Colors.greenAccent),
-                          _buildStatusMenuItem('OCUPADO', 'Ocupado', Colors.redAccent),
-                        ],
-                      ).then((nuevoEstado) {
-                        if (nuevoEstado != null) {
-                          final inicioState =
-                              statusContext.findAncestorStateOfType<PantallaInicioState>();
-                          inicioState?.cambiarEstado(nuevoEstado);
-                        }
-                      });
-                    }
-                  : null,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
+                        showMenu<String>(
+                          context: statusContext,
+                          position: position,
+                          color: Colors.white,
+                          elevation: 10,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          items: [
+                            _buildStatusMenuItem('ACTIVO', tr('statusActive'), Colors.greenAccent),
+                            _buildStatusMenuItem('OCUPADO', tr('statusBusy'), Colors.redAccent),
+                          ],
+                        ).then((nuevoEstado) {
+                          if (nuevoEstado != null) {
+                            final inicioState =
+                                statusContext.findAncestorStateOfType<PantallaInicioState>();
+                            inicioState?.cambiarEstado(nuevoEstado);
+                          }
+                        });
+                      }
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: color.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      displayEstado == 'ACTIVO'
-                          ? 'Activo'
-                          : (displayEstado == 'OCUPADO' ? 'Ocupado' : 'Desconectado'),
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        color: color,
+                      const SizedBox(width: 8),
+                      Text(
+                        displayEstado == 'ACTIVO'
+                            ? tr('statusActive')
+                            : (displayEstado == 'OCUPADO' ? tr('statusBusy') : tr('statusOffline')),
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: color,
+                        ),
                       ),
-                    ),
-                    if (esPropio) ...[
-                      const SizedBox(width: 4),
-                      Icon(Icons.keyboard_arrow_down_rounded, color: color, size: 16),
+                      if (esPropio) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.keyboard_arrow_down_rounded, color: color, size: 16),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
@@ -247,49 +250,53 @@ class InfoPerfil extends StatelessWidget {
   Widget _buildBioSection(Color colorTextoP, Color colorTextoS) {
     final bool esPropio = currentUserId != null && currentUserId == usuario.id;
     
-    return GestureDetector(
-      onTap: esPropio ? onEditarBio : null,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            (biografiaLocal == null || biografiaLocal!.isEmpty) ? 'Sin biografía' : biografiaLocal!,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              height: 1.5,
-              color: colorTextoP.withOpacity(0.9),
-            ),
-          ),
-          if (esPropio)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.edit_note_rounded, size: 16, color: colorTextoS),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Toca para editar biografía',
-                    style: GoogleFonts.inter(fontSize: 11, color: colorTextoS, fontWeight: FontWeight.bold),
-                  ),
-                ],
+    return TranslationWidget(
+      builder: (context, tr) => GestureDetector(
+        onTap: esPropio ? onEditarBio : null,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              (biografiaLocal == null || biografiaLocal!.isEmpty) ? tr('profileBioEmpty') : biografiaLocal!,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                height: 1.5,
+                color: colorTextoP.withOpacity(0.9),
               ),
             ),
-        ],
+            if (esPropio)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, size: 16, color: colorTextoS),
+                    const SizedBox(width: 4),
+                    Text(
+                      tr('profileBioTapToEdit'),
+                      style: GoogleFonts.inter(fontSize: 11, color: colorTextoS, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildStatsRow(Color colorTextoS, String fecha) {
-    return Row(
-      children: [
-        Icon(Icons.calendar_today_rounded, size: 14, color: colorTextoS),
-        const SizedBox(width: 6),
-        Text(
-          'Se unió en $fecha',
-          style: GoogleFonts.inter(fontSize: 13, color: colorTextoS),
-        ),
-      ],
+    return TranslationWidget(
+      builder: (context, tr) => Row(
+        children: [
+          Icon(Icons.calendar_today_rounded, size: 14, color: colorTextoS),
+          const SizedBox(width: 6),
+          Text(
+            tr('profileJoined', {'date': fecha}),
+            style: GoogleFonts.inter(fontSize: 13, color: colorTextoS),
+          ),
+        ],
+      ),
     );
   }  Widget _buildActionButtons(BuildContext context) {
     if (currentUserId == null) return const SizedBox.shrink();
@@ -371,12 +378,14 @@ class InfoPerfil extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  haVotadoHoy ? 'Editar' : 'Votar',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: haVotadoHoy ? const Color(0xFF248EA6) : Colors.white,
+                TranslationWidget(
+                  builder: (context, tr) => Text(
+                    haVotadoHoy ? tr('profileVoteEdit') : tr('profileVoteNew'),
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: haVotadoHoy ? const Color(0xFF248EA6) : Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -401,6 +410,8 @@ class InfoPerfil extends StatelessWidget {
     );
   }
 
+  // TODO: confirm translation key — _getFollowText is called outside TranslationWidget context;
+  // callers should use TranslationWidget and pass tr() result.
   String _getFollowText() {
     if (estadoSeguimiento == 'ACEPTADO') return 'Siguiendo';
     if (estadoSeguimiento == 'SOLICITUD') return 'Pendiente';
