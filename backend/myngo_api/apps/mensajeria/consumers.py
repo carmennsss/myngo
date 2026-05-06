@@ -78,7 +78,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             tipo = data.get('tipo', 'TEXTO')
             attachments_data = data.get('attachments', [])
             if content is not None or url_archivo_s3 is not None or attachments_data:
-                msg = await self.save_message(
+                msg, saved_attachments = await self.save_message(
                     self.user, self.room_id, content, 
                     url_archivo_s3=url_archivo_s3, 
                     tipo=tipo,
@@ -103,7 +103,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'leido_por_ids': [],
                         'referencia_a': data.get('referencia_a'),
                         'referencia_a_detalle': await self.get_msg_detail(data.get('referencia_a')),
-                        'media': await self.get_media_detail(msg),
+                        'media': saved_attachments,
                     }
                 )
 
@@ -210,6 +210,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             referencia_a_id=referencia_id
         )
         
+        saved_media = []
         if attachments_data:
             from contenido.models import ImagenGaleria
             for att in attachments_data:
@@ -220,11 +221,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         msg.imagenes.add(img)
                         if not msg.imagen_principal:
                             msg.imagen_principal = img
+                        
+                        saved_media.append({
+                            'id': img.id,
+                            'url': img.url_s3.url if img.url_s3 else '',
+                            'tipo': img.tipo_archivo
+                        })
                 except ImagenGaleria.DoesNotExist:
                     pass
             msg.save()
             
-        return msg
+        return msg, saved_media
 
     @database_sync_to_async
     def get_media_detail(self, msg):

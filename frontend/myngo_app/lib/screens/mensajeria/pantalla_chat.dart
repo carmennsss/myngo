@@ -333,10 +333,20 @@ class _PantallaChatState extends State<PantallaChat> {
           });
         }
 
+        String tipoFinal = 'TEXTO';
+        if (attachments.isNotEmpty) {
+          // Si solo hay un archivo y es video, marcamos como VIDEO. Si hay varios o imagen, IMAGEN.
+          if (attachments.length == 1 && attachments.first['tipo'] == 'V') {
+            tipoFinal = 'VIDEO';
+          } else {
+            tipoFinal = 'IMAGEN';
+          }
+        }
+
         _servicio.enviarMensajeChat(
           texto, 
           referenciaA: respuestaId,
-          tipo: attachments.isNotEmpty ? 'MEDIA' : 'TEXTO',
+          tipo: tipoFinal,
           attachments: attachments.isNotEmpty ? attachments : null,
         );
       }

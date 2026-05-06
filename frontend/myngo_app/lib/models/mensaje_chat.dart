@@ -1,3 +1,5 @@
+import '../utils/configuracion.dart';
+
 /// Modelo que representa un archivo adjunto en un mensaje.
 class ChatAttachment {
   final int id;
@@ -13,10 +15,15 @@ class ChatAttachment {
   });
 
   factory ChatAttachment.fromJson(Map<String, dynamic> json) {
+    String rawUrl = json['url'] ?? json['file_url'] ?? '';
+    if (rawUrl.startsWith('/')) {
+      rawUrl = '${Configuracion.baseUrl}$rawUrl';
+    }
+    
     return ChatAttachment(
       id: json['id'] ?? 0,
-      url: json['url'] ?? '',
-      type: json['tipo'] ?? json['type'] ?? 'I',
+      url: rawUrl,
+      type: json['tipo'] ?? json['type'] ?? json['file_type'] ?? 'I',
       name: json['name'],
     );
   }
@@ -76,12 +83,17 @@ class MensajeChat {
       mediaList = (json['attachments'] as List).map((i) => ChatAttachment.fromJson(i)).toList();
     }
 
+    String? urlS3 = json['url_archivo_s3']?.toString();
+    if (urlS3 != null && urlS3.startsWith('/')) {
+      urlS3 = '${Configuracion.baseUrl}$urlS3';
+    }
+
     return MensajeChat(
       id: json['id'] ?? json['message_id'] ?? 0,
       salaId: json['sala'] ?? json['sala_id'] ?? 0,
       emisorId: json['emisor'] ?? json['user_id'] ?? json['sender_id'] ?? 0,
       contenido: json['content']?.toString() ?? json['contenido']?.toString(),
-      urlArchivoS3: json['url_archivo_s3']?.toString(),
+      urlArchivoS3: urlS3,
       attachments: mediaList,
       fechaEnvio: json['fecha_envio'] != null
           ? DateTime.parse(json['fecha_envio']).toLocal()
