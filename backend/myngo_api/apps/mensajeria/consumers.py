@@ -78,7 +78,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             tipo = data.get('tipo', 'TEXTO')
             attachments_data = data.get('attachments', [])
             if content is not None or url_archivo_s3 is not None or attachments_data:
-                msg, saved_attachments = await self.save_message(
+                msg, _ = await self.save_message(
                     self.user, self.room_id, content, 
                     url_archivo_s3=url_archivo_s3, 
                     tipo=tipo,
@@ -86,26 +86,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     attachments_data=attachments_data
                 )
 
-                preview_text = '📷 Foto' if tipo == 'IMAGEN' else (content[:60] + ('...' if len(content or '') > 60 else '') if content else 'Mensaje')
+                # Usamos el serializador para que los datos sean idénticos a la API REST
+                from .serializers import MensajeChatSerializer
+                serializer_data = await self.get_serializer_data(msg)
+
+                # Añadimos client_id que no está en el serializador pero es útil para el frontend
+                serializer_data['client_id'] = data.get('client_id')
+                serializer_data['type'] = 'chat_message'
 
                 await self.channel_layer.group_send(
                     self.room_group_name,
-                    {
-                        'type': 'chat_message',
-                        'message_id': msg.id,
-                        'client_id': data.get('client_id'),
-                        'content': content,
-                        'url_archivo_s3': msg.url_archivo_s3.url if msg.url_archivo_s3 else None,
-                        'tipo': tipo,
-                        'user_id': self.user.id,
-                        'username': self.user.nombre_usuario,
-                        'timestamp': msg.fecha_envio.isoformat(),
-                        'leido_por_ids': [],
-                        'referencia_a': data.get('referencia_a'),
-                        'referencia_a_detalle': await self.get_msg_detail(data.get('referencia_a')),
-                        'media': saved_attachments,
-                    }
+                    serializer_data
                 )
+
+                preview_text = '📷 Foto' if tipo == 'IMAGEN' else (content[:60] + ('...' if len(content or '') > 60 else '') if content else 'Mensaje')
 
                 miembros_ids = await self.get_miembros_ids(self.room_id, exclude_user_id=self.user.id)
                 sala_nombre = await self.get_sala_nombre(self.room_id)
@@ -243,6 +237,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'tipo': img.tipo_archivo
             })
         return media
+
+    @database_sync_to_async
+    def get_serializer_data(self, msg):
+        from .serializers import MensajeChatSerializer
+        # Necesitamos el contexto del request para que las URLs sean absolutas
+        return MensajeChatSerializer(msg).data
 
     @database_sync_to_async
     def marcar_mensajes_como_leidos(self):
