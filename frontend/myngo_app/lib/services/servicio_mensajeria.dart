@@ -78,16 +78,12 @@ class ServicioMensajeria {
         if (decoded is List) {
           return List<Map<String, dynamic>>.from(decoded);
         } else if (decoded is Map && decoded.containsKey('results')) {
-          // Soporte preventivo para paginación si se activara en el futuro
           return List<Map<String, dynamic>>.from(decoded['results']);
         }
-        debugPrint('Formato de respuesta inesperado en obtenerSalasChat: $decoded');
         return [];
-      } else {
-        debugPrint('Error en obtenerSalasChat: ${respuesta.statusCode} - ${respuesta.body}');
       }
     } catch (e) {
-      debugPrint('Excepción en obtenerSalasChat: $e');
+      debugPrint('Error en obtenerSalasChat: $e');
     }
     return [];
   }
@@ -101,12 +97,8 @@ class ServicioMensajeria {
 
       if (respuesta.statusCode == 200) {
         return jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>;
-      } else {
-        debugPrint('Error en obtenerConteoMensajesNoLeidos: ${respuesta.statusCode} - ${respuesta.body}');
       }
-    } catch (e) {
-      debugPrint('Excepción en obtenerConteoMensajesNoLeidos: $e');
-    }
+    } catch (_) {}
     return {'total': 0, 'por_sala': []};
   }
 
@@ -164,21 +156,6 @@ class ServicioMensajeria {
     return null;
   }
 
-  Future<Map<String, dynamic>?> enviarMensaje(int idSala, String texto) async {
-    try {
-      final respuesta = await http.post(
-        Uri.parse('$_urlApi/mensajeria/salas/$idSala/enviar/'),
-        headers: await _obtenerCabeceras(),
-        body: jsonEncode({'texto': texto}),
-      ).timeout(const Duration(seconds: 10));
-
-      if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
-        return jsonDecode(utf8.decode(respuesta.bodyBytes));
-      }
-    } catch (_) {}
-    return null;
-  }
-
   /// Actualiza la configuración y metadatos de una sala.
   Future<bool> actualizarSala(int idSala, {String? nombre, PersonalizacionChat? personalizacion, String? avatarS3}) async {
     try {
@@ -229,36 +206,41 @@ class ServicioMensajeria {
     return null;
   }
 
-  /// Sube imagen para mensaje de chat.
-  Future<String?> uploadChatImage(int idSala, XFile imagen) async {
+  /// Sube un archivo multimedia (imagen o vídeo) para el chat.
+  Future<Map<String, dynamic>?> uploadMedia(int idSala, XFile archivo) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      final uri = Uri.parse('$_urlApi/mensajeria/salas/$idSala/upload-image/');
+      final uri = Uri.parse('$_urlApi/mensajeria/messages/upload/');
       var solicitud = http.MultipartRequest('POST', uri);
 
       if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+      solicitud.fields['room_id'] = idSala.toString();
 
       if (kIsWeb) {
-        final bytes = await imagen.readAsBytes();
+        final bytes = await archivo.readAsBytes();
         solicitud.files.add(http.MultipartFile.fromBytes(
-          'imagen',
+          'file',
           bytes,
-          filename: imagen.name,
-          contentType: MediaType('image', 'jpeg'),
+          filename: archivo.name,
+          contentType: MediaType(
+            archivo.name.toLowerCase().endsWith('.mp4') || 
+            archivo.name.toLowerCase().endsWith('.mov') ||
+            archivo.name.toLowerCase().endsWith('.webm') ? 'video' : 'image', 
+            'octet-stream'
+          ),
         ));
       } else {
-        solicitud.files.add(await http.MultipartFile.fromPath('imagen', imagen.path));
+        solicitud.files.add(await http.MultipartFile.fromPath('file', archivo.path));
       }
 
-      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 60));
       final respuesta = await http.Response.fromStream(respuestaStream);
 
-      if (respuesta.statusCode == 200) {
-        final datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        return datos['url'];
+      if (respuesta.statusCode == 201) {
+        return jsonDecode(utf8.decode(respuesta.bodyBytes));
       }
     } catch (e) {
-      debugPrint('Error uploadChatImage: $e');
+      debugPrint('Error uploadMedia: $e');
     }
     return null;
   }
@@ -415,7 +397,13 @@ class ServicioMensajeria {
     });
   }
 
-  void enviarMensajeChat(String contenido, {String? clientId, int? referenciaA, String? tipo, String? urlArchivoS3}) {
+  void enviarMensajeChat(String contenido, {
+    String? clientId, 
+    int? referenciaA, 
+    String? tipo, 
+    String? urlArchivoS3,
+    List<Map<String, dynamic>>? attachments,
+  }) {
     if (_estaConectadoChat && _canalChat != null) {
       _canalChat!.sink.add(jsonEncode({
         'type': 'message',
@@ -423,6 +411,7 @@ class ServicioMensajeria {
         'client_id': clientId,
         'tipo': tipo ?? 'TEXTO',
         'url_archivo_s3': urlArchivoS3,
+        if (attachments != null) 'attachments': attachments,
         if (referenciaA != null) 'referencia_a': referenciaA,
       }));
     }
@@ -440,7 +429,6 @@ class ServicioMensajeria {
     }
   }
 
-  /// Actualiza el estado de disponibilidad del usuario (Online, Offline, etc.).
   void cambiarEstadoDisponibilidad(String nuevoEstado) {
     if (_estaConectadoPresencia && _canalPresencia != null) {
       _canalPresencia!.sink.add(jsonEncode({

@@ -15,6 +15,8 @@ from rest_framework import generics, pagination, permissions, status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
+import magic
+from django.core.exceptions import ValidationError
 
 from usuarios.models import Usuario
 from .models import MensajeChat, SalaChat, ParticipanteChat, PersonalizacionChat, ApodoPersonalizado
@@ -584,3 +586,54 @@ def upload_chat_image(request, sala_id):
         import traceback
         traceback.print_exc()
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ChatMediaUploadView(generics.CreateAPIView):
+    """Sube un archivo multimedia para el chat sin crear el mensaje todavía.
+    
+    Valida el tipo de archivo (MIME) y el tamaño máximo.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, *args, **kwargs):
+        archivo = request.FILES.get('file')
+        room_id = request.data.get('room_id')
+
+        if not archivo:
+            return Response({'error': 'No se proporcionó ningún archivo'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Validar tamaño
+        size_mb = archivo.size / (1024 * 1024)
+        
+        # Leemos los primeros bytes para detectar el MIME real
+        file_content = archivo.read(2048)
+        archivo.seek(0)
+        mime = magic.from_buffer(file_content, mime=True)
+
+        tipo_archivo = 'I'
+        if mime.startswith('image/'):
+            if size_mb > 10:
+                return Response({'error': 'La imagen excede los 10MB permitidos'}, status=status.HTTP_400_BAD_REQUEST)
+            tipo_archivo = 'I'
+        elif mime.startswith('video/'):
+            if size_mb > 50:
+                return Response({'error': 'El vídeo excede los 50MB permitidos'}, status=status.HTTP_400_BAD_REQUEST)
+            tipo_archivo = 'V'
+        else:
+            return Response({'error': 'Tipo de archivo no soportado'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. Crear ImagenGaleria
+        img_instancia = ImagenGaleria(
+            propietario=request.user,
+            url_s3=archivo,
+            tipo_archivo=tipo_archivo
+        )
+        img_instancia._es_chat = True # Forzamos ruta chat/contenido/
+        img_instancia.save()
+
+        return Response({
+            'file_url': img_instancia.url_s3.url,
+            'file_type': 'image' if tipo_archivo == 'I' else 'video',
+            'name': archivo.name,
+            'id': img_instancia.id
+        }, status=status.HTTP_201_CREATED)
