@@ -475,7 +475,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '¡Miau-bienvenido!',
+              widget.tr('authLoginWelcome'),
               style: GoogleFonts.outfit(
                 fontSize: 30,
                 fontWeight: FontWeight.w900,
@@ -485,7 +485,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Entra en tu rincón michi',
+              widget.tr('authLoginSubtitle'),
               style: GoogleFonts.outfit(
                 color: Colors.grey.shade500,
                 fontSize: 14,
@@ -505,7 +505,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                     tipoTeclado: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
                     validador: (valor) {
-                      if (valor == null || valor.isEmpty) return '¿Tu email? 🐾';
+                      if (valor == null || valor.isEmpty) return widget.tr('formUsernameHint');
                       if (!valor.contains('@')) return widget.tr('errorInvalidEmail');
                       return null;
                     },
@@ -520,7 +520,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                     autofillHints: const [AutofillHints.password],
                     alCambiarVisibilidad: _alCambiarVisibilidadPassword,
                     validador: (valor) {
-                      if (valor == null || valor.isEmpty) return 'Falta la clave michi';
+                      if (valor == null || valor.isEmpty) return widget.tr('authPasswordRequired');
                       return null;
                     },
                   ),
@@ -548,7 +548,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Recuérdame',
+                        widget.tr('authRememberMe'),
                         style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 14),
                       ),
                     ],
@@ -565,7 +565,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             BotonCarga(
               alPresionar: _iniciarSesion,
               notificadorCargando: _estaCargando,
-              texto: 'ENTRAR 🐾',
+              texto: widget.tr('authLoginButton'),
             ),
             const SizedBox(height: 20),
             Row(

@@ -367,7 +367,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                   onPressed: _mostrarDialogoCrearPost,
                   backgroundColor: const Color(0xFFF28B50),
                   icon: const Icon(Icons.add_box_rounded, color: Colors.white),
-                  label: Text('Subir Post',
+                  label: Text(tr('profileUploadPost'),
                       style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold, color: Colors.white)),
                 )
@@ -552,7 +552,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                     }
                   },
                   icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                  label: Text('Eliminar mi voto', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  label: Text(tr('profileVoteDelete'), style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold)),
                 ),
               ],
               const SizedBox(height: 12),
@@ -567,49 +567,51 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final controller = TextEditingController(text: _biografiaLocal);
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Editar Biografía',
-            style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          style: GoogleFonts.inter(color: Colors.white70),
-          decoration: InputDecoration(
-            hintText: 'Cuéntanos algo sobre ti...',
-            hintStyle: TextStyle(color: Colors.grey.shade600),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancelar', style: GoogleFonts.inter(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final nuevaBio = controller.text;
-              final res = await ServicioPerfiles().editarBiografia(
-                textoBiografia: nuevaBio,
-                perfilId: _usuario!.perfilId,
-              );
-              if (res.exito) {
-                setState(() => _biografiaLocal = nuevaBio);
-                if (mounted) Navigator.pop(ctx);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF248EA6),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      builder: (ctx) => TranslationWidget(
+        builder: (ctx, tr) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(tr('profileEditBioTitle'),
+              style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: controller,
+            maxLines: 5,
+            style: GoogleFonts.inter(color: Colors.white70),
+            decoration: InputDecoration(
+              hintText: tr('profileEditBioHint'),
+              hintStyle: TextStyle(color: Colors.grey.shade600),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.05),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             ),
-            child: Text('Guardar',
-                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(tr('commonCancel'), style: GoogleFonts.inter(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final nuevaBio = controller.text;
+                final res = await ServicioPerfiles().editarBiografia(
+                  textoBiografia: nuevaBio,
+                  perfilId: _usuario!.perfilId,
+                );
+                if (res.exito) {
+                  setState(() => _biografiaLocal = nuevaBio);
+                  if (mounted) Navigator.pop(ctx);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF248EA6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(tr('commonSave'),
+                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -642,14 +644,16 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DialogoCrearPost(
-        titulo: 'Nuevo Miau-Post',
-        onPublicar: (txt, archivos, tags, {void Function(int, int)? alProgresar}) async {
-          final ok = await Provider.of<PostProvider>(context, listen: false)
-              .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: archivos, etiquetas: tags);
-          if (ok) _cargarPublicaciones();
-          return ok;
-        },
+      builder: (context) => TranslationWidget(
+        builder: (context, translate) => DialogoCrearPost(
+          titulo: translate('postNewTitle'),
+          onPublicar: (txt, archivos, tags, {void Function(int, int)? alProgresar}) async {
+            final ok = await Provider.of<PostProvider>(context, listen: false)
+                .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: archivos, etiquetas: tags);
+            if (ok) _cargarPublicaciones();
+            return ok;
+          },
+        ),
       ),
     );
   }
