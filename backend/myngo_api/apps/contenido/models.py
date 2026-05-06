@@ -10,23 +10,21 @@ from comunidades.models import Comunidad
 from usuarios.models import Usuario
 
 
+from django.utils.text import get_valid_filename
+
 def _definir_ruta_almacenamiento(instance, filename):
     """Determina la ruta S3 donde se almacenará un archivo de imagen.
 
     Si la instancia tiene el atributo temporal ``_es_avatar`` activado,
     el archivo se guarda en ``perfiles/avatar/``; en caso contrario,
     en ``publicaciones/archivos/``.
-
-    Args:
-        instance: Instancia de ``ImagenGaleria`` que se está guardando.
-        filename: Nombre original del archivo subido.
-
-    Returns:
-        Ruta relativa dentro del bucket S3.
     """
     es_avatar = getattr(instance, '_es_avatar', False)
     ruta_s3 = 'perfiles/avatar' if es_avatar else 'publicaciones/archivos'
-    return f"{ruta_s3}/{filename}"
+    
+    # Sanitizamos el nombre del archivo para evitar problemas con espacios o caracteres especiales en S3
+    nombre_limpio = get_valid_filename(filename)
+    return f"{ruta_s3}/{nombre_limpio}"
 
 
 class ImagenGaleria(models.Model):
