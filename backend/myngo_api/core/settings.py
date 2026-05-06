@@ -202,36 +202,25 @@ STATIC_URL = 'static/'
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='')
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
-AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME').strip()
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='us-east-1').strip()
+
+# Parámetros de comportamiento de S3
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_FILE_OVERWRITE = False
+AWS_QUERYSTRING_AUTH = True
+AWS_QUERYSTRING_EXPIRE = 3600
+
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "bucket_name": AWS_STORAGE_BUCKET_NAME,
-            "region_name": AWS_S3_REGION_NAME,
-            "access_key": AWS_ACCESS_KEY_ID,
-            "secret_key": AWS_SECRET_ACCESS_KEY ,
-            
-            # CAMBIO CLAVE: Activamos la firma de URLs
-            "querystring_auth": True, 
-            "querystring_expire": 3600, # La URL caduca en 1 hora
-            
-            "file_overwrite": False,
-            
-            # FIX: Removemos endpoint_url que causa URLs presignadas malformadas
-            # boto3 lo usa para generar URLs públicas incorrectamente
-            # Déjame que boto3 use la URL estándar de S3: https://bucket.s3.region.amazonaws.com
-            
-            "signature_version": "s3v4",
-            "addressing_style": "virtual",  # Usa virtual-host-style (https://bucket.s3.region.amazonaws.com)
-        },
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
+# Al usar S3Boto3Storage, la URL de media se genera automáticamente.
+# MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
 # REST Framework configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

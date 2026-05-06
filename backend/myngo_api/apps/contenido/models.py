@@ -26,7 +26,7 @@ def _definir_ruta_almacenamiento(instance, filename):
     """
     es_avatar = getattr(instance, '_es_avatar', False)
     ruta_s3 = 'perfiles/avatar' if es_avatar else 'publicaciones/archivos'
-    return os.path.join(ruta_s3, filename)
+    return f"{ruta_s3}/{filename}"
 
 
 class ImagenGaleria(models.Model):
