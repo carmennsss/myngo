@@ -382,6 +382,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                             height: double.infinity,
                             child: SidebarIzquierdo(
                               estaLogueado: _estaLogueado == true,
+                              tr: tr,
                               cargando: _cargandoComunidades == true,
                               comunidades: _misComunidades,
                               rankingUsuarios: _rankingUsuarios,
@@ -409,7 +410,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                         child: GestureDetector(
                           onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
                           child: Tooltip(
-                            message: _isSidebarOpen ? tr('commonClose') : tr('commonShow'),
+                            message: _isSidebarOpen ? 'Cerrar sidebar' : 'Mostrar sidebar',
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               height: 24.0,
@@ -508,6 +509,7 @@ class PantallaInicioState extends State<PantallaInicio> {
             const Divider(height: 32, indent: 20, endIndent: 20),
             SidebarIzquierdo(
               estaLogueado: _estaLogueado == true,
+              tr: tr,
               cargando: _cargandoComunidades == true,
               comunidades: _misComunidades,
               rankingUsuarios: _rankingUsuarios,
@@ -636,7 +638,7 @@ class _ToastMensajeState extends State<_ToastMensaje>
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) => Center(
                                       child: Text(
-                                        widget.sender[0].toUpperCase(),
+                                        widget.sender.isNotEmpty ? widget.sender[0].toUpperCase() : '?',
                                         style: GoogleFonts.outfit(
                                           fontWeight: FontWeight.bold,
                                           color: const Color(0xFFC35E34),
@@ -644,9 +646,9 @@ class _ToastMensajeState extends State<_ToastMensaje>
                                       ),
                                     ),
                                   )
-                                : Center(
+                                  : Center(
                                     child: Text(
-                                      widget.sender[0].toUpperCase(),
+                                      widget.sender.isNotEmpty ? widget.sender[0].toUpperCase() : '?',
                                       style: GoogleFonts.outfit(
                                         fontWeight: FontWeight.bold,
                                         color: const Color(0xFFC35E34),

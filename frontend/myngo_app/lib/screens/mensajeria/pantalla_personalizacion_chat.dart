@@ -6,7 +6,7 @@ import 'dart:math';
 import '../../models/sala_chat.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../widgets/comunes/boton_tactil.dart';
-import 'package:myngo_app/l10n/app_localizations.dart';
+import 'package:tolgee/tolgee.dart';
 
 // Painter eficiente para preview de patrones
 class _PatternPreviewPainter extends CustomPainter {
@@ -187,85 +187,89 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.chatPersonalization, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        actions: [
-          if (_estaGuardando)
-            const Center(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))))
-          else
-            TextButton(
-              onPressed: _guardar,
-              child: Text('GUARDAR', style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontWeight: FontWeight.bold)),
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(tr('chatPersonalization'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            actions: [
+              if (_estaGuardando)
+                const Center(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))))
+              else
+                TextButton(
+                  onPressed: _guardar,
+                  child: Text('GUARDAR', style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildAvatarPicker(),
+                const SizedBox(height: 32),
+                _buildPreview(),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Identidad del Chat'),
+                const SizedBox(height: 12),
+                TextFormField(
+                  initialValue: _nombre,
+                  decoration: InputDecoration(
+                    labelText: 'Nombre del Chat',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.edit_outlined),
+                  ),
+                  onChanged: (v) => setState(() => _nombre = v),
+                ),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Colores de Burbujas'),
+                const SizedBox(height: 16),
+                _buildColorPicker('Mis mensajes', _perso.colorBurbujaMio, (hex) {
+                  setState(() => _perso = _copyPerso(colorBurbujaMio: hex));
+                }),
+                const SizedBox(height: 16),
+                _buildColorPicker('Mensajes de otros', _perso.colorBurbujaOtro, (hex) {
+                  setState(() => _perso = PersonalizacionChat(
+                    colorFondo: _perso.colorFondo,
+                    colorBurbujaMio: _perso.colorBurbujaMio,
+                    colorBurbujaOtro: hex,
+                    colorTextoMio: _perso.colorTextoMio,
+                    colorTextoOtro: _perso.colorTextoOtro,
+                    formaBurbuja: _perso.formaBurbuja,
+                    fontSize: _perso.fontSize,
+                    tema: _perso.tema,
+                  ));
+                }),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Patrón y Estilo de Fondo'),
+                const SizedBox(height: 16),
+                _buildGradientPicker(),
+                const SizedBox(height: 16),
+                _buildPatternPicker(),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Estilo de Burbujas'),
+                const SizedBox(height: 16),
+                _buildBubbleStylePicker(),
+                const SizedBox(height: 24),
+                _buildShapePicker(),
+                const SizedBox(height: 24),
+                _buildFontSizePicker(),
+                const SizedBox(height: 40),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () {
+                      setState(() => _perso = PersonalizacionChat());
+                    },
+                    icon: const Icon(Icons.refresh, color: Colors.red),
+                    label: const Text('Restablecer diseño por defecto', style: TextStyle(color: Colors.red)),
+                  ),
+                ),
+              ],
             ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAvatarPicker(),
-            const SizedBox(height: 32),
-            _buildPreview(),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Identidad del Chat'),
-            const SizedBox(height: 12),
-            TextFormField(
-              initialValue: _nombre,
-              decoration: InputDecoration(
-                labelText: 'Nombre del Chat',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.edit_outlined),
-              ),
-              onChanged: (v) => setState(() => _nombre = v),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Colores de Burbujas'),
-            const SizedBox(height: 16),
-            _buildColorPicker('Mis mensajes', _perso.colorBurbujaMio, (hex) {
-              setState(() => _perso = _copyPerso(colorBurbujaMio: hex));
-            }),
-            const SizedBox(height: 16),
-            _buildColorPicker('Mensajes de otros', _perso.colorBurbujaOtro, (hex) {
-              setState(() => _perso = PersonalizacionChat(
-                colorFondo: _perso.colorFondo,
-                colorBurbujaMio: _perso.colorBurbujaMio,
-                colorBurbujaOtro: hex,
-                colorTextoMio: _perso.colorTextoMio,
-                colorTextoOtro: _perso.colorTextoOtro,
-                formaBurbuja: _perso.formaBurbuja,
-                fontSize: _perso.fontSize,
-                tema: _perso.tema,
-              ));
-            }),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Patrón y Estilo de Fondo'),
-            const SizedBox(height: 16),
-            _buildGradientPicker(),
-            const SizedBox(height: 16),
-            _buildPatternPicker(),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Estilo de Burbujas'),
-            const SizedBox(height: 16),
-            _buildBubbleStylePicker(),
-            const SizedBox(height: 24),
-            _buildShapePicker(),
-            const SizedBox(height: 24),
-            _buildFontSizePicker(),
-            const SizedBox(height: 40),
-            Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  setState(() => _perso = PersonalizacionChat());
-                },
-                icon: const Icon(Icons.refresh, color: Colors.red),
-                label: const Text('Restablecer diseño por defecto', style: TextStyle(color: Colors.red)),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
