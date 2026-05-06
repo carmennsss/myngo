@@ -33,7 +33,6 @@ class MensajeChatSerializer(serializers.ModelSerializer):
     referencia_a_detalle = serializers.SerializerMethodField()
     borrado_para_mi = serializers.SerializerMethodField()
     info_lectura = serializers.SerializerMethodField()
-    url_archivo_s3 = serializers.SerializerMethodField()
 
     class Meta:
         model = MensajeChat
@@ -72,11 +71,7 @@ class MensajeChatSerializer(serializers.ModelSerializer):
         lecturas = LecturaMensaje.objects.filter(mensaje=obj)
         return {l.usuario_id: l.fecha_lectura.isoformat() for l in lecturas}
 
-    def get_url_archivo_s3(self, obj):
-        """Retorna la URL absoluta de S3 para el archivo adjunto."""
-        if obj.url_archivo_s3:
-            return obj.url_archivo_s3.url
-        return None
+    # url_archivo_s3 se maneja automáticamente por el ImageField
 
     def validate_url_archivo_s3(self, value):
         """Valida tipo de archivo y tamaño máximo (10MB)."""
