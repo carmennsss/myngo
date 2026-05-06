@@ -75,7 +75,12 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
           if (nuevos.isEmpty) {
             _hayMasPosts = false;
           } else {
-            _posts.addAll(nuevos);
+            final idsExistentes = _posts.map((p) => p.id).toSet();
+            for (var n in nuevos) {
+              if (idsExistentes.add(n.id)) {
+                _posts.add(n);
+              }
+            }
           }
         });
       }
@@ -306,24 +311,34 @@ class _TarjetaPostGuardado extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (post.urlsImagenes.isNotEmpty)
+            if (post.media.isNotEmpty)
               Stack(
+                alignment: Alignment.center,
                 children: [
                   Container(
                     constraints: const BoxConstraints(maxHeight: 150),
                     width: double.infinity,
                     color: Colors.black.withOpacity(0.03),
-                    child: CachedNetworkImage(
-                      imageUrl: post.urlsImagenes.first,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => Container(
-                        color: Colors.black.withOpacity(0.05),
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(Icons.broken_image_rounded, color: Colors.grey),
-                    ),
+                    child: post.media.first['tipo'] == 'V'
+                        ? Container(
+                            height: 120,
+                            color: Colors.black.withOpacity(0.1),
+                            child: const Center(
+                              child: Icon(Icons.play_circle_fill_rounded, 
+                                  color: Color(0xFFF28B50), size: 40),
+                            ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: post.media.first['url'] ?? '',
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => Container(
+                              color: Colors.black.withOpacity(0.05),
+                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                          ),
                   ),
-                  if (post.urlsImagenes.length > 1)
+                  if (post.media.length > 1)
                     Positioned(
                       top: 6,
                       right: 6,

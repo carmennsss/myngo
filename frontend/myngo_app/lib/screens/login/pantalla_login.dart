@@ -261,12 +261,15 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
   }
 
   Future<void> _checkExistingTokenAndRedirect() async {
-    // Si acabamos de cerrar sesión, no queremos redirigir
+    // Pequeño retardo para dar tiempo a que SharedPreferences se asiente si venimos de un logout
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+
     final preferencias = await SharedPreferences.getInstance();
     final token = preferencias.getString('auth_token');
     
-    if (token != null && mounted) {
-      // Solo redirigimos si el token parece válido y no estamos en un proceso de logout
+    // Solo redirigimos si el token existe
+    if (token != null && token.isNotEmpty && mounted) {
       context.go('/inicio');
     }
   }
@@ -351,12 +354,13 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
       _notificarCambioGato();
 
       try {
+        // Medida de seguridad: limpiar cualquier rastro antes de intentar nuevo login
+        await _servicioUsuarios.limpiarToken();
+
         final respuesta = await _servicioUsuarios.iniciarSesion(
           _controladorEmail.text.trim(),
           _controladorPassword.text.trim(),
         );
-
-        _estaCargando.value = false;
 
         if (!mounted) return;
 
@@ -383,9 +387,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           );
           context.go('/inicio');
         } else {
-          // Imprimir para ver el error aunque el SnackBar falle
           print("DEBUG LOGIN: ${respuesta.mensaje}");
-          _estaCargando.value = false;
           
           setState(() {
             _estadoGatos = EstadoMonstruo.triste;
@@ -397,6 +399,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
               content: Text(respuesta.mensaje),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
           );
@@ -411,7 +414,6 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           });
         }
       } catch (e) {
-        _estaCargando.value = false;
         if (!mounted) return;
         
         setState(() {
@@ -422,33 +424,21 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.tr('authConnectionError')),
+            content: Text('${widget.tr('authConnectionError')}: $e'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         );
-        
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            setState(() {
-              _estadoGatos = EstadoMonstruo.inactivo;
-            });
-            _notificarCambioGato();
-          }
-        });
+      } finally {
+        // ASEGURAMOS que el botón siempre vuelva a su estado normal
+        if (mounted) {
+          _estaCargando.value = false;
+        }
       }
     } else {
       _estadoGatos = EstadoMonstruo.triste;
       _notificarCambioGato();
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _estadoGatos = EstadoMonstruo.inactivo;
-          });
-          _notificarCambioGato();
-        }
-      });
     }
   }
 
