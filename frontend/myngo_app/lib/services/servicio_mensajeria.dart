@@ -156,6 +156,21 @@ class ServicioMensajeria {
     return null;
   }
 
+  Future<Map<String, dynamic>?> enviarMensaje(int idSala, String texto) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/enviar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'texto': texto}),
+      ).timeout(const Duration(seconds: 10));
+
+      if (respuesta.statusCode == 201 || respuesta.statusCode == 200) {
+        return jsonDecode(utf8.decode(respuesta.bodyBytes));
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Actualiza la configuración y metadatos de una sala.
   Future<bool> actualizarSala(int idSala, {String? nombre, PersonalizacionChat? personalizacion, String? avatarS3}) async {
     try {

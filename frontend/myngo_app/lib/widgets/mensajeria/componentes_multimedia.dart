@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
@@ -49,10 +50,12 @@ class MediaPreviewGrid extends StatelessWidget {
                   color: Colors.grey[200],
                   child: isVideo
                       ? const Center(child: Icon(Icons.videocam, color: Colors.blue))
-                      : Image.file(
-                          File(file.path),
-                          fit: BoxFit.cover,
-                        ),
+                      : kIsWeb
+                          ? Image.network(file.path, fit: BoxFit.cover)
+                          : Image.file(
+                              File(file.path),
+                              fit: BoxFit.cover,
+                            ),
                 ),
               ),
               Positioned(
@@ -100,11 +103,20 @@ class ChatMediaGrid extends StatelessWidget {
     final count = attachments.length;
     
     return Container(
-      constraints: const BoxConstraints(maxWidth: 250),
+      width: 250,
       margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ClipRRect(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        child: _buildGrid(context, count),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _buildGrid(context, count),
+          ),
+        ],
       ),
     );
   }
@@ -151,7 +163,25 @@ class ChatMediaGrid extends StatelessWidget {
             children: [
               Expanded(child: _buildItem(context, attachments[2], height: 100)),
               const SizedBox(width: 2),
-              Expanded(child: _buildItem(context, attachments[3], height: 100)),
+              Expanded(
+                child: Stack(
+                  children: [
+                    _buildItem(context, attachments[3], height: 100),
+                    if (count > 4)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black45,
+                          child: Center(
+                            child: Text(
+                              '+${count - 3}',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
@@ -178,12 +208,18 @@ class ChatMediaGrid extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CachedNetworkImage(
-              imageUrl: att.url,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(color: Colors.grey[300]),
-              errorWidget: (context, url, error) => const Icon(Icons.error),
-            ),
+            if (att.url.isEmpty)
+              Container(
+                color: Colors.grey[200],
+                child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+              )
+            else
+              CachedNetworkImage(
+                imageUrl: att.url,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(color: Colors.grey[300]),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+              ),
             if (att.isVideo)
               const Center(
                 child: Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
@@ -240,6 +276,9 @@ class _ChatMediaLightboxState extends State<ChatMediaLightbox> {
         onPageChanged: (index) => setState(() => _currentIndex = index),
         itemBuilder: (context, index) {
           final att = widget.attachments[index];
+          if (att.url.isEmpty) {
+            return const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 64));
+          }
           if (att.isVideo) {
             return ChatVideoPlayer(url: att.url);
           } else {
@@ -248,6 +287,7 @@ class _ChatMediaLightboxState extends State<ChatMediaLightbox> {
                 imageUrl: att.url,
                 fit: BoxFit.contain,
                 placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) => const Center(child: Icon(Icons.error, color: Colors.white)),
               ),
             );
           }
@@ -278,6 +318,7 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
   }
 
   Future<void> _initPlayer() async {
+    if (widget.url.isEmpty) return;
     _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
     await _videoPlayerController.initialize();
     _chewieController = ChewieController(
