@@ -217,11 +217,13 @@ STORAGES = {
             "querystring_expire": 3600, # La URL caduca en 1 hora
             
             "file_overwrite": False,
-            "endpoint_url": f"https://s3.{AWS_S3_REGION_NAME}.amazonaws.com",
             
-            # ELIMINA O COMENTA custom_domain si vas a usar URLs firmadas, 
-            # S3Boto3 lo gestiona mejor automáticamente cuando querystring_auth es True.
-            # "custom_domain": "myngo-538675137521-eu-north-1-an.s3.eu-north-1.amazonaws.com",
+            # FIX: Removemos endpoint_url que causa URLs presignadas malformadas
+            # boto3 lo usa para generar URLs públicas incorrectamente
+            # Déjame que boto3 use la URL estándar de S3: https://bucket.s3.region.amazonaws.com
+            
+            "signature_version": "s3v4",
+            "s3_addressing_style": "virtual",  # Usa virtual-host-style (https://bucket.s3.region.amazonaws.com)
         },
     },
     "staticfiles": {
