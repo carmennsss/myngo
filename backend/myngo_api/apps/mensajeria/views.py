@@ -467,12 +467,14 @@ def subir_avatar_sala(request, pk):
             
         # Usamos ImagenGaleria como almacén temporal/permanente para S3
         from contenido.models import ImagenGaleria
-        img_instancia = ImagenGaleria.objects.create(
+        img_instancia = ImagenGaleria(
             propietario=request.user,
             url_s3=imagen,
             comunidad_id=sala.comunidad_id,
             tipo_archivo='I'
         )
+        img_instancia._es_avatar = True # Es un avatar, no contenido de chat
+        img_instancia.save()
         
         sala.avatar_s3 = img_instancia.url_s3.url
         sala.save()
@@ -491,55 +493,94 @@ def subir_avatar_sala(request, pk):
 @permission_classes([permissions.IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def upload_chat_image(request, sala_id):
-    """Sube imagen para mensaje de chat, crea el mensaje y lo notifica vía WS."""
+    """Sube múltiples imágenes/vídeos para un mensaje de chat y lo notifica vía WS.
+    
+    Adopta la lógica de publicaciones: subida local previa y envío atómico al final.
+    Soporta hasta 4 archivos multimedia en un solo mensaje.
+    """
     try:
         # 1. Validar pertenencia a la sala
         sala = SalaChat.objects.get(id=sala_id, miembros=request.user)
-        imagen = request.FILES.get('imagen')
         
-        if not imagen:
-            return Response({'error': 'No se proporcionó imagen'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # 2. Crear instancia de MensajeChat (la validación ocurre en el modelo/serializer si se usara uno)
-        # Aquí validamos manualmente o mediante el serializador para aprovechar las validaciones añadidas
-        serializer = MensajeChatSerializer(data={
-            'sala': sala.id,
-            'emisor': request.user.id,
-            'url_archivo_s3': imagen,
-            'tipo': 'IMAGEN'
-        }, context={'request': request})
+        # Obtener archivos (múltiples nombres posibles para compatibilidad)
+        archivos = (
+            request.FILES.getlist('imagenes[]') or 
+            request.FILES.getlist('imagen') or 
+            request.FILES.getlist('url_archivo_s3[]') or
+            request.FILES.getlist('archivos[]')
+        )
+        contenido = request.data.get('contenido', '') or request.data.get('content', '')
         
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not archivos and not contenido:
+            return Response({'error': 'No se proporcionó contenido ni archivos'}, status=status.HTTP_400_BAD_REQUEST)
             
-        mensaje = serializer.save()
+        from django.db import transaction
+        from contenido.models import ImagenGaleria
+        
+        with transaction.atomic():
+            # Determinar tipo base del mensaje
+            tipo_mensaje = 'TEXTO'
+            if archivos:
+                tipo_mensaje = 'IMAGEN' # Por defecto si hay archivos
+            
+            # Crear instancia de MensajeChat
+            mensaje = MensajeChat.objects.create(
+                sala=sala,
+                emisor=request.user,
+                contenido=contenido,
+                tipo=tipo_mensaje,
+                referencia_a_id=request.data.get('referencia_a')
+            )
+            
+            # Procesar hasta 4 archivos multimedia
+            for i, archivo in enumerate(archivos[:4]):
+                # Detección de tipo (Lógica de views_publicaciones.py)
+                tipo_archivo = 'I'
+                content_type = archivo.content_type or ''
+                extension = archivo.name.lower().split('.')[-1] if archivo.name else ''
+                
+                if content_type.startswith('video/') or extension in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
+                    tipo_archivo = 'V'
+                    mensaje.tipo = 'VIDEO' # Si hay al menos un vídeo, el mensaje es tipo VIDEO
+                
+                img_instancia = ImagenGaleria(
+                    propietario=request.user,
+                    url_s3=archivo,
+                    comunidad_id=sala.comunidad_id,
+                    tipo_archivo=tipo_archivo,
+                    relacion_aspecto=float(request.data.get('relacion_aspecto', 1.0))
+                )
+                img_instancia._es_chat = True # Forzamos ruta chat/contenido/
+                img_instancia.save()
+                
+                mensaje.imagenes.add(img_instancia)
+                if i == 0:
+                    mensaje.imagen_principal = img_instancia
+            
+            mensaje.save()
         
         # 3. Notificar vía WebSocket a los miembros de la sala
+        serializer = MensajeChatSerializer(mensaje, context={'request': request})
+        message_data = serializer.data
+        
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f'chat_{sala_id}',
             {
                 'type': 'chat_message',
-                'message_id': mensaje.id,
-                'content': '',
-                'url_archivo_s3': mensaje.url_archivo_s3.url if mensaje.url_archivo_s3 else '',
-                'tipo': 'IMAGEN',
+                **message_data,
+                'message_id': mensaje.id, # Compatibilidad
                 'user_id': request.user.id,
                 'username': request.user.nombre_usuario,
-                'timestamp': mensaje.fecha_envio.isoformat(),
-                'leido_por_ids': [],
             }
         )
         
-        # 4. Responder al contrato solicitado por el frontend
-        return Response({
-            'message_id': mensaje.id,
-            'url': mensaje.url_archivo_s3.url if mensaje.url_archivo_s3 else '',
-            'room_id': sala.id,
-            'timestamp': mensaje.fecha_envio.isoformat()
-        }, status=status.HTTP_200_OK)
+        # 4. Responder al frontend con el objeto completo
+        return Response(message_data, status=status.HTTP_200_OK)
         
     except SalaChat.DoesNotExist:
         return Response({'error': 'Sala no encontrada o no eres miembro'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

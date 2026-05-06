@@ -128,6 +128,20 @@ class MensajeChat(models.Model):
         null=True,
         blank=True
     )
+    # Nuevas relaciones con la galería centralizada (estilo publicaciones)
+    imagen_principal = models.ForeignKey(
+        'contenido.ImagenGaleria',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='mensajes_como_principal'
+    )
+    imagenes = models.ManyToManyField(
+        'contenido.ImagenGaleria',
+        related_name='mensajes_donde_aparece',
+        blank=True
+    )
+    
     fecha_envio = models.DateTimeField(auto_now_add=True)
     leido_por = models.ManyToManyField(Usuario, through='LecturaMensaje', related_name='mensajes_leidos', blank=True)
     referencia_a = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='respuestas')

@@ -16,11 +16,18 @@ def _definir_ruta_almacenamiento(instance, filename):
     """Determina la ruta S3 donde se almacenará un archivo de imagen.
 
     Si la instancia tiene el atributo temporal ``_es_avatar`` activado,
-    el archivo se guarda en ``perfiles/avatar/``; en caso contrario,
-    en ``publicaciones/archivos/``.
+    el archivo se guarda en ``perfiles/avatar/``; si tiene ``_es_chat``,
+    en ``chat/contenido/``; en caso contrario, en ``publicaciones/archivos/``.
     """
     es_avatar = getattr(instance, '_es_avatar', False)
-    ruta_s3 = 'perfiles/avatar' if es_avatar else 'publicaciones/archivos'
+    es_chat = getattr(instance, '_es_chat', False)
+    
+    if es_avatar:
+        ruta_s3 = 'perfiles/avatar'
+    elif es_chat:
+        ruta_s3 = 'chat/contenido'
+    else:
+        ruta_s3 = 'publicaciones/archivos'
     
     # Sanitizamos el nombre del archivo para evitar problemas con espacios o caracteres especiales en S3
     nombre_limpio = get_valid_filename(filename)
