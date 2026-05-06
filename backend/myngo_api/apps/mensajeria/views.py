@@ -611,7 +611,18 @@ class ChatMediaUploadView(generics.CreateAPIView):
         # Leemos los primeros bytes para detectar el MIME real
         file_content = archivo.read(2048)
         archivo.seek(0)
-        mime = magic.from_buffer(file_content, mime=True)
+        
+        mime = None
+        if magic:
+            try:
+                mime = magic.from_buffer(file_content, mime=True)
+            except Exception:
+                pass
+        
+        if not mime:
+            # Fallback a content_type o mimetypes
+            import mimetypes
+            mime = archivo.content_type or mimetypes.guess_type(archivo.name)[0] or 'application/octet-stream'
 
         tipo_archivo = 'I'
         if mime.startswith('image/'):
