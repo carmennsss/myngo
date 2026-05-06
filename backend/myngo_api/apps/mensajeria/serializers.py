@@ -7,6 +7,7 @@ incluyendo detalles de miembros y estados de lectura.
 from rest_framework import serializers
 
 from usuarios.serializers import UsuarioSerializer
+from contenido.serializers import ImagenGaleriaSerializer
 from .models import MensajeChat, SalaChat, ParticipanteChat, PersonalizacionChat, ApodoPersonalizado, LecturaMensaje
 
 
@@ -33,6 +34,11 @@ class MensajeChatSerializer(serializers.ModelSerializer):
     referencia_a_detalle = serializers.SerializerMethodField()
     borrado_para_mi = serializers.SerializerMethodField()
     info_lectura = serializers.SerializerMethodField()
+    
+    # Nuevos campos multimedia
+    media = serializers.SerializerMethodField()
+    imagenes_detalle = ImagenGaleriaSerializer(source='imagenes', many=True, read_only=True)
+    url_archivo_s3 = serializers.SerializerMethodField() # Sobrescribimos para compatibilidad
 
     class Meta:
         model = MensajeChat
@@ -41,8 +47,37 @@ class MensajeChatSerializer(serializers.ModelSerializer):
             'content', 'url_archivo_s3', 'fecha_envio', 'leido_por_ids',
             'referencia_a', 'referencia_a_detalle', 'es_editado', 
             'fecha_edicion', 'borrado_para_todos', 'borrado_para_mi',
-            'tipo', 'info_lectura'
+            'tipo', 'info_lectura', 'imagen_principal', 'imagenes',
+            'imagenes_detalle', 'media'
         ]
+
+    def get_url_archivo_s3(self, obj):
+        """Mantiene compatibilidad devolviendo la URL de la imagen principal."""
+        if obj.url_archivo_s3:
+            return obj.url_archivo_s3.url
+        if obj.imagen_principal and obj.imagen_principal.url_s3:
+            return obj.imagen_principal.url_s3.url
+        return None
+
+    def get_media(self, obj):
+        """Lista detallada de archivos multimedia (estilo publicaciones)."""
+        media_list = []
+        # Si tiene imágenes en el M2M
+        for img in obj.imagenes.all():
+            if img.url_s3:
+                media_list.append({
+                    'id': img.id,
+                    'url': img.url_s3.url,
+                    'tipo': img.tipo_archivo
+                })
+        # Si no tiene en M2M pero tiene imagen_principal (compatibilidad)
+        if not media_list and obj.imagen_principal and obj.imagen_principal.url_s3:
+            media_list.append({
+                'id': obj.imagen_principal.id,
+                'url': obj.imagen_principal.url_s3.url,
+                'tipo': obj.imagen_principal.tipo_archivo
+            })
+        return media_list
 
     def get_referencia_a_detalle(self, obj):
         if obj.referencia_a:
