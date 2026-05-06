@@ -522,7 +522,7 @@ def upload_chat_image(request, sala_id):
                 'type': 'chat_message',
                 'message_id': mensaje.id,
                 'content': '',
-                'url_archivo_s3': mensaje.url_archivo_s3.url,
+                'url_archivo_s3': mensaje.url_archivo_s3.url if mensaje.url_archivo_s3 else '',
                 'tipo': 'IMAGEN',
                 'user_id': request.user.id,
                 'username': request.user.nombre_usuario,
@@ -534,10 +534,10 @@ def upload_chat_image(request, sala_id):
         # 4. Responder al contrato solicitado por el frontend
         return Response({
             'message_id': mensaje.id,
-            'image_url': mensaje.url_archivo_s3.url,
+            'url': mensaje.url_archivo_s3.url if mensaje.url_archivo_s3 else '',
             'room_id': sala.id,
             'timestamp': mensaje.fecha_envio.isoformat()
-        }, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_200_OK)
         
     except SalaChat.DoesNotExist:
         return Response({'error': 'Sala no encontrada o no eres miembro'}, status=status.HTTP_404_NOT_FOUND)
