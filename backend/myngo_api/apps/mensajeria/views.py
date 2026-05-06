@@ -653,6 +653,4 @@ class ChatMediaUploadView(generics.CreateAPIView):
                 'id': img_instancia.id
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return Response({'error': f'Error al guardar en DB: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Error al procesar el archivo multimedia'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
