@@ -266,16 +266,6 @@ class _PantallaChatState extends State<PantallaChat> {
         if (type == 'chat_message') {
           final nuevoMsg = MensajeChat.fromJson(datos);
           _mensajes.insert(0, nuevoMsg);
-        } else if (type == 'system_debug') {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('DEBUG SERVER: ${datos['message']}'),
-                backgroundColor: Colors.blueAccent,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
         } else if (type == 'room_updated') {
           _sala = SalaChat.fromJson(datos['data']);
         } else if (type == 'message_deleted') {
@@ -328,22 +318,14 @@ class _PantallaChatState extends State<PantallaChat> {
           
           for (var file in _archivosSeleccionados) {
             final res = await _servicio.uploadMedia(_sala!.id, file);
-            print('DEBUG: uploadMedia response for ${file.name}: $res');
             if (res != null) {
               attachments.add({
                 'id': res['id'],
                 'url': res['file_url'],
                 'tipo': res['file_type'] == 'video' ? 'V' : 'I',
               });
-            } else {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error al subir el archivo: ${file.name}')),
-                );
-              }
             }
           }
-          print('DEBUG: Total attachments collected: ${attachments.length}');
           
           setState(() {
             _estaSubiendoMedia = false;
@@ -765,34 +747,7 @@ class _PantallaChatState extends State<PantallaChat> {
                       children: [
                         if (msg.referenciaADetalle != null) 
                           _buildCitaMensaje(msg.referenciaADetalle!, esMio),
-                        // DEBUG: Información cruda del mensaje
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 4),
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ID: ${msg.id} | TIPO: ${msg.tipo} | ATTACH: ${msg.attachments.length}',
-                                style: const TextStyle(color: Colors.yellow, fontSize: 9, fontWeight: FontWeight.bold),
-                              ),
-                              if (msg.attachments.isEmpty)
-                                Text(
-                                  'S3 URL: ${msg.urlArchivoS3 ?? "NULL"}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 8),
-                                ),
-                              Text(
-                                'SEL: ${_archivosSeleccionados.length} | UPLOADING: $_estaSubiendoMedia',
-                                style: const TextStyle(color: Colors.greenAccent, fontSize: 8),
-                              ),
-                            ],
-                          ),
-                        ),
-
+                        
                         if (msg.attachments.isNotEmpty)
                           ChatMediaGrid(attachments: msg.attachments, esMio: esMio),
                         
