@@ -223,7 +223,7 @@ STORAGES = {
             # Déjame que boto3 use la URL estándar de S3: https://bucket.s3.region.amazonaws.com
             
             "signature_version": "s3v4",
-            "s3_addressing_style": "virtual",  # Usa virtual-host-style (https://bucket.s3.region.amazonaws.com)
+            "addressing_style": "virtual",  # Usa virtual-host-style (https://bucket.s3.region.amazonaws.com)
         },
     },
     "staticfiles": {
