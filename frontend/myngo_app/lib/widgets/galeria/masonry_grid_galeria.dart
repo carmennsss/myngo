@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/imagen_galeria.dart';
@@ -404,7 +405,8 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         child: Stack(
           children: [
             if (item.tipoArchivo == 'V')
-              Positioned.fill(
+              AspectRatio(
+                aspectRatio: aspect,
                 child: Container(
                   color: Colors.black26,
                   child: const Center(
@@ -418,14 +420,15 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: Colors.grey[900],
+                  height: 150,
                   child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
                 errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
               ),
             // Menu de opciones en la esquina superior derecha
             Positioned(
-              top: 4,
-              right: 4,
+              top: 2,
+              right: 2,
               child: MenuOpcionesContenido(
                 tipoObjeto: 'IMAGEN',
                 objetoId: item.id,
@@ -437,6 +440,27 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                     _items?.remove(item);
                   });
                 },
+              ),
+            ),
+            // Botón de descarga rápida abajo a la derecha
+            Positioned(
+              bottom: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: () async {
+                  final url = Uri.parse(item.urlArchivo);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.download_rounded, color: Colors.white, size: 18),
+                ),
               ),
             ),
           ],

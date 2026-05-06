@@ -8,6 +8,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../models/publicacion.dart';
 import 'package:image_picker/image_picker.dart';
+import 'pantalla_detalle_imagen.dart';
 
 class PantallaDetalleColeccion extends StatefulWidget {
   final Coleccion coleccion;
@@ -422,21 +423,38 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                         }
                         final imagen = _imagenes[index];
                         return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PantallaDetalleImagen(imagen: imagen),
+                              ),
+                            );
+                          },
                           onLongPress: _puedeEditar ? () => _mostrarMenuImagen(context, imagen) : null,
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                  child: CachedNetworkImage(
-                                    imageUrl: imagen.urlArchivo,
-                                    fit: BoxFit.cover,
-                                    placeholder: (_, __) => Container(color: Colors.white),
-                                    errorWidget: (_, __, ___) => Container(
-                                      color: Colors.white,
-                                      child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
-                                    ),
-                                  ),
+                                child: imagen.tipoArchivo == 'V'
+                                    ? Container(
+                                        color: Colors.black,
+                                        child: const Center(
+                                          child: Icon(Icons.play_circle_fill_rounded, 
+                                              color: Colors.white, size: 40),
+                                        ),
+                                      )
+                                    : CachedNetworkImage(
+                                        imageUrl: imagen.urlArchivo,
+                                        fit: BoxFit.cover,
+                                        placeholder: (_, __) => Container(color: Colors.white),
+                                        errorWidget: (_, __, ___) => Container(
+                                          color: Colors.white,
+                                          child: const Icon(Icons.broken_image_outlined, 
+                                              color: Colors.grey),
+                                        ),
+                                      ),
                               ),
                               // Indicador de menú solo si puede editar
                               if (_puedeEditar)
@@ -452,7 +470,8 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                                         color: Colors.black.withOpacity(0.6),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 16),
+                                      child: const Icon(Icons.more_vert_rounded, 
+                                          color: Colors.white, size: 16),
                                     ),
                                   ),
                                 ),

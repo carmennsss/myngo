@@ -150,9 +150,7 @@ class PublicacionList(generics.ListCreateAPIView):
             )
 
         if solo_guardados == 'true' and user.is_authenticated:
-            qs = qs.filter(
-                Q(guardado_por__usuario=user) | Q(imagenes__en_colecciones__usuario=user)
-            ).distinct()
+            qs = qs.filter(guardado_por__usuario=user).distinct()
             if comunidad_id:
                 qs = qs.filter(comunidad_id=comunidad_id)
             return qs.order_by('-fecha_creacion')

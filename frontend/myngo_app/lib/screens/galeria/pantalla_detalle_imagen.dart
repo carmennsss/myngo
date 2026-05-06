@@ -8,6 +8,8 @@ import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 class PantallaDetalleImagen extends StatefulWidget {
   final ImagenGaleria imagen;
 
@@ -31,6 +33,19 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     super.initState();
     _esMiembro = widget.imagen.usuarioEsMiembro;
     _cargarDetalles();
+  }
+
+  Future<void> _descargarArchivo() async {
+    final url = Uri.parse(widget.imagen.urlArchivo);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir el enlace de descarga 🐾')),
+        );
+      }
+    }
   }
 
   Future<void> _cargarDetalles() async {
@@ -114,8 +129,9 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
                 ),
                 actions: [
                    IconButton(
-                    icon: const Icon(Icons.share_rounded, color: Colors.white),
-                    onPressed: () {},
+                    icon: const Icon(Icons.download_rounded, color: Colors.white),
+                    tooltip: 'Descargar archivo',
+                    onPressed: _descargarArchivo,
                   ),
                   const SizedBox(width: 8),
                 ],

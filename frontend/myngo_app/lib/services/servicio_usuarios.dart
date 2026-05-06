@@ -248,16 +248,25 @@ class ServicioUsuarios {
     }
   }
 
-  /// Finaliza la sesión actual y limpia los datos locales.
+  /// Finaliza la sesión actual y limpia los datos locales de forma inmediata.
   Future<void> cerrarSesion() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
-      await preferencias.clear();
-      // Aseguramos que el sistema de archivos termine de escribir
-      await preferencias.commit(); 
+      // Borramos todo rastro de la sesión
+      await preferencias.remove('auth_token');
+      await preferencias.remove('usuario_id');
+      await preferencias.remove('nombre_usuario');
+      // No usamos clear() para no borrar preferencias de idioma o "recordarme", 
+      // solo lo relativo a la sesión activa.
     } catch (e) {
       print('Error al cerrar sesión: $e');
     }
+  }
+
+  /// Limpia específicamente el token para forzar un re-login.
+  Future<void> limpiarToken() async {
+    final preferencias = await SharedPreferences.getInstance();
+    await preferencias.remove('auth_token');
   }
 
   /// Actualiza los datos del perfil del usuario (incluyendo avatar, bio, y orden de comunidades).

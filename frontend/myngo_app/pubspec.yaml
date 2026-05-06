@@ -57,6 +57,7 @@ dependencies:
   chewie: ^1.7.5
   visibility_detector: ^0.4.0
   dio: ^5.4.1
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
