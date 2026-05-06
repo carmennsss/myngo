@@ -77,7 +77,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             url_archivo_s3 = data.get('url_archivo_s3')
             tipo = data.get('tipo', 'TEXTO')
             attachments_data = data.get('attachments', [])
+            
             if content is not None or url_archivo_s3 is not None or attachments_data:
+                await self.send(text_data=json.dumps({'type': 'system_debug', 'message': 'Guardando en DB...'}))
                 msg, saved_attachments = await self.save_message(
                     self.user, self.room_id, content, 
                     url_archivo_s3=url_archivo_s3, 
@@ -85,13 +87,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     referencia_id=data.get('referencia_a'),
                     attachments_data=attachments_data
                 )
+                await self.send(text_data=json.dumps({'type': 'system_debug', 'message': f'DB OK. Msg ID: {msg.id}, Adjuntos: {len(saved_attachments)}'}))
 
                 # Usamos el serializador para que los datos sean idénticos a la API REST
                 from .serializers import MensajeChatSerializer
                 serializer_data = await self.get_serializer_data(msg)
+                
+                await self.send(text_data=json.dumps({'type': 'system_debug', 'message': f'Serializado media count: {len(serializer_data.get("media", []))}'}))
 
                 # FORZAMOS LA MEDIA: Si el serializador no la ve (por delay de M2M), la inyectamos
                 if not serializer_data.get('media') and saved_attachments:
+                    await self.send(text_data=json.dumps({'type': 'system_debug', 'message': 'Inyectando media forzosamente'}))
                     serializer_data['media'] = saved_attachments
 
                 # Añadimos client_id que no está en el serializador pero es útil para el frontend

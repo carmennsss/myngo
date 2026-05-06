@@ -266,6 +266,16 @@ class _PantallaChatState extends State<PantallaChat> {
         if (type == 'chat_message') {
           final nuevoMsg = MensajeChat.fromJson(datos);
           _mensajes.insert(0, nuevoMsg);
+        } else if (type == 'system_debug') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('DEBUG SERVER: ${datos['message']}'),
+                backgroundColor: Colors.blueAccent,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         } else if (type == 'room_updated') {
           _sala = SalaChat.fromJson(datos['data']);
         } else if (type == 'message_deleted') {
@@ -318,6 +328,7 @@ class _PantallaChatState extends State<PantallaChat> {
           
           for (var file in _archivosSeleccionados) {
             final res = await _servicio.uploadMedia(_sala!.id, file);
+            print('DEBUG: uploadMedia response for ${file.name}: $res');
             if (res != null) {
               attachments.add({
                 'id': res['id'],
@@ -332,6 +343,7 @@ class _PantallaChatState extends State<PantallaChat> {
               }
             }
           }
+          print('DEBUG: Total attachments collected: ${attachments.length}');
           
           setState(() {
             _estaSubiendoMedia = false;
