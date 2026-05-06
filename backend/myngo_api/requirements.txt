@@ -18,3 +18,4 @@ channels-redis==4.3.0
 daphne==4.2.1
 django-channels-presence==1.0.0
 redis==7.4.0
+python-magic==0.4.27

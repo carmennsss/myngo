@@ -1,3 +1,30 @@
+/// Modelo que representa un archivo adjunto en un mensaje.
+class ChatAttachment {
+  final int id;
+  final String url;
+  final String type; // 'I' (Imagen) o 'V' (Video)
+  final String? name;
+
+  ChatAttachment({
+    required this.id,
+    required this.url,
+    required this.type,
+    this.name,
+  });
+
+  factory ChatAttachment.fromJson(Map<String, dynamic> json) {
+    return ChatAttachment(
+      id: json['id'] ?? 0,
+      url: json['url'] ?? '',
+      type: json['tipo'] ?? json['type'] ?? 'I',
+      name: json['name'],
+    );
+  }
+
+  bool get isVideo => type == 'V' || type == 'video';
+  bool get isImage => type == 'I' || type == 'image';
+}
+
 /// Modelo que representa un mensaje individual dentro de una sala de chat.
 ///
 /// Soporta contenido de texto, archivos multimedia y mensajes de sistema.
@@ -6,7 +33,8 @@ class MensajeChat {
   final int salaId;
   final int emisorId;
   final String? contenido;
-  final String? urlArchivoS3;
+  final String? urlArchivoS3; // Mantenido por compatibilidad
+  final List<ChatAttachment> attachments;
   final DateTime fechaEnvio;
   final List<int> leidoPorIds;
   final int? referenciaA;
@@ -24,6 +52,7 @@ class MensajeChat {
     required this.emisorId,
     this.contenido,
     this.urlArchivoS3,
+    this.attachments = const [],
     required this.fechaEnvio,
     this.leidoPorIds = const [],
     this.referenciaA,
@@ -40,12 +69,20 @@ class MensajeChat {
 
   /// Crea una instancia de [MensajeChat] a partir de un mapa JSON.
   factory MensajeChat.fromJson(Map<String, dynamic> json) {
+    var mediaList = <ChatAttachment>[];
+    if (json['media'] != null) {
+      mediaList = (json['media'] as List).map((i) => ChatAttachment.fromJson(i)).toList();
+    } else if (json['attachments'] != null) {
+      mediaList = (json['attachments'] as List).map((i) => ChatAttachment.fromJson(i)).toList();
+    }
+
     return MensajeChat(
       id: json['id'] ?? json['message_id'] ?? 0,
       salaId: json['sala'] ?? json['sala_id'] ?? 0,
       emisorId: json['emisor'] ?? json['user_id'] ?? json['sender_id'] ?? 0,
       contenido: json['content']?.toString() ?? json['contenido']?.toString(),
       urlArchivoS3: json['url_archivo_s3']?.toString(),
+      attachments: mediaList,
       fechaEnvio: json['fecha_envio'] != null
           ? DateTime.parse(json['fecha_envio']).toLocal()
           : (json['timestamp'] != null 
@@ -71,6 +108,7 @@ class MensajeChat {
     int? emisorId,
     String? contenido,
     String? urlArchivoS3,
+    List<ChatAttachment>? attachments,
     DateTime? fechaEnvio,
     List<int>? leidoPorIds,
     int? referenciaA,
@@ -88,6 +126,7 @@ class MensajeChat {
       emisorId: emisorId ?? this.emisorId,
       contenido: contenido ?? this.contenido,
       urlArchivoS3: urlArchivoS3 ?? this.urlArchivoS3,
+      attachments: attachments ?? this.attachments,
       fechaEnvio: fechaEnvio ?? this.fechaEnvio,
       leidoPorIds: leidoPorIds ?? this.leidoPorIds,
       referenciaA: referenciaA ?? this.referenciaA,
@@ -100,4 +139,4 @@ class MensajeChat {
       infoLectura: infoLectura ?? this.infoLectura,
     );
   }
-}
+}

@@ -17,10 +17,12 @@ from .views import (
     obtener_sala_general_comunidad,
     subir_avatar_sala,
     upload_chat_image,
+    ChatMediaUploadView,
 )
 
 urlpatterns = [
     # Gestión de Salas
+    path('messages/upload/', ChatMediaUploadView.as_view(), name='chat_media_upload'),
     path('salas/', SalaChatListCreate.as_view(), name='lista_salas'),
     path('salas/<int:pk>/', SalaChatDetail.as_view(), name='detalle_sala'),
     path('salas/<int:pk>/agregar_miembro/', agregar_miembro, name='agregar_miembro'),

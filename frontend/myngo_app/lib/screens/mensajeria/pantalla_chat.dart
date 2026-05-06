@@ -18,7 +18,9 @@ import '../../models/participante_chat.dart';
 import '../../models/mensaje_chat.dart';
 import '../../models/usuario.dart';
 import '../../providers/chat_provider.dart';
+import '../../widgets/mensajeria/componentes_multimedia.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:mime/mime.dart';
 import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
@@ -137,6 +139,8 @@ class _PantallaChatState extends State<PantallaChat> {
   Map<int, String> _estadosPresencia = {};
   
   bool _mostrarEmojiPicker = false;
+  final List<XFile> _archivosSeleccionados = [];
+  bool _estaSubiendoMedia = false;
   MensajeChat? _mensajeRespuesta;
   MensajeChat? _mensajeEdicion;
   final FocusNode _focusNode = FocusNode();
@@ -158,30 +162,73 @@ class _PantallaChatState extends State<PantallaChat> {
     _conectarWebSocket();
   }
 
-  Future<void> _enviarFoto() async {
-    if (_sala == null) return;
+  void _enviarFoto() async {
+    final picker = ImagePicker();
     
-    final ImagePicker picker = ImagePicker();
-    final XFile? imagen = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    
-    if (imagen != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Subiendo imagen...'))
-      );
-      
-      final url = await _servicio.uploadChatImage(_sala!.id, imagen);
-      
-      if (url != null && mounted) {
-_servicio.enviarMensajeChat('', tipo: 'IMAGEN', urlArchivoS3: url);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Imagen enviada! 📷'))
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al subir imagen'))
-        );
-      }
-    }
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Galería de imágenes'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final picked = await picker.pickMultiImage();
+                  if (picked.isNotEmpty) {
+                    setState(() {
+                      _archivosSeleccionados.addAll(picked.take(4 - _archivosSeleccionados.length));
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.videocam_outlined),
+                title: const Text('Vídeo de la galería'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final picked = await picker.pickVideo(source: ImageSource.gallery);
+                  if (picked != null) {
+                    setState(() {
+                      if (_archivosSeleccionados.length < 4) {
+                        _archivosSeleccionados.add(picked);
+                      }
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Cámara'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final picked = await picker.pickImage(source: ImageSource.camera);
+                  if (picked != null) {
+                    setState(() {
+                      if (_archivosSeleccionados.length < 4) {
+                        _archivosSeleccionados.add(picked);
+                      }
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _cargarDatos() async {
@@ -247,7 +294,8 @@ _servicio.enviarMensajeChat('', tipo: 'IMAGEN', urlArchivoS3: url);
 
   void _enviarMensaje() async {
     final texto = _mensajeController.text.trim();
-    if (texto.isEmpty || _sala == null) return;
+    if (texto.isEmpty && _archivosSeleccionados.isEmpty) return;
+    if (_sala == null) return;
     
     final edicionId = _mensajeEdicion?.id;
     final respuestaId = _mensajeRespuesta?.id;
@@ -263,13 +311,38 @@ _servicio.enviarMensajeChat('', tipo: 'IMAGEN', urlArchivoS3: url);
       if (edicionId != null) {
         await _servicio.editarMensaje(edicionId, texto);
       } else {
+        // Lógica de archivos adjuntos
+        List<Map<String, dynamic>> attachments = [];
+        if (_archivosSeleccionados.isNotEmpty) {
+          setState(() => _estaSubiendoMedia = true);
+          
+          for (var file in _archivosSeleccionados) {
+            final res = await _servicio.uploadMedia(_sala!.id, file);
+            if (res != null) {
+              attachments.add({
+                'id': res['id'],
+                'url': res['file_url'],
+                'tipo': res['file_type'] == 'video' ? 'V' : 'I',
+              });
+            }
+          }
+          
+          setState(() {
+            _estaSubiendoMedia = false;
+            _archivosSeleccionados.clear();
+          });
+        }
+
         _servicio.enviarMensajeChat(
           texto, 
           referenciaA: respuestaId,
+          tipo: attachments.isNotEmpty ? 'MEDIA' : 'TEXTO',
+          attachments: attachments.isNotEmpty ? attachments : null,
         );
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      setState(() => _estaSubiendoMedia = false);
     }
   }
 
@@ -664,15 +737,18 @@ _servicio.enviarMensajeChat('', tipo: 'IMAGEN', urlArchivoS3: url);
                       children: [
                         if (msg.referenciaADetalle != null) 
                           _buildCitaMensaje(msg.referenciaADetalle!, esMio),
-                        Text(
-                          texto,
-                          style: GoogleFonts.inter(
-                            color: textColor,
-                            fontSize: fontSize,
-                            fontWeight: (estilo == 'neon' || estilo == 'robot') ? FontWeight.bold : FontWeight.normal,
-                            fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
+                        if (msg.attachments.isNotEmpty)
+                          ChatMediaGrid(attachments: msg.attachments, esMio: esMio),
+                        if (texto.isNotEmpty)
+                          Text(
+                            texto,
+                            style: GoogleFonts.inter(
+                              color: textColor,
+                              fontSize: fontSize,
+                              fontWeight: (estilo == 'neon' || estilo == 'robot') ? FontWeight.bold : FontWeight.normal,
+                              fontStyle: borrado ? FontStyle.italic : FontStyle.normal,
+                            ),
                           ),
-                        ),
                         if (!borrado) ...[
                           const SizedBox(height: 4),
                           Row(
@@ -1086,6 +1162,13 @@ _servicio.enviarMensajeChat('', tipo: 'IMAGEN', urlArchivoS3: url);
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildBarraRespuesta(),
+        if (_archivosSeleccionados.isNotEmpty)
+          MediaPreviewGrid(
+            files: _archivosSeleccionados,
+            onRemove: (index) => setState(() => _archivosSeleccionados.removeAt(index)),
+          ),
+        if (_estaSubiendoMedia)
+          const LinearProgressIndicator(minHeight: 2, color: Colors.blue),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -1154,7 +1237,7 @@ _servicio.enviarMensajeChat('', tipo: 'IMAGEN', urlArchivoS3: url);
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: _archivosSeleccionados.length >= 4 ? Colors.grey : Colors.blue,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.image_outlined, color: Colors.white, size: 20),

@@ -76,12 +76,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             content = data.get('content')
             url_archivo_s3 = data.get('url_archivo_s3')
             tipo = data.get('tipo', 'TEXTO')
-            if content is not None or url_archivo_s3 is not None:
+            attachments_data = data.get('attachments', [])
+            if content is not None or url_archivo_s3 is not None or attachments_data:
                 msg = await self.save_message(
                     self.user, self.room_id, content, 
                     url_archivo_s3=url_archivo_s3, 
                     tipo=tipo,
-                    referencia_id=data.get('referencia_a')
+                    referencia_id=data.get('referencia_a'),
+                    attachments_data=attachments_data
                 )
 
                 preview_text = '📷 Foto' if tipo == 'IMAGEN' else (content[:60] + ('...' if len(content or '') > 60 else '') if content else 'Mensaje')
@@ -101,6 +103,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'leido_por_ids': [],
                         'referencia_a': data.get('referencia_a'),
                         'referencia_a_detalle': await self.get_msg_detail(data.get('referencia_a')),
+                        'media': await self.get_media_detail(msg),
                     }
                 )
 
@@ -198,17 +201,41 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def save_message(self, user, room_id, content=None, url_archivo_s3=None, tipo='TEXTO', referencia_id=None):
+    def save_message(self, user, room_id, content=None, url_archivo_s3=None, tipo='TEXTO', referencia_id=None, attachments_data=None):
         room = SalaChat.objects.get(id=room_id)
-        # Note: url_archivo_s3 here would be a string if sent via WS, 
-        # but since we upload via REST, WS messages usually won't carry files.
-        # However, we keep it for compatibility or re-shares.
-        return MensajeChat.objects.create(
+        msg = MensajeChat.objects.create(
             sala=room, emisor=user, contenido=content, 
             url_archivo_s3=url_archivo_s3,
             tipo=tipo,
             referencia_a_id=referencia_id
         )
+        
+        if attachments_data:
+            from contenido.models import ImagenGaleria
+            for att in attachments_data:
+                try:
+                    att_id = att.get('id')
+                    if att_id:
+                        img = ImagenGaleria.objects.get(id=att_id)
+                        msg.imagenes.add(img)
+                        if not msg.imagen_principal:
+                            msg.imagen_principal = img
+                except ImagenGaleria.DoesNotExist:
+                    pass
+            msg.save()
+            
+        return msg
+
+    @database_sync_to_async
+    def get_media_detail(self, msg):
+        media = []
+        for img in msg.imagenes.all():
+            media.append({
+                'id': img.id,
+                'url': img.url_s3.url if img.url_s3 else '',
+                'tipo': img.tipo_archivo
+            })
+        return media
 
     @database_sync_to_async
     def marcar_mensajes_como_leidos(self):
