@@ -67,7 +67,6 @@ class PublicacionSerializer(serializers.ModelSerializer):
             list: Objetos con 'url' y 'tipo' ('I' o 'V').
         """
         media_list = []
-        request = self.context.get('request')
         
         # Obtener imágenes ordenadas mediante el modelo intermedio
         relaciones = obj.publicacionimagen_set.all().order_by('orden')[:4]
@@ -76,7 +75,8 @@ class PublicacionSerializer(serializers.ModelSerializer):
             for rel in relaciones:
                 img = rel.imagengaleria
                 if img.url_s3:
-                    url = request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url
+                    # Las URLs de S3 ya son absolutas, no las pasemos a build_absolute_uri()
+                    url = img.url_s3.url
                     media_list.append({
                         'url': url,
                         'tipo': img.tipo_archivo
@@ -84,7 +84,8 @@ class PublicacionSerializer(serializers.ModelSerializer):
         elif obj.imagen:
             # Fallback a la imagen principal para posts antiguos
             if obj.imagen.url_s3:
-                url = request.build_absolute_uri(obj.imagen.url_s3.url) if request else obj.imagen.url_s3.url
+                # Las URLs de S3 ya son absolutas, no las pasemos a build_absolute_uri()
+                url = obj.imagen.url_s3.url
                 media_list.append({
                     'url': url,
                     'tipo': obj.imagen.tipo_archivo
@@ -101,9 +102,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
             str: URL absoluta o None.
         """
         if obj.imagen and obj.imagen.url_s3:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.imagen.url_s3.url)
+            # Las URLs de S3 ya son absolutas, devolver directamente
             return obj.imagen.url_s3.url
         return None
 
@@ -236,16 +235,17 @@ class PublicacionSerializer(serializers.ModelSerializer):
             list: Lista de URLs absolutas.
         """
         urls = []
-        request = self.context.get('request')
         relaciones = obj.publicacionimagen_set.all().order_by('orden')[:4]
         
         for rel in relaciones:
             img = rel.imagengaleria
             if img.url_s3:
-                urls.append(request.build_absolute_uri(img.url_s3.url) if request else img.url_s3.url)
+                # Las URLs de S3 ya son absolutas, no las pasemos a build_absolute_uri()
+                urls.append(img.url_s3.url)
         
         if not urls and obj.imagen and obj.imagen.url_s3:
-            urls.append(request.build_absolute_uri(obj.imagen.url_s3.url) if request else obj.imagen.url_s3.url)
+            # Las URLs de S3 ya son absolutas, no las pasemos a build_absolute_uri()
+            urls.append(obj.imagen.url_s3.url)
         return urls
 
     def get_imagenes_ids(self, obj):
@@ -351,9 +351,7 @@ class ImagenGaleriaSerializer(serializers.ModelSerializer):
             str: URL absoluta.
         """
         if obj.url_s3:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.url_s3.url)
+            # Las URLs de S3 ya son absolutas, devolverlas directamente
             return obj.url_s3.url
         return None
 
@@ -420,14 +418,11 @@ class ColeccionSerializer(serializers.ModelSerializer):
         if not obj.id:
             return []
         imagenes = obj.imagenes.all().order_by('-fecha_subida')[:4]
-        request = self.context.get('request')
         urls = []
         for img in imagenes:
             if img.url_s3:
-                if request:
-                    urls.append(request.build_absolute_uri(img.url_s3.url))
-                else:
-                    urls.append(img.url_s3.url)
+                # Las URLs de S3 ya son absolutas, no las pasemos a build_absolute_uri()
+                urls.append(img.url_s3.url)
         return urls
 
 
