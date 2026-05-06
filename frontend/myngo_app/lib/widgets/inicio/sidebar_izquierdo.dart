@@ -17,11 +17,13 @@ class SidebarIzquierdo extends StatelessWidget {
   final Function(Comunidad) onComunidadSelected;
   final Function(Usuario) onUsuarioSelected;
   final Function(int, int) onReorder;
+  final String Function(String, [Map<String, Object>?]) tr;
   final bool embeddedInDrawer;
 
   const SidebarIzquierdo({
     super.key,
     required this.estaLogueado,
+    required this.tr,
     this.cargando = false,
     this.comunidades,
     this.rankingUsuarios,
@@ -42,131 +44,128 @@ class SidebarIzquierdo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
-        // Función de seguridad para evitar que Tolgee rompa la app
-        String safeTr(String key, String fallback, [Map<String, Object>? params]) {
-          try {
-            final result = tr(key, params);
-            return result ?? fallback;
-          } catch (e) {
-            return fallback;
-          }
-        }
+    // Función de seguridad para evitar que Tolgee rompa la app
+    String safeTr(String key, String fallback, [Map<String, Object>? params]) {
+      try {
+        final result = tr(key, params);
+        return result ?? fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
 
-        final content = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _TarjetaSidebar(
-              titulo: safeTr('myGatosTitle', 'Mis Michi-Grupos'),
-              contenido: (cargando || comunidades == null) 
-               ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
-               : comunidades!.isEmpty 
-                 ? Text(safeTr('emptyStateCommunitiesList', 'Únete a una comunidad 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-                 : Wrap(
-                   spacing: 12,
-                   runSpacing: 12,
-                   children: [
-                     ...comunidades!.take(7).map((c) => _ComunidadAvatarCompacto(
-                       comunidad: c, 
-                       onTap: () => onComunidadSelected(c)
-                     )),
-                     if (comunidades!.length > 7)
-                       _BotonVerMas(
-                         total: comunidades!.length,
-                         onTap: () => _mostrarDialogoComunidades(context, safeTr, comunidades!, onComunidadSelected, onReorder),
-                       ),
-                   ],
-                 ),
-            ),
-            const SizedBox(height: 12),
-            _TarjetaSidebar(
-              titulo: safeTr('sidebarRanking', 'Ranking Semanal'),
-              contenido: (cargandoRanking || rankingUsuarios == null)
-                ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
-                : rankingUsuarios!.isEmpty
-                  ? Text(safeTr('emptyStateRanking', 'Aún no hay ranking 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
-                  : Column(
-                      children: rankingUsuarios!.take(3).toList().asMap().entries.map((entry) {
-                        int index = entry.key;
-                        Usuario u = entry.value;
-                        return _RankingItem(
-                          puesto: index + 1, 
-                          usuario: u,
-                          onTap: () => onUsuarioSelected(u),
-                        );
-                      }).toList(),
-                    ),
-            ),
-            const SizedBox(height: 12),
-            if (estaLogueado)
-            _TarjetaSidebar(
-              titulo: safeTr('sidebarMyPoints', 'Mis Puntos y Rango'),
-              contenido: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_obtenerRango(misPuntos ?? 0, safeTr), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
-                  const SizedBox(height: 6),
-                  Text(safeTr('rankPoints', '${misPuntos ?? 0} / 5000 Puntos', {'count': (misPuntos ?? 0).toString()}), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
-                ],
-              ),
-            ),
-          ],
-        );
-
-        if (embeddedInDrawer) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: content,
-          );
-        }
-
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro)
-          ),
-          child: Stack(
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _TarjetaSidebar(
+          titulo: safeTr('myGatosTitle', 'Mis Michi-Grupos'),
+          contenido: (cargando || comunidades == null) 
+           ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+           : comunidades!.isEmpty 
+             ? Text(safeTr('emptyStateCommunitiesList', 'Únete a una comunidad 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+             : Wrap(
+               spacing: 12,
+               runSpacing: 12,
+               children: [
+                 ...comunidades!.take(7).map((c) => _ComunidadAvatarCompacto(
+                   comunidad: c, 
+                   onTap: () => onComunidadSelected(c)
+                 )),
+                 if (comunidades!.length > 7)
+                   _BotonVerMas(
+                     total: comunidades!.length,
+                     onTap: () => _mostrarDialogoComunidades(context, safeTr, comunidades!, onComunidadSelected, onReorder),
+                   ),
+               ],
+             ),
+        ),
+        const SizedBox(height: 12),
+        _TarjetaSidebar(
+          titulo: safeTr('sidebarRanking', 'Ranking Semanal'),
+          contenido: (cargandoRanking || rankingUsuarios == null)
+            ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+            : rankingUsuarios!.isEmpty
+              ? Text(safeTr('emptyStateRanking', 'Aún no hay ranking 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+              : Column(
+                  children: rankingUsuarios!.take(3).toList().asMap().entries.map<Widget>((entry) {
+                    int index = entry.key;
+                    Usuario u = entry.value;
+                    return _RankingItem(
+                      puesto: index + 1, 
+                      usuario: u,
+                      onTap: () => onUsuarioSelected(u),
+                      safeTr: safeTr,
+                    );
+                  }).toList(),
+                ),
+        ),
+        const SizedBox(height: 12),
+        if (estaLogueado)
+        _TarjetaSidebar(
+          titulo: safeTr('sidebarMyPoints', 'Mis Puntos y Rango'),
+          contenido: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Patrón de fondo (Patas de gato)
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.15,
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 30.0,
-                      crossAxisSpacing: 30.0,
-                    ),
-                    itemBuilder: (context, index) => Transform.rotate(
-                      angle: index % 2 == 0 ? 0.3 : -0.2,
-                      child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
-                    ),
-                  ),
-                ),
-              ),
-              // Contenido scrollable
-              Theme(
-                data: Theme.of(context).copyWith(
-                  scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
-                    thumbVisibility: WidgetStateProperty.all(false),
-                    trackVisibility: WidgetStateProperty.all(false),
-                  ),
-                ),
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                    child: content,
-                  ),
-                ),
-              ),
+              Text(_obtenerRango(misPuntos ?? 0, safeTr), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
+              const SizedBox(height: 6),
+              Text(safeTr('rankPoints', '${misPuntos ?? 0} / 5000 Puntos', {'count': (misPuntos ?? 0).toString()}), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
             ],
           ),
-        );
-      },
+        ),
+      ],
+    );
+
+    if (embeddedInDrawer) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: content,
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFE2B8A0), // Tono intermedio (terracota claro)
+      ),
+      child: Stack(
+        children: [
+          // Patrón de fondo (Patas de gato)
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.15,
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 30.0,
+                  crossAxisSpacing: 30.0,
+                ),
+                itemBuilder: (context, index) => Transform.rotate(
+                  angle: index % 2 == 0 ? 0.3 : -0.2,
+                  child: const Icon(Icons.pets_rounded, size: 40, color: Color(0xFFC35E34)),
+                ),
+              ),
+            ),
+          ),
+          // Contenido scrollable
+          Theme(
+            data: Theme.of(context).copyWith(
+              scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
+                thumbVisibility: WidgetStateProperty.all(false),
+                trackVisibility: WidgetStateProperty.all(false),
+              ),
+            ),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: content,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -577,90 +576,85 @@ class _RankingItem extends StatelessWidget {
   final int puesto;
   final Usuario usuario;
   final VoidCallback onTap;
-  const _RankingItem({required this.puesto, required this.usuario, required this.onTap});
+  final String Function(String, String, [Map<String, Object>?]) safeTr;
+
+  const _RankingItem({
+    required this.puesto, 
+    required this.usuario, 
+    required this.onTap,
+    required this.safeTr,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
-        String safeTr(String key, String fallback, [Map<String, Object>? params]) {
-          try {
-            return tr(key, params) ?? fallback;
-          } catch (e) {
-            return fallback;
-          }
-        }
-
-        return BotonTactil(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Row(
+    return BotonTactil(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              child: Text(
+                puesto.toString(), 
+                style: GoogleFonts.outfit(fontSize: 16, color: const Color(0xFFC35E34), fontWeight: FontWeight.w900)
+              ),
+            ),
+            Stack(
               children: [
-                SizedBox(
-                  width: 24,
-                  child: Text(
-                    puesto.toString(), 
-                    style: GoogleFonts.outfit(fontSize: 16, color: const Color(0xFFC35E34), fontWeight: FontWeight.w900)
-                  ),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.white,
+                  backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
+                      ? CachedNetworkImageProvider(usuario.urlAvatar!)
+                      : null,
+                  child: (usuario.urlAvatar == null || usuario.urlAvatar!.isEmpty)
+                      ? const Icon(Icons.person, size: 18, color: Color(0xFFC35E34))
+                      : null,
                 ),
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.white,
-                      backgroundImage: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
-                          ? CachedNetworkImageProvider(usuario.urlAvatar!)
-                          : null,
-                      child: (usuario.urlAvatar == null || usuario.urlAvatar!.isEmpty)
-                          ? const Icon(Icons.person, size: 18, color: Color(0xFFC35E34))
-                          : null,
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: _getColorEstado(usuario.estado ?? 'DESCONECTADO'),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        usuario.nombreUsuario, 
-                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)), 
-                        maxLines: 1, 
-                        overflow: TextOverflow.ellipsis
-                      ),
-                      Text(
-                        usuario.estado == 'ACTIVO' ? (safeTr('statusActive', 'Activo')) : (usuario.estado == 'OCUPADO' ? (safeTr('statusBusy', 'Ocupado')) : (safeTr('statusOffline', 'Desconectado'))),
-                        style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                      ),
-                    ],
                   ),
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE89A6A)),
-                    const SizedBox(width: 4),
-                    Text((usuario.ratingActual ?? 0.0).toStringAsFixed(1), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-                  ],
                 ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    usuario.nombreUsuario, 
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF4A4440)), 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis
+                  ),
+                  Text(
+                    usuario.estado == 'ACTIVO' ? (safeTr('statusActive', 'Activo')) : (usuario.estado == 'OCUPADO' ? (safeTr('statusBusy', 'Ocupado')) : (safeTr('statusOffline', 'Desconectado'))),
+                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE89A6A)),
+                const SizedBox(width: 4),
+                Text((usuario.ratingActual ?? 0.0).toStringAsFixed(1), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
