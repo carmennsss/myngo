@@ -225,20 +225,29 @@ class ComunidadSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Crea la comunidad y gestiona los tags."""
-        tags_data = self.context['request'].data.getlist('tags') if 'tags' in self.context['request'].data else None
-        # Si no es multipart, puede venir como lista normal
-        if tags_data is None:
-            tags_data = self.context['request'].data.get('tags')
-            
+        request_data = self.context['request'].data
+        tags_data = None
+        
+        if 'tags' in request_data:
+            if hasattr(request_data, 'getlist'):
+                tags_data = request_data.getlist('tags')
+            else:
+                tags_data = request_data.get('tags')
+                
         instance = super().create(validated_data)
         self._set_tags(instance, tags_data)
         return instance
 
     def update(self, instance, validated_data):
         """Actualiza la comunidad y sus tags."""
-        tags_data = self.context['request'].data.getlist('tags') if 'tags' in self.context['request'].data else None
-        if tags_data is None:
-            tags_data = self.context['request'].data.get('tags')
+        request_data = self.context['request'].data
+        tags_data = None
+        
+        if 'tags' in request_data:
+            if hasattr(request_data, 'getlist'):
+                tags_data = request_data.getlist('tags')
+            else:
+                tags_data = request_data.get('tags')
 
         instance = super().update(instance, validated_data)
         if tags_data is not None:
