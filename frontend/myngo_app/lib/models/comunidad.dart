@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/extensiones_color.dart';
 
 /// Modelo que representa una comunidad en la aplicación Myngo.
 ///
@@ -82,8 +83,7 @@ class Comunidad {
   factory Comunidad.fromJson(Map<String, dynamic> json) {
     try {
       String colorHex = json['color_tema']?.toString() ?? '#C35E34';
-      if (!colorHex.startsWith('#')) colorHex = '#$colorHex';
-      final color = Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+      final color = ColorExtension.fromHex(colorHex);
 
       return Comunidad(
         id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
