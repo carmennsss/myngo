@@ -224,7 +224,12 @@ class ServicioComunidades {
     } catch (e) {
       String msg = 'Error de conexión: $e';
       if (e is dio.DioException) {
-        msg = e.response?.data?.toString() ?? e.message ?? msg;
+        if (e.response != null) {
+          print("DEBUG: Error del backend (Cuerpo): ${e.response?.data}");
+          msg = e.response?.data?.toString() ?? e.message ?? msg;
+        } else {
+          msg = e.message ?? msg;
+        }
       }
       return RespuestaApi(exito: false, mensaje: msg);
     }
@@ -286,19 +291,53 @@ class ServicioComunidades {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       final url = '${_urlComunidades}$idComunidad/';
-      
-      final clienteDio = dio.Dio();
       final cabeceras = {
         if (token != null) 'Authorization': 'Token $token',
       };
- 
+
+      // Si NO hay archivos, usamos una petición JSON normal (más estable para campos JSON)
+      if (banner == null && avatar == null && fondo == null) {
+        final Map<String, dynamic> body = {};
+        if (nombre != null) body['nombre'] = nombre;
+        if (descripcion != null) body['descripcion'] = descripcion;
+        if (colorTema != null) body['color_tema'] = colorTema;
+        if (tiendaHabilitada != null) body['tienda_habilitada'] = tiendaHabilitada;
+        if (fondoPostsConfig != null) body['fondo_posts_config'] = fondoPostsConfig;
+        if (fuenteComunidad != null) body['fuente_comunidad'] = fuenteComunidad;
+        if (tags != null) body['tags'] = tags;
+
+        print("DEBUG: Enviando actualización vía JSON puro: $body");
+        
+        final respuesta = await dio.Dio().patch(
+          url,
+          data: body,
+          options: dio.Options(headers: cabeceras),
+        );
+
+        if (respuesta.statusCode == 200) {
+          return RespuestaApi(
+            exito: true,
+            mensaje: '¡Comunidad actualizada!',
+            datos: Comunidad.fromJson(respuesta.data),
+          );
+        }
+      } 
+      
+      // Si HAY archivos, usamos FormData (Multipart)
+      final clienteDio = dio.Dio();
       final datosFormulario = dio.FormData();
- 
+
       if (nombre != null) datosFormulario.fields.add(MapEntry('nombre', nombre));
       if (descripcion != null) datosFormulario.fields.add(MapEntry('descripcion', descripcion));
       if (colorTema != null) datosFormulario.fields.add(MapEntry('color_tema', colorTema));
       if (tiendaHabilitada != null) datosFormulario.fields.add(MapEntry('tienda_habilitada', tiendaHabilitada.toString()));
-      if (fondoPostsConfig != null) datosFormulario.fields.add(MapEntry('fondo_posts_config', jsonEncode(fondoPostsConfig)));
+      
+      if (fondoPostsConfig != null) {
+        final configJson = jsonEncode(fondoPostsConfig);
+        print("DEBUG: Enviando fondo_posts_config vía Multipart: $configJson");
+        datosFormulario.fields.add(MapEntry('fondo_posts_config', configJson));
+      }
+      
       if (fuenteComunidad != null) datosFormulario.fields.add(MapEntry('fuente_comunidad', fuenteComunidad));
       
       if (tags != null) {
@@ -306,13 +345,13 @@ class ServicioComunidades {
           datosFormulario.fields.add(MapEntry('tags', tag));
         }
       }
- 
+
       final archivos = {
         'url_portada': banner,
         'url_avatar': avatar,
         'url_fondo': fondo,
       };
- 
+
       for (var entrada in archivos.entries) {
         final archivo = entrada.value;
         if (archivo != null) {
@@ -330,13 +369,13 @@ class ServicioComunidades {
           ));
         }
       }
- 
+
       final respuesta = await clienteDio.patch(
         url,
         data: datosFormulario,
         options: dio.Options(headers: cabeceras),
       );
- 
+
       if (respuesta.statusCode == 200) {
         final datosRespuesta = respuesta.data is String ? jsonDecode(respuesta.data) : respuesta.data;
         return RespuestaApi(
@@ -345,20 +384,18 @@ class ServicioComunidades {
           datos: Comunidad.fromJson(datosRespuesta),
         );
       }
+      
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar comunidad (${respuesta.statusCode})');
+      
     } catch (e) {
       String msg = 'Error de conexión: $e';
       if (e is dio.DioException) {
-        final resData = e.response?.data;
-        if (resData is Map) {
-          msg = resData['error']?.toString() ?? 
-                resData['mensaje']?.toString() ?? 
-                resData.values.firstWhere((v) => v is List, orElse: () => null)?.toString() ??
-                resData.toString();
-        } else if (resData != null) {
-          msg = resData.toString();
+        if (e.response != null) {
+          final serverError = e.response?.data;
+          print("DEBUG ERROR: $serverError");
+          msg = "ERROR BACKEND: ${jsonEncode(serverError)}";
         } else {
-          msg = e.message ?? msg;
+          msg = "ERROR RED: ${e.message}";
         }
       }
       return RespuestaApi(exito: false, mensaje: msg);

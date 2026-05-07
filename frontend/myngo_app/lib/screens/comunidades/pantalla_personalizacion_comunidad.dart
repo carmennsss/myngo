@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../models/comunidad.dart';
 import '../../services/servicio_comunidades.dart';
+import '../../utils/configuracion.dart';
+import '../../utils/extensiones_color.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 
 class PantallaPersonalizacionComunidad extends StatefulWidget {
@@ -24,6 +26,7 @@ class PantallaPersonalizacionComunidad extends StatefulWidget {
 class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizacionComunidad> {
   final _servicio = ServicioComunidades();
   bool _estaGuardando = false;
+  late Color _colorTema;
 
   XFile? _avatarSeleccionado;
   XFile? _portadaSeleccionada;
@@ -95,16 +98,17 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   @override
   void initState() {
     super.initState();
+    _colorTema = widget.comunidad.colorTema;
     _fuenteSeleccionada = widget.comunidad.fuenteComunidad ?? 'Inter';
     
     final config = widget.comunidad.fondoPostsConfig;
     if (config != null) {
       _tipoFondoPosts = config['tipo'] ?? 'solido';
       if (config['color1'] != null) {
-        _colorPrimarioPosts = Color(int.parse(config['color1'].toString().replaceFirst('#', '0xFF')));
+        _colorPrimarioPosts = ColorExtension.fromHex(config['color1'].toString());
       }
       if (config['color2'] != null) {
-        _colorSecundarioPosts = Color(int.parse(config['color2'].toString().replaceFirst('#', '0xFF')));
+        _colorSecundarioPosts = ColorExtension.fromHex(config['color2'].toString());
       }
       if (config['patron'] != null) {
         _patronSeleccionado = config['patron'];
@@ -136,17 +140,20 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
     Map<String, dynamic> fondoConfig = {
       'tipo': _tipoFondoPosts,
-      'color1': '#${_colorPrimarioPosts.value.toRadixString(16).substring(2).toUpperCase()}',
+      'color1': _colorPrimarioPosts.toHex(),
     };
 
     if (_tipoFondoPosts == 'gradiente') {
-      fondoConfig['color2'] = '#${_colorSecundarioPosts.value.toRadixString(16).substring(2).toUpperCase()}';
+      fondoConfig['color2'] = _colorSecundarioPosts.toHex();
     } else if (_tipoFondoPosts == 'patron') {
       fondoConfig['patron'] = _patronSeleccionado;
     }
 
+    print("DEBUG TOCHO - Payload: {colorTema: ${_colorTema.toHex()}, fondoPostsConfig: $fondoConfig, tags: $_tagsSeleccionados}");
+
     final res = await _servicio.actualizarComunidad(
       widget.comunidad.id,
+      colorTema: _colorTema.toHex(),
       avatar: _avatarSeleccionado,
       banner: _portadaSeleccionada,
       fondo: _fondoGlobalSeleccionado,
@@ -201,8 +208,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       ],
     );
   }
-
   Widget _buildImageUploader(String titulo, String subtitulo, String tipo, XFile? archivoLocal, String? urlRemota) {
+    final String fullUrl = urlRemota != null && urlRemota.isNotEmpty
+        ? (urlRemota.startsWith('http') ? urlRemota : '${Configuracion.baseUrl}${urlRemota.startsWith('/') ? '' : '/'}$urlRemota')
+        : '';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -222,11 +232,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   ? (kIsWeb 
                       ? DecorationImage(image: NetworkImage(archivoLocal.path), fit: BoxFit.cover)
                       : DecorationImage(image: FileImage(File(archivoLocal.path)), fit: BoxFit.cover))
-                  : (urlRemota != null && urlRemota.isNotEmpty
-                      ? DecorationImage(image: NetworkImage(urlRemota), fit: BoxFit.cover)
+                  : (fullUrl.isNotEmpty
+                      ? DecorationImage(image: NetworkImage(fullUrl), fit: BoxFit.cover)
                       : null),
             ),
-            child: archivoLocal == null && (urlRemota == null || urlRemota.isEmpty)
+            child: archivoLocal == null && fullUrl.isEmpty
                 ? const Center(child: Icon(Icons.add_a_photo_rounded, size: 40, color: Colors.grey))
                 : null,
           ),
@@ -255,7 +265,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Personalizar Comunidad 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: widget.comunidad.colorTema.withOpacity(0.8),
+        backgroundColor: _colorTema.withOpacity(0.8),
         elevation: 0,
         actions: [
           if (!_estaGuardando)
@@ -383,6 +393,23 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               _buildImageUploader('Portada / Banner', 'Imagen horizontal superior', 'portada', _portadaSeleccionada, widget.comunidad.urlPortada),
               const Divider(height: 40, color: Colors.white10),
               _buildImageUploader('Fondo Global', 'Fondo de la aplicación en esta comunidad', 'fondo', _fondoGlobalSeleccionado, widget.comunidad.urlFondo),
+              const Divider(height: 40, color: Colors.white10),
+              _buildConfigItem(
+                icon: Icons.palette_rounded,
+                title: 'Color del Tema',
+                subtitle: 'Identidad principal de la comunidad',
+                trailing: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _colorTema,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]
+                  ),
+                ),
+                onTap: _mostrarSelectorColorAvanzado,
+              ),
             ],
           ),
         ),
@@ -541,58 +568,251 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
+  Widget _buildConfigItem({required IconData icon, required String title, required String subtitle, Widget? trailing, VoidCallback? onTap}) {
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: esOscuro ? Colors.white.withOpacity(0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05))
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10), 
+              decoration: BoxDecoration(
+                color: _colorTema.withOpacity(0.1), 
+                borderRadius: BorderRadius.circular(12)
+              ), 
+              child: Icon(icon, color: _colorTema, size: 22)
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.getFont(_fuenteSeleccionada, fontWeight: FontWeight.bold, color: esOscuro ? Colors.white : const Color(0xFF4A4440))),
+                  Text(subtitle, style: GoogleFonts.getFont(_fuenteSeleccionada, color: Colors.grey.shade500, fontSize: 12)),
+                ],
+              ),
+            ),
+            if (trailing != null) trailing else Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLivePreviewLarge(bool esOscuro) {
+    final String fullAvatarUrl = widget.comunidad.urlAvatar != null && widget.comunidad.urlAvatar!.isNotEmpty
+        ? (widget.comunidad.urlAvatar!.startsWith('http') ? widget.comunidad.urlAvatar! : '${Configuracion.baseUrl}${widget.comunidad.urlAvatar!.startsWith('/') ? '' : '/'}${widget.comunidad.urlAvatar!}')
+        : '';
+    final String fullBannerUrl = widget.comunidad.urlPortada.isNotEmpty
+        ? (widget.comunidad.urlPortada.startsWith('http') ? widget.comunidad.urlPortada : '${Configuracion.baseUrl}${widget.comunidad.urlPortada.startsWith('/') ? '' : '/'}${widget.comunidad.urlPortada}')
+        : '';
+
     return Container(
       decoration: BoxDecoration(
+        color: esOscuro ? const Color(0xFF121212) : Colors.white,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFF28B50).withOpacity(0.2), width: 1),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 40, offset: const Offset(0, 20))
-        ],
+          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 40, spreadRadius: -10)
+        ]
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          // Fondo real
-          Positioned.fill(child: _buildBackgroundPreview()),
-          
-          // Feed centrado
-          Positioned.fill(
-            child: Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(
+          children: [
+            // El fondo del feed
+            Positioned.fill(child: _buildBackgroundPreview()),
+            
+            Column(
+              children: [
+                // Simulación de AppBar / Header
+                Container(
+                  height: 140,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    image: _portadaSeleccionada != null
+                        ? (kIsWeb 
+                            ? DecorationImage(image: NetworkImage(_portadaSeleccionada!.path), fit: BoxFit.cover)
+                            : DecorationImage(image: FileImage(File(_portadaSeleccionada!.path)), fit: BoxFit.cover))
+                        : (fullBannerUrl.isNotEmpty
+                            ? DecorationImage(image: NetworkImage(fullBannerUrl), fit: BoxFit.cover)
+                            : null),
+                    color: _colorTema.withOpacity(0.3),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black.withOpacity(0.4), Colors.transparent],
+                      )
+                    ),
+                  ),
+                ),
+                
+                // Info de Comunidad Mock
+                Transform.translate(
+                  offset: const Offset(0, -30),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Avatar Mock
+                        Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: esOscuro ? const Color(0xFF121212) : Colors.white, width: 4),
+                            image: _avatarSeleccionado != null
+                                ? (kIsWeb 
+                                    ? DecorationImage(image: NetworkImage(_avatarSeleccionado!.path), fit: BoxFit.cover)
+                                    : DecorationImage(image: FileImage(File(_avatarSeleccionado!.path)), fit: BoxFit.cover))
+                                : (fullAvatarUrl.isNotEmpty
+                                    ? DecorationImage(image: NetworkImage(fullAvatarUrl), fit: BoxFit.cover)
+                                    : null),
+                            color: _colorTema,
+                          ),
+                          child: (_avatarSeleccionado == null && fullAvatarUrl.isEmpty)
+                              ? const Icon(Icons.pets, color: Colors.white, size: 30)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                widget.comunidad.nombre,
+                                style: GoogleFonts.getFont(_fuenteSeleccionada, 
+                                  fontSize: 18, 
+                                  fontWeight: FontWeight.bold,
+                                  color: esOscuro ? Colors.white : Colors.black,
+                                ),
+                              ),
+                              Text(
+                                'comunidad/${widget.comunidad.nombre.toLowerCase().replaceAll(' ', '')}',
+                                style: GoogleFonts.getFont(_fuenteSeleccionada, 
+                                  fontSize: 12, 
+                                  color: _colorTema,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Mock del TabBar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      _buildMockTab('Posts', true, esOscuro),
+                      _buildMockTab('Tienda', false, esOscuro),
+                      _buildMockTab('Chat', false, esOscuro),
+                    ],
+                  ),
+                ),
+
+                // Mock de Contenido (Posts)
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: 3,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) => _buildMockPost(esOscuro),
+                  ),
+                ),
+              ],
+            ),
+            
+            // Botón de guardado flotante mock
+            Positioned(
+              bottom: 20,
+              right: 20,
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 450),
-                color: Colors.black.withOpacity(0.05),
-                child: ListView(
-                  padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _colorTema,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: _colorTema.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                ),
+                child: const Row(
                   children: [
-                    _buildMockPost(400),
-                    const SizedBox(height: 16),
-                    _buildMockPost(400),
-                    const SizedBox(height: 16),
-                    _buildMockPost(400),
-                    const SizedBox(height: 16),
-                    _buildMockPost(400),
+                    Icon(Icons.add_photo_alternate, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Text('POST', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMockTab(String text, bool active, bool esOscuro) {
+    return Container(
+      margin: const EdgeInsets.only(right: 20),
+      padding: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: active ? _colorTema : Colors.transparent, width: 2))
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.getFont(_fuenteSeleccionada, 
+          fontSize: 13, 
+          fontWeight: active ? FontWeight.bold : FontWeight.normal,
+          color: active ? _colorTema : (esOscuro ? Colors.white38 : Colors.black38),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMockPost(bool esOscuro) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: esOscuro ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(radius: 14, backgroundColor: _colorTema.withOpacity(0.2), child: Icon(Icons.person, size: 16, color: _colorTema)),
+              const SizedBox(width: 10),
+              Container(height: 10, width: 80, decoration: BoxDecoration(color: esOscuro ? Colors.white12 : Colors.black12, borderRadius: BorderRadius.circular(5))),
+            ],
           ),
-          
-          // Overlay info
-          Positioned(
-            top: 20,
-            left: 20,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF28B50),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'LIVE PREVIEW',
-                style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
-              ),
-            ),
+          const SizedBox(height: 12),
+          Container(height: 8, width: double.infinity, decoration: BoxDecoration(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(4))),
+          const SizedBox(height: 8),
+          Container(height: 8, width: 150, decoration: BoxDecoration(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(4))),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.favorite_border, size: 16, color: _colorTema.withOpacity(0.5)),
+              const SizedBox(width: 16),
+              Icon(Icons.chat_bubble_outline, size: 16, color: _colorTema.withOpacity(0.5)),
+            ],
           ),
         ],
       ),
@@ -605,7 +825,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF28B50).withOpacity(0.2), width: 1),
+        border: Border.all(color: _colorTema.withOpacity(0.2), width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -619,9 +839,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   padding: const EdgeInsets.all(16),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _buildMockPost(260),
+                    _buildMockPost(esOscuro),
                     const SizedBox(height: 12),
-                    _buildMockPost(260),
+                    _buildMockPost(esOscuro),
                   ],
                 ),
               ),
@@ -635,40 +855,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   Widget _buildBackgroundPreview() {
     final Map<String, dynamic> config = {
       'tipo': _tipoFondoPosts,
-      'color1': '#${_colorPrimarioPosts.value.toRadixString(16).substring(2).toUpperCase()}',
-      'color2': '#${_colorSecundarioPosts.value.toRadixString(16).substring(2).toUpperCase()}',
+      'color1': '#${_colorPrimarioPosts.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+      'color2': '#${_colorSecundarioPosts.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
       'patron': _patronSeleccionado,
     };
     return SeccionPostsComunidad.buildPostsBackgroundFromConfig(config, context);
-  }
-
-  Widget _buildMockPost(double width) {
-    final esOscuro = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: esOscuro ? Colors.black87 : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(width: 32, height: 32, decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle)),
-              const SizedBox(width: 10),
-              Container(width: 80, height: 10, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(5))),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(width: double.infinity, height: 8, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(4))),
-          const SizedBox(height: 6),
-          Container(width: width * 0.7, height: 8, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(4))),
-        ],
-      ),
-    );
   }
 
   Widget _buildTagInput(bool esOscuro) {
@@ -718,6 +909,200 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           )).toList(),
         ),
       ],
+    );
+  }
+  void _mostrarSelectorColorAvanzado() {
+    final coloresPredefinidos = [
+      '#C35E34', '#248EA6', '#F28B50', '#7A918D', 
+      '#D95F43', '#4A4440', '#9BBAB7', '#E8D5C4',
+      '#673AB7', '#E91E63', '#4CAF50', '#FFC107'
+    ];
+
+    Color colorTemporal = _colorTema;
+    final hexController = TextEditingController(text: colorTemporal.toHex().replaceFirst('#', ''));
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          title: const Text('Color del Tema 🎨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: SizedBox(
+            width: 320,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Vista previa
+                  Container(
+                    height: 80,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colorTemporal,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white24, width: 2),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '#${colorTemporal.toHex().replaceFirst('#', '')}',
+                        style: TextStyle(
+                          color: colorTemporal.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Colores rápidos
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Colores rápidos', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.center,
+                    children: coloresPredefinidos.map((hex) {
+                      final color = ColorExtension.fromHex(hex);
+                      final bool seleccionado = colorTemporal.value == color.value;
+                      return GestureDetector(
+                        onTap: () {
+                          setDialogState(() {
+                            colorTemporal = color;
+                            hexController.text = color.toHex().replaceFirst('#', '');
+                          });
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: seleccionado ? Colors.white : Colors.white10,
+                              width: seleccionado ? 3 : 1,
+                            ),
+                            boxShadow: seleccionado ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)] : null,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 16),
+                  // Sliders personalizados
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Ajuste fino (HSL)', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildHSLSliders(colorTemporal, (nuevoColor) {
+                    setDialogState(() {
+                      colorTemporal = nuevoColor;
+                      hexController.text = nuevoColor.toHex().replaceFirst('#', '');
+                    });
+                  }),
+                  const SizedBox(height: 20),
+                  // Input Hex
+                  TextField(
+                    controller: hexController,
+                    maxLength: 6,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                    decoration: InputDecoration(
+                      labelText: 'Código Hexadecimal',
+                      labelStyle: const TextStyle(color: Colors.white60),
+                      prefixText: '#',
+                      prefixStyle: const TextStyle(color: Colors.white),
+                      counterText: '',
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    onChanged: (val) {
+                      if (val.length == 6) {
+                        final c = ColorExtension.fromHex(val);
+                        if (c != Colors.transparent && c.opacity > 0) {
+                          setDialogState(() => colorTemporal = c);
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CANCELAR', style: TextStyle(color: Colors.white60)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF28B50),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                setState(() => _colorTema = colorTemporal);
+                Navigator.pop(context);
+              },
+              child: const Text('GUARDAR', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHSLSliders(Color color, ValueChanged<Color> onChanged) {
+    final hsl = HSLColor.fromColor(color);
+    return Column(
+      children: [
+        _buildSimpleSlider(
+          label: 'Tono',
+          value: hsl.hue,
+          max: 360,
+          onChanged: (v) => onChanged(hsl.withHue(v).toColor()),
+        ),
+        _buildSimpleSlider(
+          label: 'Saturación',
+          value: hsl.saturation,
+          max: 1.0,
+          onChanged: (v) => onChanged(hsl.withSaturation(v).toColor()),
+        ),
+        _buildSimpleSlider(
+          label: 'Brillo',
+          value: hsl.lightness,
+          max: 1.0,
+          onChanged: (v) => onChanged(hsl.withLightness(v).toColor()),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSimpleSlider({required String label, required double value, required double max, required ValueChanged<double> onChanged}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(width: 70, child: Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11))),
+          Expanded(
+            child: Slider(
+              value: value,
+              min: 0,
+              max: max,
+              activeColor: const Color(0xFFF28B50),
+              inactiveColor: Colors.white10,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -390,23 +390,6 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         _buildSeccionHeader('Identidad Visual'),
         const SizedBox(height: 16),
         _buildConfigItem(
-          icon: Icons.palette_rounded,
-          title: 'Color del Tema',
-          subtitle: 'Personaliza el color principal de tu comunidad',
-          trailing: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _colorSeleccionado != null ? Color(int.parse(_colorSeleccionado!.replaceFirst('#', '0xFF'))) : widget.comunidad.colorTema,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]
-            ),
-          ),
-          onTap: _mostrarSelectorColor,
-        ),
-        const SizedBox(height: 12),
-        _buildConfigItem(
           icon: Icons.image_rounded,
           title: 'Imagen de Portada',
           subtitle: _nuevoBanner != null ? '¡Imagen seleccionada! 🐾' : 'Cambia el banner que ven todos los michis',
@@ -534,41 +517,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     );
   }
 
-  void _mostrarSelectorColor() {
-    final colores = [
-      '#C35E34', '#248EA6', '#F28B50', '#7A918D', 
-      '#D95F43', '#4A4440', '#9BBAB7', '#E8D5C4'
-    ];
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Selecciona un color', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: SizedBox(
-          width: 300,
-          child: GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 4,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            children: colores.map((c) => GestureDetector(
-              onTap: () {
-                setState(() => _colorSeleccionado = c);
-                Navigator.pop(context);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Color(int.parse(c.replaceFirst('#', '0xFF'))),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _colorSeleccionado == c ? Colors.black : Colors.transparent, width: 2),
-                ),
-              ),
-            )).toList(),
-          ),
-        ),
-      ),
-    );
-  }
+// Selector de color eliminado de aquí, ahora está en Personalización Avanzada
 
   Future<void> _guardarAjustes() async {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guardando cambios... 🐾')));
