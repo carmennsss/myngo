@@ -149,8 +149,6 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       fondoConfig['patron'] = _patronSeleccionado;
     }
 
-    print("DEBUG TOCHO - Payload: {colorTema: ${_colorTema.toHex()}, fondoPostsConfig: $fondoConfig, tags: $_tagsSeleccionados}");
-
     final res = await _servicio.actualizarComunidad(
       widget.comunidad.id,
       colorTema: _colorTema.toHex(),

@@ -295,107 +295,96 @@ class ServicioComunidades {
         if (token != null) 'Authorization': 'Token $token',
       };
 
-      // Si NO hay archivos, usamos una petición JSON normal (más estable para campos JSON)
-      if (banner == null && avatar == null && fondo == null) {
-        final Map<String, dynamic> body = {};
-        if (nombre != null) body['nombre'] = nombre;
-        if (descripcion != null) body['descripcion'] = descripcion;
-        if (colorTema != null) body['color_tema'] = colorTema;
-        if (tiendaHabilitada != null) body['tienda_habilitada'] = tiendaHabilitada;
-        if (fondoPostsConfig != null) body['fondo_posts_config'] = fondoPostsConfig;
-        if (fuenteComunidad != null) body['fuente_comunidad'] = fuenteComunidad;
-        if (tags != null) body['tags'] = tags;
+      Comunidad? comunidadActualizada;
 
-        print("DEBUG: Enviando actualización vía JSON puro: $body");
+      // PASO 1: Si hay archivos, los enviamos primero vía Multipart
+      if (banner != null || avatar != null || fondo != null) {
+        final datosArchivos = dio.FormData();
         
-        final respuesta = await dio.Dio().patch(
+        final archivos = {
+          'url_portada': banner,
+          'url_avatar': avatar,
+          'url_fondo': fondo,
+        };
+
+        for (var entrada in archivos.entries) {
+          final archivo = entrada.value;
+          if (archivo != null) {
+            final bytes = await archivo.readAsBytes();
+            final mimeType = lookupMimeType(archivo.name, headerBytes: bytes) ?? 'application/octet-stream';
+            final typeParts = mimeType.split('/');
+            
+            datosArchivos.files.add(MapEntry(
+              entrada.key,
+              dio.MultipartFile.fromBytes(
+                bytes,
+                filename: archivo.name,
+                contentType: MediaType(typeParts[0], typeParts[1]),
+              ),
+            ));
+          }
+        }
+
+        final resArchivos = await dio.Dio().patch(
+          url,
+          data: datosArchivos,
+          options: dio.Options(headers: cabeceras),
+        );
+
+        if (resArchivos.statusCode == 200) {
+          final resData = resArchivos.data is String ? jsonDecode(resArchivos.data) : resArchivos.data;
+          comunidadActualizada = Comunidad.fromJson(resData);
+        } else {
+          return RespuestaApi(exito: false, mensaje: 'Error al subir imágenes (${resArchivos.statusCode})');
+        }
+      }
+
+      // PASO 2: Enviamos el resto de datos vía JSON puro (es mucho más estable)
+      final Map<String, dynamic> body = {};
+      if (nombre != null) body['nombre'] = nombre;
+      if (descripcion != null) body['descripcion'] = descripcion;
+      if (colorTema != null) body['color_tema'] = colorTema;
+      if (tiendaHabilitada != null) body['tienda_habilitada'] = tiendaHabilitada;
+      if (fondoPostsConfig != null) body['fondo_posts_config'] = fondoPostsConfig;
+      if (fuenteComunidad != null) body['fuente_comunidad'] = fuenteComunidad;
+      if (tags != null) body['tags'] = tags;
+
+      if (body.isNotEmpty) {
+        final resDatos = await dio.Dio().patch(
           url,
           data: body,
           options: dio.Options(headers: cabeceras),
         );
 
-        if (respuesta.statusCode == 200) {
-          return RespuestaApi(
-            exito: true,
-            mensaje: '¡Comunidad actualizada!',
-            datos: Comunidad.fromJson(respuesta.data),
-          );
-        }
-      } 
-      
-      // Si HAY archivos, usamos FormData (Multipart)
-      final clienteDio = dio.Dio();
-      final datosFormulario = dio.FormData();
-
-      if (nombre != null) datosFormulario.fields.add(MapEntry('nombre', nombre));
-      if (descripcion != null) datosFormulario.fields.add(MapEntry('descripcion', descripcion));
-      if (colorTema != null) datosFormulario.fields.add(MapEntry('color_tema', colorTema));
-      if (tiendaHabilitada != null) datosFormulario.fields.add(MapEntry('tienda_habilitada', tiendaHabilitada.toString()));
-      
-      if (fondoPostsConfig != null) {
-        final configJson = jsonEncode(fondoPostsConfig);
-        print("DEBUG: Enviando fondo_posts_config vía Multipart: $configJson");
-        datosFormulario.fields.add(MapEntry('fondo_posts_config', configJson));
-      }
-      
-      if (fuenteComunidad != null) datosFormulario.fields.add(MapEntry('fuente_comunidad', fuenteComunidad));
-      
-      if (tags != null) {
-        for (var tag in tags) {
-          datosFormulario.fields.add(MapEntry('tags', tag));
+        if (resDatos.statusCode == 200) {
+          final resData = resDatos.data is String ? jsonDecode(resDatos.data) : resDatos.data;
+          comunidadActualizada = Comunidad.fromJson(resData);
+        } else {
+          return RespuestaApi(exito: false, mensaje: 'Error al actualizar datos (${resDatos.statusCode})');
         }
       }
 
-      final archivos = {
-        'url_portada': banner,
-        'url_avatar': avatar,
-        'url_fondo': fondo,
-      };
-
-      for (var entrada in archivos.entries) {
-        final archivo = entrada.value;
-        if (archivo != null) {
-          final bytes = await archivo.readAsBytes();
-          final mimeType = lookupMimeType(archivo.name, headerBytes: bytes) ?? 'application/octet-stream';
-          final typeParts = mimeType.split('/');
-          
-          datosFormulario.files.add(MapEntry(
-            entrada.key,
-            dio.MultipartFile.fromBytes(
-              bytes,
-              filename: archivo.name,
-              contentType: MediaType(typeParts[0], typeParts[1]),
-            ),
-          ));
-        }
-      }
-
-      final respuesta = await clienteDio.patch(
-        url,
-        data: datosFormulario,
-        options: dio.Options(headers: cabeceras),
+      return RespuestaApi(
+        exito: true,
+        mensaje: '¡Comunidad actualizada correctamente!',
+        datos: comunidadActualizada,
       );
-
-      if (respuesta.statusCode == 200) {
-        final datosRespuesta = respuesta.data is String ? jsonDecode(respuesta.data) : respuesta.data;
-        return RespuestaApi(
-          exito: true,
-          mensaje: '¡Comunidad actualizada!',
-          datos: Comunidad.fromJson(datosRespuesta),
-        );
-      }
-      
-      return RespuestaApi(exito: false, mensaje: 'Error al actualizar comunidad (${respuesta.statusCode})');
       
     } catch (e) {
       String msg = 'Error de conexión: $e';
       if (e is dio.DioException) {
         if (e.response != null) {
-          final serverError = e.response?.data;
-          print("DEBUG ERROR: $serverError");
-          msg = "ERROR BACKEND: ${jsonEncode(serverError)}";
+          final resData = e.response?.data;
+          if (resData is Map) {
+            msg = resData['error']?.toString() ?? 
+                  resData['mensaje']?.toString() ?? 
+                  resData.values.firstWhere((v) => v is List, orElse: () => null)?.toString() ??
+                  resData.toString();
+          } else {
+            msg = e.response?.statusMessage ?? 'Error del servidor (${e.response?.statusCode})';
+          }
         } else {
-          msg = "ERROR RED: ${e.message}";
+          msg = 'Error de red: ${e.message}';
         }
       }
       return RespuestaApi(exito: false, mensaje: msg);
