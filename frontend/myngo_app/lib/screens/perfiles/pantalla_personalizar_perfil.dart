@@ -117,8 +117,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     final item = _misMejoras.firstWhere((m) => m['mejora_detalles']['id'] == mejoraId);
     final estaEquipada = item['esta_equipada'] == true;
 
-    if (tipo?.toLowerCase() == 'fondo') {
-      destino = await _mostrarDialogoDestinoFondo(esDesequipar: estaEquipada);
+    if (tipo?.toLowerCase() == 'fondo' && !estaEquipada) {
+      destino = await _mostrarDialogoDestinoFondo(esDesequipar: false);
       if (destino == null) return; // Cancelado
     }
     
@@ -137,11 +137,11 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           if (!va_a_equipar) {
             // Desequipar: limpiar preview local
             if (tipo?.toLowerCase() == 'fondo') {
-              if (destino == 'fondo_feed') {
-                setState(() => _previewFondoPerfil = null);
-              } else {
-                setState(() => _previewFondo = null);
-              }
+              // Si desequipamos un fondo sin destino, lo quitamos de ambos por si acaso
+              setState(() {
+                _previewFondoPerfil = null;
+                _previewFondo = null;
+              });
             } else if (tipo?.toLowerCase() == 'avatar') {
               setState(() => _previewAvatar = null);
             } else if (tipo?.toLowerCase() == 'marco') {

@@ -10,6 +10,7 @@ class SeccionChatComunidad extends StatelessWidget {
   final List<SalaChat>? salasChat;
   final bool estaCargando;
   final VoidCallback onCrearSala;
+  final VoidCallback? onRefresh;
   final bool esAppClara;
   final Color colorTextoPrincipal;
   final Color colorTextoSecundario;
@@ -21,6 +22,7 @@ class SeccionChatComunidad extends StatelessWidget {
     required this.salasChat,
     required this.estaCargando,
     required this.onCrearSala,
+    this.onRefresh,
     required this.esAppClara,
     required this.colorTextoPrincipal,
     required this.colorTextoSecundario,
@@ -102,17 +104,26 @@ class SeccionChatComunidad extends StatelessWidget {
               color: colorTextoPrincipal,
             ),
           ),
-          TextButton.icon(
-            onPressed: onCrearSala,
-            icon: const Icon(Icons.add_circle_outline,
-                size: 20, color: Color(0xFF248EA6)),
-            label: Text(
-              'Crear Sala',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF248EA6),
-                fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              if (onRefresh != null)
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded, size: 20, color: Colors.grey),
+                  onPressed: onRefresh,
+                ),
+              TextButton.icon(
+                onPressed: onCrearSala,
+                icon: const Icon(Icons.add_circle_outline,
+                    size: 20, color: Color(0xFF248EA6)),
+                label: Text(
+                  'Crear Sala',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF248EA6),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

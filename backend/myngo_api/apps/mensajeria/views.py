@@ -461,6 +461,7 @@ def obtener_sala_general_comunidad(request, comunidad_id):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def subir_avatar_sala(request, pk):
     """Sube una imagen a S3 y la establece como avatar de la sala."""
     try:
@@ -481,12 +482,13 @@ def subir_avatar_sala(request, pk):
         img_instancia._es_avatar = True # Es un avatar, no contenido de chat
         img_instancia.save()
         
-        sala.avatar_s3 = img_instancia.url_s3.url
+        sala.avatar_s3 = img_instancia.url_s3.name
         sala.save()
         
+        from django.core.files.storage import default_storage
         return Response({
             'status': 'ok',
-            'url_avatar': sala.avatar_s3
+            'url_avatar': default_storage.url(sala.avatar_s3)
         })
     except SalaChat.DoesNotExist:
         return Response({'error': 'Sala no encontrada'}, status=404)

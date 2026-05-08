@@ -16,39 +16,46 @@ class _PatternPreviewPainter extends CustomPainter {
   
   @override
   void paint(Canvas canvas, Size size) {
+    if (!size.width.isFinite || !size.height.isFinite || 
+        size.width <= 0 || size.height <= 0 || 
+        size.width > 5000 || size.height > 5000) {
+      return;
+    }
+    
     final paint = Paint()..color = Colors.white;
-    const spacing = 25.0;
+    const double spacing = 25.0;
+    if (spacing <= 0) return;
     
     switch (patternType) {
       case 'dots':
         for (double x = 0; x < size.width; x += spacing) {
           for (double y = 0; y < size.height; y += spacing) {
-            canvas.drawCircle(Offset(x, y), 2, paint);
+            canvas.drawCircle(Offset(x, y), 1.5, paint);
           }
         }
         break;
       case 'stars':
         for (double x = 0; x < size.width; x += spacing) {
           for (double y = 0; y < size.height; y += spacing) {
-            canvas.drawCircle(Offset(x, y), 2, paint);
+            _drawSmallStar(canvas, Offset(x, y), 5, paint);
           }
         }
         break;
       case 'triangles':
         for (double x = 0; x < size.width; x += spacing) {
           for (double y = 0; y < size.height; y += spacing) {
-            _drawSmallTriangle(canvas, Offset(x, y), 4, paint);
+            _drawSmallTriangle(canvas, Offset(x, y), 8, paint);
           }
         }
         break;
       case 'waves':
         for (double y = 0; y < size.height; y += 15) {
-          for (double x = 0; x <= size.width; x += 3) {
-            final nextX = x + 3;
-            if (nextX <= size.width) {
-              canvas.drawLine(Offset(x, y), Offset(nextX, y + 2), paint..strokeWidth = 0.5);
-            }
+          final wavePath = Path();
+          wavePath.moveTo(0, y);
+          for (double x = 0; x <= size.width; x += 10) {
+            wavePath.quadraticBezierTo(x + 5, y + 5, x + 10, y);
           }
+          canvas.drawPath(wavePath, paint..style = PaintingStyle.stroke..strokeWidth = 0.5);
         }
         break;
       case 'lines':
@@ -59,13 +66,29 @@ class _PatternPreviewPainter extends CustomPainter {
     }
   }
   
+  void _drawSmallStar(Canvas canvas, Offset center, double size, Paint paint) {
+    final path = Path();
+    final double innerRadius = size / 2.5;
+    final double outerRadius = size;
+    
+    for (int i = 0; i < 5; i++) {
+      double angle = (i * 72) * pi / 180 - pi / 2;
+      path.lineTo(center.dx + outerRadius * cos(angle), center.dy + outerRadius * sin(angle));
+      
+      angle = (i * 72 + 36) * pi / 180 - pi / 2;
+      path.lineTo(center.dx + innerRadius * cos(angle), center.dy + innerRadius * sin(angle));
+    }
+    path.close();
+    canvas.drawPath(path, paint..style = PaintingStyle.fill);
+  }
+  
   void _drawSmallTriangle(Canvas canvas, Offset center, double size, Paint paint) {
     final path = Path();
     path.moveTo(center.dx, center.dy - size / 2);
     path.lineTo(center.dx + size / 2, center.dy + size / 2);
     path.lineTo(center.dx - size / 2, center.dy + size / 2);
     path.close();
-    canvas.drawPath(path, paint..style = PaintingStyle.stroke..strokeWidth = 0.5);
+    canvas.drawPath(path, paint..style = PaintingStyle.fill);
   }
   
   @override
@@ -289,7 +312,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
               if (index == 0) {
                 final isSelected = _perso.gradienteFondo == null;
                 return GestureDetector(
-                  onTap: () => setState(() => _perso = _copyPerso(gradienteFondo: null)),
+                  onTap: () => setState(() => _perso = _copyPerso(gradienteFondo: '', clearGradiente: true)),
                   child: Container(
                     width: 60,
                     decoration: BoxDecoration(
@@ -341,7 +364,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
               if (index == 0) {
                 final isSelected = _perso.patronFondo == null;
                 return GestureDetector(
-                  onTap: () => setState(() => _perso = _copyPerso(patronFondo: null)),
+                  onTap: () => setState(() => _perso = _copyPerso(patronFondo: '', clearPatron: true)),
                   child: Container(
                     width: 50,
                     decoration: BoxDecoration(
@@ -386,10 +409,10 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.1, // Un poco más alto para la preview
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.85,
           ),
           itemCount: _estilosBurbuja.length,
           itemBuilder: (context, index) {
@@ -531,6 +554,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     String? estiloBurbuja,
     String? formaBurbuja,
     int? fontSize,
+    bool clearGradiente = false,
+    bool clearPatron = false,
   }) {
     return PersonalizacionChat(
       colorFondo: colorFondo ?? _perso.colorFondo,
@@ -540,8 +565,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
       colorTextoOtro: colorTextoOtro ?? _perso.colorTextoOtro,
       colorNombreMio: colorNombreMio ?? _perso.colorNombreMio,
       colorNombreOtro: colorNombreOtro ?? _perso.colorNombreOtro,
-      gradienteFondo: gradienteFondo ?? _perso.gradienteFondo,
-      patronFondo: patronFondo ?? _perso.patronFondo,
+      gradienteFondo: clearGradiente ? null : (gradienteFondo ?? _perso.gradienteFondo),
+      patronFondo: clearPatron ? null : (patronFondo ?? _perso.patronFondo),
       imagenFondoS3: _perso.imagenFondoS3,
       formaBurbuja: formaBurbuja ?? _perso.formaBurbuja,
       estiloBurbuja: estiloBurbuja ?? _perso.estiloBurbuja,

@@ -131,20 +131,6 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  if (widget.marcoUrl != null && widget.marcoUrl!.isNotEmpty)
-                                    Positioned.fill(
-                                      child: Center(
-                                        child: SizedBox(
-                                          width: 70,
-                                          height: 70,
-                                          child: CachedNetworkImage(
-                                            imageUrl: widget.marcoUrl!,
-                                            fit: BoxFit.contain,
-                                            alignment: Alignment.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                   Container(
                                     padding: const EdgeInsets.all(2),
                                     decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
@@ -165,6 +151,22 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                                           : const Icon(Icons.person, color: Color(0xFFC35E34), size: 30),
                                     ),
                                   ),
+                                  if (widget.marcoUrl != null && widget.marcoUrl!.isNotEmpty)
+                                    Positioned.fill(
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 70,
+                                          height: 70,
+                                          child: IgnorePointer(
+                                            child: CachedNetworkImage(
+                                              imageUrl: widget.marcoUrl!,
+                                              fit: BoxFit.contain,
+                                              alignment: Alignment.center,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   Builder(
                                     builder: (context) {
                                       String displayEstado = widget.estado;

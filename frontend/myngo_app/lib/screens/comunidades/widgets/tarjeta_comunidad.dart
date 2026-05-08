@@ -24,7 +24,7 @@ class TarjetaComunidad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final paleta = _paletas[comunidad.id % _paletas.length];
-    final tieneImagen = comunidad.urlPortada.isNotEmpty;
+    final tieneImagen = comunidad.urlPortada?.isNotEmpty ?? false;
 
     return BotonTactil(
       onTap: alPresionar,

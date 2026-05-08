@@ -5,16 +5,19 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'reproductor_video_post.dart';
+import '../../utils/gestor_descargas.dart';
 
 /// Reusable Twitter/X style media grid for posts (Images and Videos).
 class GridImagenesPost extends StatefulWidget {
   final List<Map<String, String>> media;
   final VoidCallback? onTap;
+  final bool mostrarDescarga;
 
   const GridImagenesPost({
     super.key,
     required this.media,
     this.onTap,
+    this.mostrarDescarga = false,
   });
 
   @override
@@ -50,7 +53,8 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
               if (widget.media.length == 1)
                 _GridMediaItem(
                   url: widget.media[0]['url']!, 
-                  tipo: widget.media[0]['tipo'] ?? 'I'
+                  tipo: widget.media[0]['tipo'] ?? 'I',
+                  mostrarDescarga: widget.mostrarDescarga,
                 )
               else
                 PageView.builder(
@@ -60,7 +64,8 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
                   onPageChanged: (index) => setState(() => _currentPage = index),
                   itemBuilder: (context, index) => _GridMediaItem(
                     url: widget.media[index]['url']!, 
-                    tipo: widget.media[index]['tipo'] ?? 'I'
+                    tipo: widget.media[index]['tipo'] ?? 'I',
+                    mostrarDescarga: widget.mostrarDescarga,
                   ),
                 ),
               
@@ -153,7 +158,8 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
 class _GridMediaItem extends StatefulWidget {
   final String url;
   final String tipo;
-  const _GridMediaItem({required this.url, required this.tipo});
+  final bool mostrarDescarga;
+  const _GridMediaItem({required this.url, required this.tipo, required this.mostrarDescarga});
 
   @override
   State<_GridMediaItem> createState() => _GridMediaItemState();
@@ -213,6 +219,36 @@ class _GridMediaItemState extends State<_GridMediaItem> {
             );
           },
         ),
+        if (widget.mostrarDescarga)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  try {
+                    await GestorDescargas.descargar(widget.url);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No se pudo descargar el archivo 🐾')),
+                      );
+                    }
+                  }
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.download_rounded, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

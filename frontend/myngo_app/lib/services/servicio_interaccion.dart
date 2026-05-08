@@ -43,7 +43,7 @@ class ServicioInteraccion {
       String mensajeError = 'No se pudo procesar el me gusta';
       try {
         final Map<String, dynamic> cuerpo = jsonDecode(respuesta.body);
-        if (cuerpo.containsKey('error')) mensajeError = cuerpo['error'];
+        mensajeError = cuerpo['error'] ?? cuerpo['detail'] ?? mensajeError;
       } catch (_) {}
 
       return RespuestaApi(exito: false, mensaje: mensajeError);
@@ -107,9 +107,7 @@ class ServicioInteraccion {
       String mensajeError = 'Error al enviar comentario';
       try {
         final Map<String, dynamic> cuerpo = jsonDecode(respuesta.body);
-        if (cuerpo.containsKey('error') || cuerpo.containsKey('detail')) {
-          mensajeError = cuerpo['error'] ?? cuerpo['detail'];
-        }
+        mensajeError = cuerpo['error'] ?? cuerpo['detail'] ?? mensajeError;
       } catch (_) {}
 
       return RespuestaApi(exito: false, mensaje: mensajeError);

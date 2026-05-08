@@ -365,6 +365,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
         if (!mounted) return;
 
         if (respuesta.exito) {
+          debugPrint('[Login] Éxito para ${_controladorEmail.text}');
           final prefs = await SharedPreferences.getInstance();
           if (_recordarme) {
             await prefs.setString('recordar_email', _controladorEmail.text);
@@ -387,7 +388,10 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           );
           context.go('/inicio');
         } else {
-          print("DEBUG LOGIN: ${respuesta.mensaje}");
+          debugPrint('[Login] Fallo: ${respuesta.mensaje}');
+          if (respuesta.errores != null) {
+             debugPrint('[Login] Errores detallados: ${respuesta.errores}');
+          }
           
           setState(() {
             _estadoGatos = EstadoMonstruo.triste;

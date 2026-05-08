@@ -1,6 +1,6 @@
 {
-    "name": "myngo_app",
-    "short_name": "myngo_app",
+    "name": "Myngo",
+    "short_name": "Myngo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

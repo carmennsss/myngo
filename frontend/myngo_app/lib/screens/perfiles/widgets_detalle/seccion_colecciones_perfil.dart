@@ -7,6 +7,8 @@ import '../../../widgets/comunes/boton_tactil.dart';
 import '../../galeria/pantalla_detalle_coleccion.dart';
 import '../../../services/servicio_galeria.dart';
 import '../../../utils/configuracion.dart';
+import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
+import 'package:mime/mime.dart';
 import 'dart:math' as math;
 
 /// Widget que muestra las colecciones (carpetas) de un usuario en su perfil.
@@ -108,6 +110,12 @@ class SeccionColeccionesPerfil extends StatelessWidget {
                                       if (!url.startsWith('http')) {
                                         url = '${Configuracion.baseUrl}${url.startsWith('/') ? '' : '/'}$url';
                                       }
+                                      final esVideo = lookupMimeType(url)?.startsWith('video/') ?? false;
+
+                                      if (esVideo) {
+                                        return MiniaturaVideo(url: url, fit: BoxFit.cover);
+                                      }
+
                                       return CachedNetworkImage(
                                         imageUrl: url,
                                         fit: BoxFit.cover,

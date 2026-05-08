@@ -161,18 +161,30 @@ class SalaChatSerializer(serializers.ModelSerializer):
     ultimo_mensaje = serializers.SerializerMethodField()
     mensajes_no_leidos = serializers.SerializerMethodField()
     participantes_data = serializers.SerializerMethodField()
-    otro_usuario_id = serializers.SerializerMethodField()
+    avatar_s3 = serializers.SerializerMethodField()
     personalizacion = PersonalizacionChatSerializer(source='personalizacion_v2', read_only=True)
 
     class Meta:
         model = SalaChat
         fields = [
-            'id', 'nombre', 'es_grupal', 'es_publica', 'invite_token',
+            'id', 'nombre', 'comunidad', 'es_grupal', 'es_publica', 'invite_token',
             'miembros', 'miembros_detalle', 'ultimo_mensaje',
             'mensajes_no_leidos', 'fecha_creacion', 'avatar_s3', 
             'configuracion', 'participantes_data', 'personalizacion',
             'otro_usuario_id'
         ]
+
+    def get_avatar_s3(self, obj):
+        """Obtiene la URL firmada de S3 para el avatar de la sala."""
+        if not obj.avatar_s3:
+            return None
+        if obj.avatar_s3.startswith('http'):
+            return obj.avatar_s3
+        from django.core.files.storage import default_storage
+        try:
+            return default_storage.url(obj.avatar_s3)
+        except Exception:
+            return None
 
     def get_otro_usuario_id(self, obj):
         """Para DMs, obtiene el ID del interlocutor."""

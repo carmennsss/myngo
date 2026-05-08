@@ -373,16 +373,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                 )
               : null,
           body: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              image: (_fondoPerfilLocal != null && _fondoPerfilLocal!.isNotEmpty)
-                  ? DecorationImage(
-                      image: NetworkImage(_fondoPerfilLocal!),
-                      fit: BoxFit.cover,
-                      opacity: 0.6,
-                    )
-                  : null,
-            ),
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: Scrollbar(
               controller: _scrollController,
               thumbVisibility: true,
@@ -406,20 +397,23 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                       esIntegrada: widget.esIntegrada,
                     ),
                     SliverToBoxAdapter(
-                      child: InfoPerfil(
-                        usuario: _usuario!,
-                        currentUserId: _currentUserId,
-                        biografiaLocal: _biografiaLocal,
-                        estadoSeguimiento: _estadoSeguimiento,
-                        isLoading: _isLoading,
-                        rolEnComunidad: _rolEnComunidad,
-                        ratingLocal: _ratingLocal,
-                        haVotadoHoy: _haVotadoHoy,
-                        tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
-                        onManejarSeguimiento: _manejarSeguimiento,
-                        onMostrarVoto: _mostrarSelectorVoto,
-                        onEditarBio: _mostrarDialogoEditarBio,
-                        onChat: _iniciarChat,
+                      child: Container(
+                        color: Theme.of(context).cardColor,
+                        child: InfoPerfil(
+                          usuario: _usuario!,
+                          currentUserId: _currentUserId,
+                          biografiaLocal: _biografiaLocal,
+                          estadoSeguimiento: _estadoSeguimiento,
+                          isLoading: _isLoading,
+                          rolEnComunidad: _rolEnComunidad,
+                          ratingLocal: _ratingLocal,
+                          haVotadoHoy: _haVotadoHoy,
+                          tiempoParaReinicio: _formatearTiempo(_segundosParaReinicio),
+                          onManejarSeguimiento: _manejarSeguimiento,
+                          onMostrarVoto: _mostrarSelectorVoto,
+                          onEditarBio: _mostrarDialogoEditarBio,
+                          onChat: _iniciarChat,
+                        ),
                       ),
                     ),
                     SliverPersistentHeader(
@@ -439,48 +433,60 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                     ),
                   ];
                 },
-                body: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    SeccionPostsPerfil(
-                      publicaciones: _publicaciones,
-                      estaCargando: _cargandoPublicaciones,
-                      onRefresh: _cargarPublicaciones,
-                      onLoadMore: (pagina) async {
-                        final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
-                        return res.datos ?? [];
-                      },
-                    ),
-                    if (_currentUserId == _usuario!.id)
-                      SeccionGuardadosPerfil(
-                        publicaciones: _publicacionesGuardadas,
-                        colecciones: _misColecciones,
-                        estaCargando: _cargandoGuardados,
-                        estaCargandoColecciones: _cargandoColecciones,
-                        comunidadesFiltro: _comunidadesFiltro,
-                        filtroComunidadId: _filtroComunidadId,
-                        onFiltroChanged: (id) {
-                          setState(() => _filtroComunidadId = id);
-                          _cargarGuardados(comunidadId: id);
-                        },
-                        onRefresh: () => _cargarGuardados(force: true),
-                        onRefreshColecciones: () => _cargarColecciones(force: true),
+                body: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    image: (_fondoPerfilLocal != null && _fondoPerfilLocal!.isNotEmpty)
+                        ? DecorationImage(
+                            image: NetworkImage(_fondoPerfilLocal!),
+                            fit: BoxFit.cover,
+                            opacity: 0.6,
+                          )
+                        : null,
+                  ),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      SeccionPostsPerfil(
+                        publicaciones: _publicaciones,
+                        estaCargando: _cargandoPublicaciones,
+                        onRefresh: _cargarPublicaciones,
                         onLoadMore: (pagina) async {
-                          final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
-                            comunidadId: _filtroComunidadId,
-                            pagina: pagina,
-                          );
+                          final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
                           return res.datos ?? [];
                         },
-                      )
-                    else
-                      SeccionColeccionesPerfil(
-                        colecciones: _misColecciones,
-                        estaCargando: _cargandoColecciones,
-                        onRefresh: () => _cargarColecciones(force: true),
-                        esPropietario: false,
                       ),
-                  ],
+                      if (_currentUserId == _usuario!.id)
+                        SeccionGuardadosPerfil(
+                          publicaciones: _publicacionesGuardadas,
+                          colecciones: _misColecciones,
+                          estaCargando: _cargandoGuardados,
+                          estaCargandoColecciones: _cargandoColecciones,
+                          comunidadesFiltro: _comunidadesFiltro,
+                          filtroComunidadId: _filtroComunidadId,
+                          onFiltroChanged: (id) {
+                            setState(() => _filtroComunidadId = id);
+                            _cargarGuardados(comunidadId: id);
+                          },
+                          onRefresh: () => _cargarGuardados(force: true),
+                          onRefreshColecciones: () => _cargarColecciones(force: true),
+                          onLoadMore: (pagina) async {
+                            final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
+                              comunidadId: _filtroComunidadId,
+                              pagina: pagina,
+                            );
+                            return res.datos ?? [];
+                          },
+                        )
+                      else
+                        SeccionColeccionesPerfil(
+                          colecciones: _misColecciones,
+                          estaCargando: _cargandoColecciones,
+                          onRefresh: () => _cargarColecciones(force: true),
+                          esPropietario: false,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

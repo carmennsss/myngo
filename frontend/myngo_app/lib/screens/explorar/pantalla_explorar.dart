@@ -43,6 +43,11 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   List<Usuario> _usuariosOriginales = [];
   List<Usuario> _usuariosFiltrados = [];
   final int _tamanoPagina = 20;
+  
+  // Filtros avanzados
+  int? _filtroMinStars;
+  List<String> _filtroTags = [];
+  List<Map<String, dynamic>> _allTags = []; // Para el buscador de tags
 
   @override
   void initState() {
@@ -78,7 +83,12 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     
     if (_indicePestana == 0) {
       _paginaActualComunidades = 1;
-      final respuesta = await _servicioComunidades.listarComunidades(busqueda: filtro, pagina: _paginaActualComunidades);
+      final respuesta = await _servicioComunidades.listarComunidades(
+        busqueda: filtro, 
+        pagina: _paginaActualComunidades,
+        minRating: _filtroMinStars,
+        tags: (_filtroTags.isNotEmpty) ? _filtroTags : null,
+      );
       if (mounted) {
         setState(() {
           _comunidades = respuesta.datos ?? [];
@@ -114,8 +124,10 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     
     _paginaActualComunidades++;
     final res = await _servicioComunidades.listarComunidades(
-      busqueda: _controladorBusqueda.text.isNotEmpty ? _controladorBusqueda.text : null,
-      pagina: _paginaActualComunidades
+      busqueda: (_controladorBusqueda.text != null && _controladorBusqueda.text.isNotEmpty) ? _controladorBusqueda.text : null,
+      pagina: _paginaActualComunidades,
+      minRating: _filtroMinStars,
+      tags: (_filtroTags.isNotEmpty) ? _filtroTags : null,
     );
     
     if (mounted) {
@@ -139,7 +151,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     _paginaActualUsuarios++;
     final res = await _servicioUsuarios.listarUsuarios(
       pagina: _paginaActualUsuarios,
-      busqueda: _controladorBusqueda.text.isNotEmpty ? _controladorBusqueda.text : null,
+      busqueda: (_controladorBusqueda.text != null && _controladorBusqueda.text.isNotEmpty) ? _controladorBusqueda.text : null,
     );
     
     if (mounted) {
@@ -151,11 +163,11 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
           _hayMasUsuarios = nuevos.length >= _tamanoPagina;
           
           // Re-aplicar filtro si hay búsqueda activa
-          final filtro = _controladorBusqueda.text;
+          final filtro = _controladorBusqueda.text ?? '';
           if (filtro.isNotEmpty) {
              _usuariosFiltrados = _usuariosOriginales.where((u) => 
-                u.nombreUsuario.toLowerCase().contains(filtro.toLowerCase()) ||
-                u.email.toLowerCase().contains(filtro.toLowerCase())
+                (u.nombreUsuario ?? '').toLowerCase().contains(filtro.toLowerCase()) ||
+                (u.email ?? '').toLowerCase().contains(filtro.toLowerCase())
              ).toList();
           } else {
             _usuariosFiltrados = List.from(_usuariosOriginales);
@@ -221,19 +233,48 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      TextField(
-                        controller: _controladorBusqueda,
-                        onChanged: (valor) => _cargarDatos(filtro: valor),
-                        style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: _indicePestana == 0 ? 'Busca una comunidad...' : 'Busca a un michi...',
-                          prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34), size: 20),
-                          filled: true,
-                          fillColor: Colors.white,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _controladorBusqueda,
+                              onChanged: (valor) => _cargarDatos(filtro: valor),
+                              style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText: _indicePestana == 0 ? 'Busca una comunidad...' : 'Busca a un michi...',
+                                prefixIcon: const Icon(Icons.search, color: Color(0xFFC35E34), size: 20),
+                                filled: true,
+                                fillColor: const Color(0xFFF5F5F5),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12), 
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (_indicePestana == 0) ...[
+                            const SizedBox(width: 8),
+                            BotonTactil(
+                              onTap: _mostrarFiltrosAvanzados,
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: (_filtroMinStars != null || _filtroTags.isNotEmpty) 
+                                    ? const Color(0xFFC35E34) 
+                                    : const Color(0xFFF5F5F5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.tune_rounded, 
+                                  color: (_filtroMinStars != null || _filtroTags.isNotEmpty) ? Colors.white : const Color(0xFFC35E34), 
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -349,6 +390,25 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     );
   }
 
+  void _mostrarFiltrosAvanzados() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _ModalFiltrosAvanzados(
+        minStars: _filtroMinStars,
+        selectedTags: _filtroTags,
+        alAplicar: (stars, tags) {
+          setState(() {
+            _filtroMinStars = stars;
+            _filtroTags = tags;
+          });
+          _cargarDatos(filtro: _controladorBusqueda.text);
+        },
+      ),
+    );
+  }
+
   void _mostrarModalCreacion(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -403,11 +463,11 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 2),
-                    image: usuario.urlAvatar != null
+                    image: (usuario.urlAvatar != null && usuario.urlAvatar!.isNotEmpty)
                         ? DecorationImage(image: NetworkImage(usuario.urlAvatar!), fit: BoxFit.cover)
                         : null,
                   ),
-                  child: usuario.urlAvatar == null ? const Icon(Icons.person, color: Color(0xFFC35E34)) : null,
+                  child: (usuario.urlAvatar == null || usuario.urlAvatar!.isEmpty) ? const Icon(Icons.person, color: Color(0xFFC35E34)) : null,
                 ),
                 title: Text(usuario.nombreUsuario, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
                 subtitle: Text(usuario.email, style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
@@ -432,6 +492,227 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
             );
           },
           childCount: _usuarios.length,
+        ),
+      ),
+    );
+  }
+}
+
+class _ModalFiltrosAvanzados extends StatefulWidget {
+  final int? minStars;
+  final List<String> selectedTags;
+  final Function(int?, List<String>) alAplicar;
+
+  const _ModalFiltrosAvanzados({
+    required this.minStars,
+    required this.selectedTags,
+    required this.alAplicar,
+  });
+
+  @override
+  State<_ModalFiltrosAvanzados> createState() => _ModalFiltrosAvanzadosState();
+}
+
+class _ModalFiltrosAvanzadosState extends State<_ModalFiltrosAvanzados> {
+  int? _tempStars;
+  List<String> _tempTags = [];
+  final _tagController = TextEditingController();
+  final _servicio = ServicioComunidades();
+  List<Map<String, dynamic>> _sugerenciasTags = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _tempStars = widget.minStars;
+    _tempTags = List<String>.from(widget.selectedTags ?? []);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filtros Avanzados',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF4A4440),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // Reputación mínima (Estrellas)
+            Text(
+              'Reputación mínima requerida',
+              style: GoogleFonts.outfit(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF4A4440),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                int starValue = index + 1;
+                bool isSelected = _tempStars != null && _tempStars! >= starValue;
+                return IconButton(
+                  onPressed: () {
+                    setState(() {
+                      if (_tempStars == starValue) {
+                        _tempStars = null;
+                      } else {
+                        _tempStars = starValue;
+                      }
+                    });
+                  },
+                  icon: Icon(
+                    isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                    color: isSelected ? const Color(0xFFF28B50) : Colors.grey,
+                    size: 36,
+                  ),
+                );
+              }),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Etiquetas (Tags)
+            Text(
+              'Etiquetas (Tags)',
+              style: GoogleFonts.outfit(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF4A4440),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_tempTags.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Wrap(
+                  spacing: 8,
+                  children: _tempTags.map((tag) => Chip(
+                    label: Text(tag, style: GoogleFonts.outfit(fontSize: 12)),
+                    deleteIcon: const Icon(Icons.close, size: 14),
+                    onDeleted: () {
+                      setState(() => _tempTags.remove(tag));
+                    },
+                    backgroundColor: const Color(0xFFC35E34).withOpacity(0.1),
+                    labelStyle: const TextStyle(color: Color(0xFFC35E34)),
+                  )).toList(),
+                ),
+              ),
+            TextField(
+              controller: _tagController,
+              onChanged: (val) async {
+                if (val.length > 1) {
+                  final res = await _servicio.buscarTags(query: val);
+                  if (res.exito && mounted) {
+                    setState(() => _sugerenciasTags = res.datos ?? []);
+                  }
+                } else {
+                  setState(() => _sugerenciasTags = []);
+                }
+              },
+              decoration: InputDecoration(
+                hintText: 'Añadir etiqueta...',
+                hintStyle: GoogleFonts.outfit(fontSize: 14),
+                prefixIcon: const Icon(Icons.tag, size: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+            if (_sugerenciasTags.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                constraints: const BoxConstraints(maxHeight: 150),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _sugerenciasTags.length,
+                  itemBuilder: (context, index) {
+                    final tag = _sugerenciasTags[index]['nombre'];
+                    return ListTile(
+                      dense: true,
+                      title: Text(tag, style: GoogleFonts.outfit(fontSize: 14)),
+                      onTap: () {
+                        if (!_tempTags.contains(tag)) {
+                          setState(() {
+                            _tempTags.add(tag);
+                            _tagController.clear();
+                            _sugerenciasTags = [];
+                          });
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            
+            const SizedBox(height: 32),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _tempStars = null;
+                        _tempTags = [];
+                      });
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text('Limpiar', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      widget.alAplicar(_tempStars, _tempTags);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC35E34),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text('Aplicar Filtros', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
