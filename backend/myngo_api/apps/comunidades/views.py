@@ -58,14 +58,26 @@ class ComunidadListCreate(generics.ListCreateAPIView):
         usuario = self.request.user
         queryset = Comunidad.objects.all()
 
-        # Filtrado por tags (OR)
+        # Filtrado por tags (AND)
         tags_param = self.request.query_params.get('tags')
         if tags_param:
-            # Soportar tanto ?tags=a&tags=b como ?tags=a,b
             tags_list = []
             for t in self.request.query_params.getlist('tags'):
                 tags_list.extend(t.split(','))
-            queryset = queryset.filter(tags__slug__in=tags_list).distinct()
+            
+            # Filtramos comunidades que tengan TODOS los tags especificados
+            for tag in tags_list:
+                queryset = queryset.filter(tags__nombre__iexact=tag)
+
+        # Filtrado por rating mínimo
+        min_rating = self.request.query_params.get('min_rating')
+        if min_rating and min_rating.isdigit():
+            queryset = queryset.filter(min_rating_acceso__gte=int(min_rating))
+
+        # Filtrado por rating máximo (opcional, para el sistema de 5 estrellas)
+        max_rating = self.request.query_params.get('max_rating')
+        if max_rating and max_rating.isdigit():
+            queryset = queryset.filter(min_rating_acceso__lte=int(max_rating))
 
         queryset = queryset.annotate(
             anotado_miembros_count=models.Count('miembros_comunidades', distinct=True)
@@ -326,7 +338,7 @@ class ListarMiembrosComunidad(generics.ListAPIView):
         
         miembros_data = []
         
-        # Si es la primera página y no hay offset (o page=1), añadimos al creador
+        # Si es la primera página, añadimos al creador manualmente
         page_num = request.query_params.get('page', '1')
         if page_num == '1' and comunidad.creador:
             from django.core.files.storage import default_storage
@@ -347,11 +359,15 @@ class ListarMiembrosComunidad(generics.ListAPIView):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             for m in serializer.data:
-                # Evitar duplicar al creador
                 if comunidad.creador and m['usuario_id'] == comunidad.creador.id:
                     continue
                 miembros_data.append(m)
-            return self.get_paginated_response(miembros_data)
+            
+            # Devolvemos una respuesta compatible con lo que espera el frontend
+            res = self.get_paginated_response(miembros_data)
+            res.data['exito'] = True
+            res.data['datos'] = res.data.pop('results')
+            return res
 
         serializer = self.get_serializer(queryset, many=True)
         for m in serializer.data:

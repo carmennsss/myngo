@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/respuesta_api.dart';
@@ -35,9 +36,10 @@ class ServicioUsuarios {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.body.contains('<!DOCTYPE') || respuesta.body.contains('<html')) {
+        debugPrint('[Auth] Error Crítico: El servidor devolvió HTML en lugar de JSON. Status: ${respuesta.statusCode}');
         return RespuestaApi(
           exito: false,
-          mensaje: 'Error del servidor (${respuesta.statusCode}). La respuesta no es válida.',
+          mensaje: 'Error técnico en el servidor (${respuesta.statusCode}). Por favor, contacta con soporte.',
         );
       }
 
@@ -252,14 +254,15 @@ class ServicioUsuarios {
   Future<void> cerrarSesion() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
-      // Borramos todo rastro de la sesión
+      // Borramos de forma agresiva todo rastro de la sesión
       await preferencias.remove('auth_token');
       await preferencias.remove('usuario_id');
       await preferencias.remove('nombre_usuario');
-      // No usamos clear() para no borrar preferencias de idioma o "recordarme", 
-      // solo lo relativo a la sesión activa.
+      await preferencias.remove('orden_comunidades_local');
+      
+      debugPrint('[Auth] Sesión cerrada y SharedPreferences limpiadas.');
     } catch (e) {
-      print('Error al cerrar sesión: $e');
+      debugPrint('Error al cerrar sesión: $e');
     }
   }
 

@@ -169,13 +169,7 @@ class ToggleLikeView(APIView):
             like.delete()
             return Response({'mensaje': 'Like eliminado', 'resultado': 'unliked'}, status=status.HTTP_200_OK)
 
-        if publicacion.autor != request.user:
-            Notificacion.objects.create(
-                usuario=publicacion.autor,
-                tipo='LIKE',
-                mensaje=f'A {request.user.nombre_usuario} le ha gustado tu miau-post ✨',
-                referencia_id=publicacion.id,
-            )
+        # Las notificaciones se manejan ahora vía signals (contenido/signals.py)
         return Response({'mensaje': 'Like añadido', 'resultado': 'liked'}, status=status.HTTP_201_CREATED)
 
 
@@ -226,13 +220,8 @@ class ComentarioListCreate(generics.ListCreateAPIView):
             padre_id=padre_id
         )
         
-        if publicacion.autor != self.request.user:
-            Notificacion.objects.create(
-                usuario=publicacion.autor,
-                tipo='COMENTARIO',
-                mensaje=f'{self.request.user.nombre_usuario} ha comentado tu miau-post 🐾',
-                referencia_id=publicacion.id,
-            )
+        # Las notificaciones se manejan ahora vía signals (contenido/signals.py)
+
 
 
 

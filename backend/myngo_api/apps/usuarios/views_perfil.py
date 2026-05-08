@@ -112,7 +112,7 @@ class GestionPerfiles(generics.ListCreateAPIView):
 
     serializer_class = PerfilSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['usuario__nombre_usuario']
+    search_fields = ['^usuario__nombre_usuario']
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):

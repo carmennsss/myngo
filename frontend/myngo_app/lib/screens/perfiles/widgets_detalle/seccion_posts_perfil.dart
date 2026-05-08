@@ -6,6 +6,7 @@ import '../../../models/publicacion.dart';
 import '../../../widgets/comunes/estado_vacio_cargando.dart';
 import '../../../widgets/comunes/detalle_publicacion_sheet.dart';
 import '../../../utils/estilo_post_helper.dart';
+import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
 
 /// Widget que muestra la grilla de publicaciones de un usuario.
 class SeccionPostsPerfil extends StatefulWidget {
@@ -180,14 +181,7 @@ class _TarjetaPostPerfil extends StatelessWidget {
                     width: double.infinity,
                     color: Colors.black.withOpacity(0.03),
                     child: post.media.first['tipo'] == 'V'
-                        ? Container(
-                            height: 150,
-                            color: Colors.black.withOpacity(0.1),
-                            child: const Center(
-                              child: Icon(Icons.play_circle_fill_rounded, 
-                                  color: Color(0xFFF28B50), size: 48),
-                            ),
-                          )
+                        ? MiniaturaVideo(url: post.media.first['url'] ?? '')
                         : CachedNetworkImage(
                             imageUrl: post.media.first['url'] ?? '',
                             fit: BoxFit.contain,

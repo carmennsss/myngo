@@ -163,8 +163,14 @@ class LoginUsuario(APIView):
             usuario = Usuario.objects.get(email=email)
             if usuario.check_password(password):
                 cache.delete(clave_intentos)
+                
+                # Intentamos recalcular puntos, pero si falla no bloqueamos el login
                 if hasattr(usuario, 'perfil'):
-                    usuario.perfil.recalcular_puntos()
+                    try:
+                        usuario.perfil.recalcular_puntos()
+                    except Exception as e:
+                        print(f"Error al recalcular puntos para {email}: {e}")
+                
                 usuario.last_login = timezone.now()
                 usuario.save(update_fields=['last_login'])
                 token, _ = Token.objects.get_or_create(user=usuario)

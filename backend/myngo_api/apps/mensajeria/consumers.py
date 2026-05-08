@@ -91,8 +91,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 from .serializers import MensajeChatSerializer
                 serializer_data = await self.get_serializer_data(msg)
 
-                # FORZAMOS LA MEDIA: Si el serializador no la ve (por delay de M2M), la inyectamos
-                if not serializer_data.get('media') and saved_attachments:
+                # Aseguramos que la media enviada sea la que acabamos de guardar
+                if saved_attachments:
                     serializer_data['media'] = saved_attachments
 
                 # Añadimos client_id que no está en el serializador pero es útil para el frontend

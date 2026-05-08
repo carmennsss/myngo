@@ -39,7 +39,13 @@ class ServicioComunidades {
   }
 
   /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda, tags y página.
-  Future<RespuestaApi<List<Comunidad>>> listarComunidades({String? busqueda, List<String>? tags, int? pagina}) async {
+  Future<RespuestaApi<List<Comunidad>>> listarComunidades({
+    String? busqueda, 
+    List<String>? tags, 
+    int? pagina,
+    int? minRating,
+    int? maxRating,
+  }) async {
     try {
       List<String> queryParts = [];
       if (busqueda != null && busqueda.isNotEmpty) {
@@ -50,6 +56,12 @@ class ServicioComunidades {
       }
       if (pagina != null) {
         queryParts.add('page=$pagina');
+      }
+      if (minRating != null) {
+        queryParts.add('min_rating=$minRating');
+      }
+      if (maxRating != null) {
+        queryParts.add('max_rating=$maxRating');
       }
       
       final fullQuery = queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
@@ -134,7 +146,9 @@ class ServicioComunidades {
 
       if (respuesta.statusCode == 200) {
         final dynamic datosJson = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? []);
+        final List<dynamic> lista = datosJson is List 
+            ? datosJson 
+            : (datosJson['datos'] ?? datosJson['results'] ?? []);
         return RespuestaApi(
           exito: true,
           mensaje: 'Miembros cargados',

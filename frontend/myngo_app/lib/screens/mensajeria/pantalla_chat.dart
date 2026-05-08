@@ -16,6 +16,7 @@ import '../../models/comunidad.dart';
 import '../../models/sala_chat.dart';
 import '../../models/participante_chat.dart';
 import '../../models/mensaje_chat.dart';
+import '../../widgets/mensajeria/decoraciones_burbuja.dart';
 import '../../models/usuario.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/mensajeria/componentes_multimedia.dart';
@@ -33,8 +34,18 @@ class PatternPainter extends CustomPainter {
   
   @override
   void paint(Canvas canvas, Size size) {
+    // Protección ultra-defensiva contra tamaños infinitos, NaN o absurdamente grandes
+    if (!size.width.isFinite || !size.height.isFinite || 
+        size.width <= 0 || size.height <= 0 || 
+        size.width > 10000 || size.height > 10000) {
+      return;
+    }
+
     final paint = Paint()..color = Colors.white;
-    const spacing = 60.0;
+    const double spacing = 60.0;
+    
+    // Si spacing es por algún motivo 0, evitamos el bucle infinito
+    if (spacing <= 0) return;
     
     switch (patternType) {
       case 'dots':
@@ -60,7 +71,9 @@ class PatternPainter extends CustomPainter {
         break;
       case 'waves':
         for (double y = 0; y < size.height; y += 40) {
+          if (y > 5000) break; // Límite de seguridad
           for (double x = 0; x <= size.width; x += 5) {
+            if (x > 5000) break; // Límite de seguridad
             final nextX = x + 5;
             final nextY = y + (y.toInt() % 2 == 0 ? 3 : -3);
             if (nextX <= size.width) {
@@ -78,27 +91,39 @@ class PatternPainter extends CustomPainter {
   }
   
   void _drawStar(Canvas canvas, Offset center, double size, Paint paint) {
-    const angles = [0, 72, 144, 216, 288];
-    final points = <Offset>[];
-    for (final angle in angles) {
-      final rad = (angle * 3.14159 / 180);
-      points.add(Offset(
-        center.dx + size * 0.5 * (0.809 * cos(rad - 1.571) + 0.309 * cos(rad - 1.571)),
-        center.dy + size * 0.5 * (0.809 * sin(rad - 1.571) + 0.309 * sin(rad - 1.571)),
-      ));
+    final path = Path();
+    final double innerRadius = size / 2.5;
+    final double outerRadius = size;
+    const int numPoints = 5;
+    const double angleStep = (2 * pi) / numPoints;
+
+    for (int i = 0; i < numPoints; i++) {
+      double outerAngle = i * angleStep - pi / 2;
+      double innerAngle = outerAngle + angleStep / 2;
+
+      double x1 = center.dx + outerRadius * cos(outerAngle);
+      double y1 = center.dy + outerRadius * sin(outerAngle);
+      if (i == 0) {
+        path.moveTo(x1, y1);
+      } else {
+        path.lineTo(x1, y1);
+      }
+
+      double x2 = center.dx + innerRadius * cos(innerAngle);
+      double y2 = center.dy + innerRadius * sin(innerAngle);
+      path.lineTo(x2, y2);
     }
-    
-    // Dibujar un punto simple en lugar de una estrella compleja para mantener performance
-    canvas.drawCircle(center, 3, paint);
+    path.close();
+    canvas.drawPath(path, paint..style = PaintingStyle.fill);
   }
   
   void _drawTriangle(Canvas canvas, Offset center, double size, Paint paint) {
     final path = Path();
-    path.moveTo(center.dx, center.dy - size / 2);
-    path.lineTo(center.dx + size / 2, center.dy + size / 2);
-    path.lineTo(center.dx - size / 2, center.dy + size / 2);
+    path.moveTo(center.dx, center.dy - size);
+    path.lineTo(center.dx + size, center.dy + size);
+    path.lineTo(center.dx - size, center.dy + size);
     path.close();
-    canvas.drawPath(path, paint..style = PaintingStyle.stroke..strokeWidth = 1);
+    canvas.drawPath(path, paint..style = PaintingStyle.fill);
   }
   
   @override
@@ -266,8 +291,19 @@ class _PantallaChatState extends State<PantallaChat> {
         if (type == 'chat_message') {
           final nuevoMsg = MensajeChat.fromJson(datos);
           _mensajes.insert(0, nuevoMsg);
+          // Si estamos viendo el chat, marcamos como leído en tiempo real
+          _servicio.marcarMensajesLeidosWS();
         } else if (type == 'room_updated') {
           _sala = SalaChat.fromJson(datos['data']);
+        } else if (type == 'message_updated') {
+          final mData = datos['message'] ?? datos['data'];
+          if (mData != null) {
+            final actualizado = MensajeChat.fromJson(mData);
+            final idx = _mensajes.indexWhere((m) => m.id == actualizado.id);
+            if (idx != -1) {
+              _mensajes[idx] = actualizado;
+            }
+          }
         } else if (type == 'message_deleted') {
           final mId = datos['mensaje_id'];
           final idx = _mensajes.indexWhere((m) => m.id == mId);
@@ -278,18 +314,29 @@ class _PantallaChatState extends State<PantallaChat> {
             );
           }
         } else if (type == 'messages_read') {
-          final ids = List<int>.from(datos['leidos_ids'] ?? []);
-          final lectorId = datos['leido_por'];
-          for (var i = 0; i < _mensajes.length; i++) {
-            if (ids.contains(_mensajes[i].id)) {
-              if (!_mensajes[i].leidoPorIds.contains(lectorId)) {
-                _mensajes[i].leidoPorIds.add(lectorId);
+          final rawIds = datos['leidos_ids'] as List?;
+          if (rawIds != null) {
+            final ids = rawIds.map((e) => (e as num).toInt()).toList();
+            final lectorId = (datos['leido_por'] as num).toInt();
+            
+            bool huboCambios = false;
+            for (var i = 0; i < _mensajes.length; i++) {
+              if (ids.contains(_mensajes[i].id)) {
+                if (!_mensajes[i].leidoPorIds.contains(lectorId)) {
+                  _mensajes[i] = _mensajes[i].copyWith(
+                    leidoPorIds: [..._mensajes[i].leidoPorIds, lectorId],
+                  );
+                  huboCambios = true;
+                }
               }
+            }
+            if (huboCambios) {
+              _mensajes = List.from(_mensajes);
             }
           }
         }
       });
-    });
+    }, alConectar: () => _servicio.marcarMensajesLeidosWS());
   }
 
   void _enviarMensaje() async {
@@ -309,7 +356,20 @@ class _PantallaChatState extends State<PantallaChat> {
     
     try {
       if (edicionId != null) {
-        await _servicio.editarMensaje(edicionId, texto);
+        final exito = await _servicio.editarMensaje(edicionId, texto);
+        if (exito) {
+          // Actualización optimista local por si el WebSocket tarda
+          setState(() {
+            final idx = _mensajes.indexWhere((m) => m.id == edicionId);
+            if (idx != -1) {
+              _mensajes[idx] = _mensajes[idx].copyWith(
+                contenido: texto,
+                esEditado: true,
+                fechaEdicion: DateTime.now(),
+              );
+            }
+          });
+        }
       } else {
         // Lógica de archivos adjuntos
         List<Map<String, dynamic>> attachments = [];
@@ -492,7 +552,7 @@ class _PantallaChatState extends State<PantallaChat> {
                 try {
                   otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId != _miId);
                 } catch (_) {
-                  otroParticipante = _sala!.participantes.first;
+                  otroParticipante = _sala!.participantes.isNotEmpty ? _sala!.participantes.first : null;
                 }
               }
             }
@@ -766,6 +826,18 @@ class _PantallaChatState extends State<PantallaChat> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (msg.esEditado)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: Text(
+                                    'editado',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: esMio ? (colorMio.computeLuminance() > 0.5 ? Colors.black54 : Colors.white70) : Colors.black45,
+                                    ),
+                                  ),
+                                ),
                               Text(
                                 _formatHora(msg.fechaEnvio),
                                 style: GoogleFonts.outfit(
@@ -783,6 +855,8 @@ class _PantallaChatState extends State<PantallaChat> {
                               ],
                             ],
                           ),
+                          if (esMio && msg.leidoPorIds.isNotEmpty)
+                            _buildLectoresAvatar(msg),
                         ],
                       ],
                     ),
@@ -797,63 +871,49 @@ class _PantallaChatState extends State<PantallaChat> {
     );
   }
 
+  Widget _buildLectoresAvatar(MensajeChat msg) {
+    if (_sala == null || msg.leidoPorIds.isEmpty) return const SizedBox.shrink();
+    
+    // Filtramos lectores: no nosotros mismos
+    final lectoresIds = msg.leidoPorIds.where((id) => id != _miId).toList();
+    if (lectoresIds.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Wrap(
+        spacing: -6, 
+        children: lectoresIds.take(5).map((id) {
+          String? avatarUrl;
+          try {
+            final p = _sala!.participantes.firstWhere((p) => p.usuarioId == id);
+            avatarUrl = p.usuario?.urlAvatar;
+          } catch (_) {}
+          
+          if (avatarUrl != null && avatarUrl.isNotEmpty && !avatarUrl.startsWith('http')) {
+             avatarUrl = '${Configuracion.baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}$avatarUrl';
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1),
+            ),
+            child: CircleAvatar(
+              radius: 7,
+              backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty) 
+                ? CachedNetworkImageProvider(avatarUrl) 
+                : null,
+              backgroundColor: const Color(0xFFF28B50).withOpacity(0.2),
+              child: (avatarUrl == null || avatarUrl.isEmpty) ? const Icon(Icons.person, size: 8, color: Color(0xFFC35E34)) : null,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildDecoracionesBurbuja(String estilo, bool esMio) {
-    switch (estilo) {
-      case 'amor':
-        return Positioned(
-          top: -12,
-          right: esMio ? -5 : null,
-          left: !esMio ? -5 : null,
-          child: const Text('💖', style: TextStyle(fontSize: 20)),
-        );
-      case 'vaquero':
-        return Positioned(
-          top: -18,
-          right: esMio ? -5 : null,
-          left: !esMio ? -5 : null,
-          child: const Text('🤠', style: TextStyle(fontSize: 22)),
-        );
-      case 'bosque':
-        return Positioned(
-          top: -15,
-          left: esMio ? -10 : null,
-          right: !esMio ? -10 : null,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Text('🍃', style: TextStyle(fontSize: 18)),
-              Text('🌸', style: TextStyle(fontSize: 14)),
-            ],
-          ),
-        );
-      case 'cyber':
-        return Positioned(
-          top: 5,
-          right: esMio ? 5 : null,
-          left: !esMio ? 5 : null,
-          child: Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(color: Color(0xFF00E5FF), shape: BoxShape.circle),
-          ),
-        );
-      case 'kawaii':
-        return Stack(
-          children: [
-            Positioned(top: -15, left: -5, child: const Text('✨', style: TextStyle(fontSize: 18))),
-            Positioned(bottom: -10, right: -5, child: const Text('🎀', style: TextStyle(fontSize: 22))),
-            Positioned(top: -5, right: 10, child: const Text('⭐', style: TextStyle(fontSize: 12))),
-          ],
-        );
-      case 'aventura':
-        return Positioned(
-          top: -18,
-          right: 0,
-          child: const Text('📜', style: TextStyle(fontSize: 24)),
-        );
-      default:
-        return const SizedBox.shrink();
-    }
+    return DecoracionesBurbuja(estilo: estilo, esMio: esMio);
   }
 
   BorderRadius _getBorderRadius(bool esMio, double radius) {
@@ -917,7 +977,7 @@ class _PantallaChatState extends State<PantallaChat> {
     if (_sala == null) return;
     
     // Si es un chat de comunidad, mostramos el componente existente
-    if (_sala!.esGrupal && _sala!.comunidadId != null) {
+    if (_sala!.esGrupal && _sala!.comunidadId != 0) {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -929,8 +989,8 @@ class _PantallaChatState extends State<PantallaChat> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(32))
           ),
           child: ListaMiembrosComunidad(comunidad: Comunidad(
-            id: _sala!.comunidadId!, 
-            nombre: _sala!.nombre ?? '', 
+            id: _sala!.comunidadId, 
+            nombre: _sala!.nombre, 
             descripcion: '', creadorNombre: '', urlPortada: '', esPublica: true, esVerificada: false, esMiembro: true, ratingMedio: 0.0, fechaCreacion: DateTime.now(), miRol: 'Miembro'
           )),
         ),
@@ -968,11 +1028,19 @@ class _PantallaChatState extends State<PantallaChat> {
                   final esYo = p.usuarioId == _miId;
                   
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: p.usuario?.urlAvatar != null 
-                        ? CachedNetworkImageProvider(p.usuario!.urlAvatar!) 
-                        : null,
-                      child: p.usuario?.urlAvatar == null ? const Icon(Icons.person) : null,
+                    leading: Builder(
+                      builder: (context) {
+                        String? url = p.usuario?.urlAvatar;
+                        if (url != null && url.isNotEmpty && !url.startsWith('http')) {
+                          url = '${Configuracion.baseUrl}${url.startsWith('/') ? '' : '/'}$url';
+                        }
+                        return CircleAvatar(
+                          backgroundImage: (url != null && url.isNotEmpty) 
+                            ? CachedNetworkImageProvider(url) 
+                            : null,
+                          child: (url == null || url.isEmpty) ? const Icon(Icons.person) : null,
+                        );
+                      }
                     ),
                     title: Text(
                       esYo ? '${p.nombreAMostrar} (Tú)' : p.nombreAMostrar,
@@ -983,7 +1051,8 @@ class _PantallaChatState extends State<PantallaChat> {
                       icon: const Icon(Icons.person_outline),
                       onPressed: () {
                         Navigator.pop(context);
-                        context.push('/perfil/${p.usuarioId}');
+                        final identifier = p.usuario?.nombreUsuario ?? p.usuarioId.toString();
+                        context.push('/inicio/perfiles/$identifier');
                       },
                     ) : null,
                   );
@@ -1088,6 +1157,14 @@ class _PantallaChatState extends State<PantallaChat> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Enviado el ${_formatFechaCompleta(msg.fechaEnvio)}', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
+              if (msg.esEditado && msg.fechaEdicion != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    'Editado el ${_formatFechaCompleta(msg.fechaEdicion!)}', 
+                    style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)
+                  ),
+                ),
               const Divider(height: 24),
               Text('Leído por:', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
               const SizedBox(height: 8),
@@ -1105,11 +1182,19 @@ class _PantallaChatState extends State<PantallaChat> {
                     final fechaLectura = msg.infoLectura[lector.usuarioId];
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundImage: lector.usuario?.urlAvatar != null 
-                          ? CachedNetworkImageProvider(lector.usuario!.urlAvatar!) 
-                          : null,
-                        child: lector.usuario?.urlAvatar == null ? const Icon(Icons.person) : null,
+                      leading: Builder(
+                        builder: (context) {
+                          String? url = lector.usuario?.urlAvatar;
+                          if (url != null && url.isNotEmpty && !url.startsWith('http')) {
+                            url = '${Configuracion.baseUrl}${url.startsWith('/') ? '' : '/'}$url';
+                          }
+                          return CircleAvatar(
+                            backgroundImage: (url != null && url.isNotEmpty) 
+                              ? CachedNetworkImageProvider(url) 
+                              : null,
+                            child: (url == null || url.isEmpty) ? const Icon(Icons.person) : null,
+                          );
+                        }
                       ),
                       title: Text(lector.nombreAMostrar, style: GoogleFonts.outfit(fontSize: 14)),
                       subtitle: fechaLectura != null 
@@ -1339,6 +1424,65 @@ class _PantallaChatState extends State<PantallaChat> {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     }
 
+    if (_sala == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.chat_bubble_outline_rounded, size: 64, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Sala no encontrada',
+                style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'La sala de chat no existe o ya no tienes acceso a ella 🐾',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(fontSize: 16, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _cargarDatos(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFC35E34),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('Reintentar'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    side: const BorderSide(color: Colors.grey),
+                  ),
+                  child: Text('Volver atrás', style: TextStyle(color: Colors.grey[700])),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final perso = _sala?.personalizacion;
     final colorFondo = _colorFromHex(perso?.colorFondo) ?? Colors.white;
     
@@ -1358,25 +1502,28 @@ class _PantallaChatState extends State<PantallaChat> {
     return Stack(
       children: [
         // Fondo base
-        Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            color: gradColors == null ? colorFondo : null,
-            gradient: gradColors != null ? LinearGradient(colors: gradColors, begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: gradColors == null ? colorFondo : null,
+              gradient: gradColors != null ? LinearGradient(colors: gradColors, begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+            ),
           ),
         ),
         // Patrón geométrico
         if (perso?.patronFondo != null)
-          Opacity(
-            opacity: 0.05,
-            child: _buildPatternBackground(perso!.patronFondo!),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.05,
+                child: _buildPatternBackground(perso!.patronFondo!),
+              ),
+            ),
           ),
         // Contenido
         Column(
           children: [
             Expanded(child: _buildListaMensajes()),
-            _buildBarraRespuesta(),
             _buildInputArea(),
             if (_mostrarEmojiPicker) _buildEmojiPicker(),
           ],
@@ -1388,7 +1535,6 @@ class _PantallaChatState extends State<PantallaChat> {
   Widget _buildPatternBackground(String id) {
     return CustomPaint(
       painter: PatternPainter(patternType: id),
-      child: Container(),
     );
   }
 

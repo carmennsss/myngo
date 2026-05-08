@@ -240,6 +240,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                 constraints: const BoxConstraints(maxHeight: 400),
                                 child: GridImagenesPost(
                                   media: widget.post.media,
+                                  mostrarDescarga: true,
                                 ),
                               ),
                             ),

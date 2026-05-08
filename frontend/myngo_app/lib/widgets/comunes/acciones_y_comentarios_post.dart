@@ -54,6 +54,22 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
   }
 
   @override
+  void didUpdateWidget(AccionesYComentariosPost oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.usuarioDioLike != widget.post.usuarioDioLike ||
+        oldWidget.post.likesCount != widget.post.likesCount ||
+        oldWidget.post.comentariosCount != widget.post.comentariosCount ||
+        oldWidget.post.usuarioGuardoPost != widget.post.usuarioGuardoPost) {
+      setState(() {
+        _dioLike = widget.post.usuarioDioLike;
+        _likesCount = widget.post.likesCount;
+        _comentariosCount = widget.post.comentariosCount;
+        _estaGuardado = widget.post.usuarioGuardoPost;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _comentarioController.dispose();
     _comentarioFocus.dispose();
@@ -127,7 +143,10 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
       setState(() => _enviandoComentario = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(respuesta.mensaje)),
+          SnackBar(
+            content: Text(respuesta.mensaje),
+            backgroundColor: const Color(0xFFC35E34),
+          ),
         );
       }
     }
@@ -157,16 +176,43 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 label: _likesCount.toString(),
                 textColor: widget.colorTexto,
                 onTap: () async {
-                  final token = await _servicioUsuarios.obtenerToken();
-                  if (token == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inicia sesión para dar like')));
+                  final id = await _servicioUsuarios.obtenerIdUsuario();
+                  if (id == 0) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('¡Vaya! Debes iniciar miau-sesión para dar like 🐾'),
+                          backgroundColor: Color(0xFFC35E34),
+                        ),
+                      );
+                    }
                     return;
                   }
+
                   setState(() {
                     _dioLike = !_dioLike;
                     _likesCount += _dioLike ? 1 : -1;
+                    widget.post.usuarioDioLike = _dioLike;
+                    widget.post.likesCount = _likesCount;
                   });
-                  await _servicioInteraccion.alternarMeGusta(widget.post.id);
+
+                  final res = await _servicioInteraccion.alternarMeGusta(widget.post.id);
+                  if (!res.exito && mounted) {
+                    setState(() {
+                      _dioLike = !_dioLike;
+                      _likesCount += _dioLike ? 1 : -1;
+                      widget.post.usuarioDioLike = _dioLike;
+                      widget.post.likesCount = _likesCount;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(res.mensaje),
+                        backgroundColor: const Color(0xFFD95F43),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  }
                 },
               ),
               _ActionIcon(

@@ -9,6 +9,7 @@ import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+import '../../utils/gestor_descargas.dart';
 
 class PantallaDetalleImagen extends StatefulWidget {
   final ImagenGaleria imagen;
@@ -36,13 +37,12 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
   }
 
   Future<void> _descargarArchivo() async {
-    final url = Uri.parse(widget.imagen.urlArchivo);
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+    try {
+      await GestorDescargas.descargar(widget.imagen.urlArchivo);
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir el enlace de descarga 🐾')),
+          const SnackBar(content: Text('No se pudo descargar el archivo 🐾')),
         );
       }
     }

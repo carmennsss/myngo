@@ -8,6 +8,8 @@ import '../../widgets/comunes/boton_tactil.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
+import 'package:provider/provider.dart';
+import '../../providers/chat_provider.dart';
 
 /// Cabecera superior de la pantalla de inicio con logo, navegación y perfil de usuario.
 class CabeceraPro extends StatelessWidget {
@@ -287,7 +289,10 @@ class _UserProfileHeader extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('settingsAdjustmentsSoon'))));
         } else if (value == 'logout') {
           await ServicioUsuarios().cerrarSesion();
-          if (context.mounted) context.go('/login');
+          if (context.mounted) {
+            context.read<ChatProvider>().limpiar();
+            context.go('/login');
+          }
         }
       },
       itemBuilder: (context) => [

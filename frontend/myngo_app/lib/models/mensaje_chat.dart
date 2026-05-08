@@ -100,7 +100,7 @@ class MensajeChat {
           : (json['timestamp'] != null 
               ? DateTime.parse(json['timestamp']).toLocal() 
               : DateTime.now()),
-      leidoPorIds: (json['leido_por_ids'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
+      leidoPorIds: (json['leido_por_ids'] as List<dynamic>?)?.map((e) => (e as num).toInt()).toList() ?? [],
       referenciaA: json['referencia_a'],
       referenciaADetalle: json['referencia_a_detalle'],
       esEditado: json['es_editado'] ?? false,

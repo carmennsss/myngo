@@ -219,11 +219,21 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         });
       }
     } else if (index == 2) {
-        setState(() => _galeriaKey = UniqueKey());
+        setState(() {
+          _estaCargandoDatos = true;
+          _galeriaKey = UniqueKey();
+        });
         await _cargarColecciones();
+        if (mounted) setState(() => _estaCargandoDatos = false);
     } else if (index == 3) {
+        setState(() => _estaCargandoDatos = true);
         final res = await _servicio.obtenerSalasChat(_comunidad!.id);
-        if (mounted) setState(() => _salasChat = res.datos ?? []);
+        if (mounted) {
+          setState(() {
+            _salasChat = res.datos ?? [];
+            _estaCargandoDatos = false;
+          });
+        }
     }
   }
 
@@ -457,6 +467,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           salasChat: _salasChat,
           estaCargando: _estaCargandoDatos,
           onCrearSala: () => _mostrarDialogoCrearSalaComunidad(context),
+          onRefresh: () => _cargarDatosSeccion(3),
           esAppClara: _esAppClara(context),
           colorTextoPrincipal: _colorTextoPrincipal(context),
           colorTextoSecundario: _colorTextoSecundario(context),

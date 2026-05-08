@@ -45,6 +45,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   String? _previewAvatar;
   String? _previewMarco;
   String? _previewFondo;
+  String? _previewFondoFeed;
   Map<String, dynamic>? _previewEstiloPost;
 
   List<CatalogoMejoras> _mejorasCatalogo = [];
@@ -94,6 +95,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           _previewAvatar = _usuarioActual?.urlAvatar;
           _previewMarco = _usuarioActual?.marco;
           _previewFondo = _usuarioActual?.fondo;
+          _previewFondoFeed = _usuarioActual?.fondoPerfil;
           _previewEstiloPost = _usuarioActual?.estiloPost;
         }
       });
@@ -184,7 +186,19 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     );
 
     final previewSection = Container(
-      color: Colors.white.withOpacity(0.5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
+            ? DecorationImage(
+                image: NetworkImage(_previewFondoFeed!),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.white.withOpacity(0.6),
+                  BlendMode.lighten,
+                ),
+              )
+            : null,
+      ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: TiendaPreviewSection(
@@ -210,13 +224,28 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
         : Column(
             mainAxisSize: MainAxisSize.min, // Evita ocupar infinito si no es necesario
             children: [
-              TiendaPreviewSection(
-                usuarioActual: _usuarioActual,
-                previewAvatar: _previewAvatar,
-                previewMarco: _previewMarco,
-                previewFondo: _previewFondo,
-                previewEstiloPost: _previewEstiloPost,
-                comunidad: widget.comunidad,
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
+                      ? DecorationImage(
+                          image: NetworkImage(_previewFondoFeed!),
+                          fit: BoxFit.cover,
+                          colorFilter: ColorFilter.mode(
+                            Colors.white.withOpacity(0.6),
+                            BlendMode.lighten,
+                          ),
+                        )
+                      : null,
+                ),
+                child: TiendaPreviewSection(
+                  usuarioActual: _usuarioActual,
+                  previewAvatar: _previewAvatar,
+                  previewMarco: _previewMarco,
+                  previewFondo: _previewFondo,
+                  previewEstiloPost: _previewEstiloPost,
+                  comunidad: widget.comunidad,
+                ),
               ),
               // Si está integrado en un sliver, necesitamos una altura fija o limitada
               widget.esVistaIntegrada 
@@ -287,7 +316,10 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
         setState(() {
           if (tipo == 'Avatar') _previewAvatar = item.urlRecurso;
           if (tipo == 'Marco') _previewMarco = item.urlRecurso;
-          if (tipo == 'Fondo') _previewFondo = item.urlRecurso;
+          if (tipo == 'Fondo') {
+            _previewFondo = item.urlRecurso;
+            _previewFondoFeed = item.urlRecurso;
+          }
           if (tipo == 'Estilo Post') _previewEstiloPost = item.datosExtra;
         });
       },

@@ -22,6 +22,17 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Limpia todo el estado del provider (usado al cerrar sesión).
+  void limpiar() {
+    _userId = null;
+    _totalNoLeidos = 0;
+    _noLeidosPorSala = {};
+    _salaActivaId = null;
+    _estadosUsuarios = {};
+    _salas = [];
+    notifyListeners();
+  }
+
   String getEstadoUsuario(int userId) => _estadosUsuarios[userId] ?? 'DESCONECTADO';
   bool isUsuarioOnline(int userId) => getEstadoUsuario(userId) != 'DESCONECTADO';
 

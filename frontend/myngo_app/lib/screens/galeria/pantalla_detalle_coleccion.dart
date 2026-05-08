@@ -9,6 +9,8 @@ import '../../services/servicio_comunidades.dart';
 import '../../models/publicacion.dart';
 import 'package:image_picker/image_picker.dart';
 import 'pantalla_detalle_imagen.dart';
+import '../../utils/gestor_descargas.dart';
+import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
 
 class PantallaDetalleColeccion extends StatefulWidget {
   final Coleccion coleccion;
@@ -299,6 +301,26 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
             ),
             const SizedBox(height: 16),
             ListTile(
+              leading: const Icon(Icons.download_rounded, color: Color(0xFF248EA6)),
+              title: Text(
+                'Descargar archivo',
+                style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await GestorDescargas.descargar(imagen.urlArchivo);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No se pudo descargar el archivo 🐾')),
+                    );
+                  }
+                }
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
               leading: const Icon(Icons.remove_circle_outline_rounded, color: Colors.orangeAccent),
               title: Text(
                 'Quitar de esta colección',
@@ -438,13 +460,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: imagen.tipoArchivo == 'V'
-                                    ? Container(
-                                        color: Colors.black,
-                                        child: const Center(
-                                          child: Icon(Icons.play_circle_fill_rounded, 
-                                              color: Colors.white, size: 40),
-                                        ),
-                                      )
+                                    ? MiniaturaVideo(url: imagen.urlArchivo)
                                     : CachedNetworkImage(
                                         imageUrl: imagen.urlArchivo,
                                         fit: BoxFit.cover,
@@ -457,24 +473,52 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                                       ),
                               ),
                               // Indicador de menú solo si puede editar
-                              if (_puedeEditar)
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () => _mostrarMenuImagen(context, imagen),
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        shape: BoxShape.circle,
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () async {
+                                        try {
+                                          await GestorDescargas.descargar(imagen.urlArchivo);
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('No se pudo descargar el archivo 🐾')),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      child: Container(
+                                        width: 26,
+                                        height: 26,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.6),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.download_rounded, 
+                                            color: Colors.white, size: 14),
                                       ),
-                                      child: const Icon(Icons.more_vert_rounded, 
-                                          color: Colors.white, size: 16),
                                     ),
-                                  ),
+                                    const SizedBox(width: 4),
+                                    if (_puedeEditar)
+                                      GestureDetector(
+                                        onTap: () => _mostrarMenuImagen(context, imagen),
+                                        child: Container(
+                                          width: 26,
+                                          height: 26,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.more_vert_rounded, 
+                                              color: Colors.white, size: 16),
+                                        ),
+                                      ),
+                                  ],
                                 ),
+                              ),
                             ],
                           ),
                         );

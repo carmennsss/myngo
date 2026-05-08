@@ -53,6 +53,20 @@ class _TarjetaPostState extends State<TarjetaPost> {
     _estaGuardado = widget.post.usuarioGuardoPost;
   }
 
+  @override
+  void didUpdateWidget(TarjetaPost oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.usuarioDioLike != widget.post.usuarioDioLike ||
+        oldWidget.post.likesCount != widget.post.likesCount ||
+        oldWidget.post.usuarioGuardoPost != widget.post.usuarioGuardoPost) {
+      setState(() {
+        _dioLike = widget.post.usuarioDioLike;
+        _likesCount = widget.post.likesCount;
+        _estaGuardado = widget.post.usuarioGuardoPost;
+      });
+    }
+  }
+
   void _mostrarDetalles(BuildContext context) {
     showDialog(
       context: context,
@@ -85,7 +99,12 @@ class _TarjetaPostState extends State<TarjetaPost> {
         widget.post.likesCount = _likesCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(res.mensaje), 
+          backgroundColor: const Color(0xFFD95F43),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
     }
   }

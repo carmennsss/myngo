@@ -103,91 +103,57 @@ class ChatMediaGrid extends StatelessWidget {
     final count = attachments.length;
     
     return Container(
-      width: 250,
+      width: 260,
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: count > 1 ? _buildCarousel(context) : _buildItem(context, attachments[0]),
+      ),
+    );
+  }
+
+  Widget _buildCarousel(BuildContext context) {
+    return SizedBox(
+      height: 250,
+      child: Stack(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _buildGrid(context, count),
+          PageView.builder(
+            itemCount: attachments.length,
+            itemBuilder: (context, index) {
+              return _buildItem(context, attachments[index], height: 250);
+            },
+          ),
+          Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${attachments.length} fotos • Desliza',
+                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGrid(BuildContext context, int count) {
-    if (count == 1) {
-      return _buildItem(context, attachments[0]);
-    } else if (count == 2) {
-      return Row(
-        children: [
-          Expanded(child: _buildItem(context, attachments[0])),
-          const SizedBox(width: 2),
-          Expanded(child: _buildItem(context, attachments[1])),
-        ],
-      );
-    } else if (count == 3) {
-      return Row(
-        children: [
-          Expanded(child: _buildItem(context, attachments[0])),
-          const SizedBox(width: 2),
-          Expanded(
-            child: Column(
-              children: [
-                _buildItem(context, attachments[1], height: 100),
-                const SizedBox(height: 2),
-                _buildItem(context, attachments[2], height: 100),
-              ],
-            ),
-          ),
-        ],
-      );
-    } else {
-      return Column(
-        children: [
-          Row(
-            children: [
-              Expanded(child: _buildItem(context, attachments[0], height: 100)),
-              const SizedBox(width: 2),
-              Expanded(child: _buildItem(context, attachments[1], height: 100)),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Expanded(child: _buildItem(context, attachments[2], height: 100)),
-              const SizedBox(width: 2),
-              Expanded(
-                child: Stack(
-                  children: [
-                    _buildItem(context, attachments[3], height: 100),
-                    if (count > 4)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black45,
-                          child: Center(
-                            child: Text(
-                              '+${count - 3}',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-  }
+
 
   Widget _buildItem(BuildContext context, ChatAttachment att, {double? height}) {
     return GestureDetector(
