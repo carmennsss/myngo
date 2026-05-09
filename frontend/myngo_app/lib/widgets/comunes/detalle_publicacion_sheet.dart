@@ -93,14 +93,17 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
       barrierColor: Colors.black54,
       builder: (ctx) => DialogoCrearPost(
         titulo: 'Editar Miau-post 🐾',
+        initialTitulo: widget.publicacion.titulo,
         initialTexto: widget.publicacion.contenidoTexto,
-        onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+        onPublicar: (title, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final res = await ServicioComunidades().actualizarPublicacion(
             idPublicacion: widget.publicacion.id,
+            titulo: title,
             texto: texto,
           );
           if (res.exito && mounted) {
             setState(() {
+              widget.publicacion.titulo = title;
               widget.publicacion.contenidoTexto = texto;
             });
             return true;

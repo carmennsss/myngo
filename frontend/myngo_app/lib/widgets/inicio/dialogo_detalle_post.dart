@@ -124,14 +124,17 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                     borderRadius: BorderRadius.circular(32),
                                     child: DialogoCrearPost(
                                       titulo: 'Editar Miau-post 🐾',
+                                      initialTitulo: widget.post.titulo,
                                       initialTexto: widget.post.contenidoTexto,
-                                      onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+                                      onPublicar: (title, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
                                         final res = await ServicioComunidades().actualizarPublicacion(
                                           idPublicacion: widget.post.id,
+                                          titulo: title,
                                           texto: texto,
                                         );
                                         if (res.exito) {
                                           setState(() {
+                                            widget.post.titulo = title;
                                             widget.post.contenidoTexto = texto;
                                           });
                                           return true;
