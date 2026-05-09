@@ -19,12 +19,29 @@ class PeticionMejoraCreate(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        """Guarda la petición y envía notificaciones a los moderadores.
+        """Guarda la petición. Si es el creador, aprueba directamente. Si no, notifica a moderadores.
 
         Args:
             serializer: Serializador con los datos de la propuesta.
         """
-        peticion = serializer.save(usuario=self.request.user)
+        user = self.request.user
+        peticion = serializer.save(usuario=user)
+        
+        # Si el usuario es el creador, aprobamos automáticamente y creamos el item
+        if peticion.comunidad.creador == user:
+            peticion.estado = 'APROBADO'
+            peticion.save()
+            
+            CatalogoMejoras.objects.create(
+                tipo=peticion.tipo,
+                precio_puntos=peticion.precio_sugerido or 0,
+                url_recurso=peticion.url_recurso,
+                comunidad=peticion.comunidad,
+                creador=user,
+                esta_activo=True
+            )
+            return # No enviamos notificaciones si es el propio creador quien añade fondos
+
         from notificaciones.models import Notificacion
         
         # Obtener moderadores y administradores de la tabla de membresía
@@ -40,6 +57,7 @@ class PeticionMejoraCreate(generics.CreateAPIView):
             destinatarios.add(peticion.comunidad.creador)
             
         for usuario in destinatarios:
+            if usuario == user: continue # No notificarse a uno mismo
             Notificacion.objects.create(
                 usuario=usuario,
                 tipo='NUEVA_PROPUESTA_TIENDA',
