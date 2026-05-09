@@ -280,7 +280,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final res = await ServicioGaleria().obtenerColecciones(idUsuario: _usuario!.id);
     if (mounted) {
       setState(() {
-        _misColecciones = res.exito ? res.datos : [];
+        List<Coleccion> lista = res.exito ? (res.datos ?? []) : [];
+        
+        // FILTRO DE PRIVACIDAD: Si no es mi perfil, oculto las privadas
+        if (_currentUserId != _usuario!.id) {
+          lista = lista.where((c) => !c.esPrivada).toList();
+        }
+        
+        _misColecciones = lista;
         _cargandoColecciones = false;
       });
     }

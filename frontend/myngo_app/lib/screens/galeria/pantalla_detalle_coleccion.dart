@@ -105,6 +105,132 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     }
   }
 
+  Future<void> _cambiarPrivacidad() async {
+    if (!_puedeEditar) return;
+    setState(() => _procesando = true);
+    final nuevaPrivacidad = !_coleccion.esPrivada;
+    final res = await _servicio.editarColeccion(
+      _coleccion.id,
+      {'es_privada': nuevaPrivacidad},
+    );
+    if (mounted) {
+      setState(() {
+        _procesando = false;
+        if (res.exito) {
+          _coleccion.esPrivada = nuevaPrivacidad;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.exito ? 'Privacidad actualizada 🐾' : res.mensaje),
+          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _editarNombre() async {
+    final controller = TextEditingController(text: _coleccion.nombreColeccion);
+    final nuevoNombre = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Renombrar colección', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Nuevo nombre'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC35E34)),
+            child: const Text('Guardar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (nuevoNombre != null && nuevoNombre.isNotEmpty && nuevoNombre != _coleccion.nombreColeccion) {
+      setState(() => _procesando = true);
+      final res = await _servicio.editarColeccion(
+        _coleccion.id,
+        {'nombre_coleccion': nuevoNombre},
+      );
+      if (mounted) {
+        setState(() {
+          _procesando = false;
+          if (res.exito) {
+            _coleccion.nombreColeccion = nuevoNombre;
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _cambiarPrivacidad() async {
+    if (!_puedeEditar) return;
+    setState(() => _procesando = true);
+    final nuevaPrivacidad = !_coleccion.esPrivada;
+    final res = await _servicio.editarColeccion(
+      _coleccion.id,
+      {'es_privada': nuevaPrivacidad},
+    );
+    if (mounted) {
+      setState(() {
+        _procesando = false;
+        if (res.exito) {
+          _coleccion.esPrivada = nuevaPrivacidad;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.exito ? 'Privacidad actualizada 🐾' : res.mensaje),
+          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _editarNombre() async {
+    final controller = TextEditingController(text: _coleccion.nombreColeccion);
+    final nuevoNombre = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Renombrar colección', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Nuevo nombre'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC35E34)),
+            child: const Text('Guardar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (nuevoNombre != null && nuevoNombre.isNotEmpty && nuevoNombre != _coleccion.nombreColeccion) {
+      setState(() => _procesando = true);
+      final res = await _servicio.editarColeccion(
+        _coleccion.id,
+        {'nombre_coleccion': nuevoNombre},
+      );
+      if (mounted) {
+        setState(() {
+          _procesando = false;
+          if (res.exito) {
+            _coleccion.nombreColeccion = nuevoNombre;
+          }
+        });
+      }
+    }
+  }
+
   Future<void> _confirmarEliminarColeccion(dynamic tr) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -372,28 +498,50 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
         ) : null,
         appBar: AppBar(
           iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _coleccion.nombreColeccion.toUpperCase(),
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440)),
+          title: Row(
+          children: [
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _coleccion.nombreColeccion.toUpperCase(),
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440)),
+                    ),
+                    if (_coleccion.descripcion != null && _coleccion.descripcion!.isNotEmpty)
+                      Text(
+                        _coleccion.descripcion!,
+                        style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
+                      ),
+                ],
               ),
-              if (_coleccion.descripcion != null && _coleccion.descripcion!.isNotEmpty)
-                Text(
-                  _coleccion.descripcion!,
-                  style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
-                ),
+            ),
+            if (_puedeEditar)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.grey),
+                onPressed: _editarNombre,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ],
           ),
           backgroundColor: const Color(0xFFFEF5F1),
           elevation: 0,
           scrolledUnderElevation: 0,
           actions: [
-            Icon(
-              _coleccion.esPrivada ? Icons.lock_rounded : Icons.public_rounded,
-              color: _coleccion.esPrivada ? const Color(0xFFC35E34) : const Color(0xFF248EA6),
+            GestureDetector(
+            onTap: _puedeEditar ? _cambiarPrivacidad : null,
+            child: MouseRegion(
+              cursor: _puedeEditar ? SystemMouseCursors.click : SystemMouseCursors.basic,
+              child: Tooltip(
+                message: _puedeEditar ? 'Toca para cambiar privacidad' : (_coleccion.esPrivada ? 'Colección privada' : 'Colección pública'),
+                child: Icon(
+                    _coleccion.esPrivada ? Icons.lock_rounded : Icons.public_rounded,
+                    color: _coleccion.esPrivada ? const Color(0xFFC35E34) : const Color(0xFF248EA6),
+                  ),
+              ),
             ),
+          ),
             const SizedBox(width: 8),
             // Menú de opciones: solo visible si el usuario tiene permiso
             if (_puedeEditar)

@@ -6,10 +6,10 @@ class Coleccion {
   final int id;
   final int usuarioId;
   final int? comunidadId;
-  final String nombreColeccion;
+  String nombreColeccion;
   final String? descripcion;
   final String? categoria;
-  final bool esPrivada;
+  bool esPrivada;
 
   /// Lista de IDs de las imágenes que pertenecen a esta colección.
   final List<int> imagenesIds;

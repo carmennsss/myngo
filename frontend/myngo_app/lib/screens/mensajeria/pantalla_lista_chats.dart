@@ -158,8 +158,6 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       builder: (context) => DialogoCrearSala(
         potencialesParticipantes: potenciales,
         alCrear: (nombre, esPublica, miembrosIds) async {
-          Navigator.pop(context); // Cerrar diálogo
-          
           final nuevaSala = await _servicioMensajeria.crearSala(
             nombre: nombre,
             esGrupal: true,
@@ -168,11 +166,19 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           );
 
           if (nuevaSala != null && mounted) {
-            _cargar(); // Recargar lista
-            context.push('/mensajes/sala/${nuevaSala['id']}', extra: {
-              'nombre': nuevaSala['nombre'],
-              'sala': nuevaSala
-            });
+            await context.read<ChatProvider>().cargarSalas(); // Forzar carga en el provider
+            if (mounted) {
+              Navigator.pop(context); // Cerrar diálogo SOLO tras éxito
+              context.push('/mensajes/sala/${nuevaSala['id']}', extra: {
+                'nombre': nuevaSala['nombre'],
+                'sala': nuevaSala
+              });
+            }
+          } else if (mounted) {
+            // Si falla, al menos quitamos el cargando del diálogo (esto lo hace el diálogo solo al terminar el await)
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No se pudo crear el chat 🐾'))
+            );
           }
         },
       ),

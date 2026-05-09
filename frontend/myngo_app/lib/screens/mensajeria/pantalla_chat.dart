@@ -1117,7 +1117,7 @@ class _PantallaChatState extends State<PantallaChat> {
                 itemBuilder: (context, index) {
                   final p = _sala!.participantes[index];
                   final esYo = p.usuarioId == _miId;
-                  final soyAdmin = _sala!.creador == _miId;
+                  final soyAdmin = _sala!.puedoEliminar; // Usamos el nuevo permiso centralizado
                   
                   return ListTile(
                     leading: Builder(
@@ -1162,12 +1162,14 @@ class _PantallaChatState extends State<PantallaChat> {
                 title: Text(tr('chatLeaveRoomWarning').split('.')[0], style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
                 onTap: () => _confirmarSalidaSala(context, tr),
               ),
-              if (_sala!.creador == _miId)
-                ListTile(
-                  leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                  title: Text(tr('chatDeleteAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
-                  onTap: () => _confirmarEliminarSala(context, tr),
-                ),
+            ],
+            if (_sala != null && _sala!.puedoEliminar) ...[
+              if (!_sala!.esGrupal) const Divider(), // Separador si no lo puso el bloque anterior
+              ListTile(
+                leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                title: Text('Eliminar chat permanentemente', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                onTap: () => _confirmarEliminarSala(context),
+              ),
               const SizedBox(height: 20),
             ],
           ],
@@ -1203,7 +1205,13 @@ class _PantallaChatState extends State<PantallaChat> {
               // 3. Ejecutar borrado en segundo plano
               if (salaId != null) {
                 _servicio.eliminarSala(salaId).then((exito) {
-                  if (!exito && context.mounted) {
+                  print('DEBUG: Resultado eliminación sala: $exito');
+                  if (exito) {
+                    // ELIMINACIÓN DEFINITIVA DE LA LISTA GLOBAL
+                    if (context.mounted) {
+                      Provider.of<ChatProvider>(context, listen: false).eliminarSalaDeLista(salaId);
+                    }
+                  } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(tr('chatDeleteError')), backgroundColor: Colors.orange)
                     );
