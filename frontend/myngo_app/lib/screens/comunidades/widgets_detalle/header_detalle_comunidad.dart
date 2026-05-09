@@ -7,6 +7,7 @@ import '../pantalla_admin_comunidad.dart';
 import '../pantalla_personalizacion_comunidad.dart';
 import '../../../utils/configuracion.dart';
 import 'package:tolgee/tolgee.dart';
+import '../../inicio/pantalla_inicio.dart';
 
 /// Widget que muestra la cabecera visual de una comunidad (portada, avatar y rol).
 class HeaderDetalleComunidad extends StatefulWidget {
@@ -86,6 +87,9 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                 Navigator.pop(context);
                 final res = await ServicioComunidades().abandonarComunidad(widget.comunidad.id);
                 if (res.exito && mounted) {
+                  // Refrescar el sidebar de la pantalla de inicio
+                  context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(tr('communityLeaveSuccess')),

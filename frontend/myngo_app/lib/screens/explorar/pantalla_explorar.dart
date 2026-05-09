@@ -136,10 +136,19 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     if (mounted) {
       setState(() {
         _estaCargandoMas = false;
-        if (res.exito && res.datos != null) {
+        if (res.exito && res.datos != null && res.datos!.isNotEmpty) {
           final nuevos = res.datos!;
-          _comunidades.addAll(nuevos);
-          _hayMasComunidades = nuevos.length >= _tamanoPagina;
+          
+          // Filtrar duplicados para evitar el bucle infinito si el backend no pagina correctamente
+          final idsExistentes = _comunidades.map((c) => c.id).toSet();
+          final realmenteNuevos = nuevos.where((c) => !idsExistentes.contains(c.id)).toList();
+          
+          if (realmenteNuevos.isEmpty) {
+            _hayMasComunidades = false;
+          } else {
+            _comunidades.addAll(realmenteNuevos);
+            _hayMasComunidades = nuevos.length >= _tamanoPagina;
+          }
         } else {
           _hayMasComunidades = false;
         }
@@ -160,24 +169,36 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     if (mounted) {
       setState(() {
         _estaCargandoMas = false;
-        if (res.exito && res.datos != null) {
+        if (res.exito && res.datos != null && res.datos!.isNotEmpty) {
           final nuevos = res.datos!;
-          _usuariosOriginales.addAll(nuevos);
-          _hayMasUsuarios = nuevos.length >= _tamanoPagina;
           
-          // Re-aplicar filtro si hay búsqueda activa
-          final filtro = _controladorBusqueda.text ?? '';
-          if (filtro.isNotEmpty) {
-             _usuariosFiltrados = _usuariosOriginales.where((u) => 
-                (u.nombreUsuario ?? '').toLowerCase().contains(filtro.toLowerCase()) ||
-                (u.email ?? '').toLowerCase().contains(filtro.toLowerCase())
-             ).toList();
+          // Filtrar duplicados
+          final idsExistentes = _usuariosOriginales.map((u) => u.id).toSet();
+          final realmenteNuevos = nuevos.where((u) => !idsExistentes.contains(u.id)).toList();
+          
+          if (realmenteNuevos.isEmpty) {
+            _hayMasUsuarios = false;
+            _hayMas = false;
           } else {
-            _usuariosFiltrados = List.from(_usuariosOriginales);
+            _usuariosOriginales.addAll(realmenteNuevos);
+            _hayMasUsuarios = nuevos.length >= _tamanoPagina;
+            
+            // Re-aplicar filtro si hay búsqueda activa
+            final filtro = _controladorBusqueda.text ?? '';
+            if (filtro.isNotEmpty) {
+               _usuariosFiltrados = _usuariosOriginales.where((u) => 
+                  (u.nombreUsuario ?? '').toLowerCase().contains(filtro.toLowerCase()) ||
+                  (u.email ?? '').toLowerCase().contains(filtro.toLowerCase())
+               ).toList();
+            } else {
+              _usuariosFiltrados = List.from(_usuariosOriginales);
+            }
+            _usuarios = _usuariosFiltrados;
+            _hayMas = _hayMasUsuarios;
           }
-          _usuarios = _usuariosFiltrados;
         } else {
           _hayMasUsuarios = false;
+          _hayMas = false;
         }
       });
     }
