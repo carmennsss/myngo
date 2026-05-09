@@ -187,36 +187,41 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
             ],
           )
         : Column(
-            mainAxisSize: MainAxisSize.min, // Evita ocupar infinito si no es necesario
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
-                      ? DecorationImage(
-                          image: NetworkImage(_previewFondoFeed!),
-                          fit: BoxFit.cover,
-                          colorFilter: ColorFilter.mode(
-                            Colors.white.withOpacity(0.6),
-                            BlendMode.lighten,
-                          ),
-                        )
-                      : null,
-                ),
-                child: TiendaPreviewSection(
-                  usuarioActual: _usuarioActual,
-                  previewAvatar: _previewAvatar,
-                  previewMarco: _previewMarco,
-                  previewFondo: _previewFondo,
-                  previewEstiloPost: _previewEstiloPost,
+              // Preview del perfil — altura fija en móvil para no desbordar
+              SizedBox(
+                height: 260,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
+                        ? DecorationImage(
+                            image: NetworkImage(_previewFondoFeed!),
+                            fit: BoxFit.cover,
+                            colorFilter: ColorFilter.mode(
+                              Colors.white.withOpacity(0.6),
+                              BlendMode.lighten,
+                            ),
+                          )
+                        : null,
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: TiendaPreviewSection(
+                      usuarioActual: _usuarioActual,
+                      previewAvatar: _previewAvatar,
+                      previewMarco: _previewMarco,
+                      previewFondo: _previewFondo,
+                      previewEstiloPost: _previewEstiloPost,
+                    ),
+                  ),
                 ),
               ),
-              // Si está integrado en un sliver, necesitamos una altura fija o limitada
-              widget.esVistaIntegrada 
-                ? SizedBox(height: 500, child: shopSection) 
-                : Expanded(child: shopSection),
+              // Sección de mejoras — siempre Expanded para llenar el resto de pantalla
+              Expanded(child: shopSection),
             ],
           );
+
 
     return widget.esVistaIntegrada
         ? Container(

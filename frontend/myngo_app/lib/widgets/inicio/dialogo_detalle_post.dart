@@ -109,28 +109,41 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                           autorId: widget.post.autorId,
                           comunidadId: widget.post.comunidadId,
                           onEditado: () {
-                            showModalBottomSheet(
+                            showDialog(
                               context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => DialogoCrearPost(
-                                titulo: 'Editar Miau-post 🐾',
-                                initialTexto: widget.post.contenidoTexto,
-                                onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
-                                  final res = await ServicioComunidades().actualizarPublicacion(
-                                    idPublicacion: widget.post.id,
-                                    texto: texto,
-                                  );
-                                  if (res.exito) {
-                                    setState(() {
-                                      widget.post.contenidoTexto = texto;
-                                    });
-                                    return true;
-                                  }
-                                  return false;
-                                },
+                              barrierColor: Colors.black54,
+                              builder: (context) => Dialog(
+                                backgroundColor: Colors.transparent,
+                                insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: 620,
+                                    maxHeight: MediaQuery.of(context).size.height * 0.55,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(32),
+                                    child: DialogoCrearPost(
+                                      titulo: 'Editar Miau-post 🐾',
+                                      initialTexto: widget.post.contenidoTexto,
+                                      onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+                                        final res = await ServicioComunidades().actualizarPublicacion(
+                                          idPublicacion: widget.post.id,
+                                          texto: texto,
+                                        );
+                                        if (res.exito) {
+                                          setState(() {
+                                            widget.post.contenidoTexto = texto;
+                                          });
+                                          return true;
+                                        }
+                                        return false;
+                                      },
+                                    ),
+                                  ),
+                                ),
                               ),
                             );
+
                           },
                         ),
                       IconButton(

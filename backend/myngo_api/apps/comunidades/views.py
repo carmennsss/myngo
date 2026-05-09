@@ -78,9 +78,6 @@ class ComunidadListCreate(generics.ListCreateAPIView):
             except ValueError:
                 pass
 
-        queryset = queryset.annotate(
-            anotado_miembros_count=models.Count('miembros_comunidades', distinct=True)
-        )
         if usuario and usuario.is_authenticated:
             from django.db.models import Exists, OuterRef, Subquery
             queryset = queryset.annotate(
@@ -139,7 +136,6 @@ class MisComunidadesList(generics.ListAPIView):
             )
             .distinct()
             .annotate(
-                anotado_miembros_count=Count('miembros_comunidades', distinct=True),
                 anotado_es_miembro=Exists(
                     MiembrosComunidad.objects.filter(
                         usuario=usuario, comunidad=OuterRef('pk')
