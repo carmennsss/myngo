@@ -125,19 +125,19 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
           }
         }
       }
-    } else if (notif.tipo == 'NUEVO_REPORTE' || notif.tipo == 'NUEVA_PROPUESTA_TIENDA') {
+    } else if (notif.tipo == 'NUEVO_REPORTE') {
       if (notif.idComunidad != null) {
         final res = await _servicioComunidades.obtenerComunidad(notif.idComunidad!);
         if (mounted && res.exito && res.datos != null) {
-          int initialTab = notif.tipo == 'NUEVO_REPORTE' ? 2 : 3;
+          int initialTab = 2;
           Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaAdminComunidad(comunidad: res.datos!, initialTab: initialTab)));
         }
       }
-    } else if (['PROPUESTA_TIENDA_ACEPTADA', 'PROPUESTA_TIENDA_RECHAZADA', 'ROL_ACTUALIZADO', 'CONTENIDO_BORRADO'].contains(notif.tipo)) {
+    } else if (['ROL_ACTUALIZADO', 'CONTENIDO_BORRADO'].contains(notif.tipo)) {
       if (notif.idComunidad != null) {
         final res = await _servicioComunidades.obtenerComunidad(notif.idComunidad!);
         if (mounted && res.exito && res.datos != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleComunidad(comunidad: res.datos!, initialIndex: (notif.tipo.contains('TIENDA')) ? 1 : 0)));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleComunidad(comunidad: res.datos!, initialIndex: 0)));
         }
       }
     }
@@ -153,8 +153,8 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     }
 
     final interacciones = _notificaciones.where((n) => ['LIKE', 'COMENTARIO', 'VOTO'].contains(n.tipo)).toList();
-    final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE', 'NUEVA_PROPUESTA_TIENDA'].contains(n.tipo)).toList();
-    final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE', 'NUEVA_PROPUESTA_TIENDA'].contains(n.tipo)).toList();
+    final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE'].contains(n.tipo)).toList();
+    final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE'].contains(n.tipo)).toList();
 
     return DefaultTabController(
       length: 3,
@@ -374,9 +374,7 @@ class _TarjetaNotificacion extends StatelessWidget {
       case 'PETICION_ACEPTADA': return Icons.check_circle_rounded;
       case 'PETICION_RECHAZADA': return Icons.error_outline_rounded;
       case 'NUEVO_REPORTE': return Icons.report_problem_rounded;
-      case 'NUEVA_PROPUESTA_TIENDA': return Icons.storefront_rounded;
-      case 'PROPUESTA_TIENDA_ACEPTADA': return Icons.shopping_bag_rounded;
-      case 'PROPUESTA_TIENDA_RECHAZADA': return Icons.shopping_bag_outlined;
+
       case 'ROL_ACTUALIZADO': return Icons.verified_user_rounded;
       case 'CONTENIDO_BORRADO': return Icons.delete_sweep_rounded;
       default: return Icons.notifications_rounded;
@@ -394,9 +392,7 @@ class _TarjetaNotificacion extends StatelessWidget {
       case 'PETICION_ACEPTADA': return const Color(0xFF248EA6);
       case 'PETICION_RECHAZADA': return const Color(0xFFD95F43);
       case 'NUEVO_REPORTE': return Colors.redAccent;
-      case 'NUEVA_PROPUESTA_TIENDA': return const Color(0xFFC35E34);
-      case 'PROPUESTA_TIENDA_ACEPTADA': return const Color(0xFF248EA6);
-      case 'PROPUESTA_TIENDA_RECHAZADA': return Colors.grey;
+
       case 'ROL_ACTUALIZADO': return Colors.blueAccent;
       case 'CONTENIDO_BORRADO': return const Color(0xFFD95F43);
       default: return const Color(0xFFF29C50);

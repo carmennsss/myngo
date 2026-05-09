@@ -69,8 +69,10 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom, 
         left: 24, right: 24, top: 24
       ),
@@ -251,6 +253,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
           ),
           const SizedBox(height: 24),
         ],
+      ),
       ),
     );
   }

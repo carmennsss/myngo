@@ -5,7 +5,7 @@ la compatibilidad con las URLs existentes sin cambiar ninguna ruta.
 """
 
 from .views_auth import LoginUsuario, RecuperarPassword, RegistroUsuarios
-from .views_perfil import DatosUsuarios, EditarPerfil, GestionPerfiles, RankingUsuarios
+from .views_perfil import DatosUsuarios, EditarPerfil, GestionPerfiles, RankingUsuarios, CambiarPassword, EliminarCuenta
 from .views_social import ResponderPeticionUnion, SeguimientoUsuarios, SeguirPerfil
 
 __all__ = [
@@ -19,4 +19,6 @@ __all__ = [
     'SeguimientoUsuarios',
     'SeguirPerfil',
     'ResponderPeticionUnion',
+    'CambiarPassword',
+    'EliminarCuenta',
 ]

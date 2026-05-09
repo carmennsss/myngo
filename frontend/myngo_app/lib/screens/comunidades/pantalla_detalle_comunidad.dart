@@ -18,10 +18,7 @@ import '../../providers/post_provider.dart';
 
 import '../../widgets/dialogo_crear_post.dart';
 import '../perfiles/pantalla_perfiles.dart';
-import '../perfiles/pantalla_tienda_mejoras.dart';
-import '../inicio/pantalla_inicio.dart';
 import 'pantalla_admin_comunidad.dart';
-import 'pantalla_enviar_propuesta.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../widgets/mensajeria/dialogo_crear_sala.dart';
 import '../../models/usuario.dart';
@@ -77,7 +74,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   int? _miId;
   int _indiceSeccion = 0;
   String _miRol = 'Visitante';
-  String _tipoMejoraSeleccionado = 'Avatar';
 
   List<Publicacion>? _publicaciones;
   List<SalaChat>? _salasChat;
@@ -218,14 +214,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           _estaCargandoDatos = false;
         });
       }
-    } else if (index == 2) {
+    } else if (index == 1) {
         setState(() {
           _estaCargandoDatos = true;
           _galeriaKey = UniqueKey();
         });
         await _cargarColecciones();
         if (mounted) setState(() => _estaCargandoDatos = false);
-    } else if (index == 3) {
+    } else if (index == 2) {
         setState(() => _estaCargandoDatos = true);
         final res = await _servicio.obtenerSalasChat(_comunidad!.id);
         if (mounted) {
@@ -458,8 +454,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           esMiembro: _comunidad!.esMiembro || (_miId != null && _miId == _comunidad!.creadorId),
         );
       case 1:
-        return SliverFillRemaining(hasScrollBody: true, child: _buildStore());
-      case 2:
         return SeccionGaleriaComunidad(
           comunidad: _comunidad!,
           colecciones: _colecciones,
@@ -469,19 +463,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           comoSliver: true,
           esMiembro: _comunidad!.esMiembro || (_miId != null && _miId == _comunidad!.creadorId),
         );
-      case 3:
+      case 2:
         return SeccionChatComunidad(
           comunidad: _comunidad!,
           salasChat: _salasChat,
           estaCargando: _estaCargandoDatos,
           onCrearSala: () => _mostrarDialogoCrearSalaComunidad(context),
-          onRefresh: () => _cargarDatosSeccion(3),
+          onRefresh: () => _cargarDatosSeccion(2),
           esAppClara: _esAppClara(context),
           colorTextoPrincipal: _colorTextoPrincipal(context),
           colorTextoSecundario: _colorTextoSecundario(context),
           comoSliver: true,
         );
-      case 4:
+      case 3:
         return ListaMiembrosComunidad(
           comunidad: _comunidad!,
           comoSliver: true,
@@ -510,10 +504,9 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               children: [
                 _buildNavItem(0, tr('communityTabPosts'), Icons.grid_view_rounded),
-                _buildNavItem(1, tr('communityTabStore'), Icons.shopping_bag_rounded),
-                _buildNavItem(2, tr('communityTabGallery'), Icons.photo_library_rounded),
-                _buildNavItem(3, tr('communityTabChats'), Icons.chat_bubble_rounded),
-                _buildNavItem(4, tr('communityTabMembers'), Icons.people_alt_rounded),
+                _buildNavItem(1, tr('communityTabGallery'), Icons.photo_library_rounded),
+                _buildNavItem(2, tr('communityTabChats'), Icons.chat_bubble_rounded),
+                _buildNavItem(3, tr('communityTabMembers'), Icons.people_alt_rounded),
               ],
             ),
           ),
@@ -638,23 +631,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         ),
       );
     }
-    if (_indiceSeccion == 1) {
-      return Positioned(
-        bottom: 24,
-        right: 24,
-        child: TranslationWidget(
-          builder: (context, tr) => FloatingActionButton.extended(
-            onPressed: () => _irAEnviarPropuesta(),
-            label: Text(tr('communityFabSuggest', {'type': _tipoMejoraSeleccionado}),
-                style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold, color: Colors.white)),
-            icon: const Icon(Icons.palette_rounded, color: Colors.white),
-            backgroundColor: _comunidad!.colorTema,
-          ),
-        ),
-      );
-    }
-    if (_indiceSeccion == 3) {
+    if (_indiceSeccion == 2) {
       return Positioned(
         bottom: 24,
         right: 24,
@@ -749,28 +726,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
-  Widget _buildStore() {
-    final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-    return PantallaTiendaMejoras(
-      esVistaIntegrada: true,
-      comunidad: _comunidad,
-      onCategoryChanged: (tipo) =>
-          setState(() => _tipoMejoraSeleccionado = tipo),
-      onPuntosActualizados: (p) => inicioState?.actualizarPuntos(p),
-    );
-  }
 
-  void _irAEnviarPropuesta() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PantallaEnviarPropuesta(
-          comunidad: _comunidad!,
-          tipoInicial: _tipoMejoraSeleccionado,
-        ),
-      ),
-    );
-  }
 
   Widget _buildGlobalBackground() {
     if (_comunidad == null) return Container();

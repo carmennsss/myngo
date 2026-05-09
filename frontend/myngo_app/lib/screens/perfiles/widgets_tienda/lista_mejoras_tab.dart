@@ -9,9 +9,6 @@ import '../../../utils/estilo_post_helper.dart';
 /// Widget que muestra una pestaña del catálogo de mejoras filtrada por tipo.
 class ListaMejorasTab extends StatefulWidget {
   final String tipo;
-  final int? comunidadId;
-  final bool esModerador;
-  final bool modoGestion;
   final Usuario? usuarioActual;
   final List<CatalogoMejoras> mejoras;
   final List<dynamic> misMejoras;
@@ -22,9 +19,6 @@ class ListaMejorasTab extends StatefulWidget {
   const ListaMejorasTab({
     super.key,
     required this.tipo,
-    this.comunidadId,
-    this.esModerador = false,
-    this.modoGestion = false,
     this.usuarioActual,
     required this.mejoras,
     required this.misMejoras,
@@ -44,9 +38,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
     var filtradas = widget.mejoras
         .where((m) => m.tipo.toLowerCase() == widget.tipo.toLowerCase())
         .toList();
-    if (!widget.modoGestion) {
-      filtradas = filtradas.where((m) => m.estaActivo).toList();
-    }
+    filtradas = filtradas.where((m) => m.estaActivo).toList();
     return filtradas;
   }
 
@@ -95,13 +87,10 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
           mejora: mejora,
           laTiene: _tieneMejora(mejora.id),
           estaEquipada: _tieneEquipada(mejora.id),
-          modoGestion: widget.modoGestion,
           usuarioActual: widget.usuarioActual,
           onPreview: () => widget.onPreviewRequested(mejora),
           onEquipar: () => _equipar(mejora),
           onComprar: () => _confirmarCompra(mejora),
-          onToggleVisibilidad: () => _toggleVisibilidad(mejora),
-          onEditPrice: (p) => _editarPrecio(mejora, p),
         );
       },
     );
@@ -127,62 +116,6 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
   }
 
   Future<void> _equipar(CatalogoMejoras mejora) async {
-    String? modoEquipacion = 'personal';
-
-    // Si es una tienda de comunidad y el usuario es moderador/admin, preguntamos destino
-    if (widget.comunidadId != null && widget.esModerador) {
-      modoEquipacion = await showDialog<String>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Text('¿Dónde quieres equipar esto? 🐾',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _OpcionDestino(
-                titulo: 'En mi Perfil',
-                descripcion: 'Usa esta mejora para personalizar tu propio usuario.',
-                icono: Icons.person_rounded,
-                onTap: () => Navigator.pop(ctx, 'personal'),
-              ),
-              const SizedBox(height: 12),
-              _OpcionDestino(
-                titulo: 'En la Comunidad',
-                descripcion: 'Cambia la imagen visual de toda la comunidad.',
-                icono: Icons.groups_rounded,
-                onTap: () => Navigator.pop(ctx, 'comunidad'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey)),
-            ),
-          ],
-        ),
-      );
-      if (modoEquipacion == null) return;
-    }
-
-    if (modoEquipacion == 'comunidad') {
-      final res = await _servicioMejoras.equiparMejoraComunidad(mejora.id, widget.comunidadId!);
-      if (mounted) {
-        if (res.exito) {
-          widget.onRefresh();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.mensaje), backgroundColor: const Color(0xFF248EA6)),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
-          );
-        }
-      }
-      return;
-    }
-
     // Lógica original para equipación personal
     String? destino;
     if (mejora.tipo.toLowerCase() == 'fondo') {
@@ -300,92 +233,26 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
     );
   }
 
-  Future<void> _toggleVisibilidad(CatalogoMejoras mejora) async {
-    if (widget.comunidadId == null) return;
-    
-    final res = await _servicioMejoras.actualizarArticuloCatalogo(
-      widget.comunidadId!, 
-      mejora.id,
-      estaActivo: !mejora.estaActivo,
-    );
-    
-    if (mounted) {
-      if (res.exito) {
-        widget.onRefresh();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
-      }
-    }
-  }
 
-  Future<void> _editarPrecio(CatalogoMejoras mejora, int precioActual) async {
-    if (widget.comunidadId == null) return;
-
-    final controller = TextEditingController(text: precioActual.toString());
-    
-    final nuevoPrecioStr = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Editar Precio 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Precio en Puntos'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCELAR')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('GUARDAR'),
-          ),
-        ],
-      ),
-    );
-
-    if (nuevoPrecioStr != null && nuevoPrecioStr.isNotEmpty) {
-      final nuevoPrecio = int.tryParse(nuevoPrecioStr);
-      if (nuevoPrecio != null) {
-        final res = await _servicioMejoras.actualizarArticuloCatalogo(
-          widget.comunidadId!, 
-          mejora.id,
-          precioFinal: nuevoPrecio,
-        );
-        if (mounted) {
-          if (res.exito) {
-            widget.onRefresh();
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
-          }
-        }
-      }
-    }
-  }
 }
 
 class _MejoraCard extends StatelessWidget {
   final CatalogoMejoras mejora;
   final bool laTiene;
   final bool estaEquipada;
-  final bool modoGestion;
   final Usuario? usuarioActual;
   final VoidCallback onPreview;
   final VoidCallback onEquipar;
   final VoidCallback onComprar;
-  final VoidCallback onToggleVisibilidad;
-  final Function(int) onEditPrice;
 
   const _MejoraCard({
     required this.mejora,
     required this.laTiene,
     required this.estaEquipada,
-    required this.modoGestion,
     this.usuarioActual,
     required this.onPreview,
     required this.onEquipar,
     required this.onComprar,
-    required this.onToggleVisibilidad,
-    required this.onEditPrice,
   });
 
   @override
@@ -417,7 +284,7 @@ class _MejoraCard extends StatelessWidget {
                   _buildImagePreview(estaActivo),
                   if (estaEquipada) _buildEquippedIndicator(),
                   if (!estaActivo) _buildHiddenIndicator(),
-                  if (modoGestion) _buildModeratorActions(),
+
                 ],
               ),
             ),
@@ -510,30 +377,7 @@ class _MejoraCard extends StatelessWidget {
     );
   }
 
-  Widget _buildModeratorActions() {
-    return Positioned(
-      top: 4,
-      left: 4,
-      child: Row(
-        children: [
-          _ActionButton(
-            icon: mejora.estaActivo ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-            color: mejora.estaActivo ? Colors.green : Colors.red,
-            onTap: onToggleVisibilidad,
-          ),
-          const SizedBox(width: 4),
-          _ActionButton(
-            icon: Icons.edit_rounded,
-            color: Colors.blue,
-            onTap: () async {
-              // Dialogo rápido para editar precio
-              onEditPrice(mejora.precioPuntos);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+
   Widget _buildFooter() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -557,29 +401,7 @@ class _MejoraCard extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
 
-  const _ActionButton({required this.icon, required this.color, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.9),
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-        ),
-        child: Icon(icon, color: Colors.white, size: 14),
-      ),
-    );
-  }
-}
 
 class _FooterButton extends StatelessWidget {
   final String label;

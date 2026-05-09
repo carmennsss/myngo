@@ -12,6 +12,7 @@ import 'package:myngo_app/screens/comunidades/pantalla_detalle_comunidad.dart';
 import 'package:myngo_app/screens/comunidades/pantalla_detalle_post.dart';
 import 'package:myngo_app/screens/perfiles/pantalla_detalle_perfil.dart';
 import 'package:myngo_app/screens/perfiles/pantalla_personalizar_perfil.dart';
+import 'package:myngo_app/screens/perfiles/pantalla_configuracion_cuenta.dart';
 
 // Components inside the Shell
 import 'package:myngo_app/widgets/inicio/feed_publicaciones.dart';
@@ -77,6 +78,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/recuperar_contrasena',
       builder: (context, state) => const PantallaRecuperarContrasena(),
+    ),
+    GoRoute(
+      path: '/configuracion',
+      builder: (context, state) => const ProtectedRoute(
+        title: 'Configuración',
+        child: PantallaConfiguracionCuenta(),
+      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

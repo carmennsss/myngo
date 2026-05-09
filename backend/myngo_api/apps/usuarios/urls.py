@@ -13,6 +13,8 @@ from .views import (
     ResponderPeticionUnion,
     SeguimientoUsuarios,
     SeguirPerfil,
+    CambiarPassword,
+    EliminarCuenta,
 )
 
 urlpatterns = [
@@ -25,6 +27,8 @@ urlpatterns = [
     # Perfiles y Datos de Usuario
     path('datos/', DatosUsuarios.as_view(), name="listar_datos_usuarios"),
     path('actualizar_usuario/', DatosUsuarios.as_view(), name="actualizar_usuario"),
+    path('configuracion/cambiar-password/', CambiarPassword.as_view(), name='cambiar_password'),
+    path('configuracion/eliminar-cuenta/', EliminarCuenta.as_view(), name='eliminar_cuenta'),
     path('datos/<str:usuario_id>/', DatosUsuarios.as_view(), name="detalle_datos_usuario"),
     path('perfil/editar/', EditarPerfil.as_view(), name='editar_perfil'),
     path('ranking/', RankingUsuarios.as_view(), name='ranking_usuarios'),

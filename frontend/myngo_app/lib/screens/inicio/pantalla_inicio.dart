@@ -367,6 +367,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                 onNavSelected: _alPulsarNav,
                 onProfileSelected: _seleccionarUsuario,
                 onStatusChanged: cambiarEstado,
+                onRefreshProfile: _inicializarDatos,
               ),
               Expanded(
                 child: Stack(
