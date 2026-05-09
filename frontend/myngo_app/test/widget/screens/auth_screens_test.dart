@@ -12,13 +12,35 @@ class MockServicioUsuarios extends Mock implements ServicioUsuarios {}
 void main() {
   late MockServicioUsuarios mockServicioUsuarios;
 
-  setUp(() {
-    mockServicioUsuarios = MockServicioUsuarios();
+  setUpAll(() async {
+    // Inicialización mínima de Tolgee para tests
+    await Tolgee.init(
+      staticData: {
+        'es': {
+          'authLoginWelcome': 'Bienvenido',
+          'authLoginSubtitle': 'Inicia sesión para continuar',
+          'formEmailLabel': 'Email',
+          'formPasswordLabel': 'Contraseña',
+          'authRememberMe': 'Recordarme',
+          'authForgotPassword': '¿Olvidaste tu contraseña?',
+          'authLoginButton': 'Entrar',
+          'authRegisterLink': '¿No tienes cuenta?',
+          'authRegisterButton': 'Regístrate',
+          'authRegisterWelcome': 'Únete a Myngo',
+          'formUsernameLabel': 'Nombre de usuario',
+        }
+      },
+    );
   });
 
   Widget buildTestableWidget(Widget widget) {
-    return MaterialApp(
-      home: widget,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LocaleNotifier()),
+      ],
+      child: MaterialApp(
+        home: widget,
+      ),
     );
   }
 

@@ -29,7 +29,7 @@ class RespuestaApi<T> {
   /// en una instancia de un modelo específico (ej. convertir un Map en un objeto Usuario).
   factory RespuestaApi.fromJson(Map<String, dynamic> json, {T Function(Map<String, dynamic>)? transformador}) {
     return RespuestaApi(
-      exito: json['exito'] ?? false,
+      exito: json['exito'] ?? (json['mensaje'] != null || json['datos'] != null || json['token'] != null),
       mensaje: json['mensaje']?.toString() ?? '',
       datos: (json['datos'] != null && transformador != null) 
           ? transformador(json['datos'] as Map<String, dynamic>) 
