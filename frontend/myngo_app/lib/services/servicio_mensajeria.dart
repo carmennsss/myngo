@@ -303,6 +303,31 @@ class ServicioMensajeria {
     }
   }
 
+  Future<bool> abandonarSala(int idSala) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/salir/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> expulsarMiembro(int idSala, int usuarioId) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/expulsar/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'usuario_id': usuarioId}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // --- WEBSOCKETS ---
 
   void conectarASala(int idSala, Function(Map<String, dynamic>) alRecibirMensaje, {VoidCallback? alConectar}) {

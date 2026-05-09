@@ -102,6 +102,7 @@ class SalaChatListCreate(generics.ListCreateAPIView):
             es_publica=es_publica,
             comunidad_id=comunidad_id,
             invite_token=str(uuid.uuid4()),
+            creador=request.user,
         )
         sala.miembros.add(request.user)
 
@@ -661,3 +662,77 @@ class ChatMediaUploadView(generics.CreateAPIView):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': 'Error al procesar el archivo multimedia'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def salir_sala(request, sala_id):
+    """Permite a un usuario abandonar una sala de chat."""
+    try:
+        sala = SalaChat.objects.get(id=sala_id, miembros=request.user)
+        
+        # No permitir salir si es el creador (debería borrarla o transferirla, pero por ahora evitamos el bloqueo)
+        # Si es el creador, simplemente se borra la relación
+        sala.miembros.remove(request.user)
+        
+        # Notificar al resto
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{sala_id}',
+            {
+                'type': 'user_left',
+                'user_id': request.user.id,
+                'username': request.user.nombre_usuario
+            }
+        )
+        
+        # Mensaje de sistema
+        MensajeChat.objects.create(
+            sala=sala,
+            emisor=request.user,
+            contenido=f"🚪 {request.user.nombre_usuario} ha abandonado la sala.",
+            tipo='SISTEMA'
+        )
+        
+        return Response({'status': 'ok'})
+    except SalaChat.DoesNotExist:
+        return Response({'error': 'Sala no encontrada'}, status=404)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def expulsar_miembro(request, sala_id):
+    """Permite al creador expulsar a un miembro de la sala."""
+    try:
+        sala = SalaChat.objects.get(id=sala_id, creador=request.user)
+        usuario_id = request.data.get('usuario_id')
+        if not usuario_id:
+            return Response({'error': 'ID de usuario requerido'}, status=400)
+            
+        usuario = Usuario.objects.get(id=usuario_id)
+        if usuario == request.user:
+            return Response({'error': 'No puedes expulsarte a ti mismo'}, status=400)
+            
+        sala.miembros.remove(usuario)
+        
+        # Notificar
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{sala_id}',
+            {
+                'type': 'user_kicked',
+                'user_id': usuario.id,
+                'username': usuario.nombre_usuario
+            }
+        )
+        
+        # Mensaje de sistema
+        MensajeChat.objects.create(
+            sala=sala,
+            emisor=request.user,
+            contenido=f"🚫 {usuario.nombre_usuario} ha sido expulsado por el administrador.",
+            tipo='SISTEMA'
+        )
+        
+        return Response({'status': 'ok'})
+    except SalaChat.DoesNotExist:
+        return Response({'error': 'No tienes permisos o la sala no existe'}, status=403)
+    except Usuario.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=404)
