@@ -173,7 +173,7 @@ class SalaChatSerializer(serializers.ModelSerializer):
             'miembros', 'miembros_detalle', 'ultimo_mensaje',
             'mensajes_no_leidos', 'fecha_creacion', 'avatar_s3', 
             'configuracion', 'participantes_data', 'personalizacion',
-            'otro_usuario_id', 'num_miembros'
+            'otro_usuario_id', 'num_miembros', 'creador'
         ]
 
     def get_avatar_s3(self, obj):
