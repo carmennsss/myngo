@@ -596,7 +596,7 @@ class _ModalFiltrosAvanzadosState extends State<_ModalFiltrosAvanzados> {
               }),
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             
             // Etiquetas (Tags)
             Text(

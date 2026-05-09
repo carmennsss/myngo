@@ -69,15 +69,14 @@ class ComunidadListCreate(generics.ListCreateAPIView):
             for tag in tags_list:
                 queryset = queryset.filter(tags__nombre__iexact=tag)
 
-        # Filtrado por rating mínimo
-        min_rating = self.request.query_params.get('min_rating')
-        if min_rating and min_rating.isdigit():
-            queryset = queryset.filter(min_rating_acceso__gte=int(min_rating))
-
-        # Filtrado por rating máximo (opcional, para el sistema de 5 estrellas)
-        max_rating = self.request.query_params.get('max_rating')
-        if max_rating and max_rating.isdigit():
-            queryset = queryset.filter(min_rating_acceso__lte=int(max_rating))
+        # Filtrado por reputación mínima requerida para entrar (acceso)
+        min_rating_acceso = self.request.query_params.get('min_rating')
+        if min_rating_acceso:
+            try:
+                min_rating_val = float(min_rating_acceso)
+                queryset = queryset.filter(min_rating_acceso__gte=min_rating_val)
+            except ValueError:
+                pass
 
         queryset = queryset.annotate(
             anotado_miembros_count=models.Count('miembros_comunidades', distinct=True)

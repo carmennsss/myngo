@@ -8,6 +8,7 @@ import './seccion_posts_comunidad.dart';
 import '../widgets_preview/preview_about_section.dart';
 import '../widgets_preview/community_join_button.dart';
 import '../widgets_preview/preview_header.dart';
+import '../../../widgets/galeria/masonry_grid_galeria.dart';
 
 /// Vista para usuarios que no son miembros de la comunidad.
 /// Muestra información básica y contenido público limitado.
@@ -227,6 +228,12 @@ class PreviewComunidad extends StatelessWidget {
   }
 
   Widget _buildPreviewGallery(BuildContext context) {
-    return const Center(child: Text('Galería Pública'));
+    return SizedBox(
+      height: 600, // Altura fija para el preview
+      child: MasonryGridGaleria(
+        comunidadId: comunidad.id,
+        esMiembro: false,
+      ),
+    );
   }
 }

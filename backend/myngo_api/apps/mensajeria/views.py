@@ -40,16 +40,20 @@ class SalaChatListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         from django.db.models.functions import Coalesce
-        
-        # Filtramos salas donde el usuario es miembro
-        queryset = SalaChat.objects.filter(miembros=self.request.user)
+        from django.db.models import Q
         
         comunidad_id = self.request.query_params.get('comunidad_id')
+        
         if comunidad_id:
-            queryset = queryset.filter(comunidad_id=comunidad_id)
+            # Si filtramos por comunidad, mostramos salas donde el usuario es miembro O son públicas
+            queryset = SalaChat.objects.filter(
+                Q(comunidad_id=comunidad_id) & (Q(miembros=self.request.user) | Q(es_publica=True))
+            )
+        else:
+            # En la lista general (Mis Chats), solo mostramos donde el usuario es miembro
+            queryset = SalaChat.objects.filter(miembros=self.request.user)
 
-        # Anotamos la fecha de última actividad (mensaje más reciente o creación de la sala)
-        # Usamos distinct() antes de la anotación para evitar duplicados por el join de miembros
+        # Anotamos la fecha de última actividad
         return queryset.distinct().annotate(
             ultima_actividad=Coalesce(Max('mensajes__fecha_envio'), 'fecha_creacion')
         ).prefetch_related(

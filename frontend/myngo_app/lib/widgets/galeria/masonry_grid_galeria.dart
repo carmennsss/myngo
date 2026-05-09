@@ -9,6 +9,18 @@ import '../../screens/galeria/pantalla_detalle_imagen.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../screens/galeria/dialogo_selector_imagen.dart';
 import '../comunes/menu_opciones_contenido.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../models/imagen_galeria.dart';
+import '../../services/servicio_galeria.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../screens/galeria/pantalla_detalle_imagen.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../screens/galeria/dialogo_selector_imagen.dart';
+import '../comunes/menu_opciones_contenido.dart';
 import '../comunes/estado_vacio_cargando.dart';
 
 
@@ -16,8 +28,15 @@ class MasonryGridGaleria extends StatefulWidget {
   final int? comunidadId;
   final int? usuarioId;
   final int? coleccionId;
+  final bool esMiembro;
 
-  const MasonryGridGaleria({Key? key, this.comunidadId, this.usuarioId, this.coleccionId}) : super(key: key);
+  const MasonryGridGaleria({
+    Key? key,
+    this.comunidadId,
+    this.usuarioId,
+    this.coleccionId,
+    this.esMiembro = true,
+  }) : super(key: key);
 
   @override
   _MasonryGridGaleriaState createState() => _MasonryGridGaleriaState();
@@ -191,10 +210,10 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           child: FloatingActionButton(
             heroTag: 'fab_dual_masonry_${widget.coleccionId ?? widget.comunidadId ?? widget.usuarioId ?? 'gen'}_${identityHashCode(this)}',
             backgroundColor: _subiendo ? Colors.grey : const Color(0xFF248EA6),
-            onPressed: _subiendo ? null : () => _mostrarMenuOpciones(context),
+            onPressed: (_subiendo || !widget.esMiembro) ? null : () => _mostrarMenuOpciones(context),
             child: _subiendo 
               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Icon(Icons.add, color: Colors.white, size: 28),
+              : Icon(widget.esMiembro ? Icons.add : Icons.lock_outline_rounded, color: Colors.white, size: 28),
           ),
         ),
         if (_subiendo)
@@ -391,7 +410,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
 
   Widget _buildTile(ImagenGaleria item, double aspect) {
     return GestureDetector(
-      onTap: () {
+      onTap: !widget.esMiembro ? null : () {
         Navigator.push(context, MaterialPageRoute(
           builder: (context) => PantallaDetalleImagen(imagen: item)
         ));
@@ -404,68 +423,94 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            if (item.tipoArchivo == 'V')
-              AspectRatio(
-                aspectRatio: aspect,
-                child: Container(
-                  color: Colors.black26,
-                  child: const Center(
-                    child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 40),
-                  ),
+            // Imagen con blur si no es miembro
+            if (!widget.esMiembro)
+              ImageFiltered(
+                imageFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
+                child: ImageFiltered(
+                  imageFilter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8), 
+                  child: _buildInnerTileContent(item, aspect),
                 ),
               )
             else
-              CachedNetworkImage(
-                imageUrl: item.urlArchivo,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[900],
-                  height: 150,
-                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              _buildInnerTileContent(item, aspect),
+
+            // Menu de opciones en la esquina superior derecha (Solo miembros)
+            if (widget.esMiembro)
+              Positioned(
+                top: 2,
+                right: 2,
+                child: MenuOpcionesContenido(
+                  tipoObjeto: 'IMAGEN',
+                  objetoId: item.id,
+                  autorId: item.propietarioId,
+                  comunidadId: item.comunidadId,
+                  creadorComunidadId: item.creadorComunidadId,
+                  onEliminado: () {
+                    setState(() {
+                      _items?.remove(item);
+                    });
+                  },
                 ),
-                errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
               ),
-            // Menu de opciones en la esquina superior derecha
-            Positioned(
-              top: 2,
-              right: 2,
-              child: MenuOpcionesContenido(
-                tipoObjeto: 'IMAGEN',
-                objetoId: item.id,
-                autorId: item.propietarioId,
-                comunidadId: item.comunidadId,
-                creadorComunidadId: item.creadorComunidadId,
-                onEliminado: () {
-                  setState(() {
-                    _items?.remove(item);
-                  });
-                },
-              ),
-            ),
-            // Botón de descarga rápida abajo a la derecha
-            Positioned(
-              bottom: 4,
-              right: 4,
-              child: GestureDetector(
-                onTap: () async {
-                  final url = Uri.parse(item.urlArchivo);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(8),
+            // Botón de descarga rápida (Solo miembros)
+            if (widget.esMiembro)
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: () async {
+                    final url = Uri.parse(item.urlArchivo);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.download_rounded, color: Colors.white, size: 18),
                   ),
-                  child: const Icon(Icons.download_rounded, color: Colors.white, size: 18),
                 ),
               ),
-            ),
+            
+            // Candado central si no es miembro
+            if (!widget.esMiembro)
+              const Positioned.fill(
+                child: Center(
+                  child: Icon(Icons.lock_rounded, color: Colors.white, size: 32),
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildInnerTileContent(ImagenGaleria item, double aspect) {
+    if (item.tipoArchivo == 'V') {
+      return AspectRatio(
+        aspectRatio: aspect,
+        child: Container(
+          color: Colors.black26,
+          child: const Center(
+            child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 40),
+          ),
+        ),
+      );
+    } else {
+      return CachedNetworkImage(
+        imageUrl: item.urlArchivo,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          color: Colors.grey[900],
+          height: 150,
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
+      );
+    }
   }
 }

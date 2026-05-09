@@ -557,14 +557,18 @@ class ServicioComunidades {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final List<dynamic> datos = jsonDecode(respuesta.body);
+        final body = utf8.decode(respuesta.bodyBytes);
+        final dynamic decoded = jsonDecode(body);
+        
+        final List<dynamic> listaJson = decoded is List ? decoded : (decoded['results'] ?? []);
+        
         return RespuestaApi(
           exito: true,
           mensaje: 'Salas de chat cargadas',
-          datos: datos.map((s) => SalaChat.fromJson(s)).toList(),
+          datos: listaJson.map((s) => SalaChat.fromJson(s)).toList(),
         );
       }
-      return RespuestaApi(exito: false, mensaje: 'Error al cargar salas de chat');
+      return RespuestaApi(exito: false, mensaje: 'Error al cargar salas de chat (${respuesta.statusCode})');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

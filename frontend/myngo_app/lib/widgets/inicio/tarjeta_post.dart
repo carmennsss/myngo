@@ -23,6 +23,7 @@ class TarjetaPost extends StatefulWidget {
   final bool estaEnComunidad;
   final VoidCallback? onEliminado;
   final String? fuente;
+  final bool esMiembroComunidad;
 
   const TarjetaPost({
     super.key,
@@ -33,6 +34,7 @@ class TarjetaPost extends StatefulWidget {
     this.estaEnComunidad = false,
     this.onEliminado,
     this.fuente,
+    this.esMiembroComunidad = true,
   });
 
   @override
@@ -70,7 +72,10 @@ class _TarjetaPostState extends State<TarjetaPost> {
   void _mostrarDetalles(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => DialogoDetallePublicacion(post: widget.post),
+      builder: (context) => DialogoDetallePublicacion(
+        post: widget.post,
+        esMiembro: widget.esMiembroComunidad,
+      ),
     ).then((_) {
       if (mounted) {
         setState(() {
@@ -83,6 +88,15 @@ class _TarjetaPostState extends State<TarjetaPost> {
   }
 
   Future<void> _toggleLike() async {
+    if (!widget.esMiembroComunidad) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Vaya! Debes unirte a la comunidad para dar miau-like 🐾'),
+          backgroundColor: Color(0xFFC35E34),
+        ),
+      );
+      return;
+    }
     setState(() {
       _dioLike = !_dioLike;
       _likesCount += _dioLike ? 1 : -1;
@@ -110,6 +124,15 @@ class _TarjetaPostState extends State<TarjetaPost> {
   }
 
   Future<void> _toggleGuardado() async {
+    if (!widget.esMiembroComunidad) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Vaya! Únete a la comunidad para guardar este post 🐾'),
+          backgroundColor: Color(0xFFC35E34),
+        ),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -358,6 +381,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                           child: GridImagenesPost(
                             media: widget.post.media,
                             onTap: () => _mostrarDetalles(context),
+                            mostrarDescarga: widget.esMiembroComunidad,
                           ),
                         ),
                       const SizedBox(height: 12),
