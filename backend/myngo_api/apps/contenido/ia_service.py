@@ -16,16 +16,18 @@ from django.conf import settings
 API_URL = "https://api-inference.huggingface.co/models/unitary/multilingual-toxic-xlm-roberta"
 
 # Umbrales de decisión para cada categoría de toxicidad (ajustados al modelo xlm-roberta)
+# Bajamos los umbrales para ser más sensibles ante palabras de odio aisladas (como "odio").
 LABEL_THRESHOLDS = {
-    'toxic': 0.35,
-    'severe_toxic': 0.20,
-    'obscene': 0.30,
-    'threat': 0.20,
-    'insult': 0.30,
-    'identity_hate': 0.25,
-    'toxicity': 0.35, # Fallback
-    'severe_toxicity': 0.20,
-    'identity_attack': 0.25,
+    'toxic': 0.22,
+    'severe_toxic': 0.15,
+    'obscene': 0.20,
+    'threat': 0.15,
+    'insult': 0.20,
+    'identity_hate': 0.18,
+    'toxicity': 0.22,
+    'severe_toxicity': 0.15,
+    'identity_attack': 0.18,
+    'hate': 0.18,
 }
 
 
@@ -40,53 +42,40 @@ def _get_headers():
 
 
 def _normalize_predictions(resultado):
-    """Normaliza la respuesta de la API de Hugging Face a una lista plana."""
+    """Normaliza la respuesta de la API de Hugging Face a una lista plana de diccionarios."""
+    if not resultado:
+        return []
     if isinstance(resultado, dict):
-        if 'error' in resultado:
-            return None
-        if 'label' in resultado and 'score' in resultado:
-            return [resultado]
-        return None
-
+        if 'label' in resultado: return [resultado]
+        return []
     if isinstance(resultado, list):
-        if not resultado:
-            return []
-        first = resultado[0]
-        if isinstance(first, dict) and 'label' in first:
-            return resultado
-        if isinstance(first, list):
-            return first
-    return None
+        if not resultado: return []
+        if isinstance(resultado[0], list): return resultado[0]
+        if isinstance(resultado[0], dict): return resultado
+    return []
 
 
 def _es_malicioso(prediccion):
     """Determina si una predicción supera el umbral de toxicidad."""
     if not isinstance(prediccion, dict):
         return False
-
     label = str(prediccion.get('label', '')).lower()
     try:
         score = float(prediccion.get('score', 0.0))
     except (TypeError, ValueError):
         return False
-
-    umbral = LABEL_THRESHOLDS.get(label, 0.35) # Más estricto por defecto
-    return score >= umbral
+    umbral = LABEL_THRESHOLDS.get(label, 0.25)
+    if score >= umbral:
+        print(f'Moderación IA: BLOQUEO por "{label}" (score {score:.3f} >= {umbral})')
+        return True
+    return False
 
 
 def validar_contenido_toxico(texto):
-    """Valida si un texto contiene contenido tóxico o inapropiado.
-
-    Realiza hasta 3 intentos (con espera en caso de 503 - modelo cargando).
-    Si la API falla por cualquier motivo, permite el contenido por defecto.
-
-    Args:
-        texto (str): Texto a analizar.
-
-    Returns:
-        bool: True si el contenido es válido, False si es tóxico.
+    """Valida si un texto contiene contenido tóxico o inapropiado mediante IA.
+    Realiza hasta 2 intentos (por si el modelo está cargando).
     """
-    if not texto or len(texto.strip()) < 3:
+    if not texto or len(texto.strip()) < 2:
         return True
 
     headers = _get_headers()
@@ -96,40 +85,25 @@ def validar_contenido_toxico(texto):
     }
 
     try:
-        print(f'Moderación IA: analizando texto "{texto[:80]}..."')
-        for intento in range(3):
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=20)
-
+        print(f'Moderación IA: analizando "{texto[:60]}..."')
+        for intento in range(2):
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=12)
             if response.status_code == 200:
                 resultado = response.json()
-                print(f'Moderación IA: respuesta raw = {resultado}')
-
                 predictions = _normalize_predictions(resultado)
-                if predictions is None:
-                    print('Moderación IA: formato inesperado, permitiendo contenido')
+                if not predictions:
                     return True
-
                 for prediccion in predictions:
                     if _es_malicioso(prediccion):
-                        label = prediccion.get('label')
-                        score = prediccion.get('score')
-                        print(f'Moderación IA: BLOQUEADO por {label} (score={score:.3f})')
                         return False
-
-                print('Moderación IA: contenido aprobado')
+                print('Moderación IA: Contenido aprobado')
                 return True
-
             elif response.status_code == 503:
-                # Modelo cargando — esperamos y reintentamos
-                print(f'Moderación IA: modelo cargando (503), intento {intento + 1}/3...')
-                time.sleep(2)
+                time.sleep(3)
                 continue
-
             else:
-                print(f'Moderación IA: error HTTP {response.status_code} - {response.text[:200]}')
+                print(f'Moderación IA: Error {response.status_code}')
                 return True
-
     except Exception as e:
-        print(f'Moderación IA: error de conexión ({e}), permitiendo contenido')
-
+        print(f'Moderación IA: Error {e}')
     return True

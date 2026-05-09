@@ -700,10 +700,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
         titulo: 'Nueva Publicación 🐾',
-        onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+        onPublicar: (title, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final provider = Provider.of<PostProvider>(context, listen: false);
           final exito = await provider.crearPost(
             comunidadId: _comunidad!.id,
+            titulo: title,
             texto: texto,
             imagenes: imagenes,
             etiquetas: etiquetas,

@@ -747,9 +747,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       builder: (context) => TranslationWidget(
         builder: (context, translate) => DialogoCrearPost(
           titulo: translate('postNewTitle'),
-          onPublicar: (txt, archivos, tags, {void Function(int, int)? alProgresar}) async {
+          onPublicar: (title, txt, archivos, tags, {void Function(int, int)? alProgresar}) async {
             final ok = await Provider.of<PostProvider>(context, listen: false)
-                .crearPost(comunidadId: widget.comunidadIdContexto, texto: txt, imagenes: archivos, etiquetas: tags);
+                .crearPost(comunidadId: widget.comunidadIdContexto, titulo: title, texto: txt, imagenes: archivos, etiquetas: tags);
             if (ok) _cargarPublicaciones();
             return ok;
           },

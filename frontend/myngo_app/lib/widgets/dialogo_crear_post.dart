@@ -10,13 +10,15 @@ import '../providers/post_provider.dart';
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
+  final String? initialTitulo;
   final String? initialTexto;
   final String? initialEtiquetas;
-  final Future<bool> Function(String texto, List<XFile>? archivos, String etiquetas, {void Function(int, int)? alProgresar}) onPublicar;
+  final Future<bool> Function(String titulo, String texto, List<XFile>? archivos, String etiquetas, {void Function(int, int)? alProgresar}) onPublicar;
 
   const DialogoCrearPost({
     super.key,
     required this.titulo,
+    this.initialTitulo,
     this.initialTexto,
     this.initialEtiquetas,
     required this.onPublicar,
@@ -27,6 +29,7 @@ class DialogoCrearPost extends StatefulWidget {
 }
 
 class _DialogoCrearPostState extends State<DialogoCrearPost> {
+  late final TextEditingController _controladorTitulo;
   late final TextEditingController _controladorTexto;
   late final TextEditingController _controladorEtiquetas;
   List<XFile> _archivosSeleccionados = [];
@@ -36,6 +39,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
   @override
   void initState() {
     super.initState();
+    _controladorTitulo = TextEditingController(text: widget.initialTitulo);
     _controladorTexto = TextEditingController(text: widget.initialTexto);
     _controladorEtiquetas = TextEditingController(text: widget.initialEtiquetas);
     // Listener para actualizar el estado del botón en tiempo real al escribir
@@ -44,6 +48,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
 
   @override
   void dispose() {
+    _controladorTitulo.dispose();
     _controladorTexto.dispose();
     _controladorEtiquetas.dispose();
     super.dispose();
@@ -100,6 +105,19 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
         children: [
           Text(widget.titulo, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 24),
+          TextField(
+            controller: _controladorTitulo,
+            maxLines: 1,
+            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+            decoration: InputDecoration(
+              hintText: 'Título (opcional)',
+              hintStyle: GoogleFonts.inter(color: Colors.grey.withOpacity(0.5)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              filled: true,
+              fillColor: const Color(0xFF121212),
+            ),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _controladorTexto,
             maxLines: 4,
@@ -212,6 +230,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                           _progresoSubida = 0;
                         });
                         final exitoso = await widget.onPublicar(
+                          _controladorTitulo.text,
                           _controladorTexto.text,
                           _archivosSeleccionados,
                           _controladorEtiquetas.text,

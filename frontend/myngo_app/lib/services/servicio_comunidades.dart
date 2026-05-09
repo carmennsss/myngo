@@ -602,6 +602,7 @@ class ServicioComunidades {
   /// Ahora soporta seguimiento de progreso de subida.
   Future<RespuestaApi<Publicacion>> crearPublicacion({
     int? idComunidad,
+    String? titulo,
     required String texto,
     List<XFile>? imagenes,
     String? etiquetas,
@@ -623,6 +624,9 @@ class ServicioComunidades {
       
       if (idComunidad != null && idComunidad != 0) {
         datosFormulario.fields.add(MapEntry('comunidad', idComunidad.toString()));
+      }
+      if (titulo != null && titulo.trim().isNotEmpty) {
+        datosFormulario.fields.add(MapEntry('titulo', titulo.trim()));
       }
       datosFormulario.fields.add(MapEntry('contenido_texto', texto));
       if (etiquetas != null && etiquetas.trim().isNotEmpty) {
