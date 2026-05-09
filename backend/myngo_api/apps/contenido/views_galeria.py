@@ -43,12 +43,20 @@ class GaleriaList(generics.ListCreateAPIView):
         coleccion_id = self.request.query_params.get('coleccion_id')
         qs = ImagenGaleria.objects.filter(es_publica=True)
 
+        # Solo mostrar imágenes vinculadas a publicaciones (posts)
+        # Esto excluye imágenes de chats, avatares, etc.
+        qs = qs.filter(
+            Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+        ).distinct()
+
         if coleccion_id:
             try:
                 coleccion = Coleccion.objects.get(id=coleccion_id)
                 if coleccion.es_privada and getattr(coleccion, 'usuario', None) != self.request.user:
                     return ImagenGaleria.objects.none()
-                return coleccion.imagenes.all().order_by('-fecha_subida')
+                return coleccion.imagenes.filter(
+                    Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+                ).distinct().order_by('-fecha_subida')
             except Exception:
                 return ImagenGaleria.objects.none()
 
@@ -61,13 +69,13 @@ class GaleriaList(generics.ListCreateAPIView):
                     ).exists()
                     if not es_miembro and comunidad.creador != self.request.user:
                         return ImagenGaleria.objects.none()
-                return ImagenGaleria.objects.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
+                return qs.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
             except Comunidad.DoesNotExist:
                 return ImagenGaleria.objects.none()
 
         if propietario_id:
             if str(propietario_id) == str(self.request.user.id):
-                return ImagenGaleria.objects.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+                return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
             return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
 
         return qs.order_by('-fecha_subida')

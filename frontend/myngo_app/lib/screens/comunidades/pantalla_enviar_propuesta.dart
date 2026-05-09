@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/comunidad.dart';
 import '../../services/servicio_mejoras.dart';
+import '../../services/servicio_usuarios.dart';
 
 class PantallaEnviarPropuesta extends StatefulWidget {
   final Comunidad comunidad;
