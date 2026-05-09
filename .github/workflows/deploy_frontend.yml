@@ -1,0 +1,36 @@
+name: Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Dependencies
+        working-directory: frontend/myngo_app
+        run: flutter pub get
+
+      - name: Build Web Application
+        working-directory: frontend/myngo_app
+        run: flutter build web --release --base-href /
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: myngo-frontend
+          directory: frontend/myngo_app/build/web
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
