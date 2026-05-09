@@ -182,6 +182,25 @@ class ServicioComunidades {
     }
   }
 
+  /// Permite al usuario abandonar una comunidad de la que es miembro.
+  Future<RespuestaApi<void>> abandonarComunidad(int idComunidad) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('${_urlComunidades}$idComunidad/salir/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Has abandonado la comunidad');
+      }
+      
+      final error = jsonDecode(utf8.decode(respuesta.bodyBytes));
+      return RespuestaApi(exito: false, mensaje: error['error'] ?? 'Error al abandonar comunidad');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Crea una nueva comunidad permitiendo la subida de una imagen de portada y etiquetas.
   Future<RespuestaApi<Comunidad>> crearComunidad(Comunidad comunidad, {XFile? imagenPortada, List<String>? tags}) async {
     try {

@@ -295,6 +295,42 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     }
   }
 
+  void _confirmarEliminarComunidad() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: Text('¿Borrar comunidad permanentemente?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFD95F43))),
+        content: Text('¡Cuidado michi! Esta acción no se puede deshacer. Se borrarán todos los posts, imágenes y salas de chat de "${widget.comunidad.nombre}".', style: GoogleFonts.outfit()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: Text('CANCELAR', style: TextStyle(color: Colors.grey.shade600))
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD95F43),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+            ),
+            onPressed: () async {
+              Navigator.pop(context);
+              final res = await _servicioComunidades.eliminarComunidad(widget.comunidad.id);
+              if (res.exito && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Comunidad eliminada con éxito! 🐾')));
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${res.mensaje}'), backgroundColor: Colors.red));
+              }
+            },
+            child: const Text('BORRAR PERMANENTEMENTE'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _resolverReporte(int id, String estado) async {
     final res = await _servicioModeracion.resolverReporte(id, estado);
     if (res.exito) _cargarDatos(silencioso: true);
@@ -501,6 +537,15 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
               ),
             );
           },
+        ),
+        const SizedBox(height: 32),
+        _buildSeccionHeader('Zona de Peligro'),
+        const SizedBox(height: 16),
+        _buildConfigItem(
+          icon: Icons.delete_forever_rounded,
+          title: 'Eliminar Comunidad',
+          subtitle: 'Esta acción borrará todo el contenido de forma permanente',
+          onTap: _confirmarEliminarComunidad,
         ),
         const SizedBox(height: 40),
         ElevatedButton(

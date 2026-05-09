@@ -32,6 +32,9 @@ class SalaChat(models.Model):
     invite_token = models.CharField(
         max_length=100, unique=True, null=True, blank=True
     )
+    creador = models.ForeignKey(
+        Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='salas_creadas'
+    )
     miembros = models.ManyToManyField(
         Usuario, related_name='salas_pertenecientes', through='ParticipanteChat', blank=True
     )

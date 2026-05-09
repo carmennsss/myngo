@@ -675,3 +675,70 @@ class ObtenerRolUsuarioEnComunidad(APIView):
         except Exception as e:
             return Response({'rol': 'Visitante', 'debug': str(e)})
 
+
+class SalirComunidad(APIView):
+    """Permite a un usuario dejar de ser miembro de una comunidad."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        """Procesa la salida de un usuario de una comunidad.
+
+        Args:
+            request: Petición POST.
+            pk (int): ID de la comunidad.
+
+        Returns:
+            Response: Resultado de la operación.
+        """
+        try:
+            comunidad = Comunidad.objects.get(pk=pk)
+        except Comunidad.DoesNotExist:
+            return Response(
+                {'error': 'La comunidad no existe'}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        usuario = request.user
+
+        if comunidad.creador == usuario:
+            return Response(
+                {'error': 'El creador no puede abandonar su propia comunidad.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 1. Eliminar de MiembrosComunidad
+        miembro = MiembrosComunidad.objects.filter(usuario=usuario, comunidad=comunidad).first()
+        if not miembro:
+            return Response(
+                {'error': 'No eres miembro de esta comunidad.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        miembro.delete()
+
+        # 2. Eliminar de Seguimiento (si existía la relación de seguimiento de comunidad)
+        Seguimiento.objects.filter(seguidor=usuario, seguida_comunidad=comunidad).delete()
+
+        # 3. Notificar al creador
+        Notificacion.objects.create(
+            usuario=comunidad.creador,
+            tipo='MIEMBRO_SALIO',
+            mensaje=(
+                f'¡Miau! {usuario.nombre_usuario} ha dejado tu '
+                f"comunidad '{comunidad.nombre}'."
+            ),
+            referencia_usuario=usuario,
+            referencia_comunidad=comunidad,
+        )
+
+        # 4. Eliminar del chat de la comunidad
+        # Buscamos salas de chat vinculadas a esta comunidad
+        from mensajeria.models import SalaChat
+        salas = SalaChat.objects.filter(comunidad=comunidad)
+        for sala in salas:
+            # Los participantes se gestionan a través de ParticipanteChat
+            from mensajeria.models import ParticipanteChat
+            ParticipanteChat.objects.filter(sala=sala, usuario=usuario).delete()
+
+        return Response({'mensaje': 'Has abandonado la comunidad con éxito.'}, status=status.HTTP_200_OK)
+

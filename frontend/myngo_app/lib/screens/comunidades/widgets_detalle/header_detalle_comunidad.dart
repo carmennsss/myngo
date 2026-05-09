@@ -6,6 +6,7 @@ import '../../../services/servicio_comunidades.dart';
 import '../pantalla_admin_comunidad.dart';
 import '../pantalla_personalizacion_comunidad.dart';
 import '../../../utils/configuracion.dart';
+import 'package:tolgee/tolgee.dart';
 
 /// Widget que muestra la cabecera visual de una comunidad (portada, avatar y rol).
 class HeaderDetalleComunidad extends StatefulWidget {
@@ -65,6 +66,45 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
         _cargandoRol = false;
       });
     }
+  }
+
+  void _confirmarSalida(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => TranslationWidget(
+        builder: (context, tr) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(tr('communityLeaveTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          content: Text(tr('communityLeaveConfirm'), style: GoogleFonts.outfit()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final res = await ServicioComunidades().abandonarComunidad(widget.comunidad.id);
+                if (res.exito && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(tr('communityLeaveSuccess')),
+                      backgroundColor: const Color(0xFF248EA6),
+                    ),
+                  );
+                  widget.onCerrar();
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+                  );
+                }
+              },
+              child: Text(tr('communityLeaveAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   TextStyle _getEstiloComunidad({
@@ -202,6 +242,14 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                         widget.onComunidadActualizada!(actualizada);
                       }
                     },
+                  ),
+                ],
+                if (!esCreador && widget.comunidad.esMiembro) ...[
+                  const SizedBox(width: 12),
+                  _ActionButton(
+                    icon: Icons.exit_to_app_rounded,
+                    tooltip: 'Abandonar Comunidad',
+                    onPressed: () => _confirmarSalida(context),
                   ),
                 ],
               ],
