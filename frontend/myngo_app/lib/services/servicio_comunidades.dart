@@ -185,18 +185,23 @@ class ServicioComunidades {
   /// Permite al usuario abandonar una comunidad de la que es miembro.
   Future<RespuestaApi<void>> abandonarComunidad(int idComunidad) async {
     try {
+      print('DEBUG: Solicitando abandonar comunidad ID: $idComunidad');
       final respuesta = await http.post(
         Uri.parse('${_urlComunidades}$idComunidad/salir/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 
+      print('DEBUG: Código de respuesta del servidor: ${respuesta.statusCode}');
       if (respuesta.statusCode == 200) {
+        print('DEBUG: Salida de comunidad exitosa');
         return RespuestaApi(exito: true, mensaje: 'Has abandonado la comunidad');
       }
       
       final error = jsonDecode(utf8.decode(respuesta.bodyBytes));
+      print('DEBUG: El servidor devolvió un error: ${error['error']}');
       return RespuestaApi(exito: false, mensaje: error['error'] ?? 'Error al abandonar comunidad');
     } catch (e) {
+      print('DEBUG: Error de conexión al intentar salir: $e');
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }

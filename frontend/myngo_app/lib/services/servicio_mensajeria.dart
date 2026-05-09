@@ -328,6 +328,18 @@ class ServicioMensajeria {
     }
   }
 
+  Future<bool> eliminarSala(int idSala) async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/eliminar/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // --- WEBSOCKETS ---
 
   void conectarASala(int idSala, Function(Map<String, dynamic>) alRecibirMensaje, {VoidCallback? alConectar}) {

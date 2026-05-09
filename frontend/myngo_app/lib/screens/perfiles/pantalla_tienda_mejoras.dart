@@ -355,8 +355,10 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   Widget? _buildFAB() {
     if (widget.comunidad == null) return null;
     
-    // Si no tenemos el ID del usuario actual todavía, esperamos o usamos un fallback seguro
-    final bool esCreador = _usuarioActual != null && _usuarioActual!.id == widget.comunidad!.creadorId;
+    // Si eres la creadora (por ID) o tienes rol de Administrador, tienes control total
+    final bool esCreador = (_usuarioActual != null && _usuarioActual!.id == widget.comunidad!.creadorId) ||
+                           widget.comunidad!.miRol == 'Administrador' ||
+                           _esModerador; // Si es moderador/admin en esta vista, le damos el botón de gestión
 
     return FloatingActionButton.extended(
       onPressed: () => Navigator.push(

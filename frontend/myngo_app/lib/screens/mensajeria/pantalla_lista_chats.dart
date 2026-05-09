@@ -100,21 +100,36 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     if (!sala['es_grupal'] && miembros.isNotEmpty) {
       Map<String, dynamic>? otro;
       try {
-        // Buscamos al otro usuario que no soy yo
-        otro = miembros.firstWhere(
-          (m) => m['id'] != myId,
-          orElse: () => miembros.first,
-        );
+        // Buscamos al otro usuario que no soy yo de forma segura
+        for (var m in miembros) {
+          if (m['id'] != myId) {
+            otro = m;
+            break;
+          }
+        }
+        // Si no hay otro, usamos el primero disponible
+        otro ??= miembros.isNotEmpty ? miembros.first : null;
       } catch (_) {
-        otro = miembros.first;
+        otro = miembros.isNotEmpty ? miembros.first : null;
       }
       
+      if (otro == null) return {'nombre': 'Chat vacío', 'avatar': null};
+
       final interlocutor = otro!;
       // Guardamos el ID del otro usuario para usarlo al abrir el chat
       sala['_otro_usuario_id'] = interlocutor['id'];
       
+      // Intentamos sacar el nombre más amigable posible
+      String nombreFinal = interlocutor['nombre_usuario'] ?? sala['nombre'] ?? 'Usuario';
+      // Si tenemos un nombre a mostrar o nombre real, lo usamos sin el @
+      if (interlocutor['nombre_completo'] != null && interlocutor['nombre_completo'].toString().isNotEmpty) {
+        nombreFinal = interlocutor['nombre_completo'];
+      } else if (interlocutor['nombre_usuario'] != null) {
+        nombreFinal = interlocutor['nombre_usuario'];
+      }
+      
       return {
-        'nombre': '@${interlocutor['nombre_usuario'] ?? sala['nombre']}',
+        'nombre': nombreFinal,
         'avatar': interlocutor['url_avatar'],
       };
     }
