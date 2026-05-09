@@ -1091,7 +1091,7 @@ class _PantallaChatState extends State<PantallaChat> {
                 itemBuilder: (context, index) {
                   final p = _sala!.participantes[index];
                   final esYo = p.usuarioId == _miId;
-                  final soyAdmin = _sala!.creador == _miId;
+                  final soyAdmin = _sala!.puedoEliminar; // Usamos el nuevo permiso centralizado
                   
                   return ListTile(
                     leading: Builder(
@@ -1135,12 +1135,14 @@ class _PantallaChatState extends State<PantallaChat> {
                 title: Text('Abandonar sala', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
                 onTap: () => _confirmarSalidaSala(context),
               ),
-              if (_sala!.creador == _miId)
-                ListTile(
-                  leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                  title: Text('Eliminar sala permanentemente', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
-                  onTap: () => _confirmarEliminarSala(context),
-                ),
+            ],
+            if (_sala != null && _sala!.puedoEliminar) ...[
+              if (!_sala!.esGrupal) const Divider(), // Separador si no lo puso el bloque anterior
+              ListTile(
+                leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                title: Text('Eliminar chat permanentemente', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                onTap: () => _confirmarEliminarSala(context),
+              ),
               const SizedBox(height: 20),
             ],
           ],
@@ -1178,7 +1180,12 @@ class _PantallaChatState extends State<PantallaChat> {
                 print('DEBUG: Solicitando ELIMINAR sala $salaId');
                 _servicio.eliminarSala(salaId).then((exito) {
                   print('DEBUG: Resultado eliminación sala: $exito');
-                  if (!exito && context.mounted) {
+                  if (exito) {
+                    // ELIMINACIÓN DEFINITIVA DE LA LISTA GLOBAL
+                    if (context.mounted) {
+                      Provider.of<ChatProvider>(context, listen: false).eliminarSalaDeLista(salaId);
+                    }
+                  } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Error: No tienes permisos para eliminar esta sala'), backgroundColor: Colors.orange)
                     );

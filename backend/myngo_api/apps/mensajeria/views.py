@@ -739,15 +739,37 @@ def expulsar_miembro(request, sala_id):
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticated])
 def eliminar_sala(request, sala_id):
-    """Permite al creador eliminar la sala de chat permanentemente."""
+    """Permite al creador de la sala o al creador de la comunidad eliminarla."""
     try:
-        sala = SalaChat.objects.get(id=sala_id, creador=request.user)
+        # Buscamos la sala
+        sala = SalaChat.objects.get(id=sala_id)
         
-        # Guardamos el ID para la notificación antes de borrar
+        # Verificamos si es el creador de la sala
+        es_creador_sala = sala.creador == request.user
+        
+        # Fallback para salas antiguas
+        if sala.creador is None and not es_creador_sala:
+            from .models import ParticipanteChat
+            primer = ParticipanteChat.objects.filter(sala=sala).order_by('id').first()
+            if primer and primer.usuario == request.user:
+                es_creador_sala = True
+                
+        # Verificamos si es el dueño de la comunidad
+        es_dueno_comunidad = False
+        if sala.comunidad_id:
+            from comunidades.models import Comunidad
+            try:
+                comunidad = Comunidad.objects.get(id=sala.comunidad_id)
+                es_dueno_comunidad = comunidad.creador == request.user
+            except Comunidad.DoesNotExist:
+                pass
+        
+        if not (es_creador_sala or es_dueno_comunidad):
+            return Response({'error': 'No tienes permisos para eliminar esta sala'}, status=403)
+        
         id_borrada = sala.id
         nombre_borrada = sala.nombre
         
-        # Notificar a todos vía WS que la sala va a desaparecer
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f'chat_{id_borrada}',
@@ -758,10 +780,7 @@ def eliminar_sala(request, sala_id):
             }
         )
         
-        # El on_delete=models.CASCADE en ParticipanteChat y MensajeChat 
-        # se encargará de borrar los registros relacionados automáticamente.
         sala.delete()
-        
         return Response({'status': 'ok', 'mensaje': 'Sala eliminada correctamente'})
     except SalaChat.DoesNotExist:
-        return Response({'error': 'No tienes permisos para eliminar esta sala o no existe'}, status=403)
+        return Response({'error': 'La sala no existe'}, status=404)

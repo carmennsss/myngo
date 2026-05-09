@@ -334,7 +334,7 @@ class ServicioMensajeria {
         Uri.parse('$_urlApi/mensajeria/salas/$idSala/eliminar/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
-      return respuesta.statusCode == 200;
+      return respuesta.statusCode == 200 || respuesta.statusCode == 204;
     } catch (_) {
       return false;
     }

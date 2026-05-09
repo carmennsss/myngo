@@ -25,6 +25,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
   bool _esPublica = false;
   final List<int> _miembrosSeleccionados = [];
   String _busqueda = '';
+  bool _cargando = false;
 
   @override
   Widget build(BuildContext context) {
@@ -193,8 +194,12 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: (_nombreController.text.trim().isNotEmpty && _miembrosSeleccionados.isNotEmpty)
-                ? () => widget.alCrear(_nombreController.text.trim(), _esPublica, _miembrosSeleccionados)
+              onPressed: (_nombreController.text.trim().isNotEmpty && _miembrosSeleccionados.isNotEmpty && !_cargando)
+                ? () async {
+                    setState(() => _cargando = true);
+                    await widget.alCrear(_nombreController.text.trim(), _esPublica, _miembrosSeleccionados);
+                    if (mounted) setState(() => _cargando = false);
+                  }
                 : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC35E34),
@@ -203,10 +208,16 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
-              child: Text(
-                'Crear Chat 🐾',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+              child: _cargando 
+                ? const SizedBox(
+                    width: 24, 
+                    height: 24, 
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                  )
+                : Text(
+                    'Crear Chat 🐾',
+                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
             ),
           ),
         ],

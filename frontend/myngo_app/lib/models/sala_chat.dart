@@ -85,6 +85,7 @@ class SalaChat {
   final PersonalizacionChat? personalizacion;
   final int numMiembros;
   final int? creador;
+  final bool puedoEliminar;
 
   SalaChat({
     required this.id,
@@ -99,6 +100,7 @@ class SalaChat {
     this.personalizacion,
     this.numMiembros = 0,
     this.creador,
+    this.puedoEliminar = false,
   });
 
   factory SalaChat.fromJson(Map<String, dynamic> json) {
@@ -121,6 +123,7 @@ class SalaChat {
           : null,
       numMiembros: json['num_miembros'] ?? 0,
       creador: json['creador'],
+      puedoEliminar: json['puedo_eliminar'] ?? false,
     );
   }
 

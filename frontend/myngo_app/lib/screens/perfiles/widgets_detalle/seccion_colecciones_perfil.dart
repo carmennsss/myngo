@@ -59,11 +59,13 @@ class SeccionColeccionesPerfil extends StatelessWidget {
         final color = Color(coloresHex[index % coloresHex.length]);
 
         return BotonTactil(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => PantallaDetalleColeccion(coleccion: col)),
             );
+            // Refrescar al volver para aplicar cambios de nombre o privacidad
+            onRefresh();
           },
           child: Transform.rotate(
             angle: rotacion,
