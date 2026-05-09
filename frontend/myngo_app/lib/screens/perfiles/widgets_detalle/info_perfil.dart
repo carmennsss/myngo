@@ -430,6 +430,7 @@ class InfoPerfil extends StatelessWidget {
   String _getFollowText() {
     if (estadoSeguimiento == 'ACEPTADO') return 'Siguiendo';
     if (estadoSeguimiento == 'SOLICITUD') return 'Pendiente';
+    if (!usuario.esPublico) return 'Solicitar seguir';
     return 'Seguir';
   }
 }

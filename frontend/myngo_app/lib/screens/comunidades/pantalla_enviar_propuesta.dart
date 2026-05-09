@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/comunidad.dart';
 import '../../services/servicio_mejoras.dart';
+import '../../services/servicio_usuarios.dart';
 
 class PantallaEnviarPropuesta extends StatefulWidget {
   final Comunidad comunidad;
@@ -92,69 +93,91 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1),
-      appBar: AppBar(
-        title: Text('Sugerir para ${widget.comunidad.nombre}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Comparte tu creatividad con la comunidad. Tu diseño será revisado por los administradores antes de aparecer en la tienda.',
-              style: GoogleFonts.outfit(color: Colors.grey.shade700),
+    // Determinamos si es el creador para cambiar los textos
+    // Nota: creadorId puede ser null si no se cargó bien, pero intentamos comparar
+    return FutureBuilder<int?>(
+      future: ServicioUsuarios().obtenerIdUsuario(),
+      builder: (context, snapshot) {
+        final bool esCreador = snapshot.data != null && snapshot.data == widget.comunidad.creadorId;
+        
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+          appBar: AppBar(
+            title: Text(
+              esCreador ? 'Añadir mejora a ${widget.comunidad.nombre}' : 'Sugerir para ${widget.comunidad.nombre}', 
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold)
             ),
-            const SizedBox(height: 32),
-            GestureDetector(
-              onTap: _enviando ? null : _seleccionarImagen,
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE8D5C4)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  esCreador 
+                    ? 'Como creador, puedes añadir nuevos fondos, avatares o marcos directamente a la tienda de tu comunidad.'
+                    : 'Comparte tu creatividad con la comunidad. Tu diseño será revisado por los administradores antes de aparecer en la tienda.',
+                  style: GoogleFonts.outfit(color: Colors.grey.shade700),
                 ),
-                child: _imagenSeleccionada == null
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_photo_alternate_rounded, size: 48, color: widget.comunidad.colorTema),
-                          const SizedBox(height: 8),
-                          Text('Seleccionar diseño', style: GoogleFonts.outfit(color: Colors.grey)),
-                        ],
-                      )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: kIsWeb 
-                          ? Image.memory(_webImageBytes!, fit: BoxFit.cover)
-                          : Image.file(_imagenSeleccionada!, fit: BoxFit.cover),
-                      ),
-              ),
+                const SizedBox(height: 32),
+                GestureDetector(
+                  onTap: _enviando ? null : _seleccionarImagen,
+                  child: Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFE8D5C4)),
+                    ),
+                    child: _imagenSeleccionada == null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_photo_alternate_rounded, size: 48, color: widget.comunidad.colorTema),
+                              const SizedBox(height: 8),
+                              Text('Seleccionar diseño', style: GoogleFonts.outfit(color: Colors.grey)),
+                            ],
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: kIsWeb 
+                              ? Image.memory(_webImageBytes!, fit: BoxFit.cover)
+                              : Image.file(_imagenSeleccionada!, fit: BoxFit.cover),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildDropdown(),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  esCreador ? 'Precio en Puntos' : 'Precio sugerido (opcional)', 
+                  _precioController, 
+                  Icons.monetization_on_outlined, 
+                  isNumber: true
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  onPressed: _enviando ? null : _enviar,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.comunidad.colorTema,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: _enviando
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          esCreador ? 'Añadir a la Tienda' : 'Enviar Propuesta', 
+                          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)
+                        ),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            _buildDropdown(),
-            const SizedBox(height: 16),
-            _buildTextField('Precio sugerido (opcional)', _precioController, Icons.monetization_on_outlined, isNumber: true),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: _enviando ? null : _enviar,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.comunidad.colorTema,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: _enviando
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Text('Enviar Propuesta', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
 

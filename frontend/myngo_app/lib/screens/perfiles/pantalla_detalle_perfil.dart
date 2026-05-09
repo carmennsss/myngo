@@ -67,6 +67,13 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   bool _cargandoPublicaciones = true;
   final ScrollController _scrollController = ScrollController();
 
+  bool get _esPrivadoYNoSeguido {
+    if (_usuario == null || _currentUserId == null) return false;
+    return _currentUserId != _usuario!.id && 
+           !_usuario!.esPublico && 
+           _estadoSeguimiento != 'ACEPTADO';
+  }
+
   List<Publicacion>? _publicacionesGuardadas;
   bool _cargandoGuardados = false;
   int? _filtroComunidadId;
@@ -103,9 +110,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(() {
-      if (_tabController!.index != _tabActual) {
+      if (_tabController != null && _tabController!.index != _tabActual) {
         setState(() => _tabActual = _tabController!.index);
-        if (_tabActual == 1) {
+        if (_tabActual == 1 && !_esPrivadoYNoSeguido) {
           if (_publicacionesGuardadas == null) _cargarGuardados();
           if (_misColecciones == null) _cargarColecciones();
         }
@@ -234,7 +241,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _cargarPublicaciones() async {
-    if (_usuario == null) return;
+    if (_usuario == null || _esPrivadoYNoSeguido) {
+      setState(() => _cargandoPublicaciones = false);
+      return;
+    }
     setState(() => _cargandoPublicaciones = true);
     final res = await ServicioPerfiles()
         .obtenerPublicacionesPerfil(_usuario!.perfilId);
@@ -247,6 +257,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _cargarGuardados({int? comunidadId, bool force = false}) async {
+    if (_esPrivadoYNoSeguido) return;
     if (!force && _publicacionesGuardadas != null && comunidadId == _filtroComunidadId) return;
     setState(() => _cargandoGuardados = true);
     final res = await ServicioPerfiles()
@@ -264,7 +275,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   Future<void> _cargarColecciones({bool force = false}) async {
     if (!force && _misColecciones != null) return;
-    if (_usuario == null) return;
+    if (_usuario == null || (_esPrivadoYNoSeguido && _currentUserId != _usuario!.id)) return;
     setState(() => _cargandoColecciones = true);
     final res = await ServicioGaleria().obtenerColecciones(idUsuario: _usuario!.id);
     if (mounted) {
@@ -335,6 +346,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
 
   @override
   Widget build(BuildContext context) {
+    final bool esPrivadoYNoSeguido = _esPrivadoYNoSeguido;
+
     return TranslationWidget(
       builder: (context, tr) {
         if (_cargandoPerfil || _usuario == null) {
@@ -417,21 +430,22 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                         ),
                       ),
                     ),
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: _SliverTabsDelegate(
-                        tabBar: TabBar(
-                          controller: _tabController,
-                          tabs: [
-                            const Tab(text: 'Posts'),
-                            Tab(text: _currentUserId == _usuario!.id ? tr('profileTabsFavorites') : tr('profileTabsCollections')),
-                          ],
-                          labelStyle: GoogleFonts.getFont(_usuario!.fuentePerfil,
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                          indicatorColor: EstiloPostHelper.parseHex(_usuario?.colorTema) ?? const Color(0xFFF28B50),
+                    if (!esPrivadoYNoSeguido)
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _SliverTabsDelegate(
+                          tabBar: TabBar(
+                            controller: _tabController,
+                            tabs: [
+                              const Tab(text: 'Posts'),
+                              Tab(text: _currentUserId == _usuario!.id ? tr('profileTabsFavorites') : tr('profileTabsCollections')),
+                            ],
+                            labelStyle: GoogleFonts.getFont(_usuario!.fuentePerfil,
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                            indicatorColor: EstiloPostHelper.parseHex(_usuario?.colorTema) ?? const Color(0xFFF28B50),
+                          ),
                         ),
                       ),
-                    ),
                   ];
                 },
                 body: Container(
@@ -445,53 +459,61 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                           )
                         : null,
                   ),
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      SeccionPostsPerfil(
-                        publicaciones: _publicaciones,
-                        estaCargando: _cargandoPublicaciones,
-                        fuentePerfil: _usuario?.fuentePerfil,
-                        colorTema: _usuario?.colorTema,
-                        onRefresh: _cargarPublicaciones,
-                        onLoadMore: (pagina) async {
-                          final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
-                          return res.datos ?? [];
-                        },
-                      ),
-                      if (_currentUserId == _usuario!.id)
-                        SeccionGuardadosPerfil(
-                          publicaciones: _publicacionesGuardadas,
-                          colecciones: _misColecciones,
-                          estaCargando: _cargandoGuardados,
-                          estaCargandoColecciones: _cargandoColecciones,
-                          comunidadesFiltro: _comunidadesFiltro,
-                          filtroComunidadId: _filtroComunidadId,
-                          fuentePerfil: _usuario?.fuentePerfil,
-                          colorTema: _usuario?.colorTema,
-                          onFiltroChanged: (id) {
-                            setState(() => _filtroComunidadId = id);
-                            _cargarGuardados(comunidadId: id);
-                          },
-                          onRefresh: () => _cargarGuardados(force: true),
-                          onRefreshColecciones: () => _cargarColecciones(force: true),
-                          onLoadMore: (pagina) async {
-                            final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
-                              comunidadId: _filtroComunidadId,
-                              pagina: pagina,
-                            );
-                            return res.datos ?? [];
-                          },
-                        )
-                      else
-                        SeccionColeccionesPerfil(
-                          colecciones: _misColecciones,
-                          estaCargando: _cargandoColecciones,
-                          onRefresh: () => _cargarColecciones(force: true),
-                          esPropietario: false,
-                          fuentePerfil: _usuario?.fuentePerfil,
-                        ),
-                    ],
+                  child: Builder(
+                    builder: (context) {
+                      if (esPrivadoYNoSeguido) {
+                        return _buildLockedProfileView(tr);
+                      }
+
+                      return TabBarView(
+                        controller: _tabController,
+                        children: [
+                          SeccionPostsPerfil(
+                            publicaciones: _publicaciones,
+                            estaCargando: _cargandoPublicaciones,
+                            fuentePerfil: _usuario?.fuentePerfil,
+                            colorTema: _usuario?.colorTema,
+                            onRefresh: _cargarPublicaciones,
+                            onLoadMore: (pagina) async {
+                              final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
+                              return res.datos ?? [];
+                            },
+                          ),
+                          if (_currentUserId == _usuario!.id)
+                            SeccionGuardadosPerfil(
+                              publicaciones: _publicacionesGuardadas,
+                              colecciones: _misColecciones,
+                              estaCargando: _cargandoGuardados,
+                              estaCargandoColecciones: _cargandoColecciones,
+                              comunidadesFiltro: _comunidadesFiltro,
+                              filtroComunidadId: _filtroComunidadId,
+                              fuentePerfil: _usuario?.fuentePerfil,
+                              colorTema: _usuario?.colorTema,
+                              onFiltroChanged: (id) {
+                                setState(() => _filtroComunidadId = id);
+                                _cargarGuardados(comunidadId: id);
+                              },
+                              onRefresh: () => _cargarGuardados(force: true),
+                              onRefreshColecciones: () => _cargarColecciones(force: true),
+                              onLoadMore: (pagina) async {
+                                final res = await ServicioPerfiles().obtenerPublicacionesGuardadas(
+                                  comunidadId: _filtroComunidadId,
+                                  pagina: pagina,
+                                );
+                                return res.datos ?? [];
+                              },
+                            )
+                          else
+                            SeccionColeccionesPerfil(
+                              colecciones: _misColecciones,
+                              estaCargando: _cargandoColecciones,
+                              onRefresh: () => _cargarColecciones(force: true),
+                              esPropietario: false,
+                              fuentePerfil: _usuario?.fuentePerfil,
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -499,6 +521,65 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLockedProfileView(dynamic tr) {
+    final Color themeColor = EstiloPostHelper.parseHex(_usuario?.colorTema) ?? const Color(0xFF248EA6);
+    
+    // Función de seguridad para evitar que Tolgee rompa la app si no encuentra la clave
+    String safeTr(String key, String fallback) {
+      try {
+        final res = tr(key);
+        return (res == null || res == key) ? fallback : res;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: 400, // Altura mínima para asegurar el scroll
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: themeColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.lock_outline_rounded,
+                size: 64,
+                color: themeColor,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              safeTr('profilePrivateTitle', 'Esta cuenta es privada'),
+              style: GoogleFonts.outfit(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: themeColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              safeTr('profilePrivateSubtitle', 'Sigue a este usuario para ver sus fotos y publicaciones'),
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

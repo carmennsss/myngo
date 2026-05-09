@@ -218,7 +218,18 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
       onVisibilityChanged: _handleVisibilityChanged,
       child: Container(
         color: Colors.black,
-        child: Chewie(controller: _chewieController!),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: 400, // Ancho base para que los controles tengan un tamaño estándar legible
+              child: AspectRatio(
+                aspectRatio: _chewieController?.aspectRatio ?? _videoController.value.aspectRatio,
+                child: Chewie(controller: _chewieController!),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -354,14 +354,20 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
 
   Widget? _buildFAB() {
     if (widget.comunidad == null) return null;
+    
+    // Si eres la creadora (por ID) o tienes rol de Administrador, tienes control total
+    final bool esCreador = (_usuarioActual != null && _usuarioActual!.id == widget.comunidad!.creadorId) ||
+                           widget.comunidad!.miRol == 'Administrador' ||
+                           _esModerador; // Si es moderador/admin en esta vista, le damos el botón de gestión
+
     return FloatingActionButton.extended(
       onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
               builder: (ctx) =>
                   PantallaEnviarPropuesta(comunidad: widget.comunidad!))),
-      label: const Text('Sugerir Diseño'),
-      icon: const Icon(Icons.add_photo_alternate_rounded),
+      label: Text(esCreador ? 'Añadir Mejoras' : 'Sugerir Diseño'),
+      icon: Icon(esCreador ? Icons.add_to_photos_rounded : Icons.add_photo_alternate_rounded),
       backgroundColor: widget.comunidad!.colorTema,
     );
   }
