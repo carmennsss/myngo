@@ -91,9 +91,9 @@ class _TarjetaPostState extends State<TarjetaPost> {
   Future<void> _toggleLike() async {
     if (!widget.post.usuarioEsMiembro) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Vaya! Debes unirte a la comunidad para dar miau-like 🐾'),
-          backgroundColor: Color(0xFFC35E34),
+        SnackBar(
+          content: Text(tr('communityJoinToLike')),
+          backgroundColor: const Color(0xFFC35E34),
         ),
       );
       return;
@@ -127,9 +127,9 @@ class _TarjetaPostState extends State<TarjetaPost> {
   Future<void> _toggleGuardado() async {
     if (!widget.post.usuarioEsMiembro) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Vaya! Únete a la comunidad para guardar este post 🐾'),
-          backgroundColor: Color(0xFFC35E34),
+        SnackBar(
+          content: Text(tr('communityJoinToSave')),
+          backgroundColor: const Color(0xFFC35E34),
         ),
       );
       return;
@@ -159,7 +159,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
-        titulo: 'Editar Miau-post 🐾',
+        titulo: tr('postEditTitle'),
         initialTexto: widget.post.contenidoTexto,
         onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final res = await ServicioComunidades().actualizarPublicacion(
@@ -180,250 +180,254 @@ class _TarjetaPostState extends State<TarjetaPost> {
 
   @override
   Widget build(BuildContext context) {
-    final estilo = widget.post.autorEstiloPost;
-    final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
-    final textColor = esFondoClaro ? const Color(0xFF4A4440) : Colors.white;
-    final subTextColor = esFondoClaro ? Colors.black54 : Colors.white70;
+    return TranslationWidget(
+      builder: (context, tr) {
+        final estilo = widget.post.autorEstiloPost;
+        final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
+        final textColor = esFondoClaro ? const Color(0xFF4A4440) : Colors.white;
+        final subTextColor = esFondoClaro ? Colors.black54 : Colors.white70;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: () => _mostrarDetalles(context),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: EstiloPostHelper.buildDecoracion(
-            estilo,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: InkWell(
+            onTap: () => _mostrarDetalles(context),
             borderRadius: BorderRadius.circular(16),
-            shadows: [
-              BoxShadow(
-                color: (EstiloPostHelper.parseHex(estilo?['borde']?.toString()) ?? const Color(0xFF4A4440)).withOpacity(0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HoverProfileCard(
-                  nombre: widget.post.autorNombre,
-                  avatarUrl: widget.post.autorFoto,
-                  marcoUrl: widget.post.autorMarco,
-                  fondoUrl: widget.post.autorFondo,
-                  puntos: 0,
-                  estado: widget.post.autorEstado ?? 'DESCONECTADO',
-                  userId: widget.post.autorId,
-                  onTap: () {
-                    if (widget.onProfileSelected != null) {
-                      widget.onProfileSelected!(Usuario(
-                        id: widget.post.autorId,
-                        perfilId: 0,
-                        nombreUsuario: widget.post.autorNombre,
-                        email: '',
-                        esVerificado: false,
-                        esPublico: true,
-                        ratingActual: 0.0,
-                        fechaRegistro: DateTime.now(),
-                        urlAvatar: widget.post.autorFoto,
-                        marco: widget.post.autorMarco,
-                        fondo: widget.post.autorFondo,
-                      ));
-                    } else {
-                      context.go('/inicio/perfiles/${widget.post.autorNombre}');
-                    }
-                  },
-                  child: SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // 1. Avatar (Debajo)
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
-                              ? ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl: widget.post.autorFoto!,
-                                    fit: BoxFit.cover,
-                                    width: 30,
-                                    height: 30,
-                                    errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey, size: 18),
-                                  ),
-                                )
-                              : Center(
-                                  child: Text(
-                                    widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
-                                    style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                ),
-                        ),
-                        // 2. Marco (Encima)
-                        if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
-                          Positioned.fill(
-                            child: CachedNetworkImage(
-                              imageUrl: widget.post.autorMarco!,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                      ],
-                    ),
+            child: Container(
+              decoration: EstiloPostHelper.buildDecoracion(
+                estilo,
+                borderRadius: BorderRadius.circular(16),
+                shadows: [
+                  BoxShadow(
+                    color: (EstiloPostHelper.parseHex(estilo?['borde']?.toString()) ?? const Color(0xFF4A4440)).withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                GestureDetector(
-                                  onTap: widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
-                                    id: widget.post.comunidadId, 
-                                    nombre: widget.post.comunidadNombre, 
-                                    descripcion: '', 
-                                    creadorNombre: 'Sistema',
-                                    urlPortada: '',
-                                    esPublica: true, 
-                                    esVerificada: false,
-                                    esMiembro: false,
-                                    fechaCreacion: DateTime.now(), 
-                                    ratingMedio: 0.0,
-                                    creadorId: widget.post.creadorComunidadId ?? 0)) : null,
-                                  child: Text(widget.post.comunidadNombre, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    if (widget.onProfileSelected != null) {
-                                      widget.onProfileSelected!(Usuario(
-                                        id: widget.post.autorId,
-                                        perfilId: 0,
-                                        nombreUsuario: widget.post.autorNombre,
-                                        email: '',
-                                        esVerificado: false,
-                                        esPublico: true,
-                                        ratingActual: 0.0,
-                                        fechaRegistro: DateTime.now(),
-                                      ));
-                                    } else {
-                                      context.go('/inicio/perfiles/${widget.post.autorNombre}');
-                                    }
-                                  },
-                                  child: Text.rich(
-                                    TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')}',
-                                          style: TextStyle(color: esFondoClaro ? Theme.of(context).primaryColor : Colors.white70, fontWeight: FontWeight.w600),
-                                        ),
-                                        TextSpan(
-                                          text: ' • ${widget.post.fechaCreacion.day}/${widget.post.fechaCreacion.month}',
-                                          style: TextStyle(color: subTextColor),
-                                        ),
-                                      ],
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HoverProfileCard(
+                      nombre: widget.post.autorNombre,
+                      avatarUrl: widget.post.autorFoto,
+                      marcoUrl: widget.post.autorMarco,
+                      fondoUrl: widget.post.autorFondo,
+                      puntos: 0,
+                      estado: widget.post.autorEstado ?? 'DESCONECTADO',
+                      userId: widget.post.autorId,
+                      onTap: () {
+                        if (widget.onProfileSelected != null) {
+                          widget.onProfileSelected!(Usuario(
+                            id: widget.post.autorId,
+                            perfilId: 0,
+                            nombreUsuario: widget.post.autorNombre,
+                            email: '',
+                            esVerificado: false,
+                            esPublico: true,
+                            ratingActual: 0.0,
+                            fechaRegistro: DateTime.now(),
+                            urlAvatar: widget.post.autorFoto,
+                            marco: widget.post.autorMarco,
+                            fondo: widget.post.autorFondo,
+                          ));
+                        } else {
+                          context.go('/inicio/perfiles/${widget.post.autorNombre}');
+                        }
+                      },
+                      child: SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // 1. Avatar (Debajo)
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: (widget.post.autorFoto != null && widget.post.autorFoto!.isNotEmpty)
+                                  ? ClipOval(
+                                      child: CachedNetworkImage(
+                                        imageUrl: widget.post.autorFoto!,
+                                        fit: BoxFit.cover,
+                                        width: 30,
+                                        height: 30,
+                                        errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey, size: 18),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        widget.post.autorNombre.isNotEmpty ? widget.post.autorNombre[0].toUpperCase() : 'U',
+                                        style: const TextStyle(color: Color(0xFFC35E34), fontWeight: FontWeight.bold, fontSize: 14),
+                                      ),
                                     ),
-                                    style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 13),
+                            ),
+                            // 2. Marco (Encima)
+                            if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
+                              Positioned.fill(
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.post.autorMarco!,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
+                                        id: widget.post.comunidadId, 
+                                        nombre: widget.post.comunidadNombre, 
+                                        descripcion: '', 
+                                        creadorNombre: 'Sistema',
+                                        urlPortada: '',
+                                        esPublica: true, 
+                                        esVerificada: false,
+                                        esMiembro: false,
+                                        fechaCreacion: DateTime.now(), 
+                                        ratingMedio: 0.0,
+                                        creadorId: widget.post.creadorComunidadId ?? 0)) : null,
+                                      child: Text(widget.post.comunidadNombre, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (widget.onProfileSelected != null) {
+                                          widget.onProfileSelected!(Usuario(
+                                            id: widget.post.autorId,
+                                            perfilId: 0,
+                                            nombreUsuario: widget.post.autorNombre,
+                                            email: '',
+                                            esVerificado: false,
+                                            esPublico: true,
+                                            ratingActual: 0.0,
+                                            fechaRegistro: DateTime.now(),
+                                          ));
+                                        } else {
+                                          context.go('/inicio/perfiles/${widget.post.autorNombre}');
+                                        }
+                                      },
+                                      child: Text.rich(
+                                        TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')}',
+                                              style: TextStyle(color: esFondoClaro ? Theme.of(context).primaryColor : Colors.white70, fontWeight: FontWeight.w600),
+                                            ),
+                                            TextSpan(
+                                              text: ' • ${widget.post.fechaCreacion.day}/${widget.post.fechaCreacion.month}',
+                                              style: TextStyle(color: subTextColor),
+                                            ),
+                                          ],
+                                        ),
+                                        style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              MenuOpcionesContenido(
+                                tipoObjeto: 'POST',
+                                objetoId: widget.post.id,
+                                autorId: widget.post.autorId,
+                                comunidadId: widget.post.comunidadId,
+                                onEliminado: widget.onEliminado,
+                                onEditado: _mostrarDialogoEdicion,
+                                tituloPreview: widget.post.titulo,
+                                iconColor: textColor.withOpacity(0.7),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if (widget.post.titulo.isNotEmpty)
+                            Text(widget.post.titulo, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
+                          if (widget.post.contenidoTexto.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.post.contenidoTexto,
+                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: subTextColor, fontSize: 15),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (widget.post.contenidoTexto.length > 100)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  tr('postReadMore'),
+                                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                                    color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          MenuOpcionesContenido(
-                            tipoObjeto: 'POST',
-                            objetoId: widget.post.id,
-                            autorId: widget.post.autorId,
-                            comunidadId: widget.post.comunidadId,
-                            onEliminado: widget.onEliminado,
-                            onEditado: _mostrarDialogoEdicion,
-                            tituloPreview: widget.post.titulo,
-                            iconColor: textColor.withOpacity(0.7),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      if (widget.post.titulo.isNotEmpty)
-                        Text(widget.post.titulo, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
-                      if (widget.post.contenidoTexto.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.post.contenidoTexto,
-                          style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: subTextColor, fontSize: 15),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (widget.post.contenidoTexto.length > 100)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              'Leer más...',
-                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
-                                color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                              ),
+                          ],
+                          if (widget.post.media.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: GridImagenesPost(
+                                media: widget.post.media,
+                                onTap: () => _mostrarDetalles(context),
+                                mostrarDescarga: false, // User requested to remove it from general card
                               ),
                             ),
-                          ),
-                      ],
-                      if (widget.post.media.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: GridImagenesPost(
-                            media: widget.post.media,
-                            onTap: () => _mostrarDetalles(context),
-                            mostrarDescarga: false, // User requested to remove it from general card
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _IconoAccion(
-                            icon: _dioLike ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: _dioLike ? Colors.red : textColor.withOpacity(0.7),
-                            label: '$_likesCount',
-                            onTap: _toggleLike,
-                            textColor: textColor,
-                            fuente: widget.fuente,
-                          ),
-                          const SizedBox(width: 16),
-                          _IconoAccion(
-                            icon: Icons.chat_bubble_outline_rounded,
-                            color: textColor.withOpacity(0.7),
-                            label: '${widget.post.comentariosCount}',
-                            onTap: () => _mostrarDetalles(context),
-                            textColor: textColor,
-                            fuente: widget.fuente,
-                          ),
-                          const Spacer(),
-                          _IconoAccion(
-                            icon: _estaGuardado ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                            color: _estaGuardado ? const Color(0xFF248EA6) : textColor.withOpacity(0.7),
-                            label: '',
-                            onTap: _toggleGuardado,
-                            textColor: textColor,
-                            fuente: widget.fuente,
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              _IconoAccion(
+                                icon: _dioLike ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                color: _dioLike ? Colors.red : textColor.withOpacity(0.7),
+                                label: '$_likesCount',
+                                onTap: _toggleLike,
+                                textColor: textColor,
+                                fuente: widget.fuente,
+                              ),
+                              const SizedBox(width: 16),
+                              _IconoAccion(
+                                icon: Icons.chat_bubble_outline_rounded,
+                                color: textColor.withOpacity(0.7),
+                                label: '${widget.post.comentariosCount}',
+                                onTap: () => _mostrarDetalles(context),
+                                textColor: textColor,
+                                fuente: widget.fuente,
+                              ),
+                              const Spacer(),
+                              _IconoAccion(
+                                icon: _estaGuardado ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                color: _estaGuardado ? const Color(0xFF248EA6) : textColor.withOpacity(0.7),
+                                label: '',
+                                onTap: _toggleGuardado,
+                                textColor: textColor,
+                                fuente: widget.fuente,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

@@ -36,13 +36,13 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     _cargarDetalles();
   }
 
-  Future<void> _descargarArchivo() async {
+  Future<void> _descargarArchivo(dynamic tr) async {
     try {
       await GestorDescargas.descargar(widget.imagen.urlArchivo);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo descargar el archivo 🐾')),
+          SnackBar(content: Text(tr('moderationError'))),
         );
       }
     }
@@ -85,71 +85,73 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Visor de la imagen central interactiva de Zoom
-          // Visor de contenido (Imagen o Vídeo)
-          Center(
-            child: widget.imagen.tipoArchivo == 'V'
-                ? _VideoDetalle(url: widget.imagen.urlArchivo)
-                : InteractiveViewer(
-                    minScale: 0.1,
-                    maxScale: 6.0,
-                    child: CachedNetworkImage(
-                      imageUrl: widget.imagen.urlArchivo,
-                      fit: BoxFit.contain,
-                      width: double.infinity,
-                      height: double.infinity,
-                      placeholder: (c, u) => const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
-                      errorWidget: (c, u, e) => const Center(child: Icon(Icons.error_outline, color: Colors.white24, size: 48)),
+    return TranslationWidget(
+      builder: (context, tr) => Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // Visor de la imagen central interactiva de Zoom
+            // Visor de contenido (Imagen o Vídeo)
+            Center(
+              child: widget.imagen.tipoArchivo == 'V'
+                  ? _VideoDetalle(url: widget.imagen.urlArchivo)
+                  : InteractiveViewer(
+                      minScale: 0.1,
+                      maxScale: 6.0,
+                      child: CachedNetworkImage(
+                        imageUrl: widget.imagen.urlArchivo,
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                        placeholder: (c, u) => const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                        errorWidget: (c, u, e) => const Center(child: Icon(Icons.error_outline, color: Colors.white24, size: 48)),
+                      ),
                     ),
+            ),
+            
+            // AppBar superpuesta transparente para volver
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: Container(
+                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black54, Colors.transparent],
                   ),
-          ),
-          
-          // AppBar superpuesta transparente para volver
-          Positioned(
-            top: 0, left: 0, right: 0,
-            child: Container(
-              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black54, Colors.transparent],
                 ),
-              ),
-              child: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                actions: [
-                   IconButton(
-                    icon: const Icon(Icons.download_rounded, color: Colors.white),
-                    tooltip: 'Descargar archivo',
-                    onPressed: _descargarArchivo,
+                child: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                  const SizedBox(width: 8),
-                ],
+                  actions: [
+                     IconButton(
+                      icon: const Icon(Icons.download_rounded, color: Colors.white),
+                      tooltip: tr('collectionDownloadFile'),
+                      onPressed: () => _descargarArchivo(tr),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
               ),
             ),
-          ),
-          
-          // Bottom Panel
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: _buildPanelInformacion(),
-          ),
-        ],
+            
+            // Bottom Panel
+            Positioned(
+              bottom: 0, left: 0, right: 0,
+              child: _buildPanelInformacion(tr),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPanelInformacion() {
+  Widget _buildPanelInformacion(dynamic tr) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -193,7 +195,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
                       style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
                     ),
                     Text(
-                      'Subido el ${widget.imagen.fechaSubida.toLocal().toString().split(' ')[0]}',
+                      tr('gallerySubidoEl', {'date': widget.imagen.fechaSubida.toLocal().toString().split(' ')[0]}),
                       style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 12),
                     ),
                   ],
@@ -201,7 +203,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
                 const Spacer(),
                 // Community Tag
                 if (widget.imagen.comunidadNombre != null)
-                  _buildCommunityTag(),
+                  _buildCommunityTag(tr),
               ],
             ),
           ),
@@ -213,13 +215,13 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
               padding: EdgeInsets.all(20.0),
               child: LinearProgressIndicator(color: Color(0xFFF28B50), backgroundColor: Colors.white10),
             ))
-          else ..._buildSeccionesMetadatos(),
+          else ..._buildSeccionesMetadatos(tr),
         ],
       ),
     );
   }
 
-  Widget _buildCommunityTag() {
+  Widget _buildCommunityTag(dynamic tr) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -248,7 +250,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
                 ),
                 child: _estaUniendose 
                   ? const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('UNIRSE', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10)),
+                  : Text(tr('communityJoin').toUpperCase(), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10)),
               ),
             ),
           ],
@@ -257,7 +259,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     );
   }
 
-  List<Widget> _buildSeccionesMetadatos() {
+  List<Widget> _buildSeccionesMetadatos(dynamic tr) {
     final List<Widget> widgets = [];
     
     // Post mapping
@@ -278,11 +280,11 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
                 children: [
                   const Icon(Icons.article_rounded, color: Color(0xFFF28B50), size: 16),
                   const SizedBox(width: 8),
-                  Text('POST VINCULADO', style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                  Text(tr('galleryLinkedPost'), style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
                 ],
               ),
               const SizedBox(height: 12),
-              Text(pub['titulo'] ?? 'Sin título', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
+              Text(pub['titulo'] ?? tr('notificationNoTitle'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
               if (pub['contenido_texto'] != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -305,7 +307,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
         widgets.add(const SizedBox(height: 24));
         widgets.add(Padding(
           padding: const EdgeInsets.only(left: 4),
-          child: Text('EN CARPETAS', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+          child: Text(tr('galleryInFolders'), style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
         ));
         widgets.add(const SizedBox(height: 12));
         widgets.add(
@@ -326,7 +328,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
                     children: [
                       Icon(c['privada'] == true ? Icons.lock_rounded : Icons.folder_rounded, color: const Color(0xFF248EA6), size: 16),
                       const SizedBox(width: 8),
-                      Text(c['nombre'] ?? 'Carpeta', style: GoogleFonts.outfit(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                      Text(c['nombre'] ?? tr('galleryFolder'), style: GoogleFonts.outfit(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 );

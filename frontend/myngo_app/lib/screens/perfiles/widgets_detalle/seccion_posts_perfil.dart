@@ -99,9 +99,11 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
   @override
   Widget build(BuildContext context) {
     if (widget.esPrivado) {
-      return const EstadoVacioCargando(
-        icon: Icons.lock_rounded,
-        message: 'Esta cuenta es privada.\nSigue al usuario para ver sus miau-posts.',
+      return TranslationWidget(
+        builder: (context, tr) => EstadoVacioCargando(
+          icon: Icons.lock_rounded,
+          message: tr('profilePrivateSubtitle'),
+        ),
       );
     }
 
@@ -111,9 +113,11 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
     }
 
     if (_posts.isEmpty) {
-      return const EstadoVacioCargando(
-        icon: Icons.grid_view_rounded,
-        message: 'Aún no hay publicaciones compartidas.',
+      return TranslationWidget(
+        builder: (context, tr) => EstadoVacioCargando(
+          icon: Icons.grid_view_rounded,
+          message: tr('profileEmptyPosts'),
+        ),
       );
     }
 

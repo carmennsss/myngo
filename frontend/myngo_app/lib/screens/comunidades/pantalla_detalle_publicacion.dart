@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../tolgee/translation_widget.dart';
+
 import '../../models/publicacion.dart';
 import '../../models/comentario.dart';
 import '../../services/servicio_comunidades.dart';
@@ -97,7 +99,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
             _pub = _pub!.copyWith(comentariosCount: _comentarios.length);
           }
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Miau! Comentario enviado')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(TranslationWidget.of(context).tr('commentSent'))));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
       }
@@ -106,34 +108,39 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Publicación', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.orangeAccent),
-          onPressed: _volverConDatos,
-        ),
-      ),
-      body: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) return;
-          _volverConDatos();
-        },
-        child: _buildContenido(),
-      ),
-      bottomNavigationBar: _buildInputComentario(),
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Scaffold(
+          backgroundColor: const Color(0xFF121212),
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(tr('postDetailTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.orangeAccent),
+              onPressed: _volverConDatos,
+            ),
+          ),
+          body: PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              _volverConDatos();
+            },
+            child: _buildContenido(tr),
+          ),
+          bottomNavigationBar: _buildInputComentario(tr),
+        );
+      }
     );
+
   }
 
-  Widget _buildContenido() {
+  Widget _buildContenido(String Function(String, [Map<String, dynamic>?]) tr) {
     if (_cargando) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     if (_error != null) return _buildErrorState();
-    if (_pub == null) return const Center(child: Text('No encontrada', style: TextStyle(color: Colors.white70)));
+    if (_pub == null) return Center(child: Text(tr('commonNotFound'), style: const TextStyle(color: Colors.white70)));
 
     return RefreshIndicator(
       onRefresh: _cargarComentarios,
@@ -149,10 +156,10 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
               onEliminado: () => Navigator.pop(context, true),
             ),
             const SizedBox(height: 24),
-            Text('Comentarios (${_comentarios.length})', 
+            Text(tr('postCommentsCount', {'count': _comentarios.length}), 
               style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _buildListaComentarios(),
+            _buildListaComentarios(tr),
             const SizedBox(height: 100), // Espacio para el input
           ],
         ),
@@ -160,7 +167,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     );
   }
 
-  Widget _buildListaComentarios() {
+  Widget _buildListaComentarios(String Function(String) tr) {
     if (_cargandoComentarios && _comentarios.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     }
@@ -172,7 +179,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
             children: [
               const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white24, size: 48),
               const SizedBox(height: 12),
-              Text('¡Sé el primero en comentar!', style: GoogleFonts.inter(color: Colors.white24)),
+              Text(tr('postFirstComment'), style: GoogleFonts.inter(color: Colors.white24)),
             ],
           ),
         ),
@@ -205,7 +212,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
                       children: [
                         Text(c.autorNombre, style: GoogleFonts.inter(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(width: 8),
-                        Text('Reciente', style: GoogleFonts.inter(color: Colors.white24, fontSize: 10)),
+                        Text(tr('commonRecent'), style: GoogleFonts.inter(color: Colors.white24, fontSize: 10)),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -220,7 +227,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     );
   }
 
-  Widget _buildInputComentario() {
+  Widget _buildInputComentario(String Function(String) tr) {
     return Container(
       padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 12),
       decoration: const BoxDecoration(
@@ -235,7 +242,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
               style: const TextStyle(color: Colors.white),
               maxLines: null,
               decoration: InputDecoration(
-                hintText: 'Añadir un comentario...',
+                hintText: tr('postAddCommentHint'),
                 hintStyle: const TextStyle(color: Colors.white24),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),

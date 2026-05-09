@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../tolgee/translation_widget.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -43,18 +45,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     'Inter', 'Outfit', 'Roboto', 'Montserrat', 'Poppins', 'Lato', 'Oswald', 'Playfair Display'
   ];
 
-  final Map<String, String> _nombresPatrones = {
-    'puntos': 'Puntos',
-    'puntos_grandes': 'Puntos Grandes',
-    'lineas': 'Diagonal',
-    'diagonal_inversa': 'Diagonal Inv.',
-    'cuadricula': 'Cuadrícula',
-    'zigzag': 'Zig-Zag',
-    'diamantes': 'Diamantes',
-    'olas': 'Ondas',
-    'triangulos': 'Triángulos',
-    'estrellas': 'Estrellas',
-  };
+  final List<String> _patronesDisponibles = [
+    'puntos', 'puntos_grandes', 'lineas', 'diagonal_inversa', 'cuadricula', 
+    'zigzag', 'diamantes', 'olas', 'triangulos', 'estrellas'
+  ];
+
 
   final List<Color> _paletaColores = [
     Colors.white, const Color(0xFF141414), const Color(0xFF248EA6), 
@@ -247,10 +242,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               child: TextButton.icon(
                 onPressed: () => _seleccionarImagen(tipo),
                 icon: const Icon(Icons.edit, size: 16),
-                label: Text('Cambiar', style: GoogleFonts.getFont(_fuenteSeleccionada)),
+                label: Text(TranslationWidget.of(context).tr('personalizeChangeBtn'), style: GoogleFonts.getFont(_fuenteSeleccionada)),
               ),
             ),
           )
+
       ],
     );
   }
@@ -259,143 +255,149 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   Widget build(BuildContext context) {
     final esOscuro = Theme.of(context).brightness == Brightness.dark;
     
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Personalizar Comunidad 🐾', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: _colorTema.withOpacity(0.8),
-        elevation: 0,
-        actions: [
-          if (!_estaGuardando)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: ElevatedButton.icon(
-                onPressed: _guardarCambios,
-                icon: const Icon(Icons.save_rounded, size: 18),
-                label: const Text('GUARDAR'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF28B50),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          bool esPantallaAncha = constraints.maxWidth > 850;
-          
-          if (_estaGuardando) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
-          }
-
-          if (esPantallaAncha) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Panel de opciones (Izquierda)
-                Expanded(
-                  flex: 3,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
-                    child: _buildPanelOpciones(esOscuro),
-                  ),
-                ),
-                // Live Preview (Derecha - Sticky)
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border(left: BorderSide(color: Colors.white.withOpacity(0.05))),
-                      color: esOscuro ? Colors.black26 : Colors.grey.shade100,
-                    ),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: _buildSectionTitle('VISTA PREVIA EN TIEMPO REAL'),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                            child: _buildLivePreviewLarge(esOscuro),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            "Los cambios se reflejan al instante. Pulsa 'Guardar' para aplicar permanentemente.",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }
-
-          // Móvil
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionTitle('VISTA PREVIA'),
-                const SizedBox(height: 12),
-                _buildLivePreview(esOscuro),
-                const SizedBox(height: 24),
-                _buildPanelOpciones(esOscuro),
-                const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            title: Text(tr('personalizeTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            backgroundColor: _colorTema.withOpacity(0.8),
+            elevation: 0,
+            actions: [
+              if (!_estaGuardando)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: ElevatedButton.icon(
                     onPressed: _guardarCambios,
-                    icon: const Icon(Icons.save_rounded),
-                    label: const Text('GUARDAR CAMBIOS'),
+                    icon: const Icon(Icons.save_rounded, size: 18),
+                    label: Text(tr('adminSave')), // Reuse adminSave or personalizeSaveBtn
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF28B50),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
-                const SizedBox(height: 40),
-              ],
-            ),
-          );
-        },
-      ),
+            ],
+          ),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              bool esPantallaAncha = constraints.maxWidth > 850;
+              
+              if (_estaGuardando) {
+                return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+              }
+    
+              if (esPantallaAncha) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Panel de opciones (Izquierda)
+                    Expanded(
+                      flex: 3,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(32),
+                        child: _buildPanelOpciones(esOscuro, tr),
+                      ),
+                    ),
+                    // Live Preview (Derecha - Sticky)
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(left: BorderSide(color: Colors.white.withOpacity(0.05))),
+                          color: esOscuro ? Colors.black26 : Colors.grey.shade100,
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: _buildSectionTitle(tr('personalizeRealTimePreview')),
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                                child: _buildLivePreviewLarge(esOscuro, tr),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                tr('personalizePreviewDesc'),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+    
+              // Móvil
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle(tr('personalizePreview')),
+                    const SizedBox(height: 12),
+                    _buildLivePreview(esOscuro, tr),
+                    const SizedBox(height: 24),
+                    _buildPanelOpciones(esOscuro, tr),
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _guardarCambios,
+                        icon: const Icon(Icons.save_rounded),
+                        label: Text(tr('personalizeSaveBtn')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF28B50),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      }
     );
   }
 
-  Widget _buildPanelOpciones(bool esOscuro) {
+
+  Widget _buildPanelOpciones(bool esOscuro, String Function(String) tr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('IDENTIDAD VISUAL'),
+        _buildSectionTitle(tr('personalizeSectionVisual')),
         const SizedBox(height: 16),
         _buildGlassCard(
           child: Column(
             children: [
-              _buildImageUploader('Avatar', 'Icono circular de la comunidad', 'avatar', _avatarSeleccionado, widget.comunidad.urlAvatar),
+              _buildImageUploader(tr('personalizeAvatarTitle'), tr('personalizeAvatarDesc'), 'avatar', _avatarSeleccionado, widget.comunidad.urlAvatar),
               const Divider(height: 40, color: Colors.white10),
-              _buildImageUploader('Portada / Banner', 'Imagen horizontal superior', 'portada', _portadaSeleccionada, widget.comunidad.urlPortada),
+              _buildImageUploader(tr('personalizeBannerTitle'), tr('personalizeBannerDesc'), 'portada', _portadaSeleccionada, widget.comunidad.urlPortada),
               const Divider(height: 40, color: Colors.white10),
-              _buildImageUploader('Fondo Global', 'Fondo de la aplicación en esta comunidad', 'fondo', _fondoGlobalSeleccionado, widget.comunidad.urlFondo),
+              _buildImageUploader(tr('personalizeGlobalBackgroundTitle'), tr('personalizeGlobalBackgroundDesc'), 'fondo', _fondoGlobalSeleccionado, widget.comunidad.urlFondo),
               const Divider(height: 40, color: Colors.white10),
               _buildConfigItem(
                 icon: Icons.palette_rounded,
-                title: 'Color del Tema',
-                subtitle: 'Identidad principal de la comunidad',
+                title: tr('personalizeThemeColorTitle'),
+                subtitle: tr('personalizeThemeColorDesc'),
+
                 trailing: Container(
                   width: 40,
                   height: 40,
@@ -413,30 +415,31 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
         ),
         
         const SizedBox(height: 32),
-        _buildSectionTitle('DISEÑO DEL FEED'),
+        _buildSectionTitle(tr('personalizeSectionFeed')),
         const SizedBox(height: 16),
         _buildGlassCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Tipo de fondo', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+              Text(tr('personalizeBackgroundType'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
               const SizedBox(height: 12),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildTipoBoton('Sólido', 'solido', Icons.square_rounded),
+                    _buildTipoBoton(tr('personalizeTypeSolid'), 'solido', Icons.square_rounded),
                     const SizedBox(width: 8),
-                    _buildTipoBoton('Gradiente', 'gradiente', Icons.gradient_rounded),
+                    _buildTipoBoton(tr('personalizeTypeGradient'), 'gradiente', Icons.gradient_rounded),
                     const SizedBox(width: 8),
-                    _buildTipoBoton('Patrón', 'patron', Icons.texture_rounded),
+                    _buildTipoBoton(tr('personalizeTypePattern'), 'patron', Icons.texture_rounded),
                   ],
                 ),
               ),
+
               
               const SizedBox(height: 24),
               _buildSelectorColor(
-                _tipoFondoPosts == 'solido' ? 'Color de fondo' : 'Color primario',
+                _tipoFondoPosts == 'solido' ? tr('personalizeBackgroundColor') : tr('personalizePrimaryColor'),
                 _colorPrimarioPosts,
                 (c) => setState(() => _colorPrimarioPosts = c)
               ),
@@ -444,25 +447,41 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               if (_tipoFondoPosts != 'solido') ...[
                 const SizedBox(height: 24),
                 _buildSelectorColor(
-                  _tipoFondoPosts == 'gradiente' ? 'Color final' : 'Color del patrón',
+                  _tipoFondoPosts == 'gradiente' ? tr('personalizeFinalColor') : tr('personalizePatternColor'),
                   _colorSecundarioPosts,
                   (c) => setState(() => _colorSecundarioPosts = c)
                 ),
               ],
+
               
               if (_tipoFondoPosts == 'patron') ...[
                 const SizedBox(height: 24),
-                Text('Elegir patrón', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+                Text(tr('personalizeChoosePattern'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _nombresPatrones.entries.map((entry) {
-                    final seleccionada = _patronSeleccionado == entry.key;
+                  children: _patronesDisponibles.map((key) {
+                    final seleccionada = _patronSeleccionado == key;
+                    String label = key;
+                    // Localize pattern names
+                    if (key == 'puntos') label = tr('patternDots');
+                    else if (key == 'puntos_grandes') label = tr('patternLargeDots');
+                    else if (key == 'lineas') label = tr('patternDiagonal');
+                    else if (key == 'diagonal_inversa') label = tr('patternReverseDiagonal');
+                    else if (key == 'cuadricula') label = tr('patternGrid');
+                    else if (key == 'zigzag') label = tr('patternZigZag');
+                    else if (key == 'diamantes') label = tr('patternDiamonds');
+                    else if (key == 'olas') label = tr('patternWaves');
+                    else if (key == 'triangulos') label = tr('patternTriangles');
+                    else if (key == 'estrellas') label = tr('patternStars');
+
                     return ChoiceChip(
-                      label: Text(entry.value),
+                      label: Text(label),
                       selected: seleccionada,
-                      onSelected: (val) => setState(() => _patronSeleccionado = entry.key),
+                      onSelected: (val) => setState(() => _patronSeleccionado = key),
+
+
                       selectedColor: const Color(0xFFF28B50),
                       labelStyle: GoogleFonts.outfit(
                         color: seleccionada ? Colors.white : (esOscuro ? Colors.white70 : Colors.black87),
@@ -478,13 +497,13 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
         ),
         
         const SizedBox(height: 32),
-        _buildSectionTitle('DETALLES EXTRAS'),
+        _buildSectionTitle(tr('personalizeSectionExtras')),
         const SizedBox(height: 16),
         _buildGlassCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Fuente principal', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+              Text(tr('personalizeMainFont'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _fuentesDisponibles.contains(_fuenteSeleccionada) ? _fuenteSeleccionada : _fuentesDisponibles.first,
@@ -501,7 +520,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                 ),
               ),
               const SizedBox(height: 24),
-              Text('Etiquetas (max. 5)', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+              Text(tr('personalizeTagsLabel'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
               const SizedBox(height: 12),
               _buildTagInput(esOscuro),
             ],
@@ -510,6 +529,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       ],
     );
   }
+
 
   Widget _buildTipoBoton(String label, String value, IconData icon) {
     final seleccionado = _tipoFondoPosts == value;
@@ -605,7 +625,8 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
-  Widget _buildLivePreviewLarge(bool esOscuro) {
+  Widget _buildLivePreviewLarge(bool esOscuro, String Function(String) tr) {
+
     final String fullAvatarUrl = widget.comunidad.urlAvatar != null && widget.comunidad.urlAvatar!.isNotEmpty
         ? (widget.comunidad.urlAvatar!.startsWith('http') ? widget.comunidad.urlAvatar! : '${Configuracion.baseUrl}${widget.comunidad.urlAvatar!.startsWith('/') ? '' : '/'}${widget.comunidad.urlAvatar!}')
         : '';
@@ -718,12 +739,13 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      _buildMockTab('Posts', true, esOscuro),
-                      _buildMockTab('Tienda', false, esOscuro),
-                      _buildMockTab('Chat', false, esOscuro),
+                      _buildMockTab(tr('postsTab'), true, esOscuro),
+                      _buildMockTab(tr('storeTab'), false, esOscuro),
+                      _buildMockTab(tr('chatTab'), false, esOscuro),
                     ],
                   ),
                 ),
+
 
                 // Mock de Contenido (Posts)
                 Expanded(
@@ -748,13 +770,14 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: _colorTema.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.add_photo_alternate, color: Colors.white, size: 18),
-                    SizedBox(width: 8),
-                    Text('POST', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const Icon(Icons.add_photo_alternate, color: Colors.white, size: 18),
+                    const SizedBox(width: 8),
+                    Text(tr('personalizePostBtn'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
                 ),
+
               ),
             ),
           ],
@@ -870,7 +893,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           onSubmitted: _anadirTag,
           style: GoogleFonts.outfit(color: esOscuro ? Colors.white : Colors.black87, fontSize: 14),
           decoration: InputDecoration(
-            hintText: 'Ej: juegos, arte, música...',
+            hintText: tr('personalizeTagsHint'),
             hintStyle: TextStyle(color: Colors.grey.shade500),
             filled: true,
             fillColor: esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
@@ -926,7 +949,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           backgroundColor: const Color(0xFF1E1E1E),
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          title: const Text('Color del Tema 🎨', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: Text('${tr('personalizeThemeColorTitle')} 🎨', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           content: SizedBox(
             width: 320,
             child: SingleChildScrollView(
@@ -955,9 +978,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   ),
                   const SizedBox(height: 24),
                   // Colores rápidos
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Colores rápidos', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(tr('personalizeQuickColors'), style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -994,9 +1017,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   const Divider(color: Colors.white10),
                   const SizedBox(height: 16),
                   // Sliders personalizados
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Ajuste fino (HSL)', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(tr('personalizeFineTune'), style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
                   _buildHSLSliders(colorTemporal, (nuevoColor) {
@@ -1012,7 +1035,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     maxLength: 6,
                     style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
                     decoration: InputDecoration(
-                      labelText: 'Código Hexadecimal',
+                      labelText: tr('personalizeHexCode'),
                       labelStyle: const TextStyle(color: Colors.white60),
                       prefixText: '#',
                       prefixStyle: const TextStyle(color: Colors.white),
@@ -1037,7 +1060,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('CANCELAR', style: TextStyle(color: Colors.white60)),
+              child: Text(tr('commonCancel').toUpperCase(), style: const TextStyle(color: Colors.white60)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -1049,7 +1072,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                 setState(() => _colorTema = colorTemporal);
                 Navigator.pop(context);
               },
-              child: const Text('GUARDAR', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(tr('commonSave').toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -1062,28 +1085,31 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     return Column(
       children: [
         _buildSimpleSlider(
-          label: 'Tono',
+          label: tr('commonHue'),
           value: hsl.hue,
           max: 360,
           onChanged: (v) => onChanged(hsl.withHue(v).toColor()),
+          tr: tr,
         ),
         _buildSimpleSlider(
-          label: 'Saturación',
+          label: tr('commonSaturation'),
           value: hsl.saturation,
           max: 1.0,
           onChanged: (v) => onChanged(hsl.withSaturation(v).toColor()),
+          tr: tr,
         ),
         _buildSimpleSlider(
-          label: 'Brillo',
+          label: tr('commonBrightness'),
           value: hsl.lightness,
           max: 1.0,
           onChanged: (v) => onChanged(hsl.withLightness(v).toColor()),
+          tr: tr,
         ),
       ],
     );
   }
 
-  Widget _buildSimpleSlider({required String label, required double value, required double max, required ValueChanged<double> onChanged}) {
+  Widget _buildSimpleSlider({required String label, required double value, required double max, required ValueChanged<double> onChanged, required String Function(String) tr}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

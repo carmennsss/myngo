@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../tolgee/translation_widget.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/comunidad.dart';
@@ -114,31 +116,21 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     }
   }
 
-  Future<void> _checkRol() async {
-    final userId = await ServicioUsuarios().obtenerIdUsuario();
-    if (userId != null && widget.comunidad != null) {
-      final res = await ServicioComunidades()
-          .obtenerRolUsuarioEnComunidad(widget.comunidad!.id, userId);
-      if (mounted && res.exito) {
-        setState(() {
-          _esModerador =
-              res.datos == 'Administrador' || res.datos == 'Moderador';
-          if (_esModerador) _modoGestion = true;
-        });
-      }
-    }
-  }
-
-  void _handleTabChange() {
+  void _handleTabChange(String Function(String) tr) {
     if (!_subTabController.indexIsChanging) {
-      final tipos = ['Avatar', 'Marco', 'Fondo', 'Estilo Post'];
+      final tipos = [
+        tr('storeTypeAvatar'),
+        tr('storeTypeFrame'),
+        tr('storeTypeBackground'),
+        tr('storeTypePostStyle')
+      ];
       if (_subTabController.index < tipos.length) {
         widget.onCategoryChanged?.call(tipos[_subTabController.index]);
       }
     }
   }
 
-  Future<void> _cargarDatosTienda() async {
+  Future<void> _cargarDatosTienda(String Function(String) tr) async {
     if (!mounted) return;
     setState(() => _cargandoTienda = true);
 
@@ -163,128 +155,136 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
       if (mounted) {
         setState(() {
           _cargandoTienda = false;
-          _errorTienda = 'Error de conexión 😿';
+          _errorTienda = tr('storeErrorConnection');
         });
       }
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    final bool esAncho = MediaQuery.of(context).size.width > 1000;
+    return TranslationWidget(
+      builder: (context, tr) {
+        // Actualizamos listeners si es necesario
+        _subTabController.removeListener(() => _handleTabChange(tr));
+        _subTabController.addListener(() => _handleTabChange(tr));
 
-    final shopSection = Column(
-      children: [
-        _buildTabBar(),
-        Expanded(
-          child: _cargandoTienda
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-              : _errorTienda != null
-                  ? Center(
-                      child: Text(_errorTienda!,
-                          style: GoogleFonts.outfit(color: Colors.grey)))
-                  : TabBarView(
-                      controller: _subTabController,
-                      children: [
-                        _buildTab('Avatar'),
-                        _buildTab('Marco'),
-                        _buildTab('Fondo'),
-                        if (widget.comunidad == null) _buildTab('Estilo Post'),
-                      ],
-                    ),
-        ),
-      ],
-    );
+        final bool esAncho = MediaQuery.of(context).size.width > 1000;
 
-    final previewSection = Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
-            ? DecorationImage(
-                image: NetworkImage(_previewFondoFeed!),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.white.withOpacity(0.6),
-                  BlendMode.lighten,
-                ),
-              )
-            : null,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: TiendaPreviewSection(
-          usuarioActual: _usuarioActual,
-          previewAvatar: _previewAvatar,
-          previewMarco: _previewMarco,
-          previewFondo: _previewFondo,
-          previewEstiloPost: _previewEstiloPost,
-          comunidad: widget.comunidad,
-        ),
-      ),
-    );
-
-    final content = esAncho
-        ? Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(flex: 3, child: shopSection),
-              const VerticalDivider(width: 1, color: Color(0xFFE8D5C4)),
-              Expanded(flex: 2, child: previewSection),
-            ],
-          )
-        : Column(
-            mainAxisSize: MainAxisSize.min, // Evita ocupar infinito si no es necesario
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
-                      ? DecorationImage(
-                          image: NetworkImage(_previewFondoFeed!),
-                          fit: BoxFit.cover,
-                          colorFilter: ColorFilter.mode(
-                            Colors.white.withOpacity(0.6),
-                            BlendMode.lighten,
-                          ),
-                        )
-                      : null,
-                ),
-                child: TiendaPreviewSection(
-                  usuarioActual: _usuarioActual,
-                  previewAvatar: _previewAvatar,
-                  previewMarco: _previewMarco,
-                  previewFondo: _previewFondo,
-                  previewEstiloPost: _previewEstiloPost,
-                  comunidad: widget.comunidad,
-                ),
-              ),
-              // Si está integrado en un sliver, necesitamos una altura fija o limitada
-              widget.esVistaIntegrada 
-                ? SizedBox(height: 500, child: shopSection) 
-                : Expanded(child: shopSection),
-            ],
-          );
-
-    return widget.esVistaIntegrada
-        ? Container(
-            constraints: BoxConstraints(
-              // Aseguramos que tenga una altura razonable si está en un CustomScrollView
-              minHeight: 400,
-              maxHeight: esAncho ? 800 : 1200, 
+        final shopSection = Column(
+          children: [
+            _buildTabBar(tr),
+            Expanded(
+              child: _cargandoTienda
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+                  : _errorTienda != null
+                      ? Center(
+                          child: Text(_errorTienda!,
+                              style: GoogleFonts.outfit(color: Colors.grey)))
+                      : TabBarView(
+                          controller: _subTabController,
+                          children: [
+                            _buildTab(tr('storeTypeAvatar'), tr),
+                            _buildTab(tr('storeTypeFrame'), tr),
+                            _buildTab(tr('storeTypeBackground'), tr),
+                            if (widget.comunidad == null) _buildTab(tr('storeTypePostStyle'), tr),
+                          ],
+                        ),
             ),
-            color: const Color(0xFFFEF5F1), 
-            child: content
-          )
-        : Scaffold(
-            backgroundColor: const Color(0xFFFEF5F1),
-            appBar: _buildAppBar(),
-            body: content,
-            floatingActionButton: _buildFAB(),
-          );
+          ],
+        );
+
+        final previewSection = Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
+                ? DecorationImage(
+                    image: NetworkImage(_previewFondoFeed!),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Colors.white.withOpacity(0.6),
+                      BlendMode.lighten,
+                    ),
+                  )
+                : null,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: TiendaPreviewSection(
+              usuarioActual: _usuarioActual,
+              previewAvatar: _previewAvatar,
+              previewMarco: _previewMarco,
+              previewFondo: _previewFondo,
+              previewEstiloPost: _previewEstiloPost,
+              comunidad: widget.comunidad,
+            ),
+          ),
+        );
+
+        final content = esAncho
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(flex: 3, child: shopSection),
+                  const VerticalDivider(width: 1, color: Color(0xFFE8D5C4)),
+                  Expanded(flex: 2, child: previewSection),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
+                          ? DecorationImage(
+                              image: NetworkImage(_previewFondoFeed!),
+                              fit: BoxFit.cover,
+                              colorFilter: ColorFilter.mode(
+                                Colors.white.withOpacity(0.6),
+                                BlendMode.lighten,
+                              ),
+                            )
+                          : null,
+                    ),
+                    child: TiendaPreviewSection(
+                      usuarioActual: _usuarioActual,
+                      previewAvatar: _previewAvatar,
+                      previewMarco: _previewMarco,
+                      previewFondo: _previewFondo,
+                      previewEstiloPost: _previewEstiloPost,
+                      comunidad: widget.comunidad,
+                    ),
+                  ),
+                  widget.esVistaIntegrada 
+                    ? SizedBox(height: 500, child: shopSection) 
+                    : Expanded(child: shopSection),
+                ],
+              );
+
+        return widget.esVistaIntegrada
+            ? Container(
+                constraints: BoxConstraints(
+                  minHeight: 400,
+                  maxHeight: esAncho ? 800 : 1200, 
+                ),
+                color: const Color(0xFFFEF5F1), 
+                child: content
+              )
+            : Scaffold(
+                backgroundColor: const Color(0xFFFEF5F1),
+                appBar: _buildAppBar(tr),
+                body: content,
+                floatingActionButton: _buildFAB(tr),
+              );
+      }
+    );
   }
 
-  Widget _buildTabBar() {
+
+  Widget _buildTabBar(String Function(String) tr) {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(4),
@@ -301,16 +301,17 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
         controller: _subTabController,
         labelColor: const Color(0xFFC35E34),
         tabs: [
-          const Tab(text: 'Avatares'),
-          const Tab(text: 'Marcos'),
-          const Tab(text: 'Fondos'),
-          if (widget.comunidad == null) const Tab(text: 'Estilos Post'),
+          Tab(text: tr('storeTabAvatars')),
+          Tab(text: tr('storeTabFrames')),
+          Tab(text: tr('storeTabBackgrounds')),
+          if (widget.comunidad == null) Tab(text: tr('storeTabPostStyles')),
         ],
       ),
     );
   }
 
-  Widget _buildTab(String tipo) {
+
+  Widget _buildTab(String tipo, String Function(String) tr) {
     return ListaMejorasTab(
       tipo: tipo,
       comunidadId: widget.comunidad?.id,
@@ -319,40 +320,42 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
       usuarioActual: _usuarioActual,
       mejoras: _mejorasCatalogo,
       misMejoras: _misMejoras,
-      onRefresh: _cargarDatosTienda,
+      onRefresh: () => _cargarDatosTienda(tr),
       onPuntosActualizados: (p) {
         widget.onPuntosActualizados?.call(p);
         _cargarDatosUsuario();
       },
       onPreviewRequested: (item) {
         setState(() {
-          if (tipo == 'Avatar') _previewAvatar = item.urlRecurso;
-          if (tipo == 'Marco') _previewMarco = item.urlRecurso;
-          if (tipo == 'Fondo') {
+          if (tipo == tr('storeTypeAvatar')) _previewAvatar = item.urlRecurso;
+          if (tipo == tr('storeTypeFrame')) _previewMarco = item.urlRecurso;
+          if (tipo == tr('storeTypeBackground')) {
             _previewFondo = item.urlRecurso;
             _previewFondoFeed = item.urlRecurso;
           }
-          if (tipo == 'Estilo Post') _previewEstiloPost = item.datosExtra;
+          if (tipo == tr('storeTypePostStyle')) _previewEstiloPost = item.datosExtra;
         });
       },
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+
+  PreferredSizeWidget _buildAppBar(String Function(String, [Map<String, String>?]) tr) {
     return AppBar(
       backgroundColor: const Color(0xFFFEF5F1),
       elevation: 0,
       title: Text(
         widget.comunidad != null
-            ? 'Tienda: ${widget.comunidad!.nombre}'
-            : 'Tienda de Mejoras',
+            ? tr('storeCommunityTitle', {'name': widget.comunidad!.nombre})
+            : tr('storePersonalTitle'),
         style: GoogleFonts.outfit(fontWeight: FontWeight.w900),
       ),
       centerTitle: true,
     );
   }
 
-  Widget? _buildFAB() {
+
+  Widget? _buildFAB(String Function(String) tr) {
     if (widget.comunidad == null) return null;
     
     // Si eres la creadora (por ID) o tienes rol de Administrador, tienes control total
@@ -366,9 +369,10 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           MaterialPageRoute(
               builder: (ctx) =>
                   PantallaEnviarPropuesta(comunidad: widget.comunidad!))),
-      label: Text(esCreador ? 'Añadir Mejoras' : 'Sugerir Diseño'),
+      label: Text(esCreador ? tr('storeAddImprovedBtn') : tr('storeSuggestDesignBtn')),
       icon: Icon(esCreador ? Icons.add_to_photos_rounded : Icons.add_photo_alternate_rounded),
       backgroundColor: widget.comunidad!.colorTema,
     );
   }
+
 }

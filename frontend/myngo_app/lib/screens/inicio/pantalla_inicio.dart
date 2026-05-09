@@ -395,23 +395,22 @@ class PantallaInicioState extends State<PantallaInicio> {
                           ),
                         Expanded(
                           flex: 5,
-                          child: (widget.navigationShell != null)
-                              ? widget.navigationShell!
-                              : const Center(child: Text('Error de Navegación 🐾', style: TextStyle(color: Colors.white))),
+                               ? widget.navigationShell!
+                              : Center(child: Text(tr('errorNavigationError'), style: const TextStyle(color: Colors.white))),
                         ),
                       ],
                     ),
-                    if (!isMobile)
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOutCubic,
-                        left: _isSidebarOpen ? 308.0 : -12.0,
-                        top: 24.0, 
-                        child: GestureDetector(
-                          onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
-                          child: Tooltip(
-                            message: _isSidebarOpen ? 'Cerrar sidebar' : 'Mostrar sidebar',
-                            child: AnimatedContainer(
+                        if (!isMobile)
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOutCubic,
+                            left: _isSidebarOpen ? 308.0 : -12.0,
+                            top: 24.0, 
+                            child: GestureDetector(
+                              onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
+                              child: Tooltip(
+                                message: _isSidebarOpen ? tr('sidebarClose') : tr('sidebarOpen'),
+                                child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               height: 24.0,
                               width: 24.0,
@@ -590,53 +589,64 @@ class _ToastMensajeState extends State<_ToastMensaje>
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
-      left: 16,
-      right: 16,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: SlideTransition(
-            position: _slide,
-            child: FadeTransition(
-              opacity: _fade,
-              child: Material(
-                elevation: 20,
-                borderRadius: BorderRadius.circular(24),
-                color: Colors.transparent,
-                child: GestureDetector(
-                  onTap: widget.onTap,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1), width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFC35E34).withOpacity(0.15),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 2),
-                            color: const Color(0xFFF5EBE6),
+    return TranslationWidget(
+      builder: (context, tr) => Positioned(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 16,
+        right: 16,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SlideTransition(
+              position: _slide,
+              child: FadeTransition(
+                opacity: _fade,
+                child: Material(
+                  elevation: 20,
+                  borderRadius: BorderRadius.circular(24),
+                  color: Colors.transparent,
+                  child: GestureDetector(
+                    onTap: widget.onTap,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.1), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFC35E34).withOpacity(0.15),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
                           ),
-                          child: ClipOval(
-                            child: widget.avatar != null
-                                ? Image.network(
-                                    widget.avatar!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Center(
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFC35E34).withOpacity(0.2), width: 2),
+                              color: const Color(0xFFF5EBE6),
+                            ),
+                            child: ClipOval(
+                              child: widget.avatar != null
+                                  ? Image.network(
+                                      widget.avatar!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => Center(
+                                        child: Text(
+                                          widget.sender.isNotEmpty ? widget.sender[0].toUpperCase() : '?',
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFFC35E34),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    : Center(
                                       child: Text(
                                         widget.sender.isNotEmpty ? widget.sender[0].toUpperCase() : '?',
                                         style: GoogleFonts.outfit(
@@ -645,71 +655,62 @@ class _ToastMensajeState extends State<_ToastMensaje>
                                         ),
                                       ),
                                     ),
-                                  )
-                                  : Center(
-                                    child: Text(
-                                      widget.sender.isNotEmpty ? widget.sender[0].toUpperCase() : '?',
-                                      style: GoogleFonts.outfit(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFC35E34),
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    '@${widget.sender}',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFFC35E34),
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    'ahora',
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.grey.shade400,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.preview,
-                                style: GoogleFonts.outfit(
-                                  color: const Color(0xFF4A4440),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: widget.onDismiss,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Icon(Icons.close_rounded, color: Colors.grey.shade300, size: 18),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      '@${widget.sender}',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFFC35E34),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      tr('notificationNow'),
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.grey.shade400,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.preview,
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF4A4440),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: widget.onDismiss,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(Icons.close_rounded, color: Colors.grey.shade300, size: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

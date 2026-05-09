@@ -76,8 +76,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   bool _cargandoMasPosts = false;
   int? _miId;
   int _indiceSeccion = 0;
-  String _miRol = 'Visitante';
-  String _tipoMejoraSeleccionado = 'Avatar';
+  String _miRol = 'Visitor'; // Key for communityVisitor
+  String _tipoMejoraSeleccionado = 'Avatar'; // Key for commonAvatar
+
+
 
   List<Publicacion>? _publicaciones;
   List<SalaChat>? _salasChat;
@@ -644,9 +646,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         child: TranslationWidget(
           builder: (context, tr) => FloatingActionButton.extended(
             onPressed: () => _irAEnviarPropuesta(),
-            label: Text(tr('communityFabSuggest', {'type': _tipoMejoraSeleccionado}),
+            label: Text(tr('communityFabSuggest', {'type': tr(_tipoMejoraSeleccionado == 'Avatar' ? 'commonAvatar' : (_tipoMejoraSeleccionado == 'Marco' ? 'commonFrame' : 'commonBackground'))}),
                 style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold, color: Colors.white)),
+
             icon: const Icon(Icons.palette_rounded, color: Colors.white),
             backgroundColor: _comunidad!.colorTema,
           ),
@@ -690,7 +693,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearSala(
-        titulo: 'Nueva Sala en ${_comunidad!.nombre} 🐾',
+        titulo: tr('newRoomIn', {'community': _comunidad!.nombre}),
+
         potencialesParticipantes: potenciales,
         esDeComunidad: true,
         alCrear: (nombre, esPublica, miembrosIds) async {
@@ -717,7 +721,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
-        titulo: 'Nueva Publicación 🐾',
+        titulo: tr('postNewPublicationTitle'),
+
         onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final provider = Provider.of<PostProvider>(context, listen: false);
           final exito = await provider.crearPost(

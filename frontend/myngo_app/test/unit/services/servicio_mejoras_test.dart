@@ -22,20 +22,18 @@ void main() {
     test('obtenerCatalogoGestion devuelve lista de mejoras', () async {
       SharedPreferences.setMockInitialValues({'auth_token': 'fake'});
 
-      final responseBody = jsonEncode({
-        'results': [
-          {
-            'id': 1,
-            'nombre': 'Mejora Premium',
-            'precio': 100,
-          },
-          {
-            'id': 2,
-            'nombre': 'Mejora Estandar',
-            'precio': 50,
-          },
-        ],
-      });
+      final responseBody = jsonEncode([
+        {
+          'id': 1,
+          'nombre': 'Mejora Premium',
+          'precio': 100,
+        },
+        {
+          'id': 2,
+          'nombre': 'Mejora Estandar',
+          'precio': 50,
+        },
+      ]);
 
       when(() => mockClient.get(any(), headers: any(named: 'headers')))
           .thenAnswer((_) async => http.Response(responseBody, 200));

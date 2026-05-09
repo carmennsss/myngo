@@ -25,6 +25,9 @@ import 'package:mime/mime.dart';
 import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
+import '../../tolgee/translation_widget.dart';
+import '../../tolgee/tolgee_static.dart';
+
 
 // Painter eficiente para patrones de fondo
 class PatternPainter extends CustomPainter {
@@ -204,63 +207,68 @@ class _PantallaChatState extends State<PantallaChat> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Galería de imágenes'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final picked = await picker.pickMultiImage();
-                  if (picked.isNotEmpty) {
-                    setState(() {
-                      _archivosSeleccionados.addAll(picked.take(4 - _archivosSeleccionados.length));
-                    });
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.videocam_outlined),
-                title: const Text('Vídeo de la galería'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final picked = await picker.pickVideo(source: ImageSource.gallery);
-                  if (picked != null) {
-                    setState(() {
-                      if (_archivosSeleccionados.length < 4) {
-                        _archivosSeleccionados.add(picked);
-                      }
-                    });
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Cámara'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final picked = await picker.pickImage(source: ImageSource.camera);
-                  if (picked != null) {
-                    setState(() {
-                      if (_archivosSeleccionados.length < 4) {
-                        _archivosSeleccionados.add(picked);
-                      }
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
+      builder: (_) => TranslationWidget(
+        builder: (context, tr) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: Text(tr('chatGalleryTitle')),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final picker = ImagePicker();
+                    final picked = await picker.pickMultiImage();
+                    if (picked.isNotEmpty) {
+                      setState(() {
+                        _archivosSeleccionados.addAll(picked.take(4 - _archivosSeleccionados.length));
+                      });
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.videocam_outlined),
+                  title: Text(tr('chatVideoTitle')),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final picker = ImagePicker();
+                    final picked = await picker.pickVideo(source: ImageSource.gallery);
+                    if (picked != null) {
+                      setState(() {
+                        if (_archivosSeleccionados.length < 4) {
+                          _archivosSeleccionados.add(picked);
+                        }
+                      });
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: Text(tr('chatCameraTitle')),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final picker = ImagePicker();
+                    final picked = await picker.pickImage(source: ImageSource.camera);
+                    if (picked != null) {
+                      setState(() {
+                        if (_archivosSeleccionados.length < 4) {
+                          _archivosSeleccionados.add(picked);
+                        }
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),
@@ -356,8 +364,9 @@ class _PantallaChatState extends State<PantallaChat> {
           if (idx != -1) {
             _mensajes[idx] = _mensajes[idx].copyWith(
               borradoParaTodos: true,
-              contenido: 'Este mensaje fue eliminado',
+              contenido: 'Este mensaje fue eliminado', // Localizado en el builder
             );
+
           }
         } else if (type == 'messages_read') {
           final rawIds = datos['leidos_ids'] as List?;
@@ -457,67 +466,74 @@ class _PantallaChatState extends State<PantallaChat> {
         );
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+         // Tratar de obtener tr si es posible o usar mensaje genérico
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
       setState(() => _estaSubiendoMedia = false);
     }
+
   }
 
   Widget _buildBarraRespuesta() {
-    if (_mensajeRespuesta == null && _mensajeEdicion == null) return const SizedBox.shrink();
+    return TranslationWidget(
+      builder: (context, tr) {
+        final esEdicion = _mensajeEdicion != null;
+        final msg = esEdicion ? _mensajeEdicion! : _mensajeRespuesta!;
 
-    final esEdicion = _mensajeEdicion != null;
-    final msg = esEdicion ? _mensajeEdicion! : _mensajeRespuesta!;
-
-    String emisorNombre = 'Usuario';
-    if (_sala != null) {
-      for (var p in _sala!.participantes) {
-        if (p.usuarioId == msg.emisorId) {
-          emisorNombre = p.nombreAMostrar;
-          break;
+        String emisorNombre = 'Usuario';
+        if (_sala != null) {
+          for (var p in _sala!.participantes) {
+            if (p.usuarioId == msg.emisorId) {
+              emisorNombre = p.nombreAMostrar;
+              break;
+            }
+          }
         }
-      }
-    }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: esEdicion ? Colors.blue.withOpacity(0.1) : Colors.grey[200],
-        border: Border(left: BorderSide(color: esEdicion ? Colors.blue : const Color(0xFFC35E34), width: 4)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  esEdicion ? 'Editando mensaje' : 'Respondiendo a $emisorNombre',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: esEdicion ? Colors.blue : const Color(0xFFC35E34),
-                  ),
-                ),
-                Text(
-                  msg.contenido ?? 'Archivo',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(fontSize: 13, color: Colors.black54),
-                ),
-              ],
-            ),
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: esEdicion ? Colors.blue.withOpacity(0.1) : Colors.grey[200],
+            border: Border(left: BorderSide(color: esEdicion ? Colors.blue : const Color(0xFFC35E34), width: 4)),
           ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 20),
-            onPressed: () => setState(() {
-              _mensajeRespuesta = null;
-              _mensajeEdicion = null;
-              if (esEdicion) _mensajeController.clear();
-            }),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      esEdicion ? tr('chatEditingMessage') : tr('chatReplyTo', {'name': emisorNombre}),
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: esEdicion ? Colors.blue : const Color(0xFFC35E34),
+                      ),
+                    ),
+                    Text(
+                      msg.contenido ?? tr('commonNo'), // Fallback "No" -> "Archivo/Nada"
+
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(fontSize: 13, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => setState(() {
+                  _mensajeRespuesta = null;
+                  _mensajeEdicion = null;
+                  if (esEdicion) _mensajeController.clear();
+                }),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      }
     );
   }
 
@@ -534,48 +550,51 @@ class _PantallaChatState extends State<PantallaChat> {
         }
         return Future.value(true);
       },
-      child: Scaffold(
-        backgroundColor: colorFondo,
-        appBar: AppBar(
-          title: _buildAppBarTitle(),
-          actions: [
-            IconButton(
-              icon: _estaCargando || _sala == null
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
-                    )
-                  : const Icon(Icons.palette_outlined, color: Color(0xFFC35E34)),
-              tooltip: 'Personalizar chat',
-              onPressed: (_sala == null) 
-                ? null 
-                : () async {
-                    final actualizado = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => PantallaPersonalizacionChat(sala: _sala!)),
-                    );
-                    if (actualizado == true) {
-                      // Solo recargamos si hubo cambios, pero sin bloquear toda la UI si es posible
-                      _cargarDatos();
-                    }
-                  },
-            ),
-            IconButton(
-              icon: const Icon(Icons.people_outline),
-              onPressed: () => _mostrarMiembros(context),
-            ),
-          ],
+      child: TranslationWidget(
+        builder: (context, tr) => Scaffold(
+          backgroundColor: colorFondo,
+          appBar: AppBar(
+            title: _buildAppBarTitle(tr),
+            actions: [
+              IconButton(
+                icon: _estaCargando || _sala == null
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+                      )
+                    : const Icon(Icons.palette_outlined, color: Color(0xFFC35E34)),
+                tooltip: tr('chatPersonalization'),
+                onPressed: (_sala == null) 
+                  ? null 
+                  : () async {
+                      final actualizado = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => PantallaPersonalizacionChat(sala: _sala!)),
+                      );
+                      if (actualizado == true) {
+                        // Solo recargamos si hubo cambios, pero sin bloquear toda la UI si es posible
+                        _cargarDatos();
+                      }
+                    },
+              ),
+              IconButton(
+                icon: const Icon(Icons.people_outline),
+                onPressed: () => _mostrarMiembros(context),
+              ),
+            ],
+          ),
+          body: _buildBody(tr),
         ),
-        body: _buildBody(),
       ),
     );
   }
 
-  Widget _buildAppBarTitle() {
+  Widget _buildAppBarTitle(dynamic tr) {
     return Consumer<ChatProvider>(
       builder: (context, chatProvider, _) {
-        final nombre = _sala?.nombre ?? widget.nombreSala ?? 'Chat';
+        final nombre = _sala?.nombre ?? widget.nombreSala ?? tr('chatMessages');
+
         String subtitulo = '';
         String? avatarUrl;
         bool esDM = _sala != null && !_sala!.esGrupal;
@@ -586,12 +605,12 @@ class _PantallaChatState extends State<PantallaChat> {
               chatProvider.isUsuarioOnline(p.usuarioId)
             ).length;
             final mCount = _sala!.numMiembros > 0 ? _sala!.numMiembros : _sala!.participantes.length;
-            subtitulo = '$mCount miembros • $onlineCount en línea';
+            subtitulo = tr('communityMembers', {'count': mCount.toString()}) + ' • ' + (onlineCount > 0 ? tr('statusOnline') : tr('statusOffline'));
             avatarUrl = _sala!.avatarS3;
           } else {
             final otroId = _sala!.otroUsuarioId;
             final estado = chatProvider.getEstadoUsuario(otroId ?? 0);
-            subtitulo = estado == 'ACTIVO' ? 'En línea' : (estado == 'OCUPADO' ? 'Ocupado' : 'Desconectado');
+            subtitulo = estado == 'ACTIVO' ? tr('statusOnline') : (estado == 'OCUPADO' ? tr('statusBusy') : tr('statusOffline'));
             
             ParticipanteChat? otroParticipante;
             if (_sala!.participantes.isNotEmpty) {
@@ -672,7 +691,7 @@ class _PantallaChatState extends State<PantallaChat> {
     }
   }
 
-  Widget _buildListaMensajes() {
+  Widget _buildListaMensajes(dynamic tr) {
     if (_mensajes.isEmpty) {
       return Center(
         child: Column(
@@ -680,7 +699,7 @@ class _PantallaChatState extends State<PantallaChat> {
           children: [
             Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey.withOpacity(0.3)),
             const SizedBox(height: 16),
-            Text('No hay mensajes aún.', style: GoogleFonts.outfit(color: Colors.grey)),
+            Text(tr('chatNoMessages'), style: GoogleFonts.outfit(color: Colors.grey)),
           ],
         ),
       );
@@ -702,7 +721,7 @@ class _PantallaChatState extends State<PantallaChat> {
         }
         final msg = _mensajes[index];
         if (msg.esSistema) return _buildMensajeSistema(msg);
-        return _buildBurbujaMensaje(msg);
+        return _buildBurbujaMensaje(msg, tr);
       },
     );
   }
@@ -723,10 +742,10 @@ class _PantallaChatState extends State<PantallaChat> {
     );
   }
 
-  Widget _buildBurbujaMensaje(MensajeChat msg) {
+  Widget _buildBurbujaMensaje(MensajeChat msg, dynamic tr) {
     final esMio = msg.emisorId == _miId;
     final borrado = msg.borradoParaTodos;
-    final texto = borrado ? 'Este mensaje fue eliminado' : (msg.contenido ?? '');
+    final texto = borrado ? tr('chatDeletedMessage') : (msg.contenido ?? '');
     final perso = _sala?.personalizacion;
     final forma = perso?.formaBurbuja ?? 'redondeada';
     final estilo = perso?.estiloBurbuja ?? 'solido';
@@ -851,7 +870,7 @@ class _PantallaChatState extends State<PantallaChat> {
               Padding(
                 padding: const EdgeInsets.only(right: 8, bottom: 2),
                 child: Text(
-                  'Tú', 
+                  tr('commonCreator'), // Usamos creador como proxy de "tú" o similar si no hay uno específico
                   style: GoogleFonts.outfit(
                     fontSize: 11, 
                     fontWeight: FontWeight.bold, 
@@ -860,7 +879,7 @@ class _PantallaChatState extends State<PantallaChat> {
                 ),
               ),
             GestureDetector(
-              onLongPress: () => _mostrarMenuMensaje(msg),
+              onLongPress: () => _mostrarMenuMensaje(msg, tr),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -895,7 +914,8 @@ class _PantallaChatState extends State<PantallaChat> {
                                 Padding(
                                   padding: const EdgeInsets.only(right: 4),
                                   child: Text(
-                                    'editado',
+                                    tr('chatEditingMessage').toLowerCase(),
+
                                     style: GoogleFonts.outfit(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -1017,7 +1037,8 @@ class _PantallaChatState extends State<PantallaChat> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            cita['emisor_nombre'] ?? 'Usuario',
+            cita['emisor_nombre'] ?? tr('user'),
+
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -1025,7 +1046,8 @@ class _PantallaChatState extends State<PantallaChat> {
             ),
           ),
           Text(
-            cita['contenido'] ?? 'Archivo',
+            cita['contenido'] ?? tr('commonNo'),
+
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -1041,6 +1063,9 @@ class _PantallaChatState extends State<PantallaChat> {
   void _mostrarMiembros(BuildContext context) {
     if (_sala == null) return;
     
+    // Obtenemos tr del contexto
+    final tr = Tolgee.of(context).translate;
+
     // Si es un chat de comunidad, mostramos el componente existente
     if (_sala!.esGrupal && _sala!.comunidadId != 0) {
       showModalBottomSheet(
@@ -1079,7 +1104,8 @@ class _PantallaChatState extends State<PantallaChat> {
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
             Text(
-              'Participantes del Chat',
+              tr('chatParticipants'),
+
               style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)),
             ),
             const SizedBox(height: 20),
@@ -1112,7 +1138,8 @@ class _PantallaChatState extends State<PantallaChat> {
                       p.nombreAMostrar,
                       style: GoogleFonts.outfit(fontWeight: esYo ? FontWeight.bold : FontWeight.normal),
                     ),
-                    subtitle: Text(esYo ? 'Tú' : (p.usuario?.nombreUsuario ?? '')),
+                    subtitle: Text(esYo ? tr('you') : (p.usuario?.nombreUsuario ?? '')),
+
                     trailing: (soyAdmin && !esYo) 
                       ? IconButton(
                           icon: const Icon(Icons.person_remove_outlined, color: Colors.red),
@@ -1132,14 +1159,14 @@ class _PantallaChatState extends State<PantallaChat> {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.exit_to_app_rounded, color: Colors.red),
-                title: Text('Abandonar sala', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
-                onTap: () => _confirmarSalidaSala(context),
+                title: Text(tr('chatLeaveRoomWarning').split('.')[0], style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                onTap: () => _confirmarSalidaSala(context, tr),
               ),
               if (_sala!.creador == _miId)
                 ListTile(
                   leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                  title: Text('Eliminar sala permanentemente', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
-                  onTap: () => _confirmarEliminarSala(context),
+                  title: Text(tr('chatDeleteAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                  onTap: () => _confirmarEliminarSala(context, tr),
                 ),
               const SizedBox(height: 20),
             ],
@@ -1149,17 +1176,17 @@ class _PantallaChatState extends State<PantallaChat> {
     );
   }
 
-  void _confirmarEliminarSala(BuildContext context) {
+  void _confirmarEliminarSala(BuildContext context, dynamic tr) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('¿Eliminar sala permanentemente?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
-        content: const Text('Esta acción borrará todos los mensajes, fotos y participantes para siempre. No se puede deshacer.'),
+        title: Text(tr('chatDeleteRoomWarning').split('?')[0] + '?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Text(tr('chatDeleteRoomWarning')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext), 
-            child: const Text('Cancelar')
+            child: Text(tr('commonCancel'))
           ),
           TextButton(
             onPressed: () async {
@@ -1175,39 +1202,37 @@ class _PantallaChatState extends State<PantallaChat> {
               
               // 3. Ejecutar borrado en segundo plano
               if (salaId != null) {
-                print('DEBUG: Solicitando ELIMINAR sala $salaId');
                 _servicio.eliminarSala(salaId).then((exito) {
-                  print('DEBUG: Resultado eliminación sala: $exito');
                   if (!exito && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Error: No tienes permisos para eliminar esta sala'), backgroundColor: Colors.orange)
+                      SnackBar(content: Text(tr('chatDeleteError')), backgroundColor: Colors.orange)
                     );
                   }
                 });
               }
               
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Procesando eliminación... 🐾'), backgroundColor: Colors.red)
+                SnackBar(content: Text(tr('chatDeleteRoomProcessing')), backgroundColor: Colors.red)
               );
             },
-            child: const Text('ELIMINAR TODO', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(tr('commonDelete').toUpperCase(), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  void _confirmarSalidaSala(BuildContext context) {
+  void _confirmarSalidaSala(BuildContext context, dynamic tr) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('¿Abandonar sala?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: const Text('Dejarás de recibir mensajes de este chat. Podrás volver a entrar si alguien te invita o si es pública.'),
+        title: Text(tr('chatLeaveRoomWarning').split('?')[0] + '?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(tr('chatLeaveRoomWarning')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext), 
-            child: const Text('Cancelar')
+            child: Text(tr('commonCancel'))
           ),
           TextButton(
             onPressed: () async {
@@ -1223,22 +1248,20 @@ class _PantallaChatState extends State<PantallaChat> {
               
               // 3. Ejecutar abandono
               if (salaId != null) {
-                print('DEBUG: Solicitando ABANDONAR sala $salaId');
                 _servicio.abandonarSala(salaId).then((exito) {
-                  print('DEBUG: Resultado abandono sala: $exito');
                   if (!exito && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No se pudo abandonar la sala. ¿Eres el creador?'), backgroundColor: Colors.orange)
+                      SnackBar(content: Text(tr('moderationError')), backgroundColor: Colors.orange)
                     );
                   }
                 });
               }
               
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Saliendo de la sala... 🐾'), duration: Duration(seconds: 1))
+                SnackBar(content: Text(tr('chatLeavingRoom')), duration: const Duration(seconds: 1))
               );
             },
-            child: const Text('ABANDONAR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(tr('commonConfirm').toUpperCase(), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1250,27 +1273,28 @@ class _PantallaChatState extends State<PantallaChat> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('¿Expulsar a ${p.nombreAMostrar}?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text('Se eliminará a ${p.nombreAMostrar} de esta sala de chat.'),
+        title: Text(tr('chatExpelConfirm', {'name': p.nombreAMostrar}), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(tr('chatExpelDesc', {'name': p.nombreAMostrar})),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('commonCancel'))),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               final exito = await _servicio.expulsarMiembro(_sala!.id, p.usuarioId!);
               if (exito && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${p.nombreAMostrar} ha sido expulsado 🐾')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('chatExpelledSuccess', {'name': p.nombreAMostrar}))));
                 _cargarDatos(); // Recargar para ver la lista actualizada
               }
             },
-            child: const Text('EXPULSAR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(tr('chatExpelAction'), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
+
       ),
     );
   }
 
-  void _mostrarMenuMensaje(MensajeChat msg) {
+  void _mostrarMenuMensaje(MensajeChat msg, dynamic tr) {
     final esMio = msg.emisorId == _miId;
     if (msg.borradoParaTodos) return;
 
@@ -1291,7 +1315,7 @@ class _PantallaChatState extends State<PantallaChat> {
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.reply_outlined),
-                title: const Text('Responder'),
+                title: Text(tr('chatReplyAction')),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() => _mensajeRespuesta = msg);
@@ -1301,7 +1325,7 @@ class _PantallaChatState extends State<PantallaChat> {
               if (esMio && msg.tipo != 'SISTEMA') ...[
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Editar mensaje'),
+                  title: Text(tr('chatEditAction')),
                   onTap: () {
                     Navigator.pop(context);
                     setState(() {
@@ -1313,27 +1337,28 @@ class _PantallaChatState extends State<PantallaChat> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.info_outline),
-                  title: const Text('Info del mensaje'),
+                  title: Text(tr('chatInfoAction')),
                   onTap: () {
                     Navigator.pop(context);
-                    _verLectores(msg);
+                    _verLectores(msg, tr);
                   },
                 ),
                 ListTile(
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
-                  title: const Text('Borrar para todos', style: TextStyle(color: Colors.red)),
+                  title: Text(tr('chatDeleteForEveryone'), style: const TextStyle(color: Colors.red)),
+
                   onTap: () {
                     Navigator.pop(context);
-                    _eliminarMensaje(msg, paraTodos: true);
+                    _eliminarMensaje(msg, tr, paraTodos: true);
                   },
                 ),
               ],
               ListTile(
                 leading: const Icon(Icons.delete_sweep_outlined),
-                title: const Text('Borrar para mí'),
+                title: Text(tr('chatDeleteAction')),
                 onTap: () {
                   Navigator.pop(context);
-                  _eliminarMensaje(msg, paraTodos: false);
+                  _eliminarMensaje(msg, tr, paraTodos: false);
                 },
               ),
               const SizedBox(height: 8),
@@ -1344,7 +1369,7 @@ class _PantallaChatState extends State<PantallaChat> {
     );
   }
 
-  void _verLectores(MensajeChat msg) {
+  void _verLectores(MensajeChat msg, dynamic tr) {
     if (_sala == null) return;
     
     // Filtramos los participantes que están en la lista de lectores
@@ -1353,7 +1378,7 @@ class _PantallaChatState extends State<PantallaChat> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Info del mensaje', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(tr('chatInfoAction'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: SizedBox(
           width: double.maxFinite,
@@ -1361,22 +1386,22 @@ class _PantallaChatState extends State<PantallaChat> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Enviado el ${_formatFechaCompleta(msg.fechaEnvio)}', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
+              Text(tr('postCreatedDate', {'date': _formatFechaCompleta(msg.fechaEnvio)}), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
               if (msg.esEditado && msg.fechaEdicion != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
                   child: Text(
-                    'Editado el ${_formatFechaCompleta(msg.fechaEdicion!)}', 
+                    tr('postEditTitle') + ': ' + _formatFechaCompleta(msg.fechaEdicion!), 
                     style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)
                   ),
                 ),
               const Divider(height: 24),
-              Text('Leído por:', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+              Text(tr('chatInfoAction').split(' ')[0] + ' ' + tr('commonBy') + ':', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
               const SizedBox(height: 8),
               if (lectores.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: Text('Nadie ha leído este mensaje todavía.'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(tr('chatNoOneRead')),
                 )
               else
                 ListView.builder(
@@ -1403,7 +1428,7 @@ class _PantallaChatState extends State<PantallaChat> {
                       ),
                       title: Text(lector.nombreAMostrar, style: GoogleFonts.outfit(fontSize: 14)),
                       subtitle: fechaLectura != null 
-                        ? Text('Leído el ${_formatFechaCompleta(fechaLectura)}', style: GoogleFonts.outfit(fontSize: 12))
+                        ? Text(tr('chatInfoAction').split(' ')[0] + ' el ' + _formatFechaCompleta(fechaLectura), style: GoogleFonts.outfit(fontSize: 12))
                         : null,
                     );
                   },
@@ -1414,7 +1439,7 @@ class _PantallaChatState extends State<PantallaChat> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext), 
-            child: const Text('Cerrar')
+            child: Text(tr('commonClose'))
           ),
         ],
       ),
@@ -1422,22 +1447,23 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   String _formatFechaCompleta(DateTime fecha) {
-    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} a las ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
+    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} ${trStatic('at')} ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
   }
 
-  void _eliminarMensaje(MensajeChat msg, {required bool paraTodos}) async {
+
+  void _eliminarMensaje(MensajeChat msg, dynamic tr, {required bool paraTodos}) async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(paraTodos ? '¿Borrar para todos?' : '¿Borrar para mí?'),
+        title: Text(paraTodos ? tr('chatDeleteAction') : tr('chatDeleteAction')),
         content: Text(paraTodos 
-          ? 'Esta acción eliminará el mensaje para todos los miembros del chat.' 
-          : 'Esta acción ocultará el mensaje de tu historial personal.'),
+          ? tr('chatDeleteRoomWarning').split('.')[0] 
+          : tr('chatLeaveRoomWarning').split('.')[0]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('commonCancel'))),
           TextButton(
             onPressed: () => Navigator.pop(context, true), 
-            child: Text('Borrar', style: TextStyle(color: paraTodos ? Colors.red : Colors.blue)),
+            child: Text(tr('commonDelete'), style: TextStyle(color: paraTodos ? Colors.red : Colors.blue)),
           ),
         ],
       ),
@@ -1453,12 +1479,12 @@ class _PantallaChatState extends State<PantallaChat> {
           });
         }
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al borrar el mensaje')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('chatDeleteError'))));
       }
     }
   }
 
-  Widget _buildInputArea() {
+  Widget _buildInputArea(dynamic tr) {
     final esOscuro = Theme.of(context).brightness == Brightness.dark;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1520,7 +1546,8 @@ class _PantallaChatState extends State<PantallaChat> {
                               textInputAction: TextInputAction.newline,
                               style: GoogleFonts.outfit(fontSize: 15),
                               decoration: InputDecoration(
-                                hintText: 'Escribe un mensaje...',
+                                hintText: tr('chatTypeMessage') + '...',
+
                                 hintStyle: GoogleFonts.outfit(color: Colors.grey),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1584,11 +1611,12 @@ class _PantallaChatState extends State<PantallaChat> {
             gridPadding: EdgeInsets.zero,
             buttonMode: emoji.ButtonMode.MATERIAL,
             backgroundColor: const Color(0xFFF2F2F2),
-            noRecents: const Text(
-              'No hay recientes',
-              style: TextStyle(fontSize: 16, color: Colors.black26),
+            noRecents: Text(
+              tr('chatNoRecentEmojis'),
+              style: const TextStyle(fontSize: 16, color: Colors.black26),
               textAlign: TextAlign.center,
             ),
+
           ),
           categoryViewConfig: const emoji.CategoryViewConfig(
             initCategory: emoji.Category.RECENT,
@@ -1596,11 +1624,12 @@ class _PantallaChatState extends State<PantallaChat> {
             iconColorSelected: Color(0xFFC35E34),
             backspaceColor: Color(0xFFC35E34),
           ),
-          searchViewConfig: const emoji.SearchViewConfig(
-            backgroundColor: Color(0xFFF2F2F2),
+          searchViewConfig: emoji.SearchViewConfig(
+            backgroundColor: const Color(0xFFF2F2F2),
             buttonIconColor: Colors.grey,
-            hintText: 'Buscar emoji...',
+            hintText: tr('chatSearchEmojiHint'),
           ),
+
           bottomActionBarConfig: const emoji.BottomActionBarConfig(
             buttonColor: Color(0xFFF2F2F2),
             buttonIconColor: Colors.grey,
@@ -1646,12 +1675,12 @@ class _PantallaChatState extends State<PantallaChat> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Sala no encontrada',
+                tr('chatRoomNotFound'),
                 style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
               ),
               const SizedBox(height: 12),
               Text(
-                'La sala de chat no existe o ya no tienes acceso a ella 🐾',
+                tr('chatRoomAccessError'),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(fontSize: 16, color: Colors.grey[600]),
               ),
@@ -1666,7 +1695,7 @@ class _PantallaChatState extends State<PantallaChat> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('Reintentar'),
+                  child: Text(tr('commonRetry')),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1679,9 +1708,10 @@ class _PantallaChatState extends State<PantallaChat> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     side: const BorderSide(color: Colors.grey),
                   ),
-                  child: Text('Volver atrás', style: TextStyle(color: Colors.grey[700])),
+                  child: Text(tr('chatGoBack'), style: TextStyle(color: Colors.grey[700])),
                 ),
               ),
+
             ],
           ),
         ),

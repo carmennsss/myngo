@@ -4,6 +4,8 @@ import '../../models/comunidad.dart';
 import '../../models/catalogo_mejoras.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import '../../tolgee/translation_widget.dart';
+
 
 class PantallaGestionCatalogo extends StatefulWidget {
   final Comunidad comunidad;
@@ -58,63 +60,68 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1),
-      appBar: AppBar(
-        title: Text('Gestión de Catálogo', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
-      ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-          : _items.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _items.length,
-                  itemBuilder: (context, index) => _TarjetaGestionItem(
-                    item: _items[index],
-                    onToggle: (val) => _actualizarItem(_items[index], estaActivo: val),
-                    onEditPrecio: () => _mostrarDialogoPrecio(context, _items[index]),
-                  ),
-                ),
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+          appBar: AppBar(
+            title: Text(tr('catalogManagementTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
+          ),
+          body: _cargando
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+              : _items.isEmpty
+                  ? _buildEmptyState(tr)
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _items.length,
+                      itemBuilder: (context, index) => _TarjetaGestionItem(
+                        item: _items[index],
+                        onToggle: (val) => _actualizarItem(_items[index], estaActivo: val),
+                        onEditPrecio: () => _mostrarDialogoPrecio(context, _items[index], tr),
+                        tr: tr,
+                      ),
+                    ),
+        );
+      }
     );
   }
 
-  Widget _buildEmptyState() {
-    return const EstadoVacioCargando(
+  Widget _buildEmptyState(String Function(String) tr) {
+    return EstadoVacioCargando(
       icon: Icons.inventory_2_outlined,
-      message: 'Aún no hay items aprobados en este catálogo 🐾\nModera propuestas para que aparezcan aquí.',
+      message: tr('catalogManagementEmpty'),
     );
   }
 
-  void _mostrarDialogoPrecio(BuildContext context, CatalogoMejoras item) {
+  void _mostrarDialogoPrecio(BuildContext context, CatalogoMejoras item, String Function(String) tr) {
     final controller = TextEditingController(text: item.precioPuntos.toString());
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Editar Precio', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(tr('catalogManagementEditPrice'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Ajusta el precio para este ítem:', style: GoogleFonts.outfit(fontSize: 14)),
+            Text(tr('catalogManagementAdjustPrice'), style: GoogleFonts.outfit(fontSize: 14)),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                suffixText: 'puntos',
+                suffixText: tr('storeModerationPointsSuffix'),
                 filled: true,
                 fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                helperText: 'Mínimo 100 puntos',
+                helperText: tr('catalogManagementMinPoints'),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('commonCancel'))),
           ElevatedButton(
             onPressed: () {
               final precio = int.tryParse(controller.text);
@@ -123,11 +130,11 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
                 _actualizarItem(item, precio: precio);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('El precio mínimo es 100')),
+                  SnackBar(content: Text(tr('catalogManagementErrorMinPrice'))),
                 );
               }
             },
-            child: const Text('GUARDAR'),
+            child: Text(tr('adminSave')),
           ),
         ],
       ),
@@ -139,12 +146,15 @@ class _TarjetaGestionItem extends StatelessWidget {
   final CatalogoMejoras item;
   final Function(bool) onToggle;
   final VoidCallback onEditPrecio;
+  final String Function(String) tr;
 
   const _TarjetaGestionItem({
     required this.item,
     required this.onToggle,
     required this.onEditPrecio,
+    required this.tr,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -206,14 +216,15 @@ class _TarjetaGestionItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 if (!item.estaActivo)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8.0),
-                    child: Text('Inactivo en tienda', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Text(tr('catalogManagementInactive'), style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 OutlinedButton.icon(
                   onPressed: onEditPrecio,
                   icon: const Icon(Icons.edit_rounded, size: 14),
-                  label: const Text('CAMBIAR PRECIO'),
+                  label: Text(tr('catalogManagementChangePriceBtn')),
+
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFC35E34),
                     side: const BorderSide(color: Color(0xFFC35E34)),

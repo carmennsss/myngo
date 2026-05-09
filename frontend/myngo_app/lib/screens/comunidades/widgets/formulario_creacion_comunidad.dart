@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../tolgee/translation_widget.dart';
 import '../../../widgets/campo_texto_personalizado.dart';
+
 import '../../../widgets/boton_carga.dart';
 import '../../../services/servicio_comunidades.dart';
 import '../../../models/comunidad.dart';
@@ -114,8 +116,9 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
           Navigator.pop(context, true);
           widget.alConfirmar();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Comunidad creada 🐾!'), backgroundColor: Colors.green),
+            SnackBar(content: Text(TranslationWidget.of(context).tr('communityCreatedSuccess')), backgroundColor: Colors.green),
           );
+
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(respuesta.mensaje), backgroundColor: Colors.redAccent),
@@ -127,229 +130,234 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        top: 24,
-        left: 24,
-        right: 24,
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      child: Form(
-        key: _llaveFormulario,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Nueva Comunidad 🐾',
-                style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-
-              // Selector de Imagen
-              GestureDetector(
-                onTap: _seleccionarImagen,
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF121212),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF2A2A2A)),
-                    image: _imagenSeleccionada != null
-                        ? DecorationImage(
-                            image: kIsWeb 
-                              ? NetworkImage(_imagenSeleccionada!.path) as ImageProvider
-                              : FileImage(File(_imagenSeleccionada!.path)),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            top: 24,
+            left: 24,
+            right: 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Form(
+            key: _llaveFormulario,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    tr('communityCreateTitle'),
+                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                    textAlign: TextAlign.center,
                   ),
-                  child: _imagenSeleccionada == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.add_photo_alternate_outlined, size: 40, color: Color(0xFFF28B50)),
-                            const SizedBox(height: 8),
-                            Text('Añadir foto de portada', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
-                          ],
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              CampoTextoPersonalizado(
-                etiqueta: 'Nombre de la comunidad',
-                icono: Icons.groups_outlined,
-                controlador: _controladorNombre,
-                nodoEnfoque: _nodoNombre,
-                validador: (v) => (v == null || v.isEmpty) ? 'Escribe un nombre' : null,
-              ),
-              const SizedBox(height: 16),
-              
-              CampoTextoPersonalizado(
-                etiqueta: 'Descripción / Reglas',
-                icono: Icons.description_outlined,
-                controlador: _controladorDescripcion,
-                nodoEnfoque: _nodoDescripcion,
-                maxLineas: 5,
-                minLineas: 3,
-              ),
-              const SizedBox(height: 16),
-              
-              // --- SECCIÓN DE TAGS ---
-              Text(
-                'Etiquetas (máx. 5)',
-                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _controladorTag,
-                onChanged: _buscarSugerencias,
-                onSubmitted: _anadirTag,
-                style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Escribe un tag y pulsa intro...',
-                  hintStyle: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
-                  prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFF28B50), size: 20),
-                  filled: true,
-                  fillColor: const Color(0xFF121212),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
-                ),
-              ),
-              if (_mostrandoSugerencias)
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 24),
+    
+                  // Selector de Imagen
+                  GestureDetector(
+                    onTap: _seleccionarImagen,
+                    child: Container(
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF121212),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFF2A2A2A)),
+                        image: _imagenSeleccionada != null
+                            ? DecorationImage(
+                                image: kIsWeb 
+                                  ? NetworkImage(_imagenSeleccionada!.path) as ImageProvider
+                                  : FileImage(File(_imagenSeleccionada!.path)),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: _imagenSeleccionada == null
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.add_photo_alternate_outlined, size: 40, color: Color(0xFFF28B50)),
+                                const SizedBox(height: 8),
+                                Text(tr('communityCreateAddBanner'), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
+                              ],
+                            )
+                          : null,
+                    ),
                   ),
-                  child: Column(
-                    children: _sugerenciasTags.map((tag) => ListTile(
-                      title: Text(tag['nombre'], style: GoogleFonts.outfit(color: Colors.white, fontSize: 13)),
-                      onTap: () => _anadirTag(tag['nombre']),
-                      dense: true,
+                  const SizedBox(height: 24),
+                  
+                  CampoTextoPersonalizado(
+                    etiqueta: tr('communityCreateNameLabel'),
+                    icono: Icons.groups_outlined,
+                    controlador: _controladorNombre,
+                    nodoEnfoque: _nodoNombre,
+                    validador: (v) => (v == null || v.isEmpty) ? tr('communityCreateNameHint') : null,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  CampoTextoPersonalizado(
+                    etiqueta: tr('communityCreateDescLabel'),
+                    icono: Icons.description_outlined,
+                    controlador: _controladorDescripcion,
+                    nodoEnfoque: _nodoDescripcion,
+                    maxLineas: 5,
+                    minLineas: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // --- SECCIÓN DE TAGS ---
+                  Text(
+                    tr('communityCreateTagsLabel'),
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _controladorTag,
+                    onChanged: _buscarSugerencias,
+                    onSubmitted: _anadirTag,
+                    style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: tr('communityCreateTagsHint'),
+                      hintStyle: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
+                      prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFF28B50), size: 20),
+                      filled: true,
+                      fillColor: const Color(0xFF121212),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
+                    ),
+                  ),
+                  if (_mostrandoSugerencias)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2A2A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: _sugerenciasTags.map((tag) => ListTile(
+                          title: Text(tag['nombre'], style: GoogleFonts.outfit(color: Colors.white, fontSize: 13)),
+                          onTap: () => _anadirTag(tag['nombre']),
+                          dense: true,
+                        )).toList(),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _tagsSeleccionados.map((tag) => Chip(
+                      label: Text(tag, style: GoogleFonts.outfit(fontSize: 11, color: Colors.white)),
+                      backgroundColor: const Color(0xFFC35E34),
+                      deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
+                      onDeleted: () => setState(() => _tagsSeleccionados.remove(tag)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      side: BorderSide.none,
                     )).toList(),
                   ),
-                ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _tagsSeleccionados.map((tag) => Chip(
-                  label: Text(tag, style: GoogleFonts.outfit(fontSize: 11, color: Colors.white)),
-                  backgroundColor: const Color(0xFFC35E34),
-                  deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
-                  onDeleted: () => setState(() => _tagsSeleccionados.remove(tag)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  side: BorderSide.none,
-                )).toList(),
-              ),
-              const SizedBox(height: 16),
-              
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF121212),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _esPublica ? const Color(0xFF248EA6).withOpacity(0.3) : const Color(0xFFD95F43).withOpacity(0.3)),
-                ),
-                child: SwitchListTile(
-                  title: Text(
-                    _esPublica ? 'Comunidad Pública 🌍' : 'Comunidad Privada 🔒',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                  const SizedBox(height: 16),
+                  
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121212),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _esPublica ? const Color(0xFF248EA6).withOpacity(0.3) : const Color(0xFFD95F43).withOpacity(0.3)),
+                    ),
+                    child: SwitchListTile(
+                      title: Text(
+                        _esPublica ? tr('communityCreatePublicTitle') : tr('communityCreatePrivateTitle'),
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        _esPublica ? tr('communityCreatePublicDesc') : tr('communityCreatePrivateDesc'),
+                        style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
+                      ),
+                      secondary: Icon(
+                        _esPublica ? Icons.pets_rounded : Icons.lock_person_rounded,
+                        color: _esPublica ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
+                      ),
+                      value: _esPublica,
+                      onChanged: (v) => setState(() => _esPublica = v),
+                      activeColor: const Color(0xFF248EA6),
+                    ),
                   ),
-                  subtitle: Text(
-                    _esPublica ? 'Cualquier miau puede unirse libremente' : 'Solo con invitación o solicitud aceptada',
-                    style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
-                  ),
-                  secondary: Icon(
-                    _esPublica ? Icons.pets_rounded : Icons.lock_person_rounded,
-                    color: _esPublica ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
-                  ),
-                  value: _esPublica,
-                  onChanged: (v) => setState(() => _esPublica = v),
-                  activeColor: const Color(0xFF248EA6),
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // --- REQUISITO DE RANKING ---
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF121212),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF2A2A2A)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  const SizedBox(height: 16),
+                  
+                  // --- REQUISITO DE RANKING ---
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121212),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
-                            const SizedBox(width: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  tr('communityCreateMinRank'),
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                                ),
+                              ],
+                            ),
                             Text(
-                              'Ranking Mínimo',
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                              _minRating == 0 ? tr('communityCreateMinRankNone') : '${_minRating.toStringAsFixed(1)} ⭐',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold, 
+                                color: _minRating == 0 ? Colors.grey : Colors.amber,
+                                fontSize: 14
+                              ),
                             ),
                           ],
                         ),
-                        Text(
-                          _minRating == 0 ? 'Sin límite' : '${_minRating.toStringAsFixed(1)} ⭐',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold, 
-                            color: _minRating == 0 ? Colors.grey : Colors.amber,
-                            fontSize: 14
+                        const SizedBox(height: 8),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: const Color(0xFFF28B50),
+                            inactiveTrackColor: const Color(0xFF1E1E1E),
+                            thumbColor: const Color(0xFFF28B50),
+                            overlayColor: const Color(0xFFF28B50).withOpacity(0.2),
                           ),
+                          child: Slider(
+                            value: _minRating,
+                            min: 0,
+                            max: 5,
+                            divisions: 10,
+                            label: _minRating.toStringAsFixed(1),
+                            onChanged: (v) => setState(() => _minRating = v),
+                          ),
+                        ),
+                        Text(
+                          tr('communityCreateMinRankDesc'),
+                          style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        activeTrackColor: const Color(0xFFF28B50),
-                        inactiveTrackColor: const Color(0xFF1E1E1E),
-                        thumbColor: const Color(0xFFF28B50),
-                        overlayColor: const Color(0xFFF28B50).withOpacity(0.2),
-                      ),
-                      child: Slider(
-                        value: _minRating,
-                        min: 0,
-                        max: 5,
-                        divisions: 10,
-                        label: _minRating.toStringAsFixed(1),
-                        onChanged: (v) => setState(() => _minRating = v),
-                      ),
-                    ),
-                    Text(
-                      'Solo usuarios con nivel superior a este podrán unirse.',
-                      style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  BotonCarga(
+                    alPresionar: _crearComunidad,
+                    notificadorCargando: _estaCargando,
+                    texto: tr('communityCreateButton'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              
-              BotonCarga(
-                alPresionar: _crearComunidad,
-                notificadorCargando: _estaCargando,
-                texto: 'CREAR COMUNIDAD 🐾',
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
+
 }

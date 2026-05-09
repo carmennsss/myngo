@@ -321,21 +321,23 @@ class InfoPerfil extends StatelessWidget {
     return Row(
       children: [
         // Botón Seguir / Siguiendo / Pendiente
-        _SmallButton(
-          label: _getFollowText(),
-          icon: estadoSeguimiento == 'ACEPTADO'
-              ? Icons.check_rounded
-              : (estadoSeguimiento == 'SOLICITUD'
-                  ? Icons.hourglass_top_rounded
-                  : Icons.person_add_rounded),
-          color: estadoSeguimiento == 'ACEPTADO'
-              ? Colors.grey.shade600
-              : (estadoSeguimiento == 'SOLICITUD'
-                  ? Colors.grey.shade500
-                  : themeColor),
-          isLoading: isLoading,
-          onPressed: onManejarSeguimiento,
-          fuentePerfil: usuario.fuentePerfil,
+        TranslationWidget(
+          builder: (context, tr) => _SmallButton(
+            label: _getFollowText(tr),
+            icon: estadoSeguimiento == 'ACEPTADO'
+                ? Icons.check_rounded
+                : (estadoSeguimiento == 'SOLICITUD'
+                    ? Icons.hourglass_top_rounded
+                    : Icons.person_add_rounded),
+            color: estadoSeguimiento == 'ACEPTADO'
+                ? Colors.grey.shade600
+                : (estadoSeguimiento == 'SOLICITUD'
+                    ? Colors.grey.shade500
+                    : themeColor),
+            isLoading: isLoading,
+            onPressed: onManejarSeguimiento,
+            fuentePerfil: usuario.fuentePerfil,
+          ),
         ),
         const SizedBox(width: 8),
         // Botón Chat
@@ -425,13 +427,11 @@ class InfoPerfil extends StatelessWidget {
     );
   }
 
-  // TODO: confirm translation key — _getFollowText is called outside TranslationWidget context;
-  // callers should use TranslationWidget and pass tr() result.
-  String _getFollowText() {
-    if (estadoSeguimiento == 'ACEPTADO') return 'Siguiendo';
-    if (estadoSeguimiento == 'SOLICITUD') return 'Pendiente';
-    if (!usuario.esPublico) return 'Solicitar seguir';
-    return 'Seguir';
+  String _getFollowText(dynamic tr) {
+    if (estadoSeguimiento == 'ACEPTADO') return tr('profileFollowFollowing');
+    if (estadoSeguimiento == 'SOLICITUD') return tr('profileFollowPending');
+    if (!usuario.esPublico) return tr('profileFollowRequest');
+    return tr('profileFollowFollow');
   }
 }
 

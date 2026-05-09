@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../tolgee/translation_widget.dart';
+
 import '../../../models/publicacion.dart';
 import '../../../widgets/inicio/tarjeta_post.dart';
 import '../../../widgets/comunes/estado_vacio_cargando.dart';
@@ -37,110 +39,115 @@ class SeccionPostsComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (estaCargando || publicaciones == null) {
-      const loading = Center(
-          child: Padding(
-            padding: EdgeInsets.all(40.0),
-            child: CircularProgressIndicator(color: Color(0xFFF28B50)),
-          ));
-      return comoSliver ? const SliverToBoxAdapter(child: SizedBox(height: 200, child: loading)) : loading;
-    }
-
-    if (publicaciones!.isEmpty) {
-      Color? textColor;
-      if (backgroundConfig != null) {
-        // Color basado en el fondo configurado del feed
-        final color1Hex = backgroundConfig!['color1']?.toString() ?? (esAppClara ? '#FFFFFF' : '#121212');
-        final color1 = _parseHex(color1Hex);
-        textColor = color1.computeLuminance() > 0.5 ? const Color(0xFF4A4440) : Colors.white.withOpacity(0.9);
-      } else if (tieneFondoGlobal) {
-        // Hay imagen de fondo de comunidad: texto blanco con sombra implícita
-        textColor = Colors.white.withOpacity(0.9);
-      } else {
-        // Sin fondo: adaptar al tema (claro = oscuro, oscuro = blanco)
-        textColor = esAppClara ? const Color(0xFF4A4440) : Colors.white.withOpacity(0.8);
-      }
-
-      final empty = EstadoVacioCargando(
-        icon: Icons.feed_outlined,
-        message: 'Aún no hay publicaciones',
-        textColor: textColor,
-      );
-      
-      if (comoSliver) {
-        return SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(child: empty),
-        );
-      }
-      return Center(child: empty);
-    }
-
-    // Contrucción de los slivers directamente si es comoSliver
-    if (comoSliver) {
-      return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              if (index == publicaciones!.length) {
-                return hasMore 
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32.0),
-                      child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
-                    )
-                  : const SizedBox.shrink();
-              }
-              return _buildPostItem(publicaciones![index]);
-            },
-            childCount: publicaciones!.length + (hasMore ? 1 : 0),
-          ),
-        ),
-      );
-    }
-
-    // Versión no-sliver (usada en previews o vistas simples)
-    final mainList = ListView.builder(
-      primary: false,
-      physics: const AlwaysScrollableScrollPhysics(), 
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      itemCount: publicaciones!.length + (hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == publicaciones!.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32.0),
-            child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+    return TranslationWidget(
+      builder: (context, tr) {
+        if (estaCargando || publicaciones == null) {
+          const loading = Center(
+              child: Padding(
+                padding: EdgeInsets.all(40.0),
+                child: CircularProgressIndicator(color: Color(0xFFF28B50)),
+              ));
+          return comoSliver ? const SliverToBoxAdapter(child: SizedBox(height: 200, child: loading)) : loading;
+        }
+    
+        if (publicaciones!.isEmpty) {
+          Color? textColor;
+          if (backgroundConfig != null) {
+            // Color basado en el fondo configurado del feed
+            final color1Hex = backgroundConfig!['color1']?.toString() ?? (esAppClara ? '#FFFFFF' : '#121212');
+            final color1 = _parseHex(color1Hex);
+            textColor = color1.computeLuminance() > 0.5 ? const Color(0xFF4A4440) : Colors.white.withOpacity(0.9);
+          } else if (tieneFondoGlobal) {
+            // Hay imagen de fondo de comunidad: texto blanco con sombra implícita
+            textColor = Colors.white.withOpacity(0.9);
+          } else {
+            // Sin fondo: adaptar al tema (claro = oscuro, oscuro = blanco)
+            textColor = esAppClara ? const Color(0xFF4A4440) : Colors.white.withOpacity(0.8);
+          }
+    
+          final empty = EstadoVacioCargando(
+            icon: Icons.feed_outlined,
+            message: tr('feedNoPosts'),
+            textColor: textColor,
+          );
+          
+          if (comoSliver) {
+            return SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: empty),
+            );
+          }
+          return Center(child: empty);
+        }
+    
+        // Contrucción de los slivers directamente si es comoSliver
+        if (comoSliver) {
+          return SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  if (index == publicaciones!.length) {
+                    return hasMore 
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32.0),
+                          child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+                        )
+                      : const SizedBox.shrink();
+                  }
+                  return _buildPostItem(publicaciones![index]);
+                },
+                childCount: publicaciones!.length + (hasMore ? 1 : 0),
+              ),
+            ),
           );
         }
-        return _buildPostItem(publicaciones![index]);
-      },
-    );
-
-    final mainContent = RefreshIndicator(
-      color: const Color(0xFFF28B50),
-      backgroundColor: Colors.white,
-      onRefresh: onRefresh,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification scrollInfo) {
-          if (hasMore && !isLoadingMore && 
-              scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 400) {
-            onLoadMore?.call();
-          }
-          return false;
-        },
-        child: mainList,
-      ),
-    );
-
-    if (backgroundConfig == null) return mainContent;
-
-    return Stack(
-      children: [
-        Positioned.fill(child: buildPostsBackgroundFromConfig(backgroundConfig, context)),
-        mainContent,
-      ],
+    
+        // Versión no-sliver (usada en previews o vistas simples)
+        final mainList = ListView.builder(
+          primary: false,
+          physics: const AlwaysScrollableScrollPhysics(), 
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          itemCount: publicaciones!.length + (hasMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == publicaciones!.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32.0),
+                child: Center(child: CircularProgressIndicator(color: Color(0xFFF28B50))),
+              );
+            }
+            return _buildPostItem(publicaciones![index]);
+          },
+        );
+    
+        final mainContent = RefreshIndicator(
+          color: const Color(0xFFF28B50),
+          backgroundColor: Colors.white,
+          onRefresh: onRefresh,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (hasMore && !isLoadingMore && 
+                  scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 400) {
+                onLoadMore?.call();
+              }
+              return false;
+            },
+            child: mainList,
+          ),
+        );
+    
+        if (backgroundConfig == null) return mainContent;
+    
+        return Stack(
+          children: [
+            Positioned.fill(child: buildPostsBackgroundFromConfig(backgroundConfig, context)),
+            mainContent,
+          ],
+        );
+      }
     );
   }
+
 
   Widget _buildPostItem(Publicacion post) {
     return Center(

@@ -158,53 +158,55 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
 
     return DefaultTabController(
       length: 3,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFEF5F1), // Peach Cream Universal
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          toolbarHeight: 80,
-          title: Padding(
-            padding: const EdgeInsets.only(top: 20),
-            child: Text(
-              'NOTIFICACIONES',
-              style: GoogleFonts.outfit(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFF4A4440),
-                letterSpacing: 1.0,
+      child: TranslationWidget(
+        builder: (context, tr) => Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1), // Peach Cream Universal
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            toolbarHeight: 80,
+            title: Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                tr('notificationTitle'),
+                style: GoogleFonts.outfit(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF4A4440),
+                  letterSpacing: 1.0,
+                ),
               ),
             ),
+            bottom: TabBar(
+              dividerColor: Colors.transparent,
+              isScrollable: true,
+              tabAlignment: TabAlignment.center,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+              unselectedLabelColor: Colors.grey.shade500,
+              labelColor: const Color(0xFFC35E34),
+              indicatorColor: const Color(0xFFC35E34),
+              indicatorSize: TabBarIndicatorSize.label,
+              tabs: [
+                Tab(text: tr('notificationTabInteractions'), icon: const Icon(Icons.favorite_rounded)),
+                Tab(text: tr('notificationTabRequests'), icon: const Icon(Icons.group_add_rounded)),
+                Tab(text: tr('notificationTabAlerts'), icon: const Icon(Icons.notifications_rounded)),
+              ],
+            ),
           ),
-          bottom: TabBar(
-            dividerColor: Colors.transparent,
-            isScrollable: true,
-            tabAlignment: TabAlignment.center,
-            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
-            unselectedLabelColor: Colors.grey.shade500,
-            labelColor: const Color(0xFFC35E34),
-            indicatorColor: const Color(0xFFC35E34),
-            indicatorSize: TabBarIndicatorSize.label,
-            tabs: const [
-              Tab(text: 'Interacciones', icon: Icon(Icons.favorite_rounded)),
-              Tab(text: 'Solicitudes', icon: Icon(Icons.group_add_rounded)),
-              Tab(text: 'Alertas', icon: Icon(Icons.notifications_rounded)),
+          body: TabBarView(
+            children: [
+              _buildListaTab(interacciones, tr('notificationEmptyInteractions'), Icons.favorite_border_rounded, tr),
+              _buildListaTab(solicitudes, tr('notificationEmptyRequests'), Icons.group_add_rounded, tr),
+              _buildListaTab(sistema, tr('notificationEmptyAlerts'), Icons.notifications_none_rounded, tr),
             ],
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildListaTab(interacciones, 'No tienes nuevas interacciones.', Icons.favorite_border_rounded),
-            _buildListaTab(solicitudes, 'No tienes solicitudes pendientes.', Icons.group_add_rounded),
-            _buildListaTab(sistema, 'No tienes alertas del sistema.', Icons.notifications_none_rounded),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildListaTab(List<Notificacion> lista, String mensajeVacio, IconData iconoVacio) {
-    if (lista.isEmpty) return _buildVistaVaciaEspecial(mensajeVacio, iconoVacio);
+  Widget _buildListaTab(List<Notificacion> lista, String mensajeVacio, IconData iconoVacio, dynamic tr) {
+    if (lista.isEmpty) return _buildVistaVaciaEspecial(mensajeVacio, iconoVacio, tr);
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       itemCount: lista.length,
@@ -213,11 +215,12 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         isLast: index == lista.length - 1,
         onResponder: _responder,
         onTap: _navegarADetalle,
+        tr: tr,
       ),
     );
   }
 
-  Widget _buildVistaVaciaEspecial(String mensaje, IconData icono) {
+  Widget _buildVistaVaciaEspecial(String mensaje, IconData icono, dynamic tr) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -236,7 +239,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
           ),
           const SizedBox(height: 24),
           Text(
-            '¡Todo tranquilo por aquí!',
+            tr('notificationEmptyTitle'),
             style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.w900, fontSize: 20),
           ),
           const SizedBox(height: 8),
@@ -256,12 +259,14 @@ class _TarjetaNotificacion extends StatelessWidget {
   final bool isLast;
   final Function(Notificacion, bool) onResponder;
   final Function(Notificacion) onTap;
+  final dynamic tr;
 
   const _TarjetaNotificacion({
     required this.notif,
     this.isLast = false,
     required this.onResponder,
     required this.onTap,
+    required this.tr,
   });
 
   @override
@@ -337,7 +342,7 @@ class _TarjetaNotificacion extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(color: const Color(0xFFC35E34), borderRadius: BorderRadius.circular(12)),
                           alignment: Alignment.center,
-                          child: Text('ACEPTAR', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                          child: Text(tr('notificationAccept'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                         ),
                       ),
                     ),
@@ -349,7 +354,7 @@ class _TarjetaNotificacion extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
                           alignment: Alignment.center,
-                          child: Text('RECHAZAR', style: GoogleFonts.outfit(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13)),
+                          child: Text(tr('notificationReject'), style: GoogleFonts.outfit(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13)),
                         ),
                       ),
                     ),

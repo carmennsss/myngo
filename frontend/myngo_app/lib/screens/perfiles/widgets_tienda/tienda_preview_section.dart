@@ -61,14 +61,14 @@ class TiendaPreviewSection extends StatelessWidget {
               Flexible(
                 child: Transform.scale(
                   scale: scale,
-                  child: _buildProfilePreview(),
+                  child: _buildProfilePreview(context),
                 ),
               ),
               const SizedBox(width: 20),
               Flexible(
                 child: Transform.scale(
                   scale: scale,
-                  child: _buildPostPreview(),
+                  child: _buildPostPreview(context),
                 ),
               ),
             ],
@@ -77,12 +77,12 @@ class TiendaPreviewSection extends StatelessWidget {
             children: [
               Transform.scale(
                 scale: scale,
-                child: _buildProfilePreview(),
+                child: _buildProfilePreview(context),
               ),
               const SizedBox(height: 12),
               Transform.scale(
                 scale: scale,
-                child: _buildPostPreview(),
+                child: _buildPostPreview(context),
               ),
             ],
           );
@@ -121,22 +121,24 @@ class TiendaPreviewSection extends StatelessWidget {
     );
   }
 
-  Widget _buildProfilePreview() {
+  Widget _buildProfilePreview(BuildContext context) {
+    final tr = Tolgee.of(context).tr;
     return ProfilePreview(
       fondoUrl: _getAbsoluteUrl(previewFondo),
       avatarUrl: _getAbsoluteUrl(previewAvatar),
       marcoUrl: _getAbsoluteUrl(previewMarco),
-      nombreUsuario: usuarioActual?.nombreUsuario ?? 'Usuario',
+      nombreUsuario: usuarioActual?.nombreUsuario ?? tr('user'),
       puntos: usuarioActual?.puntos ?? 0,
     );
   }
 
-  Widget _buildPostPreview() {
+  Widget _buildPostPreview(BuildContext context) {
+    final tr = Tolgee.of(context).tr;
     return PostPreview(
       estilo: previewEstiloPost,
       avatarUrl: _getAbsoluteUrl(previewAvatar),
       marcoUrl: _getAbsoluteUrl(previewMarco),
-      nombreUsuario: usuarioActual?.nombreUsuario ?? 'Usuario',
+      nombreUsuario: usuarioActual?.nombreUsuario ?? tr('user'),
     );
   }
 }

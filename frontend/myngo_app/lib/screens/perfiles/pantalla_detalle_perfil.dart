@@ -437,7 +437,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                           tabBar: TabBar(
                             controller: _tabController,
                             tabs: [
-                              const Tab(text: 'Posts'),
+                              Tab(text: tr('postTabPosts')),
                               Tab(text: _currentUserId == _usuario!.id ? tr('profileTabsFavorites') : tr('profileTabsCollections')),
                             ],
                             labelStyle: GoogleFonts.getFont(_usuario!.fuentePerfil,

@@ -167,7 +167,7 @@ class SidebarIzquierdo extends StatelessWidget {
                     style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)
                   ),
                   Text(
-                    '5000 MAX', 
+                    tr('rankMaxPoints', '5000 MAX'), 
                     style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey.shade400, fontWeight: FontWeight.w900)
                   ),
                 ],
@@ -581,7 +581,7 @@ void _mostrarDialogoComunidades(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(c.nombre ?? 'Sin nombre', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF4A4440))),
+                                            Text(c.nombre ?? tr('commonNoName', 'Sin nombre'), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF4A4440))),
                                             const SizedBox(height: 4),
                                             Row(
                                               children: [

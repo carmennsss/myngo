@@ -130,34 +130,37 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
   ];
 
   final List<Map<String, dynamic>> _gradientes = [
-    {'id': 'sunset', 'name': 'Atardecer', 'colors': [Color(0xFFFF512F), Color(0xFFDD2476)]},
-    {'id': 'ocean', 'name': 'Océano', 'colors': [Color(0xFF2193B0), Color(0xFF6DD5ED)]},
-    {'id': 'forest', 'name': 'Bosque', 'colors': [Color(0xFF11998E), Color(0xFF38EF7D)]},
-    {'id': 'purple', 'name': 'Galaxia', 'colors': [Color(0xFF8E2DE2), Color(0xFF4A00E0)]},
-    {'id': 'dark', 'name': 'Noche', 'colors': [Color(0xFF232526), Color(0xFF414345)]},
-    {'id': 'peach', 'name': 'Melocotón', 'colors': [Color(0xFFED4264), Color(0xFFFFEDBC)]},
-    {'id': 'lavender', 'name': 'Lavanda', 'colors': [Color(0xFFEECDA3), Color(0xFFEF629F)]},
+    {'id': 'sunset', 'nameKey': 'gradSunset', 'colors': [Color(0xFFFF512F), Color(0xFFDD2476)]},
+    {'id': 'ocean', 'nameKey': 'gradOcean', 'colors': [Color(0xFF2193B0), Color(0xFF6DD5ED)]},
+    {'id': 'forest', 'nameKey': 'gradForest', 'colors': [Color(0xFF11998E), Color(0xFF38EF7D)]},
+    {'id': 'purple', 'nameKey': 'gradGalaxy', 'colors': [Color(0xFF8E2DE2), Color(0xFF4A00E0)]},
+    {'id': 'dark', 'nameKey': 'gradNight', 'colors': [Color(0xFF232526), Color(0xFF414345)]},
+    {'id': 'peach', 'nameKey': 'gradPeach', 'colors': [Color(0xFFED4264), Color(0xFFFFEDBC)]},
+    {'id': 'lavender', 'nameKey': 'gradLavender', 'colors': [Color(0xFFEECDA3), Color(0xFFEF629F)]},
   ];
+
 
   final List<Map<String, dynamic>> _patrones = [
-    {'id': 'dots', 'name': 'Puntos', 'icon': Icons.blur_on},
-    {'id': 'stars', 'name': 'Estrellas', 'icon': Icons.star_border},
-    {'id': 'triangles', 'name': 'Geométrico', 'icon': Icons.change_history},
-    {'id': 'waves', 'name': 'Ondas', 'icon': Icons.waves},
-    {'id': 'lines', 'name': 'Líneas', 'icon': Icons.reorder},
+    {'id': 'dots', 'nameKey': 'patDots', 'icon': Icons.blur_on},
+    {'id': 'stars', 'nameKey': 'patStars', 'icon': Icons.star_border},
+    {'id': 'triangles', 'nameKey': 'patGeometric', 'icon': Icons.change_history},
+    {'id': 'waves', 'nameKey': 'patWaves', 'icon': Icons.waves},
+    {'id': 'lines', 'nameKey': 'patLines', 'icon': Icons.reorder},
   ];
 
+
   final List<Map<String, dynamic>> _estilosBurbuja = [
-    {'id': 'solido', 'name': 'Sólido', 'desc': 'Clásico'},
-    {'id': 'cristal', 'name': 'Cristal', 'desc': 'Cristalino'},
-    {'id': 'neon', 'name': 'Neón', 'desc': 'Brillante'},
-    {'id': 'amor', 'name': 'Amor', 'desc': 'Corazones'},
-    {'id': 'vaquero', 'name': 'Vaquero', 'desc': 'Oeste'},
-    {'id': 'bosque', 'name': 'Bosque', 'desc': 'Bosque'},
-    {'id': 'cyber', 'name': 'Cyber', 'desc': 'Futuro'},
-    {'id': 'kawaii', 'name': 'Kawaii', 'desc': 'Lindo'},
-    {'id': 'aventura', 'name': 'Aventura', 'desc': 'Rol'},
+    {'id': 'solido', 'nameKey': 'styleSolid', 'descKey': 'styleSolidDesc'},
+    {'id': 'cristal', 'nameKey': 'styleCrystal', 'descKey': 'styleCrystalDesc'},
+    {'id': 'neon', 'nameKey': 'styleNeon', 'descKey': 'styleNeonDesc'},
+    {'id': 'amor', 'nameKey': 'styleLove', 'descKey': 'styleLoveDesc'},
+    {'id': 'vaquero', 'nameKey': 'styleCowboy', 'descKey': 'styleCowboyDesc'},
+    {'id': 'bosque', 'nameKey': 'gradForest', 'descKey': 'styleForestDesc'},
+    {'id': 'cyber', 'nameKey': 'styleCyber', 'descKey': 'styleCyberDesc'},
+    {'id': 'kawaii', 'nameKey': 'styleKawaii', 'descKey': 'styleKawaiiDesc'},
+    {'id': 'aventura', 'nameKey': 'styleAdventure', 'descKey': 'styleAdventureDesc'},
   ];
+
 
   @override
   void initState() {
@@ -180,12 +183,14 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
       if (exito) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Configuración guardada correctamente'))
+          SnackBar(content: Text(TranslationWidget.of(context).tr('chatPersonalizationSaved')))
         );
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al guardar la configuración'))
+          SnackBar(content: Text(TranslationWidget.of(context).tr('chatPersonalizationError')))
         );
+
       }
     }
   }
@@ -208,8 +213,9 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
         
         if (nuevaUrl == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al subir la imagen'))
+            SnackBar(content: Text(TranslationWidget.of(context).tr('chatImageUploadError')))
           );
+
         }
       }
     }
@@ -228,7 +234,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
               else
                 TextButton(
                   onPressed: _guardar,
-                  child: Text('GUARDAR', style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontWeight: FontWeight.bold)),
+                  child: Text(tr('commonSave').toUpperCase(), style: GoogleFonts.outfit(color: const Color(0xFFF28B50), fontWeight: FontWeight.bold)),
+
                 ),
             ],
           ),
@@ -241,25 +248,30 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                 const SizedBox(height: 32),
                 _buildPreview(),
                 const SizedBox(height: 32),
-                _buildSectionTitle('Identidad del Chat'),
+                _buildSectionTitle(tr('chatIdentitySection')),
+
                 const SizedBox(height: 12),
                 TextFormField(
                   initialValue: _nombre,
                   decoration: InputDecoration(
-                    labelText: 'Nombre del Chat',
+                    labelText: tr('chatNameLabel'),
+
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.edit_outlined),
                   ),
                   onChanged: (v) => setState(() => _nombre = v),
                 ),
                 const SizedBox(height: 32),
-                _buildSectionTitle('Colores de Burbujas'),
+                _buildSectionTitle(tr('chatBubbleColorsSection')),
+
                 const SizedBox(height: 16),
-                _buildColorPicker('Mis mensajes', _perso.colorBurbujaMio, (hex) {
+                _buildColorPicker(tr('chatMyMessagesLabel'), _perso.colorBurbujaMio, (hex) {
+
                   setState(() => _perso = _copyPerso(colorBurbujaMio: hex));
                 }),
                 const SizedBox(height: 16),
-                _buildColorPicker('Mensajes de otros', _perso.colorBurbujaOtro, (hex) {
+                _buildColorPicker(tr('chatOtherMessagesLabel'), _perso.colorBurbujaOtro, (hex) {
+
                   setState(() => _perso = PersonalizacionChat(
                     colorFondo: _perso.colorFondo,
                     colorBurbujaMio: _perso.colorBurbujaMio,
@@ -272,19 +284,26 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                   ));
                 }),
                 const SizedBox(height: 32),
-                _buildSectionTitle('Patrón y Estilo de Fondo'),
+                _buildSectionTitle(tr('chatBackgroundStyleSection')),
+
                 const SizedBox(height: 16),
-                _buildGradientPicker(),
+                _buildGradientPicker(tr),
+
                 const SizedBox(height: 16),
-                _buildPatternPicker(),
+                _buildPatternPicker(tr),
+
                 const SizedBox(height: 32),
-                _buildSectionTitle('Estilo de Burbujas'),
+                _buildSectionTitle(tr('chatBubbleStyleSection')),
+
                 const SizedBox(height: 16),
-                _buildBubbleStylePicker(),
+                _buildBubbleStylePicker(tr),
+
                 const SizedBox(height: 24),
-                _buildShapePicker(),
+                _buildShapePicker(tr),
+
                 const SizedBox(height: 24),
-                _buildFontSizePicker(),
+                _buildFontSizePicker(tr),
+
                 const SizedBox(height: 40),
                 Center(
                   child: TextButton.icon(
@@ -292,7 +311,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                       setState(() => _perso = PersonalizacionChat());
                     },
                     icon: const Icon(Icons.refresh, color: Colors.red),
-                    label: const Text('Restablecer diseño por defecto', style: TextStyle(color: Colors.red)),
+                    label: Text(tr('chatResetDefaults'), style: const TextStyle(color: Colors.red)),
+
                   ),
                 ),
               ],
@@ -303,11 +323,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     );
   }
 
-  Widget _buildGradientPicker() {
+  Widget _buildGradientPicker(String Function(String) tr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Gradiente de fondo', style: TextStyle(fontWeight: FontWeight.w500)),
+        Text(tr('chatBackgroundGradient'), style: const TextStyle(fontWeight: FontWeight.w500)),
+
         const SizedBox(height: 8),
         SizedBox(
           height: 60,
@@ -355,11 +376,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     );
   }
 
-  Widget _buildPatternPicker() {
+  Widget _buildPatternPicker(String Function(String) tr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Patrón geométrico', style: TextStyle(fontWeight: FontWeight.w500)),
+        Text(tr('chatGeometricPattern'), style: const TextStyle(fontWeight: FontWeight.w500)),
+
         const SizedBox(height: 8),
         SizedBox(
           height: 50,
@@ -406,11 +428,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     );
   }
 
-  Widget _buildBubbleStylePicker() {
+  Widget _buildBubbleStylePicker(String Function(String) tr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Estilo visual de burbuja', style: TextStyle(fontWeight: FontWeight.w500)),
+        Text(tr('chatBubbleVisualStyle'), style: const TextStyle(fontWeight: FontWeight.w500)),
+
         const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
@@ -456,9 +479,10 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                       ),
                       child: Column(
                         children: [
-                          Text(estilo['name'], style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
-                          Text(estilo['desc'], style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                          Text(tr(estilo['nameKey']), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text(tr(estilo['descKey']), style: const TextStyle(fontSize: 9, color: Colors.grey)),
                         ],
+
                       ),
                     ),
                   ],
@@ -637,9 +661,10 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
           ),
           const SizedBox(height: 12),
           Text(
-            widget.sala.esGrupal ? 'Cambiar foto del grupo' : 'Cambiar foto del chat',
+            widget.sala.esGrupal ? tr('chatChangeGroupPhoto') : tr('chatChangeChatPhoto'),
             style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey[600]),
           ),
+
         ],
       ),
     );
@@ -695,7 +720,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                 _buildPreviewBadge(colorFondo),
                 const Spacer(),
                 _buildPreviewBurbuja(
-                  'Amigo', 
+                  tr('commonOther'), 
                   '¡Oye! ¿Has visto los nuevos estilos? 🐾', 
                   colorOtro, 
                   colorNombreOtro, 
@@ -705,7 +730,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                 ),
                 const SizedBox(height: 12),
                 _buildPreviewBurbuja(
-                  'Tú', 
+                  tr('commonMe'), 
                   '¡Sí! Se ven increíbles. Voy a probar este. ✨', 
                   colorMio, 
                   colorNombreMio, 
@@ -713,6 +738,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                   null, 
                   borderRadius
                 ),
+
               ],
             ),
           ),
@@ -737,7 +763,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        'VISTA PREVIA EN TIEMPO REAL', 
+        tr('chatPreviewRealTime'), 
         style: GoogleFonts.outfit(
           fontSize: 9, 
           fontWeight: FontWeight.w900, 
@@ -745,6 +771,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
           letterSpacing: 1.0,
         )
       ),
+
     );
   }
 
@@ -991,22 +1018,23 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     );
   }
 
-  Widget _buildShapePicker() {
+  Widget _buildShapePicker(String Function(String) tr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Forma de las burbujas', style: TextStyle(fontWeight: FontWeight.w500)),
+        Text(tr('chatBubbleShape'), style: const TextStyle(fontWeight: FontWeight.w500)),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildShapeOption('redondeada', 'Redondeadas', Icons.rounded_corner),
+            _buildShapeOption('redondeada', tr('chatShapeRounded'), Icons.rounded_corner),
             const SizedBox(width: 12),
-            _buildShapeOption('cuadrada', 'Cuadradas', Icons.crop_square),
+            _buildShapeOption('cuadrada', tr('chatShapeSquare'), Icons.crop_square),
           ],
         ),
       ],
     );
   }
+
 
   Widget _buildShapeOption(String value, String label, IconData icon) {
     final isSelected = _perso.formaBurbuja == value;
@@ -1032,11 +1060,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     );
   }
 
-  Widget _buildFontSizePicker() {
+  Widget _buildFontSizePicker(String Function(String) tr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Tamaño de fuente', style: TextStyle(fontWeight: FontWeight.w500)),
+        Text(tr('chatFontSize'), style: const TextStyle(fontWeight: FontWeight.w500)),
+
         const SizedBox(height: 8),
         Row(
           children: [

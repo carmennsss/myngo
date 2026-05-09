@@ -4,6 +4,7 @@ import '../../models/coleccion.dart';
 import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_interaccion.dart';
+import 'package:tolgee/tolgee.dart';
 
 class BottomSheetColecciones extends StatefulWidget {
   final int? imagenId;
@@ -51,7 +52,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
       setState(() => _guardando = false);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(res.exito ? '¡Guardado en "${coleccion.nombreColeccion}"! 🐾' : res.mensaje, style: GoogleFonts.outfit()),
+        content: Text(res.exito ? tr('collectionSavedIn', {'name': coleccion.nombreColeccion}) : res.mensaje, style: GoogleFonts.outfit()),
         backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
         behavior: SnackBarBehavior.floating,
       ));
@@ -84,7 +85,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
     }
   }
 
-  void _mostrarCrearColeccion(BuildContext context) {
+  void _mostrarCrearColeccion(BuildContext context, String Function(String, [Map<String, Object>?]) tr) {
     final ctrl = TextEditingController();
     bool esPrivada = false;
     showDialog(
@@ -93,7 +94,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
         builder: (ctx, setDlg) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Text('Nueva Colección', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900)),
+          title: Text(tr('collectionNew'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -101,7 +102,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
                 controller: ctrl,
                 style: GoogleFonts.outfit(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Nombre de la colección',
+                  hintText: tr('collectionNameHint'),
                   hintStyle: GoogleFonts.outfit(color: Colors.white38),
                   filled: true,
                   fillColor: const Color(0xFF121212),
@@ -110,7 +111,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
               ),
               const SizedBox(height: 12),
               SwitchListTile(
-                title: Text(esPrivada ? 'Privada' : 'Pública', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                title: Text(esPrivada ? tr('commonPrivate') : tr('commonPublic'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
                 value: esPrivada,
                 activeColor: const Color(0xFF248EA6),
                 onChanged: (v) => setDlg(() => esPrivada = v),
@@ -118,7 +119,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.white38))),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.white38))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () async {
@@ -132,7 +133,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje, style: GoogleFonts.outfit()), backgroundColor: Colors.red));
                 }
               },
-              child: Text('CREAR Y GUARDAR', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text(tr('collectionCreateAndSave'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -142,73 +143,77 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-      decoration: const BoxDecoration(color: Color(0xFF1E1E1E), borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                const Icon(Icons.bookmark_rounded, color: Color(0xFFF28B50), size: 22),
-                const SizedBox(width: 12),
-                Text('Guardar publicación', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
-                const Spacer(),
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded, color: Colors.white54)),
-              ],
-            ),
-          ),
-          const Divider(color: Colors.white12, height: 1),
-          const SizedBox(height: 8),
-          if (_guardando)
-            const Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: Color(0xFF248EA6)))
-          else
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                children: [
-                  // --- OPCIÓN DE GUARDAR EN PERFIL ---
-                  if (widget.postId != null)
-                    _ColeccionTile(
-                      icono: _estaGuardadoPostLocal ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, 
-                      nombre: _estaGuardadoPostLocal ? 'Eliminar de mi perfil' : 'Guardar en mi perfil', 
-                      subtitulo: _estaGuardadoPostLocal ? 'Ya guardado en tu biblioteca' : 'Añádelo a tus posts guardados', 
-                      iconColor: const Color(0xFFF28B50), 
-                      onTap: _toggleGuardarPost
-                    ),
-                  
-                  const SizedBox(height: 8),
-                  const Divider(color: Colors.white12, indent: 16, endIndent: 16),
-                  const SizedBox(height: 8),
-
-                  // --- OPCIONES DE COLECCIONES DE IMAGEN ---
-                  if (widget.imagenId != null) ...[
-                    _ColeccionTile(icono: Icons.create_new_folder_rounded, nombre: 'Nueva colección', subtitulo: 'Crea una carpeta para esta imagen', iconColor: const Color(0xFF248EA6), onTap: () => _mostrarCrearColeccion(context)),
-                    if (_cargando)
-                      const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: Color(0xFF248EA6), strokeWidth: 2)))
-                    else if (_colecciones.isEmpty)
-                      Padding(padding: const EdgeInsets.all(24), child: Center(child: Text('Aún no tienes colecciones de imágenes', style: GoogleFonts.outfit(color: Colors.white38, fontSize: 14))))
-                    else
-                      ..._colecciones.map((col) => _ColeccionTile(
-                        icono: col.esPrivada ? Icons.lock_outline_rounded : Icons.folder_rounded,
-                        nombre: col.nombreColeccion,
-                        subtitulo: '${col.numeroImagenes} imagen${col.numeroImagenes == 1 ? '' : 'es'}',
-                        iconColor: const Color(0xFF248EA6),
-                        onTap: () => _agregarAColeccion(col),
-                      )),
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          decoration: const BoxDecoration(color: Color(0xFF1E1E1E), borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    const Icon(Icons.bookmark_rounded, color: Color(0xFFF28B50), size: 22),
+                    const SizedBox(width: 12),
+                    Text(tr('postSaveTitle'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                    const Spacer(),
+                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded, color: Colors.white54)),
                   ],
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
-        ],
-      ),
+              const Divider(color: Colors.white12, height: 1),
+              const SizedBox(height: 8),
+              if (_guardando)
+                const Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: Color(0xFF248EA6)))
+              else
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    children: [
+                      // --- OPCIÓN DE GUARDAR EN PERFIL ---
+                      if (widget.postId != null)
+                        _ColeccionTile(
+                          icono: _estaGuardadoPostLocal ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, 
+                          nombre: _estaGuardadoPostLocal ? tr('postRemoveFromProfile') : tr('postSaveToProfile'), 
+                          subtitulo: _estaGuardadoPostLocal ? tr('postAlreadySaved') : tr('postAddToSaved'), 
+                          iconColor: const Color(0xFFF28B50), 
+                          onTap: _toggleGuardarPost
+                        ),
+                      
+                      const SizedBox(height: 8),
+                      const Divider(color: Colors.white12, indent: 16, endIndent: 16),
+                      const SizedBox(height: 8),
+
+                      // --- OPCIONES DE COLECCIONES DE IMAGEN ---
+                      if (widget.imagenId != null) ...[
+                        _ColeccionTile(icono: Icons.create_new_folder_rounded, nombre: tr('collectionNewFolder'), subtitulo: tr('collectionNewFolderSub'), iconColor: const Color(0xFF248EA6), onTap: () => _mostrarCrearColeccion(context, tr)),
+                        if (_cargando)
+                          const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: Color(0xFF248EA6), strokeWidth: 2)))
+                        else if (_colecciones.isEmpty)
+                          Padding(padding: const EdgeInsets.all(24), child: Center(child: Text(tr('collectionNoCollections'), style: GoogleFonts.outfit(color: Colors.white38, fontSize: 14))))
+                        else
+                          ..._colecciones.map((col) => _ColeccionTile(
+                            icono: col.esPrivada ? Icons.lock_outline_rounded : Icons.folder_rounded,
+                            nombre: col.nombreColeccion,
+                            subtitulo: tr('collectionImageCount', {'count': col.numeroImagenes, 'plural': col.numeroImagenes == 1 ? '' : 'es'}),
+                            iconColor: const Color(0xFF248EA6),
+                            onTap: () => _agregarAColeccion(col),
+                          )),
+                      ],
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

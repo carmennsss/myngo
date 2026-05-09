@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../utils/configuracion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../tolgee/translation_widget.dart';
+
 
 class PantallaListaChats extends StatefulWidget {
   const PantallaListaChats({super.key});
@@ -113,7 +115,8 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         otro = miembros.isNotEmpty ? miembros.first : null;
       }
       
-      if (otro == null) return {'nombre': 'Chat vacío', 'avatar': null};
+      if (otro == null) return {'nombre': 'Chat vacío', 'avatar': null}; // Se maneja en el builder con tr()
+
 
       final interlocutor = otro!;
       // Guardamos el ID del otro usuario para usarlo al abrir el chat
@@ -134,10 +137,11 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       };
     }
     return {
-      'nombre': sala['nombre'] ?? 'Chat', 
+      'nombre': sala['nombre'], 
       'avatar': sala['avatar_s3']
     };
   }
+
 
   void _mostrarDialogoCrearSala() async {
     // Obtener lista de posibles participantes (amigos/seguidos)
@@ -188,99 +192,104 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       return nombre.contains(query);
     }).toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFBF9F8),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _mostrarDialogoCrearSala,
-        backgroundColor: const Color(0xFFC35E34),
-        icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
-        label: Text(
-          'Nuevo Chat',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: const Color(0xFFC35E34),
-          onRefresh: () => chatProvider.cargarSalas(),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // Cabecera Premium
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Mensajes',
-                        style: GoogleFonts.outfit(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF2D2D2D),
-                          letterSpacing: -1,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Barra de búsqueda
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+    return TranslationWidget(
+      builder: (context, tr) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFBF9F8),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: _mostrarDialogoCrearSala,
+            backgroundColor: const Color(0xFFC35E34),
+            icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
+            label: Text(
+              tr('chatNew'),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ),
+          body: SafeArea(
+            child: RefreshIndicator(
+              color: const Color(0xFFC35E34),
+              onRefresh: () => chatProvider.cargarSalas(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // Cabecera Premium
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tr('chatMessages'),
+                            style: GoogleFonts.outfit(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF2D2D2D),
+                              letterSpacing: -1,
                             ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Buscar chats...',
-                            hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 15),
-                            prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onChanged: (_) => setState(() {}), // Forzar rebuild para filtrar
-                        ),
+                          const SizedBox(height: 16),
+                          // Barra de búsqueda
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: tr('chatSearchHint'),
+                                hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 15),
+                                prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onChanged: (_) => setState(() {}), // Forzar rebuild para filtrar
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Lista de Chats
-              if (_cargando && salas.isEmpty)
-                SliverFillRemaining(
-                  child: _buildCargando(),
-                )
-              else if (salasFiltradas.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildEstadoVacio(),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.only(bottom: 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return _buildSalaItem(salasFiltradas[index], index);
-                      },
-                      childCount: salasFiltradas.length,
                     ),
                   ),
-                ),
-            ],
+    
+                  // Lista de Chats
+                  if (_cargando && salas.isEmpty)
+                    SliverFillRemaining(
+                      child: _buildCargando(),
+                    )
+                  else if (salasFiltradas.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEstadoVacio(tr),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 100),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            return _buildSalaItem(salasFiltradas[index], index, tr);
+                          },
+                          childCount: salasFiltradas.length,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
+
 
 
   Widget _buildCargando() {
@@ -312,7 +321,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     );
   }
 
-  Widget _buildEstadoVacio() {
+  Widget _buildEstadoVacio(String Function(String, [Map<String, dynamic>?]) tr) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -320,7 +329,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           Icon(Icons.chat_bubble_outline_rounded, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            _searchController.text.isEmpty ? 'Sin conversaciones' : 'No se encontró nada',
+            _searchController.text.isEmpty ? tr('chatNoConversations') : tr('chatNoSearchResults'),
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -330,8 +339,8 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           const SizedBox(height: 8),
           Text(
             _searchController.text.isEmpty 
-              ? '¡Empieza a conectar con otros Myngos! 🐾'
-              : 'Prueba con otro nombre',
+              ? tr('chatStartConnecting')
+              : tr('chatTryAnotherName'),
             style: GoogleFonts.outfit(color: Colors.grey.shade400),
           ),
         ],
@@ -339,15 +348,18 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     );
   }
 
-  Widget _buildSalaItem(Map<String, dynamic> sala, int index) {
+
+  Widget _buildSalaItem(Map<String, dynamic> sala, int index, String Function(String, [Map<String, dynamic>?]) tr) {
     final datos = _datosInterlocutor(sala);
-    final nombre = datos['nombre'] ?? 'Chat';
+    final nombreRaw = datos['nombre'];
+    final nombre = (nombreRaw == null || nombreRaw == 'Chat vacío') ? tr('chatEmpty') : nombreRaw;
     final avatarUrl = datos['avatar'];
     
     final ultimoMsg = sala['ultimo_mensaje'] as Map<String, dynamic>?;
-    final preview = ultimoMsg != null ? (ultimoMsg['content'] ?? '') as String : 'Sin mensajes aún';
+    final preview = ultimoMsg != null ? (ultimoMsg['content'] ?? '') as String : tr('chatNoMessagesYet');
     final hora = ultimoMsg != null ? _formatearFecha(ultimoMsg['fecha_envio']) : '';
     final noLeidos = (sala['mensajes_no_leidos'] as num?)?.toInt() ?? 0;
+
 
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 300 + (index * 50)),

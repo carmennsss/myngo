@@ -491,7 +491,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
       _notificarCambioGato();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('¡Miau! Revisa tu correo para activar tu cuenta 📧'),
+          content: Text(tr('registrationSuccessEmail')),
           backgroundColor: const Color(0xFF248EA6),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -632,7 +632,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                   ),
                   child: cargando 
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Text('REGISTRARME 🐾', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                    : Text(tr('authRegisterButton'), style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
                 );
               }
             ),

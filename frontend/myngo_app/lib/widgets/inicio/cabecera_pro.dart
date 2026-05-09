@@ -365,7 +365,7 @@ class _UserProfileHeader extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                      Text(name ?? tr('commonDefaultUsername'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
                       const SizedBox(width: 6),
                       MouseRegion(
                         cursor: SystemMouseCursors.click,

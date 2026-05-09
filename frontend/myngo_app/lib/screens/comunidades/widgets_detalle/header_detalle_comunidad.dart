@@ -34,8 +34,9 @@ class HeaderDetalleComunidad extends StatefulWidget {
 }
 
 class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
-  String _miRol = 'Visitante';
+  String _miRol = 'Visitante'; // Se localiza al mostrar con tr()
   bool _cargandoRol = true;
+
 
   @override
   void initState() {
@@ -186,7 +187,12 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
   Widget build(BuildContext context) {
     final esCreador =
         widget.miId != null && widget.miId == widget.comunidad.creadorId;
-    final rolLabel = esCreador ? 'Creador' : _miRol;
+    final rolLabel = esCreador ? widget.tr('commonCreator') : (
+      _miRol == 'Moderador' ? widget.tr('commonModerator') : (
+        _miRol == 'Miembro' ? widget.tr('commonMember') : widget.tr('communityVisitor')
+      )
+    );
+
     final iconRol = esCreador
         ? Icons.stars_rounded
         : (rolLabel == 'Moderador'
@@ -239,7 +245,8 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
             left: 24,
             child: _ActionButton(
               icon: Icons.arrow_back_ios_new_rounded,
-              tooltip: 'Volver',
+              tooltip: widget.tr('commonBack'),
+
               onPressed: widget.onCerrar,
             ),
           ),
@@ -252,7 +259,8 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                 if (esCreador || _miRol == 'Moderador') ...[
                   _ActionButton(
                     icon: Icons.palette_rounded,
-                    tooltip: 'Personalización Visual',
+                    tooltip: widget.tr('chatPersonalization'),
+
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -272,7 +280,8 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                   const SizedBox(width: 12),
                   _ActionButton(
                     icon: Icons.settings_rounded,
-                    tooltip: 'Administrar Comunidad',
+                    tooltip: widget.tr('communityManage'),
+
                     onPressed: () async {
                       final actualizada = await Navigator.push<Comunidad>(
                         context,
@@ -292,7 +301,8 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                   const SizedBox(width: 12),
                   _ActionButton(
                     icon: Icons.exit_to_app_rounded,
-                    tooltip: 'Abandonar Comunidad',
+                    tooltip: widget.tr('communityLeaveAction'),
+
                     onPressed: () => _confirmarSalida(context),
                   ),
                 ],

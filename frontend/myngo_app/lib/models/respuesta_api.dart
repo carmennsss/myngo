@@ -28,13 +28,30 @@ class RespuestaApi<T> {
   /// El parámetro opcional [transformador] permite convertir el Map de 'datos'
   /// en una instancia de un modelo específico (ej. convertir un Map en un objeto Usuario).
   factory RespuestaApi.fromJson(Map<String, dynamic> json, {T Function(Map<String, dynamic>)? transformador}) {
+    final bool exito = json['exito'] ?? (json['error'] == null && json['errores'] == null);
+    
+    // Si no hay clave 'datos', pero el JSON parece ser el objeto en sí (tiene 'id' o 'results'), lo usamos
+    final dynamic rawDatos = json['datos'] ?? 
+        ((json.containsKey('id') || json.containsKey('results') || json.containsKey('token')) ? json : null);
+
+    T? finalDatos;
+    if (rawDatos != null) {
+      if (transformador != null && rawDatos is Map<String, dynamic>) {
+        finalDatos = transformador(rawDatos);
+      } else {
+        try {
+          finalDatos = rawDatos as T?;
+        } catch (_) {
+          finalDatos = null;
+        }
+      }
+    }
+
     return RespuestaApi(
-      exito: json['exito'] ?? (json['mensaje'] != null || json['datos'] != null || json['token'] != null),
-      mensaje: json['mensaje']?.toString() ?? '',
-      datos: (json['datos'] != null && transformador != null) 
-          ? transformador(json['datos'] as Map<String, dynamic>) 
-          : json['datos'] as T?,
-      errores: json['errores'],
+      exito: exito,
+      mensaje: (json['mensaje'] ?? json['detail'] ?? '').toString(),
+      datos: finalDatos,
+      errores: json['errores'] ?? json['error'],
     );
   }
 }
