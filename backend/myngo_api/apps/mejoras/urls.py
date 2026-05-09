@@ -7,6 +7,7 @@ from .views import (
     CatalogoMejorasGlobales,
     ComprarMejoraView,
     EquipacionMejorasGlobales,
+    EquipacionMejoraComunidad,
     GestionCatalogoComunidad,
     MisMejorasView,
     PeticionMejoraCreate,
