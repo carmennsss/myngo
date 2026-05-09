@@ -60,6 +60,9 @@ dependencies:
   url_launcher: ^6.3.0
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
+  mocktail: ^1.0.3
   flutter_test:
     sdk: flutter
 
