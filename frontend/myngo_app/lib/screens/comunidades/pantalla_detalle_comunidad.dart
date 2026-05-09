@@ -306,48 +306,52 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     _cachedBackground ??= _buildGlobalBackground();
 
     if (!esMiembro) {
-      return PreviewComunidad(
-        comunidad: _comunidad!,
-        miId: _miId,
-        indiceSeccion: _indiceSeccion,
-        publicaciones: _publicaciones,
-        colecciones: _colecciones,
-        estaCargandoDatos: _estaCargandoDatos,
-        estaCargandoPeticion: _estaCargandoPeticion,
-        onTabChanged: (idx) => setState(() {
-          _indiceSeccion = idx;
-          _cargarDatosSeccion(idx);
-        }),
-        onJoin: _gestionarMembresia,
-        onBack: widget.onBack ?? () => Navigator.pop(context),
-        backgroundFeed: _cachedBackground!,
-        esAppClara: _esAppClara(context),
-        colorTextoPrincipal: _colorTextoPrincipal(context),
-        colorTextoSecundario: _colorTextoSecundario(context),
+      return TranslationWidget(
+        builder: (context, tr) => PreviewComunidad(
+          comunidad: _comunidad!,
+          miId: _miId,
+          indiceSeccion: _indiceSeccion,
+          publicaciones: _publicaciones,
+          colecciones: _colecciones,
+          estaCargandoDatos: _estaCargandoDatos,
+          estaCargandoPeticion: _estaCargandoPeticion,
+          onTabChanged: (idx) => setState(() {
+            _indiceSeccion = idx;
+            _cargarDatosSeccion(idx);
+          }),
+          onJoin: _gestionarMembresia,
+          onBack: widget.onBack ?? () => Navigator.pop(context),
+          backgroundFeed: _cachedBackground!,
+          esAppClara: _esAppClara(context),
+          colorTextoPrincipal: _colorTextoPrincipal(context),
+          colorTextoSecundario: _colorTextoSecundario(context),
+          tr: tr,
+        ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: _colorPagina(context),
-      body: Stack(
-        children: [
-          NestedScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverAppBar(
-                  expandedHeight: 280,
-                  pinned: false,
-                  floating: false,
-                  snap: false,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  scrolledUnderElevation: 0,
-                  surfaceTintColor: Colors.transparent,
-                  automaticallyImplyLeading: false,
-                  flexibleSpace: FlexibleSpaceBar(
-                    collapseMode: CollapseMode.parallax,
-                    background: HeaderDetalleComunidad(
+    return TranslationWidget(
+      builder: (context, tr) => Scaffold(
+        backgroundColor: _colorPagina(context),
+        body: Stack(
+          children: [
+            NestedScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    expandedHeight: 280,
+                    pinned: false,
+                    floating: false,
+                    snap: false,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    surfaceTintColor: Colors.transparent,
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: FlexibleSpaceBar(
+                      collapseMode: CollapseMode.parallax,
+                      background: HeaderDetalleComunidad(
                       comunidad: _comunidad!,
                       miId: _miId,
                       onCerrar: widget.onBack ?? () => Navigator.pop(context),
@@ -357,38 +361,40 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
                           _cachedBackground = null;
                         });
                       },
+                      tr: tr,
+                    ),
                     ),
                   ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SliverAppBarDelegate(
-                    minHeight: 70,
-                    maxHeight: 70,
-                    child: Material(
-                      elevation: 2,
-                      color: _colorPagina(context),
-                      shadowColor: Colors.black.withOpacity(0.12),
-                      child: _buildSubNav(context),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SliverAppBarDelegate(
+                      minHeight: 70,
+                      maxHeight: 70,
+                      child: Material(
+                        elevation: 2,
+                        color: _colorPagina(context),
+                        shadowColor: Colors.black.withOpacity(0.12),
+                        child: _buildSubNav(context),
+                      ),
                     ),
                   ),
-                ),
-              ];
-            },
-            body: Stack(
-              children: [
-                // El fondo solo se pinta en el área del body, nunca en la cabecera
-                Positioned.fill(child: _buildPersonalizedFeedBackground()),
-                CustomScrollView(
-                  slivers: [
-                    _buildSliverContent(),
-                  ],
-                ),
-              ],
+                ];
+              },
+              body: Stack(
+                children: [
+                  // El fondo solo se pinta en el área del body, nunca en la cabecera
+                  Positioned.fill(child: _buildPersonalizedFeedBackground()),
+                  CustomScrollView(
+                    slivers: [
+                      _buildSliverContent(),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          _buildFAB(),
-        ],
+            _buildFAB(),
+          ],
+        ),
       ),
     );
   }
@@ -737,7 +743,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
     return PantallaTiendaMejoras(
       esVistaIntegrada: true,
-      comunidad: widget.comunidad,
+      comunidad: _comunidad,
       onCategoryChanged: (tipo) =>
           setState(() => _tipoMejoraSeleccionado = tipo),
       onPuntosActualizados: (p) => inicioState?.actualizarPuntos(p),

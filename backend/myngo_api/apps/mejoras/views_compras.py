@@ -167,3 +167,69 @@ class EquipacionMejorasGlobales(APIView):
             return Response({'error': 'Mejora no encontrada'}, status=status.HTTP_404_NOT_FOUND)
         except Perfil.DoesNotExist:
             return Response({'error': 'Perfil no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+class EquipacionMejoraComunidad(APIView):
+    """Permite a los administradores y creadores equipar mejoras a la comunidad.
+
+    Las mejoras de la comunidad (avatar, marco, fondo) son visibles para todos los visitantes.
+    Solo el creador o miembros con rol 'Administrador' pueden aplicar estos cambios.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """Aplica una mejora del catálogo a la comunidad.
+
+        Args:
+            request: Datos con 'mejora_id' y 'comunidad_id'.
+
+        Returns:
+            Response: Confirmación del cambio.
+        """
+        from comunidades.models import Comunidad, MiembrosComunidad
+
+        mejora_id = request.data.get('mejora_id')
+        comunidad_id = request.data.get('comunidad_id')
+
+        if not mejora_id or not comunidad_id:
+            return Response(
+                {'error': 'mejora_id y comunidad_id son requeridos'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            comunidad = Comunidad.objects.get(pk=comunidad_id)
+            mejora = CatalogoMejoras.objects.get(pk=mejora_id)
+            
+            # Verificar permisos: Creador o Administrador (Moderador NO puede equipar por feedback)
+            es_creador = comunidad.creador == request.user
+            es_admin = MiembrosComunidad.objects.filter(
+                usuario=request.user,
+                comunidad=comunidad,
+                rol='Administrador'
+            ).exists()
+
+            if not es_creador and not es_admin:
+                return Response(
+                    {'error': 'Solo el creador o administradores pueden equipar mejoras a la comunidad.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            tipo = mejora.tipo.casefold()
+            
+            if tipo == 'avatar':
+                comunidad.url_avatar = mejora.url_recurso
+            elif tipo == 'marco':
+                comunidad.url_marco = mejora.url_recurso
+            elif tipo == 'fondo':
+                comunidad.url_fondo = mejora.url_recurso
+            else:
+                return Response({'error': f'Tipo de mejora {tipo} no aplicable a comunidad'}, status=status.HTTP_400_BAD_REQUEST)
+
+            comunidad.save()
+            return Response({'mensaje': f'Se ha equipado el {tipo} a la comunidad {comunidad.nombre}'})
+
+        except Comunidad.DoesNotExist:
+            return Response({'error': 'Comunidad no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+        except CatalogoMejoras.DoesNotExist:
+            return Response({'error': 'Mejora no encontrada'}, status=status.HTTP_404_NOT_FOUND)

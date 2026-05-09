@@ -17,7 +17,8 @@ from .views_peticiones import (
 from .views_compras import (
     ComprarMejoraView,
     MisMejorasView,
-    EquipacionMejorasGlobales
+    EquipacionMejorasGlobales,
+    EquipacionMejoraComunidad
 )
 from .views_votos import (
     VotoAPIView,
@@ -35,6 +36,7 @@ __all__ = [
     'ComprarMejoraView',
     'MisMejorasView',
     'EquipacionMejorasGlobales',
+    'EquipacionMejoraComunidad',
     'VotoAPIView',
     'RankingUsuariosView',
     'RankingComunidadesView',

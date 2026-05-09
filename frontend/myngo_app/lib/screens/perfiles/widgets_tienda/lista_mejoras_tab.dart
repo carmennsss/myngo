@@ -127,9 +127,64 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
   }
 
   Future<void> _equipar(CatalogoMejoras mejora) async {
-    String? destino;
+    String? modoEquipacion = 'personal';
 
-    // Si es un fondo, preguntamos dónde quiere equiparlo
+    // Si es una tienda de comunidad y el usuario es moderador/admin, preguntamos destino
+    if (widget.comunidadId != null && widget.esModerador) {
+      modoEquipacion = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('¿Dónde quieres equipar esto? 🐾',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _OpcionDestino(
+                titulo: 'En mi Perfil',
+                descripcion: 'Usa esta mejora para personalizar tu propio usuario.',
+                icono: Icons.person_rounded,
+                onTap: () => Navigator.pop(ctx, 'personal'),
+              ),
+              const SizedBox(height: 12),
+              _OpcionDestino(
+                titulo: 'En la Comunidad',
+                descripcion: 'Cambia la imagen visual de toda la comunidad.',
+                icono: Icons.groups_rounded,
+                onTap: () => Navigator.pop(ctx, 'comunidad'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey)),
+            ),
+          ],
+        ),
+      );
+      if (modoEquipacion == null) return;
+    }
+
+    if (modoEquipacion == 'comunidad') {
+      final res = await _servicioMejoras.equiparMejoraComunidad(mejora.id, widget.comunidadId!);
+      if (mounted) {
+        if (res.exito) {
+          widget.onRefresh();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(res.mensaje), backgroundColor: const Color(0xFF248EA6)),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
+          );
+        }
+      }
+      return;
+    }
+
+    // Lógica original para equipación personal
+    String? destino;
     if (mejora.tipo.toLowerCase() == 'fondo') {
       destino = await showDialog<String>(
         context: context,
@@ -163,8 +218,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
           ],
         ),
       );
-
-      if (destino == null) return; // Canceló el diálogo
+      if (destino == null) return;
     }
 
     final res = await _servicioMejoras.equiparMejora(mejora.id, destino: destino);

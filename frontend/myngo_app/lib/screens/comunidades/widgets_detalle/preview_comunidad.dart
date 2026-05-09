@@ -27,6 +27,7 @@ class PreviewComunidad extends StatelessWidget {
   final bool esAppClara;
   final Color colorTextoPrincipal;
   final Color colorTextoSecundario;
+  final String Function(String) tr;
 
   const PreviewComunidad({
     super.key,
@@ -44,6 +45,7 @@ class PreviewComunidad extends StatelessWidget {
     required this.esAppClara,
     required this.colorTextoPrincipal,
     required this.colorTextoSecundario,
+    required this.tr,
   });
 
   @override
@@ -67,6 +69,7 @@ class PreviewComunidad extends StatelessWidget {
                   comunidad: comunidad,
                   miId: miId,
                   onCerrar: onBack,
+                  tr: tr,
                 ),
               ),
             ),
