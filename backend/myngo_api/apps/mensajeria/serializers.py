@@ -219,5 +219,5 @@ class SalaChatSerializer(serializers.ModelSerializer):
     def get_num_miembros(self, obj):
         """Obtiene el número total de miembros. Si es de comunidad, usa el conteo de la comunidad."""
         if obj.es_grupal and obj.comunidad_id:
-            return obj.comunidad.miembros.count()
+            return obj.comunidad.miembros_comunidades.count()
         return obj.miembros.count()
