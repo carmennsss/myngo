@@ -42,6 +42,20 @@ class SidebarIzquierdo extends StatelessWidget {
     return tr('rankMichiDiamond', 'Michi de Diamante');
   }
 
+  Color _getRankColor(int puntos) {
+    if (puntos < 500) return const Color(0xFFCD7F32); // Bronce
+    if (puntos < 1500) return const Color(0xFFC0C0C0); // Plata
+    if (puntos < 3000) return const Color(0xFFFFD700); // Oro
+    return const Color(0xFFB9F2FF); // Diamante (Cian claro)
+  }
+
+  IconData _getRankIcon(int puntos) {
+    if (puntos < 500) return Icons.pets_rounded;
+    if (puntos < 1500) return Icons.workspace_premium_rounded;
+    if (puntos < 3000) return Icons.military_tech_rounded;
+    return Icons.diamond_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Función de seguridad para evitar que Tolgee rompa la app
@@ -106,11 +120,58 @@ class SidebarIzquierdo extends StatelessWidget {
           contenido: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_obtenerRango(misPuntos ?? 0, safeTr), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFC35E34), fontSize: 16)),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _getRankColor(misPuntos ?? 0).withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _getRankIcon(misPuntos ?? 0),
+                      color: _getRankColor(misPuntos ?? 0),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _obtenerRango(misPuntos ?? 0, safeTr), 
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w900, 
+                        color: _getRankColor(misPuntos ?? 0), 
+                        fontSize: 17,
+                        letterSpacing: 0.5
+                      )
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: (misPuntos ?? 0) / 5000.0, 
+                  minHeight: 8, 
+                  backgroundColor: _getRankColor(misPuntos ?? 0).withOpacity(0.1), 
+                  color: _getRankColor(misPuntos ?? 0),
+                ),
+              ),
               const SizedBox(height: 8),
-              LinearProgressIndicator(value: (misPuntos ?? 0) / 5000.0, minHeight: 6, borderRadius: const BorderRadius.all(Radius.circular(4)), backgroundColor: const Color(0xFFF2D0BD), color: const Color(0xFFC35E34)),
-              const SizedBox(height: 6),
-              Text(safeTr('rankPoints', '${misPuntos ?? 0} / 5000 Puntos', {'count': (misPuntos ?? 0).toString()}), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    safeTr('rankPoints', '${misPuntos ?? 0} Puntos', {'count': (misPuntos ?? 0).toString()}), 
+                    style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)
+                  ),
+                  Text(
+                    '5000 MAX', 
+                    style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey.shade400, fontWeight: FontWeight.w900)
+                  ),
+                ],
+              ),
             ],
           ),
         ),
