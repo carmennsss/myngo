@@ -449,6 +449,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           backgroundConfig: _comunidad?.fondoPostsConfig,
           tieneFondoGlobal: _comunidad?.urlFondo != null && _comunidad!.urlFondo!.isNotEmpty,
           comoSliver: true,
+          esMiembro: _comunidad!.esMiembro || (_miId != null && _miId == _comunidad!.creadorId),
         );
       case 1:
         return SliverFillRemaining(hasScrollBody: true, child: _buildStore());
@@ -460,6 +461,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           onNuevaColeccion: () => _mostrarDialogoNuevaColeccion(context),
           galeriaKey: _galeriaKey,
           comoSliver: true,
+          esMiembro: _comunidad!.esMiembro || (_miId != null && _miId == _comunidad!.creadorId),
         );
       case 3:
         return SeccionChatComunidad(

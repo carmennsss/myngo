@@ -16,6 +16,7 @@ class SeccionGaleriaComunidad extends StatefulWidget {
   final VoidCallback onNuevaColeccion;
   final Key galeriaKey;
   final bool comoSliver;
+  final bool esMiembro;
 
   const SeccionGaleriaComunidad({
     super.key,
@@ -25,6 +26,7 @@ class SeccionGaleriaComunidad extends StatefulWidget {
     required this.onNuevaColeccion,
     required this.galeriaKey,
     this.comoSliver = false,
+    this.esMiembro = true,
   });
 
   @override
@@ -77,6 +79,7 @@ class _SeccionGaleriaComunidadState extends State<SeccionGaleriaComunidad> {
               ? MasonryGridGaleria(
                   key: widget.galeriaKey,
                   comunidadId: widget.comunidad.id,
+                  esMiembro: widget.esMiembro,
                 )
               : _buildGalleryCollections(),
         ),

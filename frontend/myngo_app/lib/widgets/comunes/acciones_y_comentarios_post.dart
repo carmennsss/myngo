@@ -10,11 +10,13 @@ import 'bottom_sheet_colecciones.dart';
 class AccionesYComentariosPost extends StatefulWidget {
   final Publicacion post;
   final Color colorTexto;
+  final bool esMiembro;
 
   const AccionesYComentariosPost({
     super.key,
     required this.post,
     this.colorTexto = Colors.white,
+    this.esMiembro = true,
   });
 
   @override
@@ -115,6 +117,15 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
   }
 
   Future<void> _enviarComentario() async {
+    if (!widget.esMiembro) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Vaya! Únete a la comunidad para participar en la conversación 🐾'),
+          backgroundColor: Color(0xFFC35E34),
+        ),
+      );
+      return;
+    }
     if (_comentarioController.text.trim().isEmpty) return;
 
     setState(() => _enviandoComentario = true);
@@ -176,6 +187,15 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 label: _likesCount.toString(),
                 textColor: widget.colorTexto,
                 onTap: () async {
+                  if (!widget.esMiembro) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('¡Vaya! Únete a la comunidad para dar miau-like 🐾'),
+                        backgroundColor: Color(0xFFC35E34),
+                      ),
+                    );
+                    return;
+                  }
                   final id = await _servicioUsuarios.obtenerIdUsuario();
                   if (id == 0) {
                     if (mounted) {
@@ -234,6 +254,15 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 label: '',
                 textColor: widget.colorTexto,
                 onTap: () async {
+                  if (!widget.esMiembro) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('¡Vaya! Únete a la comunidad para guardar este post 🐾'),
+                        backgroundColor: Color(0xFFC35E34),
+                      ),
+                    );
+                    return;
+                  }
                   await showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -296,12 +325,16 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                           focusNode: _comentarioFocus,
                           style: GoogleFonts.inter(color: widget.colorTexto, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: _comentarioPadre != null ? 'Escribe tu respuesta...' : 'Añadir un comentario...',
+                            hintText: !widget.esMiembro 
+                                ? 'Únete para comentar 🐾' 
+                                : (_comentarioPadre != null ? 'Escribe tu respuesta...' : 'Añadir un comentario...'),
                             hintStyle: GoogleFonts.inter(color: widget.colorTexto.withOpacity(0.5), fontSize: 14),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            enabled: widget.esMiembro,
                           ),
+                          enabled: widget.esMiembro,
                           maxLines: null,
                         ),
                       ),

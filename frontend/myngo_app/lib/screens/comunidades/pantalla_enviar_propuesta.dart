@@ -26,11 +26,18 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
   @override
   void initState() {
     super.initState();
-    _tipoSeleccionado = widget.tipoInicial ?? 'Avatar';
-    // Normalizar para que coincida con _tipos (Capitalización)
-    if (_tipoSeleccionado.toLowerCase() == 'avatar') _tipoSeleccionado = 'Avatar';
-    if (_tipoSeleccionado.toLowerCase() == 'marco') _tipoSeleccionado = 'Marco';
-    if (_tipoSeleccionado.toLowerCase() == 'fondo') _tipoSeleccionado = 'Fondo';
+    
+    // Validamos que el tipo inicial sea uno de los permitidos para comunidades
+    final String initial = widget.tipoInicial ?? 'Avatar';
+    if (_tipos.contains(initial)) {
+      _tipoSeleccionado = initial;
+    } else {
+      // Normalizar o fallback
+      if (initial.toLowerCase() == 'avatar') _tipoSeleccionado = 'Avatar';
+      else if (initial.toLowerCase() == 'marco') _tipoSeleccionado = 'Marco';
+      else if (initial.toLowerCase() == 'fondo') _tipoSeleccionado = 'Fondo';
+      else _tipoSeleccionado = 'Avatar';
+    }
   }
 
   final List<String> _tipos = ['Avatar', 'Marco', 'Fondo'];

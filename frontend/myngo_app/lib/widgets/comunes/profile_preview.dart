@@ -1,10 +1,12 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfilePreview extends StatelessWidget {
-  final String? avatarUrl;
+  final dynamic avatarUrl; // Puede ser String (URL) o XFile (local)
   final String? marcoUrl;
-  final String? fondoUrl;
+  final dynamic fondoUrl;
   final String? nombreUsuario;
   final int? puntos;
   final String? estado;
@@ -22,6 +24,34 @@ class ProfilePreview extends StatelessWidget {
     this.size = 120,
     this.onAvatarTap,
   });
+
+  Widget _buildImage(dynamic source, {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
+    if (source == null) return errorWidget ?? const SizedBox.shrink();
+    if (source is String && source.isNotEmpty) {
+      if (source.startsWith('http')) {
+        return CachedNetworkImage(
+          imageUrl: source,
+          fit: fit,
+          placeholder: (context, url) => Container(color: Colors.grey[100]),
+          errorWidget: (context, url, error) => errorWidget ?? const Icon(Icons.broken_image),
+        );
+      }
+    }
+    
+    // Si es XFile o una ruta local
+    try {
+      if (kIsWeb) {
+        // En web, XFile.path es un Blob URL o similar
+        final path = source is String ? source : (source as dynamic).path;
+        return Image.network(path, fit: fit, errorBuilder: (_, __, ___) => errorWidget ?? const Icon(Icons.broken_image));
+      } else {
+        final path = source is String ? source : (source as dynamic).path;
+        return Image.file(File(path), fit: fit, errorBuilder: (_, __, ___) => errorWidget ?? const Icon(Icons.broken_image));
+      }
+    } catch (_) {
+      return errorWidget ?? const Icon(Icons.broken_image);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,12 +82,7 @@ class ProfilePreview extends StatelessWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: CachedNetworkImage(
-                      imageUrl: fondoUrl!,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(color: Colors.grey[300]),
-                      errorWidget: (context, url, error) => const Icon(Icons.image),
-                    ),
+                    child: _buildImage(fondoUrl, fit: BoxFit.cover),
                   ),
                 ),
                 
@@ -99,13 +124,7 @@ class ProfilePreview extends StatelessWidget {
                 color: Colors.white,
               ),
               child: ClipOval(
-                child: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                    ? CachedNetworkImage(
-                        imageUrl: avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => const Icon(Icons.person, size: 25),
-                      )
-                    : const Icon(Icons.person, size: 25, color: Colors.grey),
+                child: _buildImage(avatarUrl, errorWidget: const Icon(Icons.person, size: 25, color: Colors.grey)),
               ),
             ),
           ),

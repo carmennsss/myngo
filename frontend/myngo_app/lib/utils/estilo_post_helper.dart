@@ -81,4 +81,9 @@ class EstiloPostHelper {
   static bool esFondoClaro(Map<String, dynamic>? estilo) {
     return effectiveBgColor(estilo).computeLuminance() > 0.5;
   }
+
+  /// Devuelve la familia de fuente configurada o 'Outfit' por defecto.
+  static String getFontFamily(Map<String, dynamic>? estilo) {
+    return estilo?['fuente']?.toString() ?? 'Outfit';
+  }
 }

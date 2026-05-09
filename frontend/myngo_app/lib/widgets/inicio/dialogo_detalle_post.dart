@@ -18,12 +18,14 @@ class DialogoDetallePublicacion extends StatefulWidget {
   final Publicacion post;
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onProfileSelected;
+  final bool esMiembro;
 
   const DialogoDetallePublicacion({
     super.key,
     required this.post,
     this.onComunidadSelected,
     this.onProfileSelected,
+    this.esMiembro = true,
   });
 
   @override
@@ -95,39 +97,39 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                         style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                       ),
                     ],
-                  ),
-                  Row(
+                  ),                   Row(
                     children: [
-                      MenuOpcionesContenido(
-                        tipoObjeto: 'POST',
-                        objetoId: widget.post.id,
-                        autorId: widget.post.autorId,
-                        comunidadId: widget.post.comunidadId,
-                        onEditado: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (context) => DialogoCrearPost(
-                              titulo: 'Editar Miau-post 🐾',
-                              initialTexto: widget.post.contenidoTexto,
-                              onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
-                                final res = await ServicioComunidades().actualizarPublicacion(
-                                  idPublicacion: widget.post.id,
-                                  texto: texto,
-                                );
-                                if (res.exito) {
-                                  setState(() {
-                                    widget.post.contenidoTexto = texto;
-                                  });
-                                  return true;
-                                }
-                                return false;
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                      if (widget.esMiembro)
+                        MenuOpcionesContenido(
+                          tipoObjeto: 'POST',
+                          objetoId: widget.post.id,
+                          autorId: widget.post.autorId,
+                          comunidadId: widget.post.comunidadId,
+                          onEditado: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => DialogoCrearPost(
+                                titulo: 'Editar Miau-post 🐾',
+                                initialTexto: widget.post.contenidoTexto,
+                                onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+                                  final res = await ServicioComunidades().actualizarPublicacion(
+                                    idPublicacion: widget.post.id,
+                                    texto: texto,
+                                  );
+                                  if (res.exito) {
+                                    setState(() {
+                                      widget.post.contenidoTexto = texto;
+                                    });
+                                    return true;
+                                  }
+                                  return false;
+                                },
+                              ),
+                            );
+                          },
+                        ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.close),
@@ -240,7 +242,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                 constraints: const BoxConstraints(maxHeight: 400),
                                 child: GridImagenesPost(
                                   media: widget.post.media,
-                                  mostrarDescarga: true,
+                                  mostrarDescarga: widget.esMiembro,
                                 ),
                               ),
                             ),
@@ -249,6 +251,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                           AccionesYComentariosPost(
                             post: widget.post,
                             colorTexto: colorTexto,
+                            esMiembro: widget.esMiembro,
                           ),
                         ],
                       ),

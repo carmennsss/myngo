@@ -17,6 +17,7 @@ class SeccionPostsComunidad extends StatelessWidget {
   final bool hasMore;
   final bool isLoadingMore;
   final bool tieneFondoGlobal;
+  final bool esMiembro;
 
   const SeccionPostsComunidad({
     super.key,
@@ -31,6 +32,7 @@ class SeccionPostsComunidad extends StatelessWidget {
     this.hasMore = false,
     this.isLoadingMore = false,
     this.tieneFondoGlobal = false,
+    this.esMiembro = true,
   });
 
   @override
@@ -152,6 +154,7 @@ class SeccionPostsComunidad extends StatelessWidget {
             onEliminado: onRefresh,
             estaEnComunidad: true,
             fuente: fuente,
+            esMiembroComunidad: esMiembro,
           ),
         ),
       ),

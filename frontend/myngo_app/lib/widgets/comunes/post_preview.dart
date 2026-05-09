@@ -1,10 +1,13 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/estilo_post_helper.dart';
 
 class PostPreview extends StatelessWidget {
   final Map<String, dynamic>? estilo;
-  final String? avatarUrl;
+  final dynamic avatarUrl;
   final String? marcoUrl;
   final String nombreUsuario;
 
@@ -15,6 +18,32 @@ class PostPreview extends StatelessWidget {
     this.marcoUrl,
     this.nombreUsuario = 'Usuario',
   });
+
+  Widget _buildImage(dynamic source, {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
+    if (source == null) return errorWidget ?? const SizedBox.shrink();
+    if (source is String && source.isNotEmpty) {
+      if (source.startsWith('http')) {
+        return CachedNetworkImage(
+          imageUrl: source,
+          fit: fit,
+          placeholder: (context, url) => Container(color: Colors.grey[100]),
+          errorWidget: (context, url, error) => errorWidget ?? const Icon(Icons.broken_image),
+        );
+      }
+    }
+    
+    try {
+      if (kIsWeb) {
+        final path = source is String ? source : (source as dynamic).path;
+        return Image.network(path, fit: fit, errorBuilder: (_, __, ___) => errorWidget ?? const Icon(Icons.broken_image));
+      } else {
+        final path = source is String ? source : (source as dynamic).path;
+        return Image.file(File(path), fit: fit, errorBuilder: (_, __, ___) => errorWidget ?? const Icon(Icons.broken_image));
+      }
+    } catch (_) {
+      return errorWidget ?? const Icon(Icons.broken_image);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,16 +80,13 @@ class PostPreview extends StatelessWidget {
                     Container(
                       width: 32,
                       height: 32,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        image: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                            ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
-                            : null,
-                        color: Colors.grey.shade300,
+                        color: Colors.white,
                       ),
-                      child: (avatarUrl == null || avatarUrl!.isEmpty)
-                          ? Center(child: Text(nombreUsuario.isNotEmpty ? nombreUsuario[0].toUpperCase() : '?', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))
-                          : null,
+                      child: ClipOval(
+                        child: _buildImage(avatarUrl, errorWidget: Center(child: Text(nombreUsuario.isNotEmpty ? nombreUsuario[0].toUpperCase() : '?', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))),
+                      ),
                     ),
                     // 2. Marco (encima)
                     if (marcoUrl != null && marcoUrl!.isNotEmpty)
@@ -76,11 +102,20 @@ class PostPreview extends StatelessWidget {
                 children: [
                   Text(
                     'Mi nuevo estilo ✨',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: colorTexto, fontSize: 14),
+                    style: GoogleFonts.getFont(
+                      EstiloPostHelper.getFontFamily(estilo),
+                      fontWeight: FontWeight.bold, 
+                      color: colorTexto, 
+                      fontSize: 14
+                    ),
                   ),
                   Text(
                     '@$nombreUsuario',
-                    style: GoogleFonts.outfit(color: colorSubtexto, fontSize: 12),
+                    style: GoogleFonts.getFont(
+                      EstiloPostHelper.getFontFamily(estilo),
+                      color: colorSubtexto, 
+                      fontSize: 12
+                    ),
                   ),
                 ],
               ),
@@ -89,7 +124,12 @@ class PostPreview extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             '¡Mira cómo queda mi perfil con estas mejoras! ¿Te gusta el nuevo diseño? 🐾',
-            style: GoogleFonts.outfit(color: colorTexto, fontSize: 13, height: 1.4),
+            style: GoogleFonts.getFont(
+              EstiloPostHelper.getFontFamily(estilo),
+              color: colorTexto, 
+              fontSize: 13, 
+              height: 1.4
+            ),
           ),
           const SizedBox(height: 12),
           Row(
