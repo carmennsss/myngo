@@ -123,6 +123,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       );
       if (res.exito) {
         _cargarMisMejoras(); // Recargar para limpiar estados de XFile
+        notificarMejoraEquipada(); // Notificar para que Detalle Perfil se recargue
       }
     }
   }
@@ -198,7 +199,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           if (_isLoading)
             Container(
               color: Colors.black26,
-              child: const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
+              child: const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 5)),
             ),
         ],
       ),
@@ -318,6 +319,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           marcoUrl: _previewMarco,
           nombreUsuario: _nombreUsuario,
           puntos: _puntos,
+          colorTema: _previewColorTema,
+          fuentePerfil: _previewFuentePerfil,
         ),
         if (_previewAvatar is XFile || _previewFondo is XFile)
           const Positioned(
@@ -370,8 +373,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   }
 
   Widget _buildInventoryGrid(String tipo) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    
+    // Eliminado el CircularProgressIndicator redundante de aquí
     final filtradas = _misMejoras.where((m) => m['mejora_detalles'] != null && m['mejora_detalles']['tipo'].toString().toLowerCase() == tipo.toLowerCase()).toList();
 
     return Column(
@@ -388,7 +390,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
               maxCrossAxisExtent: 150,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 0.8,
+              childAspectRatio: 0.7,
             ),
             itemCount: filtradas.length,
             itemBuilder: (context, index) {
@@ -401,6 +403,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                 estaEquipada: estaEquipada,
                 onTap: () => _actualizarPreview(tipo, detalles),
                 onEquipar: () => _equiparMejora(detalles['id'], tipo, detalles['url_recurso']),
+                onDesequipar: () => _desequiparMejora(detalles['id'], tipo),
               );
             },
           ),
@@ -505,11 +508,6 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           _buildColorPickerRow('Borde', 'borde', ['#C35E34', '#248EA6', '#9B59B6', '#2ECC71', '#F1C40F', '#000000']),
           
           const SizedBox(height: 24),
-          Text('Tipografía del Post', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 12),
-          _buildFontSelector(isPost: true),
-          
-          const SizedBox(height: 24),
           _buildInventoryGridSection('Estilo Post', 'Tus estilos comprados'),
         ],
       ),
@@ -533,9 +531,26 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           height: 45,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: coloresTema.length,
+            itemCount: coloresTema.length + 1,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
+              if (index == coloresTema.length) {
+                // Botón de reset
+                final isDefault = _previewColorTema == '#C35E34';
+                return GestureDetector(
+                  onTap: () => setState(() => _previewColorTema = '#C35E34'),
+                  child: Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: isDefault ? Colors.grey : Colors.transparent, width: 2),
+                    ),
+                    child: const Icon(Icons.refresh_rounded, color: Colors.grey, size: 20),
+                  ),
+                );
+              }
               final colorHex = coloresTema[index];
               final color = EstiloPostHelper.parseHex(colorHex)!;
               final isSelected = _previewColorTema == colorHex;
@@ -578,9 +593,25 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           height: 40,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: hexColors.length,
+            itemCount: hexColors.length + 1,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
+              if (index == hexColors.length) {
+                // Botón de desequipar
+                return GestureDetector(
+                  onTap: () => _actualizarAtributoEstilo(clave, null),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.red.shade200, width: 1),
+                    ),
+                    child: const Icon(Icons.close_rounded, color: Colors.red, size: 18),
+                  ),
+                );
+              }
               final color = EstiloPostHelper.parseHex(hexColors[index])!;
               final isSelected = _previewEstilo?[clave] == hexColors[index];
               return GestureDetector(
@@ -621,15 +652,19 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           value: fuentes.contains(fuenteActual) ? fuenteActual : 'Outfit',
           isExpanded: true,
           icon: Icon(Icons.font_download_rounded, color: isPost ? const Color(0xFFC35E34) : EstiloPostHelper.parseHex(_previewColorTema)),
-          items: fuentes.map((f) => DropdownMenuItem(
+          items: ['Outfit', ...fuentes.where((f) => f != 'Outfit')].map((f) => DropdownMenuItem(
             value: f,
-            child: Text(f, style: GoogleFonts.getFont(f, color: const Color(0xFF4A4440))),
+            child: Text(f == 'Outfit' ? '$f (Default)' : f, style: GoogleFonts.getFont(f, color: const Color(0xFF4A4440))),
           )).toList(),
           onChanged: (val) {
             if (isPost) {
               _actualizarAtributoEstilo('fuente', val);
             } else {
-              setState(() => _previewFuentePerfil = val ?? 'Outfit');
+              setState(() {
+                _previewFuentePerfil = val ?? 'Outfit';
+                // La fuente del perfil ahora también afecta a los posts
+                _actualizarAtributoEstilo('fuente', val);
+              });
             }
           },
         ),
@@ -658,6 +693,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
               estaEquipada: item['esta_equipada'] == true,
               onTap: () => _actualizarPreview(tipo, item['mejora_detalles']),
               onEquipar: () => _equiparMejora(item['mejora_detalles']['id'], tipo, item['mejora_detalles']['url_recurso']),
+              onDesequipar: () => _desequiparMejora(item['mejora_detalles']['id'], tipo),
               compacto: true,
             );
           },
@@ -763,6 +799,33 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     }
   }
 
+  Future<void> _desequiparMejora(int mejoraId, String? tipo) async {
+    setState(() => _isLoading = true);
+    final respuesta = await ServicioMejoras().equiparMejora(mejoraId); // El backend hace toggle
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(respuesta.mensaje),
+          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : Colors.red,
+        ),
+      );
+      if (respuesta.exito) {
+        // Limpiar preview local según el tipo
+        setState(() {
+          final t = tipo?.toLowerCase() ?? '';
+          if (t == 'avatar') _previewAvatar = null;
+          else if (t == 'marco') _previewMarco = null;
+          else if (t == 'fondo') { _previewFondo = null; _previewFondoPerfil = null; }
+          else if (t.contains('estilo')) _previewEstilo = null;
+        });
+        _cargarMisMejoras();
+        notificarMejoraEquipada();
+      }
+    }
+  }
+
   Widget _buildSaveButton() {
     return ElevatedButton.icon(
       onPressed: _guardarCambios,
@@ -784,9 +847,10 @@ class _InventoryItemCard extends StatelessWidget {
   final bool estaEquipada;
   final VoidCallback onTap;
   final VoidCallback onEquipar;
+  final VoidCallback onDesequipar;
   final bool compacto;
 
-  const _InventoryItemCard({required this.detalles, required this.estaEquipada, required this.onTap, required this.onEquipar, this.compacto = false});
+  const _InventoryItemCard({required this.detalles, required this.estaEquipada, required this.onTap, required this.onEquipar, required this.onDesequipar, this.compacto = false});
 
   @override
   Widget build(BuildContext context) {
@@ -816,17 +880,23 @@ class _InventoryItemCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (!compacto)
-              Padding(
-                padding: const EdgeInsets.all(8),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: ElevatedButton(
+                onPressed: estaEquipada ? onDesequipar : onEquipar,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: estaEquipada ? Colors.grey.shade200 : const Color(0xFFC35E34),
+                  foregroundColor: estaEquipada ? const Color(0xFF4A4440) : Colors.white,
+                  elevation: estaEquipada ? 0 : 2,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
                 child: Text(
-                  detalles['nombre'] ?? detalles['tipo'],
-                  style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  estaEquipada ? 'DESEQUIPAR' : 'EQUIPAR',
+                  style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900),
                 ),
               ),
+            ),
           ],
         ),
       ),

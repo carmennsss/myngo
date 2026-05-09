@@ -13,6 +13,8 @@ class SeccionPostsPerfil extends StatefulWidget {
   final List<Publicacion>? publicaciones;
   final bool estaCargando;
   final bool esPrivado;
+  final String? fuentePerfil;
+  final String? colorTema;
   final VoidCallback onRefresh;
   final Future<List<Publicacion>> Function(int) onLoadMore;
 
@@ -21,6 +23,8 @@ class SeccionPostsPerfil extends StatefulWidget {
     required this.publicaciones,
     required this.estaCargando,
     this.esPrivado = false,
+    this.fuentePerfil,
+    this.colorTema,
     required this.onRefresh,
     required this.onLoadMore,
   });
@@ -149,7 +153,7 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
                     return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
                   }
                   final post = _posts[index];
-                  return _TarjetaPostPerfil(post: post, onUpdate: widget.onRefresh);
+                  return _TarjetaPostPerfil(post: post, onUpdate: widget.onRefresh, fuentePerfil: widget.fuentePerfil, colorTema: widget.colorTema);
                 },
               ),
             ),
@@ -163,8 +167,10 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
 class _TarjetaPostPerfil extends StatelessWidget {
   final Publicacion post;
   final VoidCallback onUpdate;
+  final String? fuentePerfil;
+  final String? colorTema;
 
-  const _TarjetaPostPerfil({required this.post, required this.onUpdate});
+  const _TarjetaPostPerfil({required this.post, required this.onUpdate, this.fuentePerfil, this.colorTema});
 
   @override
   Widget build(BuildContext context) {
@@ -178,6 +184,7 @@ class _TarjetaPostPerfil extends StatelessWidget {
           publicacion: post,
           avatarUrl: post.autorFoto ?? '',
           onEliminado: onUpdate,
+          fuente: fuentePerfil,
         );
       },
       child: Container(
@@ -251,7 +258,8 @@ class _TarjetaPostPerfil extends StatelessWidget {
                       post.contenidoTexto,
                       maxLines: 6,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.getFont(
+                        fuentePerfil ?? 'Outfit',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: colorTexto,
@@ -263,14 +271,15 @@ class _TarjetaPostPerfil extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 8),
                       child: Row(
                         children: [
-                          const Icon(Icons.pets_rounded, size: 10, color: Color(0xFF248EA6)),
+                          Icon(Icons.pets_rounded, size: 10, color: EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFF248EA6)),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               post.comunidadNombre,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.getFont(
+                                  fuentePerfil ?? 'Outfit',
                                   fontSize: 10,
-                                  color: const Color(0xFF248EA6),
+                                  color: EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFF248EA6),
                                   fontWeight: FontWeight.w900),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

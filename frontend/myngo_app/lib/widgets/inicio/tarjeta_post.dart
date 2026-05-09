@@ -75,6 +75,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       builder: (context) => DialogoDetallePublicacion(
         post: widget.post,
         esMiembro: widget.esMiembroComunidad,
+        fuente: widget.fuente,
       ),
     ).then((_) {
       if (mounted) {

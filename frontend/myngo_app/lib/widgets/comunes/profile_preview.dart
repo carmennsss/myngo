@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../utils/estilo_post_helper.dart';
 
 class ProfilePreview extends StatelessWidget {
-  final dynamic avatarUrl; // Puede ser String (URL) o XFile (local)
+  final dynamic avatarUrl; 
   final String? marcoUrl;
   final dynamic fondoUrl;
   final String? nombreUsuario;
@@ -12,6 +14,8 @@ class ProfilePreview extends StatelessWidget {
   final String? estado;
   final double size;
   final VoidCallback? onAvatarTap;
+  final String? colorTema;
+  final String? fuentePerfil;
 
   const ProfilePreview({
     super.key,
@@ -23,6 +27,8 @@ class ProfilePreview extends StatelessWidget {
     this.estado,
     this.size = 120,
     this.onAvatarTap,
+    this.colorTema,
+    this.fuentePerfil,
   });
 
   Widget _buildImage(dynamic source, {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
@@ -57,45 +63,73 @@ class ProfilePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     // Si hay fondo, mostramos un diseño de "Cabecera de Perfil"
     if (fondoUrl != null && fondoUrl!.isNotEmpty) {
-      return Container(
-        width: size * 2.5, 
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                // 1. BANNER RECTANGULAR
-                Container(
-                  width: size * 2.5,
-                  height: size * 0.8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _buildImage(fondoUrl, fit: BoxFit.cover),
-                  ),
+      final Color themeColor = EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFFC35E34);
+      final String fontFamily = fuentePerfil ?? 'Outfit';
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              // 1. BANNER RECTANGULAR
+              Container(
+                width: size * 2.5,
+                height: size * 0.8,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                
-                // 2. AVATAR + MARCO (Posicionado encima)
-                Positioned(
-                  top: size * 0.3,
-                  child: _buildAvatarWithFrame(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: _buildImage(fondoUrl, fit: BoxFit.cover),
+                ),
+              ),
+              
+              // 2. AVATAR + MARCO (Posicionado encima)
+              Positioned(
+                top: size * 0.3,
+                child: _buildAvatarWithFrame(),
+              ),
+            ],
+          ),
+          SizedBox(height: size * 0.55), 
+          // 3. NOMBRE Y PUNTOS
+          if (nombreUsuario != null)
+            Text(
+              nombreUsuario!,
+              style: GoogleFonts.getFont(
+                fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: themeColor,
+              ),
+            ),
+          if (puntos != null)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.pets_rounded, size: 12, color: themeColor.withOpacity(0.7)),
+                const SizedBox(width: 4),
+                Text(
+                  '$puntos puntos',
+                  style: GoogleFonts.getFont(
+                    fontFamily,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: size * 0.6), 
-          ],
-        ),
+        ],
       );
     }
 

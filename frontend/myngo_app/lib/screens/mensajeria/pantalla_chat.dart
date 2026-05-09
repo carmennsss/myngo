@@ -158,6 +158,8 @@ class _PantallaChatState extends State<PantallaChat> {
   SalaChat? _sala;
   List<MensajeChat> _mensajes = [];
   bool _estaCargando = true;
+  bool _estaCargandoMas = false;
+  bool _puedeCargarMas = true;
   int? _miId;
   
   // Estados de presencia
@@ -178,7 +180,16 @@ class _PantallaChatState extends State<PantallaChat> {
         setState(() => _mostrarEmojiPicker = false);
       }
     });
+    _scrollController.addListener(_onScroll);
     _inicializar();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+        !_estaCargandoMas &&
+        _puedeCargarMas) {
+      _cargarMasMensajes();
+    }
   }
 
   Future<void> _inicializar() async {
@@ -258,7 +269,10 @@ class _PantallaChatState extends State<PantallaChat> {
 
   Future<void> _cargarDatos() async {
     if (!mounted) return;
-    setState(() => _estaCargando = true);
+    setState(() {
+      _estaCargando = true;
+      _puedeCargarMas = true;
+    });
     try {
       if (widget.esChatGeneral && widget.comunidadId != null) {
         _sala = await _servicio.obtenerSalaGeneralComunidad(widget.comunidadId!);
@@ -270,6 +284,10 @@ class _PantallaChatState extends State<PantallaChat> {
         final msgsData = await _servicio.obtenerMensajesSala(_sala!.id);
         _mensajes = msgsData.map((m) => MensajeChat.fromJson(m)).toList();
         
+        if (msgsData.length < 30) {
+          _puedeCargarMas = false;
+        }
+
         // Marcamos la sala como activa para que se limpien los no leídos
         if (mounted) {
           Provider.of<ChatProvider>(context, listen: false).setSalaActiva(_sala!.id);
@@ -279,6 +297,34 @@ class _PantallaChatState extends State<PantallaChat> {
       debugPrint('Error cargando chat: $e');
     } finally {
       if (mounted) setState(() => _estaCargando = false);
+    }
+  }
+
+  Future<void> _cargarMasMensajes() async {
+    if (_sala == null || _estaCargandoMas || !_puedeCargarMas) return;
+
+    setState(() => _estaCargandoMas = true);
+    try {
+      final msgsData = await _servicio.obtenerMensajesSala(
+        _sala!.id,
+        offset: _mensajes.length,
+      );
+
+      if (msgsData.isEmpty) {
+        _puedeCargarMas = false;
+      } else {
+        final nuevosMsgs = msgsData.map((m) => MensajeChat.fromJson(m)).toList();
+        setState(() {
+          _mensajes.addAll(nuevosMsgs);
+          if (nuevosMsgs.length < 30) {
+            _puedeCargarMas = false;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error cargando más mensajes: $e');
+    } finally {
+      if (mounted) setState(() => _estaCargandoMas = false);
     }
   }
 
@@ -537,7 +583,8 @@ class _PantallaChatState extends State<PantallaChat> {
             final onlineCount = _sala!.participantes.where((p) => 
               chatProvider.isUsuarioOnline(p.usuarioId)
             ).length;
-            subtitulo = '${_sala!.participantes.length} miembros • $onlineCount en línea';
+            final mCount = _sala!.numMiembros > 0 ? _sala!.numMiembros : _sala!.participantes.length;
+            subtitulo = '$mCount miembros • $onlineCount en línea';
             avatarUrl = _sala!.avatarS3;
           } else {
             final otroId = _sala!.otroUsuarioId;
@@ -633,8 +680,16 @@ class _PantallaChatState extends State<PantallaChat> {
       controller: _scrollController,
       reverse: true,
       padding: const EdgeInsets.all(16),
-      itemCount: _mensajes.length,
+      itemCount: _mensajes.length + (_estaCargandoMas ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index == _mensajes.length) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50)),
+            ),
+          );
+        }
         final msg = _mensajes[index];
         if (msg.esSistema) return _buildMensajeSistema(msg);
         return _buildBurbujaMensaje(msg);

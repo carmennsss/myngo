@@ -164,6 +164,7 @@ class SalaChatSerializer(serializers.ModelSerializer):
     avatar_s3 = serializers.SerializerMethodField()
     personalizacion = PersonalizacionChatSerializer(source='personalizacion_v2', read_only=True)
     otro_usuario_id = serializers.SerializerMethodField()
+    num_miembros = serializers.SerializerMethodField()
 
     class Meta:
         model = SalaChat
@@ -172,7 +173,7 @@ class SalaChatSerializer(serializers.ModelSerializer):
             'miembros', 'miembros_detalle', 'ultimo_mensaje',
             'mensajes_no_leidos', 'fecha_creacion', 'avatar_s3', 
             'configuracion', 'participantes_data', 'personalizacion',
-            'otro_usuario_id'
+            'otro_usuario_id', 'num_miembros'
         ]
 
     def get_avatar_s3(self, obj):
@@ -214,3 +215,8 @@ class SalaChatSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.mensajes.exclude(leido_por=request.user).exclude(emisor=request.user).count()
         return 0
+    def get_num_miembros(self, obj):
+        """Obtiene el número total de miembros. Si es de comunidad, usa el conteo de la comunidad."""
+        if obj.es_grupal and obj.comunidad_id:
+            return obj.comunidad.miembros.count()
+        return obj.miembros.count()

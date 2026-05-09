@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/usuario.dart';
 import '../../models/publicacion.dart';
+import '../../utils/estilo_post_helper.dart';
 import '../../services/servicio_perfiles.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_mejoras.dart';
@@ -365,7 +366,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           floatingActionButton: _currentUserId == _usuario!.id
               ? FloatingActionButton.extended(
                   onPressed: _mostrarDialogoCrearPost,
-                  backgroundColor: const Color(0xFFF28B50),
+                  backgroundColor: EstiloPostHelper.parseHex(_usuario?.colorTema) ?? const Color(0xFFF28B50),
                   icon: const Icon(Icons.add_box_rounded, color: Colors.white),
                   label: Text(tr('profileUploadPost'),
                       style: GoogleFonts.inter(
@@ -425,9 +426,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                             const Tab(text: 'Posts'),
                             Tab(text: _currentUserId == _usuario!.id ? tr('profileTabsFavorites') : tr('profileTabsCollections')),
                           ],
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: GoogleFonts.getFont(_usuario!.fuentePerfil,
                               fontWeight: FontWeight.bold, fontSize: 16),
-                          indicatorColor: const Color(0xFFF28B50),
+                          indicatorColor: EstiloPostHelper.parseHex(_usuario?.colorTema) ?? const Color(0xFFF28B50),
                         ),
                       ),
                     ),
@@ -450,6 +451,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                       SeccionPostsPerfil(
                         publicaciones: _publicaciones,
                         estaCargando: _cargandoPublicaciones,
+                        fuentePerfil: _usuario?.fuentePerfil,
+                        colorTema: _usuario?.colorTema,
                         onRefresh: _cargarPublicaciones,
                         onLoadMore: (pagina) async {
                           final res = await ServicioPerfiles().obtenerPublicacionesPerfil(_usuario!.perfilId, pagina: pagina);
@@ -464,6 +467,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                           estaCargandoColecciones: _cargandoColecciones,
                           comunidadesFiltro: _comunidadesFiltro,
                           filtroComunidadId: _filtroComunidadId,
+                          fuentePerfil: _usuario?.fuentePerfil,
+                          colorTema: _usuario?.colorTema,
                           onFiltroChanged: (id) {
                             setState(() => _filtroComunidadId = id);
                             _cargarGuardados(comunidadId: id);
@@ -484,6 +489,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                           estaCargando: _cargandoColecciones,
                           onRefresh: () => _cargarColecciones(force: true),
                           esPropietario: false,
+                          fuentePerfil: _usuario?.fuentePerfil,
                         ),
                     ],
                   ),

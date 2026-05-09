@@ -148,8 +148,9 @@ class SalaChatDetail(generics.RetrieveAPIView):
         return SalaChat.objects.filter(miembros=self.request.user)
 
 
-class MensajesChatPagination(pagination.PageNumberPagination):
-    page_size = 30
+class MensajesChatPagination(pagination.LimitOffsetPagination):
+    default_limit = 30
+    max_limit = 100
 
 
 class MensajesChatList(generics.ListAPIView):

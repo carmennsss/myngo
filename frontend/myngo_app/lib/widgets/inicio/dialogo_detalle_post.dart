@@ -19,6 +19,7 @@ class DialogoDetallePublicacion extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onProfileSelected;
   final bool esMiembro;
+  final String? fuente;
 
   const DialogoDetallePublicacion({
     super.key,
@@ -26,6 +27,7 @@ class DialogoDetallePublicacion extends StatefulWidget {
     this.onComunidadSelected,
     this.onProfileSelected,
     this.esMiembro = true,
+    this.fuente,
   });
 
   @override
@@ -84,7 +86,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                     children: [
                       Text(
                         'Publicación',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: colorTexto),
+                        style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontWeight: FontWeight.bold, fontSize: 16, color: colorTexto),
                       ),
                       const SizedBox(width: 8),
                       TextButton.icon(
@@ -92,12 +94,13 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                           Navigator.pop(context);
                           context.go('/inicio/comunidades/${widget.post.comunidadId}');
                         },
-                        label: Text('Ver comunidad', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
+                        label: Text('Ver comunidad', style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 12, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
                         icon: const Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xFFC35E34)),
                         style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                       ),
                     ],
-                  ),                   Row(
+                  ),
+                   Row(
                     children: [
                       if (widget.esMiembro)
                         MenuOpcionesContenido(
@@ -211,11 +214,11 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                   children: [
                                     Text(
                                       widget.post.autorNombre,
-                                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: colorTexto, fontSize: 15),
+                                      style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontWeight: FontWeight.bold, color: colorTexto, fontSize: 15),
                                     ),
                                     Text(
                                       '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')} · ${_formatRelativeDate(widget.post.fechaCreacion)}',
-                                      style: GoogleFonts.outfit(color: colorSubtexto, fontSize: 13),
+                                      style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 13),
                                     ),
                                   ],
                                 ),
@@ -226,13 +229,13 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                           if (widget.post.titulo.isNotEmpty) ...[
                             Text(
                               widget.post.titulo,
-                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, height: 1.3, color: colorTexto),
+                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 18, fontWeight: FontWeight.bold, height: 1.3, color: colorTexto),
                             ),
                             const SizedBox(height: 6),
                           ],
                           Text(
                             widget.post.contenidoTexto,
-                            style: GoogleFonts.outfit(fontSize: 16, height: 1.4, color: colorTexto),
+                            style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 16, height: 1.4, color: colorTexto),
                           ),
                           if (widget.post.media.isNotEmpty) ...[
                             const SizedBox(height: 12),

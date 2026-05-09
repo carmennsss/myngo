@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../utils/estilo_post_helper.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:tolgee/tolgee.dart';
@@ -61,6 +62,9 @@ class InfoPerfil extends StatelessWidget {
 
     final String fecha =
         DateFormat('dd MMM yyyy').format(usuario.fechaRegistro);
+    
+    final Color themeColor = EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6);
+    final String fontFamily = usuario.fuentePerfil;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -76,7 +80,7 @@ class InfoPerfil extends StatelessWidget {
           const SizedBox(height: 20),
           _buildStatsRow(colorTextoS, fecha),
           const SizedBox(height: 24),
-          _buildActionButtons(context),
+          _buildActionButtons(context, themeColor),
         ],
       ),
     );
@@ -88,7 +92,8 @@ class InfoPerfil extends StatelessWidget {
         Flexible(
           child: Text(
             '@${usuario.nombreUsuario}',
-            style: GoogleFonts.inter(
+            style: GoogleFonts.getFont(
+              usuario.fuentePerfil,
               fontSize: 28,
               fontWeight: FontWeight.w900,
               letterSpacing: -1,
@@ -99,7 +104,7 @@ class InfoPerfil extends StatelessWidget {
         ),
         if (usuario.esVerificado) ...[
           const SizedBox(width: 8),
-          const Icon(Icons.verified_rounded, size: 22, color: Color(0xFF248EA6)),
+          Icon(Icons.verified_rounded, size: 22, color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)),
         ],
       ],
     );
@@ -180,7 +185,8 @@ class InfoPerfil extends StatelessWidget {
                         displayEstado == 'ACTIVO'
                             ? tr('statusActive')
                             : (displayEstado == 'OCUPADO' ? tr('statusBusy') : tr('statusOffline')),
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.getFont(
+                          usuario.fuentePerfil,
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                           color: color,
@@ -210,7 +216,8 @@ class InfoPerfil extends StatelessWidget {
           Icon(Icons.circle, color: color, size: 12),
           const SizedBox(width: 8),
           Text(label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.getFont(
+                  usuario.fuentePerfil,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF4A4440))),
@@ -220,23 +227,26 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildRoleBadge(Color colorTextoP) {
+    final Color themeColor = EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6);
+
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF248EA6).withOpacity(0.15),
+        color: themeColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF248EA6).withOpacity(0.3)),
+        border: Border.all(color: themeColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.stars_rounded, color: Color(0xFF248EA6), size: 14),
+          Icon(Icons.stars_rounded, color: themeColor, size: 14),
           const SizedBox(width: 6),
           Text(
             rolEnComunidad!.toUpperCase(),
-            style: GoogleFonts.outfit(
-              color: const Color(0xFF248EA6),
+            style: GoogleFonts.getFont(
+              usuario.fuentePerfil,
+              color: themeColor,
               fontWeight: FontWeight.bold,
               fontSize: 10,
               letterSpacing: 1,
@@ -259,7 +269,8 @@ class InfoPerfil extends StatelessWidget {
           children: [
             Text(
               (biografiaLocal == null || biografiaLocal!.isEmpty) ? tr('profileBioEmpty') : biografiaLocal!,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.getFont(
+                usuario.fuentePerfil,
                 fontSize: 16,
                 height: 1.5,
                 color: colorTextoP.withOpacity(0.9),
@@ -274,7 +285,7 @@ class InfoPerfil extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       tr('profileBioTapToEdit'),
-                      style: GoogleFonts.inter(fontSize: 11, color: colorTextoS, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.getFont(usuario.fuentePerfil, fontSize: 11, color: colorTextoS, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -293,12 +304,12 @@ class InfoPerfil extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             tr('profileJoined', {'date': fecha}),
-            style: GoogleFonts.inter(fontSize: 13, color: colorTextoS),
+            style: GoogleFonts.getFont(usuario.fuentePerfil, fontSize: 13, color: colorTextoS),
           ),
         ],
       ),
     );
-  }  Widget _buildActionButtons(BuildContext context) {
+  }  Widget _buildActionButtons(BuildContext context, Color themeColor) {
     if (currentUserId == null) return const SizedBox.shrink();
     final bool esPropio = currentUserId == usuario.id;
     if (esPropio) return const SizedBox.shrink();
@@ -321,9 +332,10 @@ class InfoPerfil extends StatelessWidget {
               ? Colors.grey.shade600
               : (estadoSeguimiento == 'SOLICITUD'
                   ? Colors.grey.shade500
-                  : const Color(0xFFF28B50)),
+                  : themeColor),
           isLoading: isLoading,
           onPressed: onManejarSeguimiento,
+          fuentePerfil: usuario.fuentePerfil,
         ),
         const SizedBox(width: 8),
         // Botón Chat
@@ -336,11 +348,11 @@ class InfoPerfil extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             decoration: BoxDecoration(
               color: haVotadoHoy
-                  ? const Color(0xFF248EA6).withOpacity(0.1)
-                  : const Color(0xFF248EA6),
+                  ? (EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)).withOpacity(0.1)
+                  : (EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)),
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
-                color: const Color(0xFF248EA6).withOpacity(haVotadoHoy ? 0.4 : 0),
+                color: (EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)).withOpacity(haVotadoHoy ? 0.4 : 0),
               ),
             ),
             child: Row(
@@ -349,7 +361,7 @@ class InfoPerfil extends StatelessWidget {
                 Icon(
                   haVotadoHoy ? Icons.star_rounded : Icons.star_border_rounded,
                   size: 16,
-                  color: haVotadoHoy ? const Color(0xFF248EA6) : Colors.white,
+                  color: haVotadoHoy ? (EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)) : Colors.white,
                 ),
                 const SizedBox(width: 6),
                 Column(
@@ -357,21 +369,23 @@ class InfoPerfil extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      haVotadoHoy ? ratingLocal.toStringAsFixed(1) : ratingLocal.toStringAsFixed(1),
-                      style: GoogleFonts.outfit(
+                      ratingLocal.toStringAsFixed(1),
+                      style: GoogleFonts.getFont(
+                        usuario.fuentePerfil,
                         fontWeight: FontWeight.w900,
                         fontSize: 14,
-                        color: haVotadoHoy ? const Color(0xFF248EA6) : Colors.white,
+                        color: haVotadoHoy ? (EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)) : Colors.white,
                         height: 1.0,
                       ),
                     ),
                     if (haVotadoHoy && tiempoParaReinicio.isNotEmpty)
                       Text(
                         tiempoParaReinicio,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.getFont(
+                          usuario.fuentePerfil,
                           fontWeight: FontWeight.bold,
                           fontSize: 10,
-                          color: const Color(0xFF248EA6).withOpacity(0.7),
+                          color: (EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)).withOpacity(0.7),
                           height: 1.1,
                         ),
                       ),
@@ -381,10 +395,11 @@ class InfoPerfil extends StatelessWidget {
                 TranslationWidget(
                   builder: (context, tr) => Text(
                     haVotadoHoy ? tr('profileVoteEdit') : tr('profileVoteNew'),
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.getFont(
+                      usuario.fuentePerfil,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: haVotadoHoy ? const Color(0xFF248EA6) : Colors.white,
+                      color: haVotadoHoy ? (EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6)) : Colors.white,
                     ),
                   ),
                 ),
@@ -425,6 +440,7 @@ class _SmallButton extends StatelessWidget {
   final Color color;
   final bool isLoading;
   final VoidCallback onPressed;
+  final String? fuentePerfil;
 
   const _SmallButton({
     required this.label,
@@ -432,6 +448,7 @@ class _SmallButton extends StatelessWidget {
     required this.color,
     required this.isLoading,
     required this.onPressed,
+    this.fuentePerfil,
   });
 
   @override
@@ -453,7 +470,8 @@ class _SmallButton extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     label,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.getFont(
+                      fuentePerfil ?? 'Outfit',
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                       color: Colors.white,
@@ -471,12 +489,14 @@ class _ActionButton extends StatelessWidget {
   final LinearGradient gradient;
   final bool isLoading;
   final VoidCallback onPressed;
+  final String? fuentePerfil;
 
   const _ActionButton({
     required this.label,
     required this.gradient,
     required this.isLoading,
     required this.onPressed,
+    this.fuentePerfil,
   });
 
   @override
@@ -507,7 +527,8 @@ class _ActionButton extends StatelessWidget {
                         strokeWidth: 2, color: Colors.white))
                 : Text(
                     label,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.getFont(
+                      fuentePerfil ?? 'Outfit',
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                       color: Colors.white,

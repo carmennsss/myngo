@@ -16,6 +16,7 @@ class SeccionColeccionesPerfil extends StatelessWidget {
   final List<Coleccion>? colecciones;
   final bool estaCargando;
   final bool esPropietario;
+  final String? fuentePerfil;
   final VoidCallback onRefresh;
 
   const SeccionColeccionesPerfil({
@@ -23,6 +24,7 @@ class SeccionColeccionesPerfil extends StatelessWidget {
     required this.colecciones,
     required this.estaCargando,
     this.esPropietario = true,
+    this.fuentePerfil,
     required this.onRefresh,
   });
 
@@ -138,7 +140,8 @@ class SeccionColeccionesPerfil extends StatelessWidget {
                             Text(
                               col.nombreColeccion.toUpperCase(),
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.getFont(
+                                fuentePerfil ?? 'Outfit',
                                 color: const Color(0xFF4A4440),
                                 fontWeight: FontWeight.w900,
                                 fontSize: 10,
@@ -200,7 +203,7 @@ class SeccionColeccionesPerfil extends StatelessWidget {
             Expanded(
               child: Text(
                 coleccion.esPrivada ? '¿Hacer pública?' : '¿Hacer privada?',
-                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+                style: GoogleFonts.getFont(fuentePerfil ?? 'Outfit', color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ],
