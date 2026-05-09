@@ -5,9 +5,7 @@ import '../../models/comunidad.dart';
 import '../../models/catalogo_mejoras.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_mejoras.dart';
-import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_usuarios.dart';
-import '../comunidades/pantalla_enviar_propuesta.dart';
 
 // Widgets extraídos
 import 'widgets_tienda/tienda_preview_section.dart';
@@ -18,14 +16,12 @@ import 'widgets_tienda/lista_mejoras_tab.dart';
 /// Permite previsualizar y comprar mejoras tanto globales como exclusivas de comunidad.
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;
-  final Comunidad? comunidad;
   final Function(String)? onCategoryChanged;
   final Function(int)? onPuntosActualizados;
 
   const PantallaTiendaMejoras({
     super.key,
     this.esVistaIntegrada = false,
-    this.comunidad,
     this.onCategoryChanged,
     this.onPuntosActualizados,
   });
@@ -38,8 +34,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     with SingleTickerProviderStateMixin {
   late TabController _subTabController;
   int _tabIndex = 0; // 0: Global, 1: Comunidad
-  bool _esModerador = false;
-  bool _modoGestion = false;
 
   Usuario? _usuarioActual;
   String? _previewAvatar;
@@ -58,20 +52,13 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     super.initState();
     _inicializarTienda();
     _subTabController =
-        TabController(length: widget.comunidad != null ? 3 : 4, vsync: this);
+        TabController(length: 4, vsync: this);
     _subTabController.addListener(_handleTabChange);
   }
 
   @override
   void didUpdateWidget(PantallaTiendaMejoras oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.comunidad?.id != widget.comunidad?.id) {
-      _subTabController.removeListener(_handleTabChange);
-      _subTabController.dispose();
-      _subTabController = TabController(length: widget.comunidad != null ? 3 : 4, vsync: this);
-      _subTabController.addListener(_handleTabChange);
-      _inicializarTienda();
-    }
   }
 
   @override
@@ -83,10 +70,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
 
   Future<void> _inicializarTienda() async {
     await _cargarDatosUsuario();
-    if (widget.comunidad != null) {
-      _tabIndex = 1;
-      await _checkRol();
-    }
     await _cargarDatosTienda();
   }
 
@@ -95,37 +78,13 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     if (mounted && res.exito) {
       setState(() {
         _usuarioActual = res.datos;
-        
-        if (widget.comunidad != null) {
-          // Si es tienda de comunidad, previsualizamos la comunidad por defecto
-          _previewAvatar = widget.comunidad!.urlAvatar;
-          _previewFondo = widget.comunidad!.urlFondo ?? widget.comunidad!.urlPortada;
-          _previewMarco = null; // Las comunidades no suelen tener marco por defecto
-          _previewEstiloPost = widget.comunidad!.fondoPostsConfig;
-        } else {
-          // Si es tienda personal, previsualizamos nuestro perfil
-          _previewAvatar = _usuarioActual?.urlAvatar;
-          _previewMarco = _usuarioActual?.marco;
-          _previewFondo = _usuarioActual?.fondo;
-          _previewFondoFeed = _usuarioActual?.fondoPerfil;
-          _previewEstiloPost = _usuarioActual?.estiloPost;
-        }
+        // Previsualizamos nuestro perfil
+        _previewAvatar = _usuarioActual?.urlAvatar;
+        _previewMarco = _usuarioActual?.marco;
+        _previewFondo = _usuarioActual?.fondo;
+        _previewFondoFeed = _usuarioActual?.fondoPerfil;
+        _previewEstiloPost = _usuarioActual?.estiloPost;
       });
-    }
-  }
-
-  Future<void> _checkRol() async {
-    final userId = await ServicioUsuarios().obtenerIdUsuario();
-    if (userId != null && widget.comunidad != null) {
-      final res = await ServicioComunidades()
-          .obtenerRolUsuarioEnComunidad(widget.comunidad!.id, userId);
-      if (mounted && res.exito) {
-        setState(() {
-          _esModerador =
-              res.datos == 'Administrador' || res.datos == 'Moderador';
-          if (_esModerador) _modoGestion = true;
-        });
-      }
     }
   }
 
@@ -143,12 +102,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     setState(() => _cargandoTienda = true);
 
     try {
-      final resCatalogo = widget.comunidad != null
-          ? (_esModerador 
-              ? await ServicioMejoras().obtenerCatalogoGestion(widget.comunidad!.id)
-              : await ServicioMejoras().obtenerMejorasComunidad(widget.comunidad!.id))
-          : await ServicioMejoras().obtenerMejorasGlobales();
-
+      final resCatalogo = await ServicioMejoras().obtenerMejorasGlobales();
       final resMisMejoras = await ServicioMejoras().obtenerMisMejoras();
 
       if (mounted) {
@@ -190,7 +144,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                         _buildTab('Avatar'),
                         _buildTab('Marco'),
                         _buildTab('Fondo'),
-                        if (widget.comunidad == null) _buildTab('Estilo Post'),
+                        _buildTab('Estilo Post'),
                       ],
                     ),
         ),
@@ -219,7 +173,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           previewMarco: _previewMarco,
           previewFondo: _previewFondo,
           previewEstiloPost: _previewEstiloPost,
-          comunidad: widget.comunidad,
         ),
       ),
     );
@@ -256,7 +209,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                   previewMarco: _previewMarco,
                   previewFondo: _previewFondo,
                   previewEstiloPost: _previewEstiloPost,
-                  comunidad: widget.comunidad,
                 ),
               ),
               // Si está integrado en un sliver, necesitamos una altura fija o limitada
@@ -280,7 +232,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
             backgroundColor: const Color(0xFFFEF5F1),
             appBar: _buildAppBar(),
             body: content,
-            floatingActionButton: _buildFAB(),
           );
   }
 
@@ -304,7 +255,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           const Tab(text: 'Avatares'),
           const Tab(text: 'Marcos'),
           const Tab(text: 'Fondos'),
-          if (widget.comunidad == null) const Tab(text: 'Estilos Post'),
+          const Tab(text: 'Estilos Post'),
         ],
       ),
     );
@@ -313,9 +264,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   Widget _buildTab(String tipo) {
     return ListaMejorasTab(
       tipo: tipo,
-      comunidadId: widget.comunidad?.id,
-      esModerador: _esModerador,
-      modoGestion: _modoGestion,
       usuarioActual: _usuarioActual,
       mejoras: _mejorasCatalogo,
       misMejoras: _misMejoras,
@@ -343,32 +291,10 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
       backgroundColor: const Color(0xFFFEF5F1),
       elevation: 0,
       title: Text(
-        widget.comunidad != null
-            ? 'Tienda: ${widget.comunidad!.nombre}'
-            : 'Tienda de Mejoras',
+        'Tienda de Mejoras',
         style: GoogleFonts.outfit(fontWeight: FontWeight.w900),
       ),
       centerTitle: true,
-    );
-  }
-
-  Widget? _buildFAB() {
-    if (widget.comunidad == null) return null;
-    
-    // Si eres la creadora (por ID) o tienes rol de Administrador, tienes control total
-    final bool esCreador = (_usuarioActual != null && _usuarioActual!.id == widget.comunidad!.creadorId) ||
-                           widget.comunidad!.miRol == 'Administrador' ||
-                           _esModerador; // Si es moderador/admin en esta vista, le damos el botón de gestión
-
-    return FloatingActionButton.extended(
-      onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (ctx) =>
-                  PantallaEnviarPropuesta(comunidad: widget.comunidad!))),
-      label: Text(esCreador ? 'Añadir Mejoras' : 'Sugerir Diseño'),
-      icon: Icon(esCreador ? Icons.add_to_photos_rounded : Icons.add_photo_alternate_rounded),
-      backgroundColor: widget.comunidad!.colorTema,
     );
   }
 }

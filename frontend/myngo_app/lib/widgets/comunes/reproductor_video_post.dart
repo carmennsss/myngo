@@ -171,7 +171,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
   Widget build(BuildContext context) {
     if (_error) {
       return Container(
-        color: Colors.black,
+        color: Colors.transparent,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -206,7 +206,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
 
     if (!_initialized) {
       return Container(
-        color: Colors.black,
+        color: Colors.transparent,
         child: const Center(
           child: CircularProgressIndicator(color: Color(0xFFF28B50), strokeWidth: 2),
         ),
@@ -217,17 +217,11 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
       key: Key(widget.url),
       onVisibilityChanged: _handleVisibilityChanged,
       child: Container(
-        color: Colors.black,
+        color: Colors.transparent,
         child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: SizedBox(
-              width: 400, // Ancho base para que los controles tengan un tamaño estándar legible
-              child: AspectRatio(
-                aspectRatio: _chewieController?.aspectRatio ?? _videoController.value.aspectRatio,
-                child: Chewie(controller: _chewieController!),
-              ),
-            ),
+          child: AspectRatio(
+            aspectRatio: _chewieController?.aspectRatio ?? _videoController.value.aspectRatio,
+            child: Chewie(controller: _chewieController!),
           ),
         ),
       ),

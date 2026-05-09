@@ -231,6 +231,11 @@ class PublicacionCreate(generics.CreateAPIView):
         contenido_texto = request.data.get('contenido_texto', '') or ''
         texto = f"{titulo} {contenido_texto}".strip()
         es_valido = validar_contenido_toxico(texto)
+        if not es_valido:
+            return Response(
+                {'error': 'El contenido de la publicación incumple nuestras normas comunitarias (lenguaje ofensivo o inapropiado).'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
             serializer = self.get_serializer(data=request.data)
@@ -331,6 +336,12 @@ class PublicacionDetail(generics.RetrieveUpdateDestroyAPIView):
         )
         texto = f"{titulo} {contenido_texto}".strip()
         es_valido = validar_contenido_toxico(texto)
+        if not es_valido:
+            return Response(
+                {'error': 'El contenido de la publicación incumple nuestras normas comunitarias (lenguaje ofensivo o inapropiado).'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
         serializer.save(es_valido_ia=es_valido)
         self.perform_update(serializer)
         return Response(serializer.data)

@@ -281,7 +281,7 @@ class PerfilSerializer(serializers.ModelSerializer):
         fields = [
             'biografia', 'url_avatar', 'fondo', 'fondo_perfil', 'marco', 'estilo_post',
             'numero_seguidores', 'numero_seguidos', 'datos_usuario', 'estado_seguimiento',
-            'orden_comunidades', 'color_tema', 'fuente_perfil',
+            'orden_comunidades', 'color_tema', 'fuente_perfil', 'es_publico',
         ]
 
     def get_numero_seguidores(self, obj):

@@ -287,6 +287,7 @@ class ServicioUsuarios {
     dynamic imagenFondoPerfil,
     String? colorTema,
     String? fuentePerfil,
+    bool? esPublico,
   }) async {
     try {
       final token = await obtenerToken();
@@ -312,6 +313,9 @@ class ServicioUsuarios {
       }
       if (fuentePerfil != null) {
         datosFormulario.fields.add(MapEntry('fuente_perfil', fuentePerfil));
+      }
+      if (esPublico != null) {
+        datosFormulario.fields.add(MapEntry('es_publico', esPublico.toString()));
       }
 
       final imagenes = {
@@ -366,5 +370,81 @@ class ServicioUsuarios {
   /// Guarda el orden personalizado de las comunidades del usuario.
   Future<RespuestaApi> actualizarOrdenComunidades(int perfilId, List<int> idsOrdenados) async {
     return actualizarPerfil(perfilId: perfilId, ordenComunidades: idsOrdenados);
+  }
+
+  /// Actualiza el nombre de usuario de la cuenta actual.
+  Future<RespuestaApi> actualizarNombreUsuario(int id, String nuevoNombre) async {
+    try {
+      final respuesta = await http.put(
+        Uri.parse('$_urlUsuarios/actualizar_usuario/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({
+          'id': id,
+          'nombre_usuario': nuevoNombre.trim(),
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode == 200) {
+        final preferencias = await SharedPreferences.getInstance();
+        await preferencias.setString('nombre_usuario', nuevoNombre.trim());
+        return RespuestaApi.fromJson(datosJson);
+      }
+      
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'El nombre de usuario ya está en uso o es inválido',
+        errores: datosJson['errores'],
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Cambia la contraseña del usuario actual.
+  Future<RespuestaApi> cambiarPassword(String nuevaPassword) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlUsuarios/configuracion/cambiar-password/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'nueva_password': nuevaPassword.trim()}),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi.fromJson(datosJson);
+      }
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'Error al cambiar contraseña',
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Elimina la cuenta del usuario actual.
+  Future<RespuestaApi> eliminarCuenta() async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('$_urlUsuarios/configuracion/eliminar-cuenta/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode == 200) {
+        await cerrarSesion();
+        return RespuestaApi.fromJson(datosJson);
+      }
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'Error al eliminar cuenta',
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
   }
 }

@@ -78,7 +78,7 @@ class _MiniaturaVideoState extends State<MiniaturaVideo> {
         }
       },
       child: Container(
-        color: Colors.black,
+        color: Colors.transparent,
         child: Stack(
           alignment: Alignment.center,
           children: [
