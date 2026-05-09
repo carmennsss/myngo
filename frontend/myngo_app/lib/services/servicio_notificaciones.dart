@@ -10,6 +10,12 @@ import 'servicio_usuarios.dart';
 /// Provee métodos para listar avisos, marcarlos como leídos y procesar
 /// respuestas a solicitudes interactivas (seguimiento, uniones, etc.).
 class ServicioNotificaciones {
+  final http.Client? _httpClient;
+
+  ServicioNotificaciones({http.Client? httpClient}) : _httpClient = httpClient;
+
+  http.Client get client => _httpClient ?? http.Client();
+
   /// URL base para los endpoints de notificaciones.
   static const String _urlNotificaciones = '${Configuracion.baseUrl}/notificaciones/';
   
@@ -27,7 +33,7 @@ class ServicioNotificaciones {
   /// Recupera la lista completa de notificaciones del usuario autenticado.
   Future<RespuestaApi<List<Notificacion>>> listarNotificaciones() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse(_urlNotificaciones),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -50,7 +56,7 @@ class ServicioNotificaciones {
   /// Responde a una solicitud (aceptar/rechazar) vinculada a una notificación.
   Future<RespuestaApi<void>> responderSolicitudInteractiva(int idNotificacion, String accion) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlNotificaciones$idNotificacion/responder/'),
         headers: await _obtenerCabeceras(),
         body: json.encode({'accion': accion}),
@@ -69,7 +75,7 @@ class ServicioNotificaciones {
   /// Marca todas las notificaciones pendientes como leídas.
   Future<RespuestaApi<void>> marcarTodasComoLeidas() async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('${_urlNotificaciones}marcar-leidas/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -86,7 +92,7 @@ class ServicioNotificaciones {
   /// Marca una notificación individual como leída.
   Future<RespuestaApi<void>> marcarComoLeida(int idNotificacion) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlNotificaciones$idNotificacion/marcar-leida/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
@@ -103,7 +109,7 @@ class ServicioNotificaciones {
   /// Obtiene el conteo numérico de notificaciones sin leer.
   Future<int> obtenerConteoNoLeidas() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlNotificaciones}no-leidas/count/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));

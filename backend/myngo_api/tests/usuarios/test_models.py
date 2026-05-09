@@ -30,6 +30,7 @@ def test_recalcular_puntos(monkeypatch):
     assert perfil.puntos == 400
 
 def test_seguimiento_str():
-    seguimiento = SeguimientoFactory()
+    seguido = UsuarioFactory()
+    seguimiento = SeguimientoFactory(seguido_usuario=seguido)
     expected_str = f"{seguimiento.seguidor.nombre_usuario} → {seguimiento.seguido_usuario.nombre_usuario} ({seguimiento.estado})"
     assert str(seguimiento) == expected_str

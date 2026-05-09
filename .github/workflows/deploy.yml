@@ -1,12 +1,15 @@
-name: Deploy to EC2
+name: Deploy to EC2 & CI Tests
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  test:
+  test-backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -26,12 +29,111 @@ jobs:
       - name: Run Backend Tests
         env:
           SECRET_KEY: 'dummy-secret-key-for-testing'
+          DEBUG: 'True'
+          DB_ENGINE: 'django.db.backends.sqlite3'
+          DB_NAME: 'memory'
+          DB_USER: 'dummy'
+          DB_PASSWORD: 'dummy'
+          DB_HOST: 'dummy'
+          AWS_STORAGE_BUCKET_NAME: 'dummy'
+          EMAIL_HOST_PASSWORD: 'dummy'
         run: |
           cd backend/myngo_api
           pytest --cov=. --cov-report=xml
 
+  frontend-unit:
+    name: Frontend Unit & Widget Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0' # O la versión estable que estés usando
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: |
+          cd frontend/myngo_app
+          flutter pub get
+
+      - name: Run Unit and Widget Tests with Coverage
+        run: |
+          cd frontend/myngo_app
+          flutter test --coverage
+
+      # Reporte de cobertura en PR
+      - name: Publish Coverage Report
+        if: github.event_name == 'pull_request'
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          lcov-file: ./frontend/myngo_app/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  frontend-e2e:
+    name: Frontend E2E Tests (Patrol)
+    needs: frontend-unit
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Install Patrol CLI
+        run: dart pub global activate patrol_cli
+
+      - name: Set up Python (for Backend)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend/myngo_api
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start Django Backend (In Memory DB)
+        env:
+          SECRET_KEY: 'dummy-secret-key-for-testing'
+          DEBUG: 'True'
+          DB_ENGINE: 'django.db.backends.sqlite3'
+          DB_NAME: 'memory'
+          DB_USER: 'dummy'
+          DB_PASSWORD: 'dummy'
+          DB_HOST: 'dummy'
+          AWS_STORAGE_BUCKET_NAME: 'dummy'
+          EMAIL_HOST_PASSWORD: 'dummy'
+        run: |
+          cd backend/myngo_api
+          python manage.py migrate
+          python manage.py runserver 0.0.0.0:8000 &
+          sleep 10 
+
+      - name: Run Patrol E2E Integration Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          script: |
+            cd frontend/myngo_app
+            flutter pub get
+            # Ejecutar solo flujos básicos para CI, excluyendo sesiones masivas manuales
+            patrol test --target integration_test/patrol/auth_flow_test.dart
+            patrol test --target integration_test/patrol/chat_flow_test.dart
+            patrol test --target integration_test/patrol/comunidad_flow_test.dart
+            patrol test --target integration_test/patrol/publicacion_flow_test.dart
+            patrol test --target integration_test/patrol/notificaciones_flow_test.dart
+
   deploy:
-    needs: test
+    needs: [test-backend, frontend-unit, frontend-e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -42,24 +144,19 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # Instalar Node.js si no está presente (necesario para npx)
             if ! command -v node &> /dev/null; then
               curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
               sudo apt install -y nodejs
             fi
 
-            # Variables de entorno para Tolgee
             export TOLGEE_API_KEY="${{ secrets.TOLGEE_API_KEY }}"
             export TOLGEE_API_URL="http://127.0.0.1:8085"
-            # Si tu proyecto Tolgee necesita projectId (opcional si usas sólo push/pull)
             export TOLGEE_PROJECT_ID="${{ secrets.TOLGEE_PROJECT_ID }}"
 
-            # Actualizar código del backend (frontend no está aquí)
             cd /home/ubuntu/myngo
             git fetch origin
             git reset --hard origin/main
 
-            # Backend Django
             cd backend/myngo_api
             source venv/bin/activate
             pip install -r requirements.txt
@@ -67,9 +164,6 @@ jobs:
             python manage.py collectstatic --noinput
             sudo systemctl restart daphne
 
-            # Sincronizar traducciones (solo backend)
             cd /home/ubuntu/myngo
             chmod +x ./sync_translations.sh
-            # Normalmente después del deploy quieres traer las últimas traducciones:
             ./sync_translations.sh pull
-            # Si en cambio subes cambios desde el backend (raro en CI), usar push

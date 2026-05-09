@@ -12,6 +12,12 @@ import './servicio_usuarios.dart';
 /// Administra las votaciones entre usuarios/comunidades, el catálogo de mejoras
 /// visuales (marcos, fondos, estilos) y el flujo de propuestas de nuevos artículos.
 class ServicioMejoras {
+  final http.Client? _httpClient;
+
+  ServicioMejoras({http.Client? httpClient}) : _httpClient = httpClient;
+
+  http.Client get client => _httpClient ?? http.Client();
+
   /// URL base para los endpoints del módulo de mejoras y reputación.
   static const String _urlMejoras = '${Configuracion.baseUrl}/mejoras';
 
@@ -33,7 +39,7 @@ class ServicioMejoras {
     required int cantidadEstrellas,
   }) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlMejoras/votar/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({
@@ -68,7 +74,7 @@ class ServicioMejoras {
           ? 'receptor_usuario=$idReceptorUsuario'
           : 'receptor_comunidad=$idReceptorComunidad';
 
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlMejoras/votar/?$parametros'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -116,7 +122,7 @@ class ServicioMejoras {
   /// Obtiene la lista de artículos cosméticos disponibles en la tienda global.
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasGlobales() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlMejoras/tienda/global/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -135,7 +141,7 @@ class ServicioMejoras {
   /// Obtiene los artículos cosméticos exclusivos de una comunidad específica.
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasComunidad(int idComunidad) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlMejoras/tienda/comunidad/$idComunidad/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -196,7 +202,7 @@ class ServicioMejoras {
   /// Recupera las propuestas de mejoras pendientes de revisión para una comunidad.
   Future<RespuestaApi<List<dynamic>>> obtenerPropuestasPendientes(int idComunidad) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlMejoras/tienda/peticiones/moderacion/$idComunidad/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -214,7 +220,7 @@ class ServicioMejoras {
   /// Aprueba o rechaza una propuesta de mejora configurando su precio final.
   Future<RespuestaApi> moderarPropuesta(int idPropuesta, String nuevoEstado, int precioFinal) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlMejoras/tienda/peticiones/$idPropuesta/moderar/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({'estado': nuevoEstado, 'precio': precioFinal}),
@@ -232,7 +238,7 @@ class ServicioMejoras {
   /// Realiza la compra de un artículo del catálogo utilizando puntos del usuario.
   Future<RespuestaApi> comprarMejora(int idMejora) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlMejoras/tienda/comprar/$idMejora/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -254,7 +260,7 @@ class ServicioMejoras {
   /// Recupera el inventario completo de artículos adquiridos por el usuario actual.
   Future<RespuestaApi<List<dynamic>>> obtenerMisMejoras() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlMejoras/tienda/mis-mejoras/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -272,7 +278,7 @@ class ServicioMejoras {
   /// Activa o desactiva visualmente un cosmético del inventario.
   Future<RespuestaApi> equiparMejora(int idMejora, {String? destino}) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlMejoras/tienda/equipar/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({
@@ -316,7 +322,7 @@ class ServicioMejoras {
   /// Recupera el catálogo completo de una comunidad para fines de gestión administrativa.
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerCatalogoGestion(int idComunidad) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlMejoras/tienda/gestion/$idComunidad/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));

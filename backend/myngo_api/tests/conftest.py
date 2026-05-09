@@ -12,7 +12,18 @@ django.setup()
 
 import pytest
 from rest_framework.test import APIClient
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.authtoken.models import Token
+from tests.factories import UsuarioFactory, SuperUsuarioFactory
+
+@pytest.fixture
+def usuario(db):
+    """Retorna un usuario normal de prueba."""
+    return UsuarioFactory()
+
+@pytest.fixture
+def superusuario(db):
+    """Retorna un superusuario de prueba."""
+    return SuperUsuarioFactory()
 
 @pytest.fixture
 def api_client():
@@ -22,13 +33,13 @@ def api_client():
 @pytest.fixture
 def auth_client(api_client, usuario):
     """Retorna un cliente API autenticado para el usuario dado."""
-    refresh = RefreshToken.for_user(usuario)
-    api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+    token, _ = Token.objects.get_or_create(user=usuario)
+    api_client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
     return api_client
 
 @pytest.fixture
 def admin_client(api_client, superusuario):
     """Retorna un cliente API autenticado para un superusuario."""
-    refresh = RefreshToken.for_user(superusuario)
-    api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+    token, _ = Token.objects.get_or_create(user=superusuario)
+    api_client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
     return api_client
