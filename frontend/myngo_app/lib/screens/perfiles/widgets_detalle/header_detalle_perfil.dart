@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/usuario.dart';
+import '../../../utils/estilo_post_helper.dart';
 import '../../inicio/pantalla_inicio.dart';
 import '../../../widgets/boton_idioma.dart';
 
@@ -142,7 +143,7 @@ class HeaderDetallePerfil extends StatelessWidget {
                               color: Colors.white,
                               border: (marcoLocal == null || marcoLocal!.isEmpty)
                                   ? Border.all(
-                                      color: const Color(0xFF248EA6), width: 3)
+                                      color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6), width: 3)
                                   : null,
                               boxShadow: [
                                 BoxShadow(
@@ -163,10 +164,11 @@ class HeaderDetallePerfil extends StatelessWidget {
                                 : Center(
                                     child: Text(
                                       inicial,
-                                      style: const TextStyle(
+                                      style: GoogleFonts.getFont(
+                                        usuario.fuentePerfil,
                                         fontSize: 50,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF248EA6),
+                                        color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6),
                                       ),
                                     ),
                                   ),
@@ -202,8 +204,8 @@ class HeaderDetallePerfil extends StatelessWidget {
                         onTap: onEditarAvatar,
                         child: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF28B50),
+                          decoration: BoxDecoration(
+                            color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFFF28B50),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.camera_alt_rounded,
@@ -307,7 +309,8 @@ class _StatusIndicator extends StatelessWidget {
           Icon(Icons.circle, color: color, size: 12),
           const SizedBox(width: 8),
           Text(label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.getFont(
+                  usuario.fuentePerfil,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF4A4440))),

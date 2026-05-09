@@ -20,6 +20,7 @@ class DetallePublicacionSheet extends StatefulWidget {
   final String avatarUrl;
   final VoidCallback? onEliminado;
   final Function(Usuario)? onProfileSelected;
+  final String? fuente;
 
   const DetallePublicacionSheet({
     super.key,
@@ -27,6 +28,7 @@ class DetallePublicacionSheet extends StatefulWidget {
     required this.avatarUrl,
     this.onEliminado,
     this.onProfileSelected,
+    this.fuente,
   });
 
   static void mostrar(
@@ -35,6 +37,7 @@ class DetallePublicacionSheet extends StatefulWidget {
     required String avatarUrl,
     VoidCallback? onEliminado,
     Function(Usuario)? onProfileSelected,
+    String? fuente,
   }) {
     showModalBottomSheet(
       context: context,
@@ -45,6 +48,7 @@ class DetallePublicacionSheet extends StatefulWidget {
         avatarUrl: avatarUrl,
         onEliminado: onEliminado,
         onProfileSelected: onProfileSelected,
+        fuente: fuente,
       ),
     );
   }
@@ -189,7 +193,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                             children: [
                               Text(
                                 '@${publicacion.autorNombre}',
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
                                   color: colorTexto,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -204,7 +208,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                           ),
                           Text(
                             fecha,
-                            style: GoogleFonts.inter(color: colorSubtexto, fontSize: 12),
+                            style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 12),
                           ),
                         ],
                       ),
@@ -242,7 +246,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                 child: Text(
                   publicacion.titulo,
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
                     color: colorTexto,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -256,7 +260,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 padding: EdgeInsets.fromLTRB(16, publicacion.titulo.isEmpty ? 16 : 8, 16, 16),
                 child: Text(
                   publicacion.contenidoTexto,
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
                     color: colorTexto.withOpacity(0.9),
                     fontSize: 15,
                     height: 1.6,
@@ -274,7 +278,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                     const SizedBox(width: 6),
                     Text(
                       publicacion.comunidadNombre,
-                      style: GoogleFonts.inter(color: colorSubtexto, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

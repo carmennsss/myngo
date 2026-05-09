@@ -83,6 +83,7 @@ class SalaChat {
   final Map<String, dynamic> configuracion;
   final List<ParticipanteChat> participantes;
   final PersonalizacionChat? personalizacion;
+  final int numMiembros;
 
   SalaChat({
     required this.id,
@@ -95,6 +96,7 @@ class SalaChat {
     this.configuracion = const {},
     this.participantes = const [],
     this.personalizacion,
+    this.numMiembros = 0,
   });
 
   factory SalaChat.fromJson(Map<String, dynamic> json) {
@@ -115,6 +117,7 @@ class SalaChat {
       personalizacion: json['personalizacion'] != null 
           ? PersonalizacionChat.fromJson(json['personalizacion'])
           : null,
+      numMiembros: json['num_miembros'] ?? 0,
     );
   }
 

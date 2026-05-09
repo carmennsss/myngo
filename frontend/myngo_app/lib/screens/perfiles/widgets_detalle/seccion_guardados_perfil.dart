@@ -19,6 +19,8 @@ class SeccionGuardadosPerfil extends StatefulWidget {
   final List<Map<String, dynamic>> comunidadesFiltro;
   final int? filtroComunidadId;
   final Function(int?) onFiltroChanged;
+  final String? fuentePerfil;
+  final String? colorTema;
   final VoidCallback onRefresh;
   final VoidCallback onRefreshColecciones;
   final Future<List<Publicacion>> Function(int) onLoadMore;
@@ -31,6 +33,8 @@ class SeccionGuardadosPerfil extends StatefulWidget {
     required this.estaCargandoColecciones,
     required this.comunidadesFiltro,
     this.filtroComunidadId,
+    this.fuentePerfil,
+    this.colorTema,
     required this.onFiltroChanged,
     required this.onRefresh,
     required this.onRefreshColecciones,
@@ -128,6 +132,7 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
               child: _ToggleButton(
                 label: 'Publicaciones',
                 selected: !_mostrarCarpetas,
+                colorTema: widget.colorTema,
                 onTap: () => setState(() => _mostrarCarpetas = false),
               ),
             ),
@@ -135,6 +140,7 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
               child: _ToggleButton(
                 label: 'Carpetas',
                 selected: _mostrarCarpetas,
+                colorTema: widget.colorTema,
                 onTap: () => setState(() => _mostrarCarpetas = true),
               ),
             ),
@@ -187,7 +193,7 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
                     return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
                   }
                   final post = _posts[index];
-                  return _TarjetaPostGuardado(post: post, onUpdate: widget.onRefresh);
+                  return _TarjetaPostGuardado(post: post, onUpdate: widget.onRefresh, fuentePerfil: widget.fuentePerfil, colorTema: widget.colorTema);
                 },
               ),
             ),
@@ -203,6 +209,7 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
       estaCargando: widget.estaCargandoColecciones,
       onRefresh: widget.onRefreshColecciones,
       esPropietario: true,
+      fuentePerfil: widget.fuentePerfil,
     );
   }
 
@@ -219,11 +226,13 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
           _FilterChip(
             label: 'Todos',
             selected: widget.filtroComunidadId == null,
+            colorTema: widget.colorTema,
             onSelected: () => widget.onFiltroChanged(null),
           ),
           ...widget.comunidadesFiltro.map((c) => _FilterChip(
                 label: c['nombre'],
                 selected: widget.filtroComunidadId == c['id'],
+                colorTema: widget.colorTema,
                 onSelected: () => widget.onFiltroChanged(c['id']),
               )),
         ],
@@ -235,11 +244,13 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
 class _ToggleButton extends StatelessWidget {
   final String label;
   final bool selected;
+  final String? colorTema;
   final VoidCallback onTap;
 
   const _ToggleButton({
     required this.label,
     required this.selected,
+    this.colorTema,
     required this.onTap,
   });
 
@@ -249,7 +260,7 @@ class _ToggleButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFF28B50) : Colors.transparent,
+          color: selected ? (EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFFF28B50)) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         alignment: Alignment.center,
@@ -271,11 +282,13 @@ class _ToggleButton extends StatelessWidget {
 class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
+  final String? colorTema;
   final VoidCallback onSelected;
 
   const _FilterChip({
     required this.label,
     required this.selected,
+    this.colorTema,
     required this.onSelected,
   });
 
@@ -291,8 +304,8 @@ class _FilterChip extends StatelessWidget {
         selected: selected,
         onSelected: (_) => onSelected(),
         backgroundColor: Colors.white.withOpacity(0.05),
-        selectedColor: const Color(0xFF248EA6).withOpacity(0.3),
-        checkmarkColor: const Color(0xFF248EA6),
+        selectedColor: (EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFF248EA6)).withOpacity(0.3),
+        checkmarkColor: EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFF248EA6),
         padding: const EdgeInsets.symmetric(horizontal: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
@@ -303,8 +316,10 @@ class _FilterChip extends StatelessWidget {
 class _TarjetaPostGuardado extends StatelessWidget {
   final Publicacion post;
   final VoidCallback onUpdate;
+  final String? fuentePerfil;
+  final String? colorTema;
 
-  const _TarjetaPostGuardado({required this.post, required this.onUpdate});
+  const _TarjetaPostGuardado({required this.post, required this.onUpdate, this.fuentePerfil, this.colorTema});
 
   @override
   Widget build(BuildContext context) {
@@ -391,7 +406,8 @@ class _TarjetaPostGuardado extends StatelessWidget {
                       post.contenidoTexto,
                       maxLines: 6,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.getFont(
+                        fuentePerfil ?? 'Outfit',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: colorTexto,
@@ -403,14 +419,15 @@ class _TarjetaPostGuardado extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 6),
                       child: Row(
                         children: [
-                          const Icon(Icons.pets_rounded, size: 8, color: Color(0xFF248EA6)),
+                          Icon(Icons.pets_rounded, size: 8, color: EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFF248EA6)),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               post.comunidadNombre,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.getFont(
+                                  fuentePerfil ?? 'Outfit',
                                   fontSize: 9,
-                                  color: const Color(0xFF248EA6),
+                                  color: EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFF248EA6),
                                   fontWeight: FontWeight.w900),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
