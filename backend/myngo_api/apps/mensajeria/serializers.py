@@ -166,6 +166,7 @@ class SalaChatSerializer(serializers.ModelSerializer):
     otro_usuario_id = serializers.SerializerMethodField()
     num_miembros = serializers.SerializerMethodField()
     creador = serializers.IntegerField(source='creador_id', read_only=True, allow_null=True)
+    puedo_eliminar = serializers.SerializerMethodField()
 
     class Meta:
         model = SalaChat
@@ -174,8 +175,34 @@ class SalaChatSerializer(serializers.ModelSerializer):
             'miembros', 'miembros_detalle', 'ultimo_mensaje',
             'mensajes_no_leidos', 'fecha_creacion', 'avatar_s3', 
             'configuracion', 'participantes_data', 'personalizacion',
-            'otro_usuario_id', 'num_miembros', 'creador'
+            'otro_usuario_id', 'num_miembros', 'creador', 'puedo_eliminar'
         ]
+
+    def get_puedo_eliminar(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+            
+        # Es el creador de la sala
+        if obj.creador_id == request.user.id:
+            return True
+            
+        # Fallback para salas antiguas que se crearon antes de añadir el campo creador
+        if obj.creador_id is None:
+            from .models import ParticipanteChat
+            primer_participante = ParticipanteChat.objects.filter(sala=obj).order_by('id').first()
+            if primer_participante and primer_participante.usuario_id == request.user.id:
+                return True
+            
+        # Es el creador de la comunidad
+        if obj.comunidad_id:
+            from comunidades.models import Comunidad
+            try:
+                comunidad = Comunidad.objects.get(id=obj.comunidad_id)
+                return comunidad.creador_id == request.user.id
+            except Exception:
+                pass
+        return False
 
     def get_avatar_s3(self, obj):
         """Obtiene la URL firmada de S3 para el avatar de la sala."""

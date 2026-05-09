@@ -52,12 +52,13 @@ class GaleriaList(generics.ListCreateAPIView):
         if coleccion_id:
             try:
                 coleccion = Coleccion.objects.get(id=coleccion_id)
-                if coleccion.es_privada and getattr(coleccion, 'usuario', None) != self.request.user:
+                # Verificar privacidad de la colección
+                if coleccion.es_privada and coleccion.usuario != self.request.user:
                     return ImagenGaleria.objects.none()
-                return coleccion.imagenes.filter(
-                    Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
-                ).distinct().order_by('-fecha_subida')
-            except Exception:
+                
+                # Retornar TODAS las imágenes de la colección (tengan post o no)
+                return coleccion.imagenes.all().distinct().order_by('-fecha_subida')
+            except Coleccion.DoesNotExist:
                 return ImagenGaleria.objects.none()
 
         if comunidad_id:

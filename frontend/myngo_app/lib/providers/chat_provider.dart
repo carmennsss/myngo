@@ -131,6 +131,15 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Elimina una sala de la lista local y limpia sus datos.
+  void eliminarSalaDeLista(int salaId) {
+    _salas.removeWhere((s) => s['id'] == salaId);
+    final noLeidos = _noLeidosPorSala.remove(salaId) ?? 0;
+    _totalNoLeidos -= noLeidos;
+    if (_totalNoLeidos < 0) _totalNoLeidos = 0;
+    notifyListeners();
+  }
+
   /// Incrementa el total (usado si llega una notificación genérica).
   void incrementarTotal() {
     _totalNoLeidos++;

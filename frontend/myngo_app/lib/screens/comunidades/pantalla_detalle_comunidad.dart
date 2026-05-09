@@ -621,17 +621,18 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   Widget _buildFAB() {
     if (_indiceSeccion == 0) {
+      final esCreador = _miId != null && _miId == _comunidad!.creadorId;
       return Positioned(
         bottom: 24,
         right: 24,
         child: TranslationWidget(
           builder: (context, tr) => FloatingActionButton.extended(
             onPressed: () => _mostrarDialogoNuevoPost(context),
-            label: Text(tr('communityFabPost'),
-                style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold, color: Colors.white)),
-            icon:
-                const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
+            label: Text(
+              esCreador ? 'Subir' : 'Sugerir',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            icon: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
             backgroundColor: _comunidad!.colorTema,
           ),
         ),
@@ -694,7 +695,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         potencialesParticipantes: potenciales,
         esDeComunidad: true,
         alCrear: (nombre, esPublica, miembrosIds) async {
-          Navigator.pop(context);
           final servMensajeria = ServicioMensajeria();
           final nuevaSala = await servMensajeria.crearSala(
             nombre: nombre,
@@ -705,6 +705,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           );
           if (nuevaSala != null && mounted) {
             _cargarDatosSeccion(3);
+            Navigator.pop(context); // Cierre seguro tras éxito
+          } else if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No se pudo crear la sala 🐾'))
+            );
           }
         },
       ),
