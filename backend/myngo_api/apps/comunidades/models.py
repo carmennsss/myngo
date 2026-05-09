@@ -51,6 +51,9 @@ class Comunidad(models.Model):
     url_fondo = models.ImageField(
         upload_to='comunidades/fondos/', blank=True, null=True
     )
+    url_marco = models.ImageField(
+        upload_to='comunidades/marcos/', blank=True, null=True
+    )
     fondo_posts_config = models.JSONField(blank=True, null=True)
     fuente_comunidad = models.CharField(max_length=50, blank=True, null=True)
     es_publica = models.BooleanField(default=True)

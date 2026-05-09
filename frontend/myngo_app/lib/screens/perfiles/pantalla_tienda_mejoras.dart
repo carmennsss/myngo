@@ -63,6 +63,18 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   }
 
   @override
+  void didUpdateWidget(PantallaTiendaMejoras oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.comunidad?.id != widget.comunidad?.id) {
+      _subTabController.removeListener(_handleTabChange);
+      _subTabController.dispose();
+      _subTabController = TabController(length: widget.comunidad != null ? 3 : 4, vsync: this);
+      _subTabController.addListener(_handleTabChange);
+      _inicializarTienda();
+    }
+  }
+
+  @override
   void dispose() {
     _subTabController.removeListener(_handleTabChange);
     _subTabController.dispose();

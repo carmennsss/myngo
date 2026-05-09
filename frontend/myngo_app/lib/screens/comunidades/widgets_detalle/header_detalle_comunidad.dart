@@ -7,6 +7,9 @@ import '../pantalla_admin_comunidad.dart';
 import '../pantalla_personalizacion_comunidad.dart';
 import '../../../utils/configuracion.dart';
 import 'package:tolgee/tolgee.dart';
+import '../../inicio/pantalla_inicio.dart';
+
+import '../../../widgets/comunes/profile_preview.dart';
 
 /// Widget que muestra la cabecera visual de una comunidad (portada, avatar y rol).
 class HeaderDetalleComunidad extends StatefulWidget {
@@ -14,6 +17,7 @@ class HeaderDetalleComunidad extends StatefulWidget {
   final int? miId;
   final VoidCallback onCerrar;
   final Function(Comunidad)? onComunidadActualizada;
+  final String Function(String) tr;
 
   const HeaderDetalleComunidad({
     super.key,
@@ -21,6 +25,7 @@ class HeaderDetalleComunidad extends StatefulWidget {
     this.miId,
     required this.onCerrar,
     this.onComunidadActualizada,
+    required this.tr,
   });
 
   @override
@@ -71,38 +76,39 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
   void _confirmarSalida(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => TranslationWidget(
-        builder: (context, tr) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(tr('communityLeaveTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          content: Text(tr('communityLeaveConfirm'), style: GoogleFonts.outfit()),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                final res = await ServicioComunidades().abandonarComunidad(widget.comunidad.id);
-                if (res.exito && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(tr('communityLeaveSuccess')),
-                      backgroundColor: const Color(0xFF248EA6),
-                    ),
-                  );
-                  widget.onCerrar();
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-                  );
-                }
-              },
-              child: Text(tr('communityLeaveAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(widget.tr('communityLeaveTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(widget.tr('communityLeaveConfirm'), style: GoogleFonts.outfit()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(widget.tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final res = await ServicioComunidades().abandonarComunidad(widget.comunidad.id);
+              if (res.exito && mounted) {
+                // Refrescar el sidebar de la pantalla de inicio
+                context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(widget.tr('communityLeaveSuccess')),
+                    backgroundColor: const Color(0xFF248EA6),
+                  ),
+                );
+                widget.onCerrar();
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: Text(widget.tr('communityLeaveAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -293,6 +299,26 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                           iconRol: iconRol,
                           colorRol: colorRol,
                           fuente: widget.comunidad.fuenteComunidad),
+                      if (widget.comunidad.descripcion.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.comunidad.descripcion,
+                          style: _getEstiloComunidad(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 13,
+                            height: 1.3,
+                            shadows: const [
+                              Shadow(
+                                color: Colors.black45,
+                                blurRadius: 4,
+                                offset: Offset(0, 1),
+                              )
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -337,40 +363,24 @@ class _CommunityAvatar extends StatelessWidget {
 
   const _CommunityAvatar({required this.comunidad});
 
+  String? _getAbsoluteUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+    final base = Configuracion.baseUrl.endsWith('/') 
+        ? Configuracion.baseUrl 
+        : '${Configuracion.baseUrl}/';
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return '$base$cleanPath';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final avatarUrl = comunidad.urlAvatar;
-    final portadaUrl = comunidad.urlPortada;
-
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        color: Colors.white,
-        boxShadow: const [
-          BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2)
-        ],
-        image: (avatarUrl != null && avatarUrl.isNotEmpty)
-            ? DecorationImage(
-                image: CachedNetworkImageProvider(
-                  avatarUrl.startsWith('http') ? avatarUrl : Uri.encodeFull('${Configuracion.baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}$avatarUrl'),
-                ),
-                fit: BoxFit.cover,
-              )
-            : (portadaUrl.isNotEmpty
-                ? DecorationImage(
-                    image: CachedNetworkImageProvider(
-                      portadaUrl.startsWith('http') ? portadaUrl : Uri.encodeFull('${Configuracion.baseUrl}${portadaUrl.startsWith('/') ? '' : '/'}$portadaUrl'),
-                    ),
-                    fit: BoxFit.cover,
-                  )
-                : null),
-      ),
-      child: (avatarUrl == null || avatarUrl.isEmpty) && portadaUrl.isEmpty
-          ? const Icon(Icons.groups_rounded, color: Colors.white, size: 40)
-          : null,
+    return ProfilePreview(
+      size: 100,
+      avatarUrl: _getAbsoluteUrl(comunidad.urlAvatar ?? comunidad.urlPortada),
+      marcoUrl: _getAbsoluteUrl(comunidad.urlMarco),
+      nombreUsuario: null, // Ya se muestra abajo
+      puntos: null,
     );
   }
 }

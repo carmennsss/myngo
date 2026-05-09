@@ -68,6 +68,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           // Nombre de la sala
           TextField(
             controller: _nombreController,
+            onChanged: (val) => setState(() {}),
             style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               labelText: 'Nombre del chat',
@@ -188,8 +189,8 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: (_nombreController.text.isNotEmpty && _miembrosSeleccionados.isNotEmpty)
-                ? () => widget.alCrear(_nombreController.text, _esPublica, _miembrosSeleccionados)
+              onPressed: (_nombreController.text.trim().isNotEmpty && _miembrosSeleccionados.isNotEmpty)
+                ? () => widget.alCrear(_nombreController.text.trim(), _esPublica, _miembrosSeleccionados)
                 : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC35E34),

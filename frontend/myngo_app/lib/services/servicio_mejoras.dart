@@ -291,6 +291,28 @@ class ServicioMejoras {
     }
   }
 
+  /// Aplica una mejora comprada directamente a la identidad visual de una comunidad.
+  Future<RespuestaApi> equiparMejoraComunidad(int idMejora, int idComunidad) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlMejoras/tienda/equipar/comunidad/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({
+          'mejora_id': idMejora,
+          'comunidad_id': idComunidad,
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      final datosJson = jsonDecode(respuesta.body);
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: datosJson['mensaje'] ?? 'Mejora aplicada a la comunidad');
+      }
+      return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al equipar mejora en comunidad');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Recupera el catálogo completo de una comunidad para fines de gestión administrativa.
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerCatalogoGestion(int idComunidad) async {
     try {

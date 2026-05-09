@@ -14,6 +14,7 @@ class Comunidad {
   final String urlPortada;
   final String? urlAvatar;
   final String? urlFondo;
+  final String? urlMarco;
 
   /// Configuración de estilos para los posts dentro de esta comunidad.
   final Map<String, dynamic>? fondoPostsConfig;
@@ -74,6 +75,7 @@ class Comunidad {
     this.miRol,
     required this.fechaCreacion,
     this.tags = const [],
+    this.urlMarco,
   });
 
   /// Etiquetas o categorías de la comunidad.
@@ -94,6 +96,7 @@ class Comunidad {
         urlPortada: json['url_portada']?.toString() ?? '',
         urlAvatar: json['url_avatar']?.toString(),
         urlFondo: json['url_fondo']?.toString(),
+        urlMarco: json['url_marco']?.toString(),
         fondoPostsConfig: json['fondo_posts_config'] as Map<String, dynamic>?,
         fuenteComunidad: json['fuente_comunidad']?.toString(),
         esPublica: json['es_publica'] != false,

@@ -13,6 +13,7 @@ import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
 import 'pantalla_moderacion_tienda.dart';
 import 'pantalla_personalizacion_comunidad.dart';
+import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 
 class PantallaAdminComunidad extends StatefulWidget {
@@ -318,6 +319,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
               Navigator.pop(context);
               final res = await _servicioComunidades.eliminarComunidad(widget.comunidad.id);
               if (res.exito && mounted) {
+                // Notificar a la pantalla de inicio para refrescar el sidebar
+                context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
+                
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Comunidad eliminada con éxito! 🐾')));
                 Navigator.of(context).popUntil((route) => route.isFirst);
               } else if (mounted) {

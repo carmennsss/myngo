@@ -29,6 +29,7 @@ urlpatterns = [
     path('tienda/comprar/<int:pk>/', ComprarMejoraView.as_view(), name='comprar-mejora'),
     path('tienda/mis-mejoras/', MisMejorasView.as_view(), name='mis-mejoras'),
     path('tienda/equipar/', EquipacionMejorasGlobales.as_view(), name='equipar-mejora'),
+    path('tienda/equipar/comunidad/', EquipacionMejoraComunidad.as_view(), name='equipar-mejora-comunidad'),
 
     # Tienda: Peticiones y Moderación
     path('tienda/peticiones/crear/', PeticionMejoraCreate.as_view(), name='crear-peticion'),
