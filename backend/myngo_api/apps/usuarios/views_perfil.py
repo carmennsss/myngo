@@ -172,6 +172,14 @@ class EditarPerfil(APIView):
             imagen_nueva.url_s3 = imagen
             imagen_nueva.save()
             perfil.avatar = imagen_nueva.url_s3.name
+            
+            # Desequipar avatares del inventario
+            from mejoras.models import MejoraUsuario
+            MejoraUsuario.objects.filter(
+                usuario=request.user,
+                mejora__tipo='avatar',
+                esta_equipada=True
+            ).update(esta_equipada=False)
 
         imagen_fondo = request.FILES.get('url_fondo')
         if imagen_fondo:
@@ -187,6 +195,14 @@ class EditarPerfil(APIView):
             imagen_nueva.save()
             perfil.fondo = imagen_nueva.url_s3.name
 
+            # Desequipar fondos (banner) del inventario
+            from mejoras.models import MejoraUsuario
+            MejoraUsuario.objects.filter(
+                usuario=request.user,
+                mejora__tipo='fondo',
+                esta_equipada=True
+            ).update(esta_equipada=False)
+
         imagen_fondo_perfil = request.FILES.get('url_fondo_perfil')
         if imagen_fondo_perfil:
             imagen_nueva = ImagenGaleria.objects.create(
@@ -200,6 +216,15 @@ class EditarPerfil(APIView):
             imagen_nueva.url_s3 = imagen_fondo_perfil
             imagen_nueva.save()
             perfil.fondo_perfil = imagen_nueva.url_s3.name
+
+            # Desequipar fondos (feed) del inventario
+            # Nota: El frontend suele usar fondo_perfil para el feed
+            from mejoras.models import MejoraUsuario
+            MejoraUsuario.objects.filter(
+                usuario=request.user,
+                mejora__tipo='fondo',
+                esta_equipada=True
+            ).update(esta_equipada=False)
 
         serializer = PerfilSerializer(perfil, data=request.data, partial=True)
         if serializer.is_valid():

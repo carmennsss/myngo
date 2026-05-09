@@ -44,6 +44,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
     comentarios_count = serializers.SerializerMethodField()
     usuario_dio_like = serializers.SerializerMethodField()
     usuario_guardo_post = serializers.SerializerMethodField()
+    usuario_es_miembro = serializers.SerializerMethodField()
 
     class Meta:
         """Configuración del modelo y campos del serializador."""
@@ -54,7 +55,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
             'creador_comunidad_id', 'titulo', 'contenido_texto', 'imagen', 'imagen_id',
             'url_imagen', 'urls_imagenes', 'imagenes_ids', 'media', 'relacion_aspecto',
             'es_valido_ia', 'etiquetas', 'fecha_creacion', 'likes_count',
-            'comentarios_count', 'usuario_dio_like', 'usuario_guardo_post',
+            'comentarios_count', 'usuario_dio_like', 'usuario_guardo_post', 'usuario_es_miembro',
         ]
 
     def get_media(self, obj):
@@ -91,6 +92,32 @@ class PublicacionSerializer(serializers.ModelSerializer):
                     'tipo': obj.imagen.tipo_archivo
                 })
         return media_list
+
+    def get_usuario_es_miembro(self, obj):
+        """Indica si el usuario actual es miembro de la comunidad del post.
+        
+        Si el post no pertenece a ninguna comunidad, se considera abierto (True).
+        Si el usuario es el autor, también es True.
+        """
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+            
+        if not obj.comunidad_id:
+            return True
+            
+        if obj.autor_id == request.user.id:
+            return True
+
+        # Intentar usar anotación si existe para mayor eficiencia
+        if hasattr(obj, 'anotado_es_miembro'):
+            return obj.anotado_es_miembro
+            
+        from comunidades.models import MiembrosComunidad
+        return MiembrosComunidad.objects.filter(
+            usuario=request.user, 
+            comunidad_id=obj.comunidad_id
+        ).exists()
 
     def get_url_imagen(self, obj):
         """Obtiene la URL absoluta de la imagen principal.

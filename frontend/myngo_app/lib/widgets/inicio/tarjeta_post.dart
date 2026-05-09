@@ -88,7 +88,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
   }
 
   Future<void> _toggleLike() async {
-    if (!widget.esMiembroComunidad) {
+    if (!widget.post.usuarioEsMiembro) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('¡Vaya! Debes unirte a la comunidad para dar miau-like 🐾'),
@@ -124,7 +124,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
   }
 
   Future<void> _toggleGuardado() async {
-    if (!widget.esMiembroComunidad) {
+    if (!widget.post.usuarioEsMiembro) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('¡Vaya! Únete a la comunidad para guardar este post 🐾'),
@@ -381,7 +381,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                           child: GridImagenesPost(
                             media: widget.post.media,
                             onTap: () => _mostrarDetalles(context),
-                            mostrarDescarga: widget.esMiembroComunidad,
+                            mostrarDescarga: false, // User requested to remove it from general card
                           ),
                         ),
                       const SizedBox(height: 12),

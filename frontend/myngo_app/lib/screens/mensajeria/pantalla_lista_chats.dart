@@ -10,6 +10,8 @@ import '../../widgets/mensajeria/dialogo_crear_sala.dart';
 import '../inicio/pantalla_inicio.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../utils/configuracion.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class PantallaListaChats extends StatefulWidget {
   const PantallaListaChats({super.key});
@@ -116,7 +118,10 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         'avatar': interlocutor['url_avatar'],
       };
     }
-    return {'nombre': sala['nombre'] ?? 'Chat', 'avatar': null};
+    return {
+      'nombre': sala['nombre'] ?? 'Chat', 
+      'avatar': sala['avatar_s3']
+    };
   }
 
   void _mostrarDialogoCrearSala() async {
@@ -372,7 +377,12 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                           width: 2,
                         ),
                         image: (avatarUrl != null && avatarUrl.isNotEmpty)
-                            ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover)
+                            ? DecorationImage(
+                                image: CachedNetworkImageProvider(
+                                  avatarUrl.startsWith('http') ? avatarUrl : Uri.encodeFull('${Configuracion.baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}$avatarUrl'),
+                                ), 
+                                fit: BoxFit.cover
+                              )
                             : null,
                         color: const Color(0xFFF5EBE6),
                       ),

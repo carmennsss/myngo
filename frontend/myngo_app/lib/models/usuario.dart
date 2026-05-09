@@ -44,6 +44,9 @@ class Usuario {
   /// Orden personalizado de las comunidades en el sidebar.
   final List<int> ordenComunidades;
 
+  final String colorTema;
+  final String fuentePerfil;
+
   Usuario({
     required this.id,
     required this.perfilId,
@@ -66,6 +69,8 @@ class Usuario {
     this.estiloPost,
     this.estado = 'DESCONECTADO',
     this.ordenComunidades = const [],
+    this.colorTema = '#C35E34',
+    this.fuentePerfil = 'Outfit',
   });
 
   /// Crea una instancia de [Usuario] a partir de un mapa JSON.
@@ -103,6 +108,8 @@ class Usuario {
         ordenComunidades: json['orden_comunidades'] is List 
             ? List<int>.from(json['orden_comunidades'].map((i) => int.tryParse(i.toString()) ?? 0).where((i) => i != 0)) 
             : [],
+        colorTema: json['color_tema']?.toString() ?? '#C35E34',
+        fuentePerfil: json['fuente_perfil']?.toString() ?? 'Outfit',
       );
     } catch (e) {
       // ignore: avoid_print

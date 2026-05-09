@@ -54,6 +54,9 @@ class Publicacion {
   /// Indica si el usuario autenticado ha guardado este post en su perfil.
   bool usuarioGuardoPost;
 
+  /// Indica si el usuario autenticado es miembro de la comunidad del post.
+  bool usuarioEsMiembro;
+
   Publicacion({
     required this.id,
     required this.autorId,
@@ -80,6 +83,7 @@ class Publicacion {
     this.autorEstiloPost,
     this.usuarioDioLike = false,
     this.usuarioGuardoPost = false,
+    this.usuarioEsMiembro = true,
   });
 
   /// Crea una instancia de [Publicacion] a partir de un mapa JSON.
@@ -166,6 +170,7 @@ class Publicacion {
             : null,
         usuarioDioLike: json['usuario_dio_like'] == true,
         usuarioGuardoPost: json['usuario_guardo_post'] == true,
+        usuarioEsMiembro: json['usuario_es_miembro'] ?? true,
       );
     } catch (e) {
       debugPrint('Error parsing Publicacion: $e');
@@ -179,6 +184,7 @@ class Publicacion {
         contenidoTexto: '',
         relacionAspecto: 1.0,
         fechaCreacion: DateTime.now(),
+        usuarioEsMiembro: true,
       );
     }
   }
@@ -208,6 +214,7 @@ class Publicacion {
     int? comentariosCount,
     bool? usuarioDioLike,
     bool? usuarioGuardoPost,
+    bool? usuarioEsMiembro,
   }) {
     return Publicacion(
       id: id ?? this.id,
@@ -233,6 +240,7 @@ class Publicacion {
       comentariosCount: comentariosCount ?? this.comentariosCount,
       usuarioDioLike: usuarioDioLike ?? this.usuarioDioLike,
       usuarioGuardoPost: usuarioGuardoPost ?? this.usuarioGuardoPost,
+      usuarioEsMiembro: usuarioEsMiembro ?? this.usuarioEsMiembro,
     );
   }
 }

@@ -34,6 +34,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   String _nombreUsuario = 'Usuario';
   int _puntos = 0;
   int? _perfilId;
+  String _previewColorTema = '#C35E34';
+  String _previewFuentePerfil = 'Outfit';
 
   @override
   void initState() {
@@ -68,6 +70,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             _previewFondoPerfil = u.fondoPerfil; // Feed
             _previewEstilo = u.estiloPost;
             _perfilId = u.perfilId;
+            _previewColorTema = u.colorTema;
+            _previewFuentePerfil = u.fuentePerfil;
           }
         } else {
           _errorMensaje = respuesta.mensaje;
@@ -105,6 +109,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       imagenAvatar: _previewAvatar,
       imagenFondo: _previewFondo,
       imagenFondoPerfil: _previewFondoPerfil,
+      colorTema: _previewColorTema,
+      fuentePerfil: _previewFuentePerfil,
     );
 
     if (mounted) {
@@ -140,7 +146,12 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
 
   @override
   Widget build(BuildContext context) {
-    final bool tieneCambios = _previewAvatar is XFile || _previewFondo is XFile || _previewFondoPerfil is XFile || _previewEstilo != null;
+    final bool tieneCambios = _previewAvatar is XFile || 
+                            _previewFondo is XFile || 
+                            _previewFondoPerfil is XFile || 
+                            _previewEstilo != null ||
+                            (_perfilId != null && (_previewColorTema != '#C35E34' || _previewFuentePerfil != 'Outfit')); 
+                            // Simplificado, idealmente comparar con valores iniciales
 
     return Scaffold(
       backgroundColor: const Color(0xFFFEF5F1),
@@ -166,7 +177,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                     _buildInventoryGrid('Avatar'),
                     _buildInventoryGrid('Marco'),
                     _buildInventoryGrid('Fondo'),
-                    _buildEstiloPostPanel(),
+                    _buildPersonalizacionPanel(),
                   ],
                 ),
               ),
@@ -352,7 +363,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           Tab(text: 'Avatares'),
           Tab(text: 'Marcos'),
           Tab(text: 'Fondos'),
-          Tab(text: 'Estilo Post'),
+          Tab(text: 'Tema y Estilo'),
         ],
       ),
     );
@@ -469,12 +480,24 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildEstiloPostPanel() {
+  Widget _buildPersonalizacionPanel() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Sección de Tema (Nuevo)
+          _buildThemeSection(),
+          
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+          
+          Text('Estilo de Publicación', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440))),
+          const SizedBox(height: 8),
+          Text('Personaliza cómo se ven tus posts en el feed', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
+          const SizedBox(height: 20),
+          
           Text('Colores y Borde', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 12),
           _buildColorPickerRow('Fondo', 'fondo', ['#FFFFFF', '#FBE9E0', '#E0F2F1', '#F3E5F5', '#E3F2FD', '#121212']),
@@ -482,14 +505,66 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           _buildColorPickerRow('Borde', 'borde', ['#C35E34', '#248EA6', '#9B59B6', '#2ECC71', '#F1C40F', '#000000']),
           
           const SizedBox(height: 24),
-          Text('Tipografía', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('Tipografía del Post', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 12),
-          _buildFontSelector(),
+          _buildFontSelector(isPost: true),
           
           const SizedBox(height: 24),
           _buildInventoryGridSection('Estilo Post', 'Tus estilos comprados'),
         ],
       ),
+    );
+  }
+
+  Widget _buildThemeSection() {
+    final List<String> coloresTema = ['#C35E34', '#248EA6', '#9B59B6', '#2ECC71', '#F1C40F', '#E74C3C', '#34495E'];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Tema del Perfil', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440))),
+        const SizedBox(height: 8),
+        Text('Define el color principal y la fuente de tu perfil', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
+        const SizedBox(height: 20),
+        
+        Text('Color Principal', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 45,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: coloresTema.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final colorHex = coloresTema[index];
+              final color = EstiloPostHelper.parseHex(colorHex)!;
+              final isSelected = _previewColorTema == colorHex;
+              
+              return GestureDetector(
+                onTap: () => setState(() => _previewColorTema = colorHex),
+                child: Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: isSelected ? Colors.white : Colors.transparent, width: 3),
+                    boxShadow: [
+                      BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))
+                    ],
+                  ),
+                  child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 24) : null,
+                ),
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 24),
+        Text('Fuente del Perfil', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        _buildFontSelector(isPost: false),
+      ],
     );
   }
 
@@ -529,23 +604,34 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildFontSelector() {
+  Widget _buildFontSelector({bool isPost = true}) {
     final fuentes = ['Outfit', 'Roboto', 'Inter', 'Lobster', 'Dancing Script', 'Indie Flower'];
-    final fuenteActual = _previewEstilo?['fuente'] ?? 'Outfit';
+    final fuenteActual = isPost ? (_previewEstilo?['fuente'] ?? 'Outfit') : _previewFuentePerfil;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(16), 
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
+      ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: fuentes.contains(fuenteActual) ? fuenteActual : 'Outfit',
           isExpanded: true,
-          icon: const Icon(Icons.font_download_rounded, color: Color(0xFFC35E34)),
+          icon: Icon(Icons.font_download_rounded, color: isPost ? const Color(0xFFC35E34) : EstiloPostHelper.parseHex(_previewColorTema)),
           items: fuentes.map((f) => DropdownMenuItem(
             value: f,
             child: Text(f, style: GoogleFonts.getFont(f, color: const Color(0xFF4A4440))),
           )).toList(),
-          onChanged: (val) => _actualizarAtributoEstilo('fuente', val),
+          onChanged: (val) {
+            if (isPost) {
+              _actualizarAtributoEstilo('fuente', val);
+            } else {
+              setState(() => _previewFuentePerfil = val ?? 'Outfit');
+            }
+          },
         ),
       ),
     );
@@ -580,7 +666,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  void _actualizarPreview(String tipo, dynamic detalles) {
+  void _actualizarPreview(String tipo, dynamic detalles, {String? destino}) {
     setState(() {
       final t = tipo.toLowerCase();
       if (t == 'avatar') {
@@ -588,7 +674,11 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       } else if (t == 'marco') {
         _previewMarco = detalles['url_recurso'];
       } else if (t == 'fondo') {
-        _previewFondo = detalles['url_recurso']; // Banner
+        if (destino == 'fondo_feed') {
+          _previewFondoPerfil = detalles['url_recurso'];
+        } else {
+          _previewFondo = detalles['url_recurso']; // Banner por defecto
+        }
       } else if (t == 'fondo_perfil' || t == 'banner') {
         _previewFondoPerfil = detalles['url_recurso']; // Feed
       } else if (t.contains('estilo')) {
@@ -617,10 +707,48 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
   }
 
   Future<void> _equiparMejora(int mejoraId, String? tipo, String? url) async {
-    // Para mantener compatibilidad, seguimos usando el servicio de equipar
-    // pero también actualizamos la previsualización local
-    final respuesta = await ServicioMejoras().equiparMejora(mejoraId);
+    String? destino;
+    
+    // Si es un fondo, preguntar dónde equiparlo
+    if (tipo?.toLowerCase() == 'fondo') {
+      destino = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Equipar Fondo 🖼️', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('¿Dónde quieres equipar este fondo de tu inventario?', style: GoogleFonts.outfit(color: Colors.grey)),
+              const SizedBox(height: 24),
+              ListTile(
+                leading: const Icon(Icons.view_day_rounded, color: Color(0xFFC35E34)),
+                title: const Text('Banner de Cabecera'),
+                onTap: () => Navigator.pop(context, 'banner'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.grid_view_rounded, color: Color(0xFF248EA6)),
+                title: const Text('Fondo de Perfil (Feed)'),
+                onTap: () => Navigator.pop(context, 'fondo_feed'),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      );
+      
+      if (destino == null) return; // Usuario canceló
+    }
+
+    setState(() => _isLoading = true);
+    final respuesta = await ServicioMejoras().equiparMejora(mejoraId, destino: destino);
+    
     if (mounted) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(respuesta.mensaje),
@@ -628,7 +756,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         ),
       );
       if (respuesta.exito) {
-        _actualizarPreview(tipo ?? 'Avatar', {'url_recurso': url});
+        _actualizarPreview(tipo ?? 'Avatar', {'url_recurso': url}, destino: destino);
         _cargarMisMejoras();
         notificarMejoraEquipada();
       }

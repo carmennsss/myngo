@@ -242,7 +242,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                 constraints: const BoxConstraints(maxHeight: 400),
                                 child: GridImagenesPost(
                                   media: widget.post.media,
-                                  mostrarDescarga: widget.esMiembro,
+                                  mostrarDescarga: widget.post.usuarioEsMiembro,
                                 ),
                               ),
                             ),
@@ -251,7 +251,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                           AccionesYComentariosPost(
                             post: widget.post,
                             colorTexto: colorTexto,
-                            esMiembro: widget.esMiembro,
+                            esMiembro: widget.post.usuarioEsMiembro,
                           ),
                         ],
                       ),

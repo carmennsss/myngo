@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../models/comunidad.dart';
@@ -31,6 +32,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   
   List<Comunidad> _comunidades = [];
   List<Usuario> _usuarios = [];
+  Timer? _searchDebounce;
   
   bool _estaCargando = true;
   bool _estaCargandoMas = false;
@@ -70,6 +72,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _controladorBusqueda.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -238,7 +241,12 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                           Expanded(
                             child: TextField(
                               controller: _controladorBusqueda,
-                              onChanged: (valor) => _cargarDatos(filtro: valor),
+                              onChanged: (valor) {
+                                _searchDebounce?.cancel();
+                                _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+                                  _cargarDatos(filtro: valor);
+                                });
+                              },
                               style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14),
                               decoration: InputDecoration(
                                 hintText: _indicePestana == 0 ? 'Busca una comunidad...' : 'Busca a un michi...',

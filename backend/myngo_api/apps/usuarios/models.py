@@ -161,6 +161,10 @@ class Perfil(models.Model):
             ('OCUPADO', 'Ocupado'),
         ],
     )
+    # Personalización adicional
+    color_tema = models.CharField(max_length=7, default='#C35E34')
+    fuente_perfil = models.CharField(max_length=50, default='Outfit')
+    
     orden_comunidades = models.JSONField(null=True, blank=True, default=list)
 
     def recalcular_puntos(self):
