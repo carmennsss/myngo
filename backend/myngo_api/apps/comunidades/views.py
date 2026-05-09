@@ -44,7 +44,7 @@ class ComunidadListCreate(generics.ListCreateAPIView):
 
     serializer_class = ComunidadSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['nombre', 'descripcion', 'tags__nombre']
+    search_fields = ['nombre']
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = pagination.PageNumberPagination
 

@@ -285,6 +285,8 @@ class ServicioUsuarios {
     dynamic imagenAvatar, // Puede ser XFile o String (URL/Ruta)
     dynamic imagenFondo,
     dynamic imagenFondoPerfil,
+    String? colorTema,
+    String? fuentePerfil,
   }) async {
     try {
       final token = await obtenerToken();
@@ -304,6 +306,12 @@ class ServicioUsuarios {
       }
       if (estiloPost != null) {
         datosFormulario.fields.add(MapEntry('estilo_post', jsonEncode(estiloPost)));
+      }
+      if (colorTema != null) {
+        datosFormulario.fields.add(MapEntry('color_tema', colorTema));
+      }
+      if (fuentePerfil != null) {
+        datosFormulario.fields.add(MapEntry('fuente_perfil', fuentePerfil));
       }
 
       final imagenes = {

@@ -26,6 +26,8 @@ class UsuarioSerializer(serializers.ModelSerializer):
     puntos = serializers.SerializerMethodField()
     estado = serializers.SerializerMethodField()
     fondo_perfil = serializers.SerializerMethodField()
+    color_tema = serializers.SerializerMethodField()
+    fuente_perfil = serializers.SerializerMethodField()
     orden_comunidades = serializers.SerializerMethodField()
 
     class Meta:
@@ -38,6 +40,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'marco', 'estilo_post', 'biografia', 'es_publico', 'puntos', 'estado',
             'orden_comunidades',
             'fondo_perfil',
+            'color_tema', 'fuente_perfil',
         ]
         extra_kwargs = {'password': {'write_only': True}}
 
@@ -232,6 +235,16 @@ class UsuarioSerializer(serializers.ModelSerializer):
         perfil = self._get_perfil(obj)
         return perfil.estado if perfil else 'DESCONECTADO'
 
+    def get_color_tema(self, obj):
+        """Obtiene el color de tema del perfil."""
+        perfil = self._get_perfil(obj)
+        return perfil.color_tema if perfil else '#C35E34'
+
+    def get_fuente_perfil(self, obj):
+        """Obtiene la fuente del perfil."""
+        perfil = self._get_perfil(obj)
+        return perfil.fuente_perfil if perfil else 'Outfit'
+
     def get_orden_comunidades(self, obj):
         """Obtiene el orden personalizado de comunidades."""
         perfil = self._get_perfil(obj)
@@ -268,7 +281,7 @@ class PerfilSerializer(serializers.ModelSerializer):
         fields = [
             'biografia', 'url_avatar', 'fondo', 'fondo_perfil', 'marco', 'estilo_post',
             'numero_seguidores', 'numero_seguidos', 'datos_usuario', 'estado_seguimiento',
-            'orden_comunidades',
+            'orden_comunidades', 'color_tema', 'fuente_perfil',
         ]
 
     def get_numero_seguidores(self, obj):

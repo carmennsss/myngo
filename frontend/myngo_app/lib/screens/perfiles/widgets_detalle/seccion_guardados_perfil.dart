@@ -151,31 +151,49 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
         message: 'No tienes publicaciones guardadas en esta sección.',
       );
     }
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollEndNotification) {
-          if (notification.metrics.pixels >= notification.metrics.maxScrollExtent - 400) {
-            if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
-              _cargarMasPosts();
-            }
-          }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Lógica de columnas consistente para evitar que los posts se vean "gigantes"
+        int columnas = 2;
+        if (constraints.maxWidth > 1200) {
+          columnas = 4;
+        } else if (constraints.maxWidth > 800) {
+          columnas = 3;
         }
-        return false;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollEndNotification) {
+                  if (notification.metrics.pixels >= notification.metrics.maxScrollExtent - 400) {
+                    if (!widget.estaCargando && !_estaCargandoMas && _hayMasPosts) {
+                      _cargarMasPosts();
+                    }
+                  }
+                }
+                return false;
+              },
+              child: MasonryGridView.count(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                crossAxisCount: columnas,
+                mainAxisSpacing: 20,
+                crossAxisSpacing: 20,
+                itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == _posts.length) {
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+                  }
+                  final post = _posts[index];
+                  return _TarjetaPostGuardado(post: post, onUpdate: widget.onRefresh);
+                },
+              ),
+            ),
+          ),
+        );
       },
-      child: MasonryGridView.count(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        itemCount: _posts.length + (_estaCargandoMas ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _posts.length) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
-          }
-          final post = _posts[index];
-          return _TarjetaPostGuardado(post: post, onUpdate: widget.onRefresh);
-        },
-      ),
     );
   }
 
@@ -305,8 +323,16 @@ class _TarjetaPostGuardado extends StatelessWidget {
       child: Container(
         decoration: EstiloPostHelper.buildDecoracion(
           post.autorEstiloPost,
-          borderRadius: BorderRadius.circular(12),
-          borderWidth: 1.0,
+          borderRadius: BorderRadius.circular(24),
+          borderWidth: 1.2,
+        ).copyWith(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -317,30 +343,34 @@ class _TarjetaPostGuardado extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    constraints: const BoxConstraints(maxHeight: 150),
+                    constraints: const BoxConstraints(minHeight: 120, maxHeight: 400),
                     width: double.infinity,
                     color: Colors.black.withOpacity(0.03),
                     child: post.media.first['tipo'] == 'V'
                         ? MiniaturaVideo(url: post.media.first['url'] ?? '')
                         : CachedNetworkImage(
                             imageUrl: post.media.first['url'] ?? '',
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
                             placeholder: (context, url) => Container(
+                              height: 180,
                               color: Colors.black.withOpacity(0.05),
                               child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
                             ),
-                            errorWidget: (context, url, error) => const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                            errorWidget: (context, url, error) => const SizedBox(
+                              height: 120,
+                              child: Icon(Icons.broken_image_rounded, color: Colors.grey)
+                            ),
                           ),
                   ),
                   if (post.media.length > 1)
                     Positioned(
-                      top: 6,
-                      right: 6,
+                      top: 8,
+                      right: 8,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(4),
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Icon(
                           Icons.layers_rounded,
@@ -352,28 +382,41 @@ class _TarjetaPostGuardado extends StatelessWidget {
                 ],
               ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (post.contenidoTexto.isNotEmpty)
                     Text(
                       post.contenidoTexto,
-                      maxLines: 2,
+                      maxLines: 6,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: colorTexto),
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: colorTexto,
+                        height: 1.4,
+                      ),
                     ),
                   if (post.comunidadNombre != 'General')
                     Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        post.comunidadNombre,
-                        style: GoogleFonts.inter(
-                            fontSize: 8,
-                            color: const Color(0xFF248EA6),
-                            fontWeight: FontWeight.bold),
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.pets_rounded, size: 8, color: Color(0xFF248EA6)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              post.comunidadNombre,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 9,
+                                  color: const Color(0xFF248EA6),
+                                  fontWeight: FontWeight.w900),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],

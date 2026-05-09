@@ -7,6 +7,7 @@ import '../../models/sala_chat.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:tolgee/tolgee.dart';
+import '../../utils/configuracion.dart';
 
 // Painter eficiente para preview de patrones
 class _PatternPreviewPainter extends CustomPainter {
@@ -35,9 +36,15 @@ class _PatternPreviewPainter extends CustomPainter {
         }
         break;
       case 'stars':
+        final random = Random(42); // Semilla fija para consistencia
         for (double x = 0; x < size.width; x += spacing) {
           for (double y = 0; y < size.height; y += spacing) {
-            _drawSmallStar(canvas, Offset(x, y), 5, paint);
+            final offset = Offset(
+              x + (random.nextDouble() - 0.5) * 15,
+              y + (random.nextDouble() - 0.5) * 15
+            );
+            final starSize = 2.0 + random.nextDouble() * 4.0;
+            _drawSmallStar(canvas, offset, starSize, paint..color = Colors.white.withOpacity(0.8));
           }
         }
         break;
@@ -410,9 +417,9 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 0.85,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.9,
           ),
           itemCount: _estilosBurbuja.length,
           itemBuilder: (context, index) {
@@ -431,10 +438,10 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(12),
                         child: Center(
                           child: Transform.scale(
-                            scale: 0.8,
+                            scale: 1.1,
                             child: _buildMiniPreviewBurbuja(estilo['id']),
                           ),
                         ),
@@ -601,11 +608,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
                 child: ClipOval(
                   child: _estaSubiendoImagen
                     ? const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)))
-                    : (_avatarUrl != null)
+                    : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                       ? CachedNetworkImage(
-                          imageUrl: _avatarUrl!,
+                          imageUrl: _avatarUrl!.startsWith('http') ? _avatarUrl! : Uri.encodeFull('${Configuracion.baseUrl}${_avatarUrl!.startsWith('/') ? '' : '/'}$_avatarUrl'),
                           fit: BoxFit.cover,
                           placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => Container(color: const Color(0xFFFBE9E0), child: const Icon(Icons.group_outlined, size: 40, color: Color(0xFFF28B50))),
                         )
                       : Container(
                           color: const Color(0xFFFBE9E0),
@@ -673,10 +681,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
       ),
       child: Stack(
         children: [
-          if (_perso.patronFondo != null)
-            Opacity(
-              opacity: 0.1,
-              child: _buildPatternWidget(_perso.patronFondo!),
+          if (_perso.patronFondo != null && _perso.patronFondo!.isNotEmpty)
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.1,
+                child: _buildPatternWidget(_perso.patronFondo!),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.all(20),
@@ -812,44 +822,55 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     final textColor = estilo == 'neon' ? color : (color.computeLuminance() > 0.5 ? Colors.black : Colors.white);
 
     return Row(
-      mainAxisAlignment: esMio ? MainAxisAlignment.end : MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (!esMio && avatar != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: CircleAvatar(radius: 12, backgroundImage: NetworkImage(avatar)),
-          ),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: esMio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.only(
-                  left: esMio ? 0 : 4, 
-                  right: esMio ? 4 : 0, 
-                  bottom: 2
-                ),
-                child: Text(nombre, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: colorNombre)),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: deco,
-                child: Text(
-                  texto, 
-                  style: GoogleFonts.inter(
-                    color: textColor, 
-                    fontSize: _perso.fontSize.toDouble() - 2,
-                    fontWeight: (estilo == 'neon' || estilo == 'robot') ? FontWeight.bold : FontWeight.normal,
-                  )
+        mainAxisAlignment: esMio ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!esMio && avatar != null && avatar.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CircleAvatar(
+                radius: 12, 
+                backgroundColor: Colors.grey[200],
+                backgroundImage: CachedNetworkImageProvider(
+                  avatar.startsWith('http') ? avatar : Uri.encodeFull('${Configuracion.baseUrl}${avatar.startsWith('/') ? '' : '/'}$avatar'),
                 ),
               ),
-              _buildPreviewDecoracion(estilo, esMio),
+            ),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: esMio ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: esMio ? 0 : 4, 
+                    right: esMio ? 4 : 0, 
+                    bottom: 2
+                  ),
+                  child: Text(nombre, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: colorNombre)),
+                ),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: deco,
+                          child: Text(
+                            texto, 
+                            style: GoogleFonts.inter(
+                              color: textColor, 
+                              fontSize: _perso.fontSize.toDouble() - 2,
+                              fontWeight: (estilo == 'neon' || estilo == 'robot') ? FontWeight.bold : FontWeight.normal,
+                            )
+                          ),
+                        ),
+                        _buildPreviewDecoracion(estilo, esMio),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
-          ),
-        ),
-      ],
-    );
+          );
   }
 
   Widget _buildPreviewDecoracion(String estilo, bool esMio) {
@@ -893,12 +914,15 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
           ),
         );
       case 'kawaii':
-        return Stack(
-          children: [
-            Positioned(top: -15, left: -5, child: const Text('✨', style: TextStyle(fontSize: 18))),
-            Positioned(bottom: -10, right: -5, child: const Text('🎀', style: TextStyle(fontSize: 22))),
-            Positioned(top: -5, right: 10, child: const Text('⭐', style: TextStyle(fontSize: 12))),
-          ],
+        return Positioned.fill(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(top: -15, left: -5, child: const Text('✨', style: TextStyle(fontSize: 18))),
+              Positioned(bottom: -10, right: -5, child: const Text('🎀', style: TextStyle(fontSize: 22))),
+              Positioned(top: -5, right: 10, child: const Text('⭐', style: TextStyle(fontSize: 12))),
+            ],
+          ),
         );
       case 'aventura':
         return Positioned(
