@@ -20,6 +20,7 @@ from .views import (
     ChatMediaUploadView,
     salir_sala,
     expulsar_miembro,
+    eliminar_sala,
 )
 
 urlpatterns = [
@@ -32,6 +33,7 @@ urlpatterns = [
     path('salas/comunidad/<int:comunidad_id>/general/', obtener_sala_general_comunidad, name='sala_general_comunidad'),
     path('salas/<int:sala_id>/salir/', salir_sala, name='salir_sala'),
     path('salas/<int:sala_id>/expulsar/', expulsar_miembro, name='expulsar_miembro'),
+    path('salas/<int:sala_id>/eliminar/', eliminar_sala, name='eliminar_sala'),
     path('salas/<int:pk>/subir-avatar/', subir_avatar_sala, name='subir_avatar_sala'),
     path('salas/<int:sala_id>/upload-image/', upload_chat_image, name='upload_chat_image'),
     path('salas/<int:sala_id>/participante/', actualizar_participante, name='actualizar_participante'),

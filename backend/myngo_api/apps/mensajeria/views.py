@@ -667,30 +667,30 @@ class ChatMediaUploadView(generics.CreateAPIView):
 def salir_sala(request, sala_id):
     """Permite a un usuario abandonar una sala de chat."""
     try:
-        sala = SalaChat.objects.get(id=sala_id, miembros=request.user)
+        sala = SalaChat.objects.get(id=sala_id)
         
-        # No permitir salir si es el creador (debería borrarla o transferirla, pero por ahora evitamos el bloqueo)
-        # Si es el creador, simplemente se borra la relación
-        sala.miembros.remove(request.user)
+        # Borrar el registro de participante de forma explícita
+        borrados, _ = ParticipanteChat.objects.filter(sala=sala, usuario=request.user).delete()
         
-        # Notificar al resto
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'chat_{sala_id}',
-            {
-                'type': 'user_left',
-                'user_id': request.user.id,
-                'username': request.user.nombre_usuario
-            }
-        )
-        
-        # Mensaje de sistema
-        MensajeChat.objects.create(
-            sala=sala,
-            emisor=request.user,
-            contenido=f"🚪 {request.user.nombre_usuario} ha abandonado la sala.",
-            tipo='SISTEMA'
-        )
+        if borrados > 0:
+            # Notificar al resto vía WS
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{sala_id}',
+                {
+                    'type': 'user_left',
+                    'user_id': request.user.id,
+                    'username': request.user.nombre_usuario
+                }
+            )
+            
+            # Mensaje de sistema
+            MensajeChat.objects.create(
+                sala=sala,
+                emisor=request.user,
+                contenido=f"🚪 {request.user.nombre_usuario} ha abandonado la sala.",
+                tipo='SISTEMA'
+            )
         
         return Response({'status': 'ok'})
     except SalaChat.DoesNotExist:
@@ -736,3 +736,32 @@ def expulsar_miembro(request, sala_id):
         return Response({'error': 'No tienes permisos o la sala no existe'}, status=403)
     except Usuario.DoesNotExist:
         return Response({'error': 'Usuario no encontrado'}, status=404)
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def eliminar_sala(request, sala_id):
+    """Permite al creador eliminar la sala de chat permanentemente."""
+    try:
+        sala = SalaChat.objects.get(id=sala_id, creador=request.user)
+        
+        # Guardamos el ID para la notificación antes de borrar
+        id_borrada = sala.id
+        nombre_borrada = sala.nombre
+        
+        # Notificar a todos vía WS que la sala va a desaparecer
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{id_borrada}',
+            {
+                'type': 'room_deleted',
+                'sala_id': id_borrada,
+                'nombre': nombre_borrada
+            }
+        )
+        
+        # El on_delete=models.CASCADE en ParticipanteChat y MensajeChat 
+        # se encargará de borrar los registros relacionados automáticamente.
+        sala.delete()
+        
+        return Response({'status': 'ok', 'mensaje': 'Sala eliminada correctamente'})
+    except SalaChat.DoesNotExist:
+        return Response({'error': 'No tienes permisos para eliminar esta sala o no existe'}, status=403)

@@ -84,8 +84,51 @@ class PreviewComunidad extends StatelessWidget {
               flexibleSpace: _buildPreviewTabs(context),
             ),
 
-            // Contenido según pestaña
-            if (indiceSeccion == 0)
+            // Contenido según pestaña (o Muro de Privacidad si es privada)
+            if (!comunidad.esPublica)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: comunidad.colorTema.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.lock_person_rounded,
+                          size: 70,
+                          color: comunidad.colorTema,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Esta comunidad es privada',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: colorTextoPrincipal,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Solo los miembros aprobados pueden ver el contenido y participar en esta comunidad.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: colorTextoSecundario.withOpacity(0.7),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (indiceSeccion == 0)
               SeccionPostsComunidad(
                 key: ValueKey('posts_${publicaciones?.length}'),
                 publicaciones: publicaciones,

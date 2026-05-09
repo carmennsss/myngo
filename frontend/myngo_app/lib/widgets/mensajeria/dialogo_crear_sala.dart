@@ -6,12 +6,14 @@ class DialogoCrearSala extends StatefulWidget {
   final List<Usuario> potencialesParticipantes;
   final Function(String nombre, bool esPublica, List<int> miembrosIds) alCrear;
   final String titulo;
+  final bool esDeComunidad;
 
   const DialogoCrearSala({
     super.key,
     required this.potencialesParticipantes,
     required this.alCrear,
     this.titulo = 'Nuevo Chat 🐾',
+    this.esDeComunidad = false,
   });
 
   @override
@@ -84,47 +86,49 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           ),
           const SizedBox(height: 16),
 
-          // Interruptor Público/Privado
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFBF4F1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF5EBE6)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _esPublica ? Icons.public_rounded : Icons.lock_rounded,
-                  color: const Color(0xFFC35E34),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _esPublica ? 'Chat Público' : 'Chat Privado',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        _esPublica 
-                          ? 'Cualquier miembro de la comunidad puede verlo.' 
-                          : 'Solo los invitados podrán ver y escribir.',
-                        style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                    ],
+          // Interruptor Público/Privado (Solo para comunidades)
+          if (widget.esDeComunidad) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBF4F1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF5EBE6)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _esPublica ? Icons.public_rounded : Icons.lock_rounded,
+                    color: const Color(0xFFC35E34),
                   ),
-                ),
-                Switch(
-                  value: _esPublica,
-                  onChanged: (val) => setState(() => _esPublica = val),
-                  activeColor: const Color(0xFFC35E34),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _esPublica ? 'Chat Público' : 'Chat Privado',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          _esPublica 
+                            ? 'Cualquier miembro de la comunidad puede verlo.' 
+                            : 'Solo los invitados podrán ver y escribir.',
+                          style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _esPublica,
+                    onChanged: (val) => setState(() => _esPublica = val),
+                    activeColor: const Color(0xFFC35E34),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
+          ],
 
           Text(
             'Participantes (${_miembrosSeleccionados.length})',

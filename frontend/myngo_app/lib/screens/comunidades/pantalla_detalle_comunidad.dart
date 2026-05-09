@@ -580,10 +580,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
 
   Widget _buildNavItem(int index, String label, IconData icon) {
+    if (_comunidad == null) return const SizedBox.shrink();
+    
     final activo = _indiceSeccion == index;
-    final color = _comunidad!.colorTema;
+    final color = _comunidad?.colorTema ?? const Color(0xFFC35E34);
+    
     return InkWell(
       onTap: () {
+        if (!mounted) return;
         setState(() => _indiceSeccion = index);
         _cargarDatosSeccion(index);
       },
@@ -688,6 +692,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       builder: (context) => DialogoCrearSala(
         titulo: 'Nueva Sala en ${_comunidad!.nombre} 🐾',
         potencialesParticipantes: potenciales,
+        esDeComunidad: true,
         alCrear: (nombre, esPublica, miembrosIds) async {
           Navigator.pop(context);
           final servMensajeria = ServicioMensajeria();

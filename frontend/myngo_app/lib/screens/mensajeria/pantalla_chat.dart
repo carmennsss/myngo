@@ -470,10 +470,12 @@ class _PantallaChatState extends State<PantallaChat> {
 
     String emisorNombre = 'Usuario';
     if (_sala != null) {
-      try {
-        final part = _sala!.participantes.firstWhere((p) => p.usuarioId == msg.emisorId);
-        emisorNombre = part.nombreAMostrar;
-      } catch (_) {}
+      for (var p in _sala!.participantes) {
+        if (p.usuarioId == msg.emisorId) {
+          emisorNombre = p.nombreAMostrar;
+          break;
+        }
+      }
     }
 
     return Container(
@@ -593,15 +595,23 @@ class _PantallaChatState extends State<PantallaChat> {
             
             ParticipanteChat? otroParticipante;
             if (_sala!.participantes.isNotEmpty) {
-              try {
-                otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId == otroId);
-              } catch (_) {
-                try {
-                  otroParticipante = _sala!.participantes.firstWhere((p) => p.usuarioId != _miId);
-                } catch (_) {
-                  otroParticipante = _sala!.participantes.isNotEmpty ? _sala!.participantes.first : null;
+              for (var p in _sala!.participantes) {
+                if (p.usuarioId == otroId) {
+                  otroParticipante = p;
+                  break;
                 }
               }
+              // Si no lo encontramos por ID, pillamos el primero que no seamos nosotros
+              if (otroParticipante == null) {
+                for (var p in _sala!.participantes) {
+                  if (p.usuarioId != _miId) {
+                    otroParticipante = p;
+                    break;
+                  }
+                }
+              }
+              // Último recurso: el primero de la lista
+              otroParticipante ??= _sala!.participantes.firstOrNull;
             }
             avatarUrl = otroParticipante?.usuario?.urlAvatar;
           }
@@ -1125,6 +1135,12 @@ class _PantallaChatState extends State<PantallaChat> {
                 title: Text('Abandonar sala', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
                 onTap: () => _confirmarSalidaSala(context),
               ),
+              if (_sala!.creador == _miId)
+                ListTile(
+                  leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                  title: Text('Eliminar sala permanentemente', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                  onTap: () => _confirmarEliminarSala(context),
+                ),
               const SizedBox(height: 20),
             ],
           ],
@@ -1133,24 +1149,94 @@ class _PantallaChatState extends State<PantallaChat> {
     );
   }
 
+  void _confirmarEliminarSala(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('¿Eliminar sala permanentemente?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: const Text('Esta acción borrará todos los mensajes, fotos y participantes para siempre. No se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext), 
+            child: const Text('Cancelar')
+          ),
+          TextButton(
+            onPressed: () async {
+              final salaId = _sala?.id;
+              
+              // 1. Cerrar diálogo usando SU PROPIO contexto
+              Navigator.pop(dialogContext);
+              
+              // 2. Salida absoluta a la lista de mensajes
+              if (context.mounted) {
+                context.go('/mensajes');
+              }
+              
+              // 3. Ejecutar borrado en segundo plano
+              if (salaId != null) {
+                print('DEBUG: Solicitando ELIMINAR sala $salaId');
+                _servicio.eliminarSala(salaId).then((exito) {
+                  print('DEBUG: Resultado eliminación sala: $exito');
+                  if (!exito && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Error: No tienes permisos para eliminar esta sala'), backgroundColor: Colors.orange)
+                    );
+                  }
+                });
+              }
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Procesando eliminación... 🐾'), backgroundColor: Colors.red)
+              );
+            },
+            child: const Text('ELIMINAR TODO', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmarSalidaSala(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('¿Abandonar sala?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: const Text('Dejarás de recibir mensajes de este chat. Podrás volver a entrar si alguien te invita o si es pública.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext), 
+            child: const Text('Cancelar')
+          ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Cerrar diálogo
-              Navigator.pop(context); // Cerrar bottom sheet
-              final exito = await _servicio.abandonarSala(_sala!.id);
-              if (exito && mounted) {
-                Navigator.pop(context); // Salir del chat
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Has abandonado la sala 🐾')));
+              final salaId = _sala?.id;
+              
+              // 1. Cerrar diálogo usando SU PROPIO contexto
+              Navigator.pop(dialogContext);
+              
+              // 2. Salida absoluta
+              if (context.mounted) {
+                context.go('/mensajes');
               }
+              
+              // 3. Ejecutar abandono
+              if (salaId != null) {
+                print('DEBUG: Solicitando ABANDONAR sala $salaId');
+                _servicio.abandonarSala(salaId).then((exito) {
+                  print('DEBUG: Resultado abandono sala: $exito');
+                  if (!exito && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No se pudo abandonar la sala. ¿Eres el creador?'), backgroundColor: Colors.orange)
+                    );
+                  }
+                });
+              }
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Saliendo de la sala... 🐾'), duration: Duration(seconds: 1))
+              );
             },
             child: const Text('ABANDONAR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),

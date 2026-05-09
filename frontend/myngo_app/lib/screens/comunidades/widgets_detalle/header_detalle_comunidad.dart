@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import '../../../models/comunidad.dart';
 import '../../../services/servicio_comunidades.dart';
 import '../pantalla_admin_comunidad.dart';
@@ -65,6 +66,9 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
     if (mounted) {
       setState(() {
         String rolObtenido = res.datos ?? 'Visitante';
+        // Sincronizamos el objeto comunidad con la realidad del servidor
+        widget.comunidad.esMiembro = (rolObtenido != 'Visitante');
+        
         // Normalizar: el backend devuelve 'Administrador' para el creador
         if (rolObtenido.toLowerCase() == 'administrador') rolObtenido = 'Creador';
         _miRol = rolObtenido;
@@ -74,39 +78,73 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
   }
 
   void _confirmarSalida(BuildContext context) {
+    // Función de seguridad para traducciones en caliente
+    String safeTr(String key, String fallback) {
+      try {
+        return widget.tr(key);
+      } catch (e) {
+        print('DEBUG: Error en traducción "$key", usando fallback');
+        return fallback;
+      }
+    }
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(widget.tr('communityLeaveTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text(widget.tr('communityLeaveConfirm'), style: GoogleFonts.outfit()),
+        title: Text(safeTr('communityLeaveTitle', 'Abandonar comunidad'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(safeTr('communityLeaveConfirm', '¿Estás seguro de que quieres dejar esta comunidad?'), style: GoogleFonts.outfit()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(widget.tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.grey)),
+            child: Text(safeTr('commonCancel', 'Cancelar'), style: GoogleFonts.outfit(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(dialogContext);
-              final res = await ServicioComunidades().abandonarComunidad(widget.comunidad.id);
-              if (res.exito && mounted) {
-                // Refrescar el sidebar de la pantalla de inicio
-                context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(widget.tr('communityLeaveSuccess')),
-                    backgroundColor: const Color(0xFF248EA6),
-                  ),
-                );
-                widget.onCerrar();
-              } else if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-                );
+              Navigator.pop(dialogContext); // Cerrar diálogo
+              
+              final comunidadId = widget.comunidad.id;
+              print('UI DEBUG: Iniciando proceso para abandonar comunidad $comunidadId');
+              
+              // SALIDA INMEDIATA Y ABSOLUTA
+              widget.onCerrar();
+              if (context.mounted) {
+                print('UI DEBUG: Forzando navegación a Inicio');
+                try {
+                  context.go('/inicio');
+                } catch (e) {
+                  print('UI DEBUG Error en navegación: $e');
+                }
               }
+
+              // Ejecutamos la baja en segundo plano
+              ServicioComunidades().abandonarComunidad(comunidadId).then((res) {
+                print('UI DEBUG: Respuesta recibida - Éxito: ${res.exito}');
+                if (res.exito) {
+                  // Intentamos refrescar el sidebar por múltiples vías
+                  if (context.mounted) {
+                    try {
+                      // 1. Vía ancestro directo
+                      context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
+                      // 2. Vía navegación (al volver a inicio se debería refrescar)
+                      context.go('/inicio');
+                    } catch (e) {
+                      print('UI DEBUG Error en refresco: $e');
+                      context.go('/inicio');
+                    }
+                  }
+                }
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(safeTr('communityLeaveSuccess', 'Has abandonado la comunidad')),
+                  backgroundColor: const Color(0xFF248EA6),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
             },
-            child: Text(widget.tr('communityLeaveAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(safeTr('communityLeaveAction', 'Abandonar'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
