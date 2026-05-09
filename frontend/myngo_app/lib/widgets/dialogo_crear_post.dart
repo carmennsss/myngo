@@ -38,24 +38,19 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
     super.initState();
     _controladorTexto = TextEditingController(text: widget.initialTexto);
     _controladorEtiquetas = TextEditingController(text: widget.initialEtiquetas);
+    // Listener para actualizar el estado del botón en tiempo real al escribir
+    _controladorTexto.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _controladorTexto.dispose();
+    _controladorEtiquetas.dispose();
+    super.dispose();
   }
 
   Future<void> _validarYAgregarArchivo(XFile archivo) async {
-    final bytes = await archivo.length();
-    final mb = bytes / (1024 * 1024);
-    
-    if (mb > 100) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('El archivo ${archivo.name} es demasiado grande (${mb.toStringAsFixed(1)} MB). El límite es 100 MB.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-      return;
-    }
-
+    // Añadimos inmediatamente para que el botón se active sin lag
     setState(() {
       if (_archivosSeleccionados.length < 4) {
         _archivosSeleccionados.add(archivo);
@@ -65,6 +60,26 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
         );
       }
     });
+
+    if (_archivosSeleccionados.contains(archivo)) {
+      // Validamos el tamaño en segundo plano
+      final bytes = await archivo.length();
+      final mb = bytes / (1024 * 1024);
+      
+      if (mb > 100) {
+        if (mounted) {
+          setState(() {
+            _archivosSeleccionados.remove(archivo);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('El archivo ${archivo.name} es demasiado grande (${mb.toStringAsFixed(1)} MB). El límite es 100 MB.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -189,38 +204,45 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
               ),
               const Spacer(),
               ElevatedButton(
-                onPressed: (_estaCargando || _controladorTexto.text.trim().isEmpty && _archivosSeleccionados.isEmpty) ? null : () async {
-                  setState(() {
-                    _estaCargando = true;
-                    _progresoSubida = 0;
-                  });
-                  final exitoso = await widget.onPublicar(
-                    _controladorTexto.text,
-                    _archivosSeleccionados,
-                    _controladorEtiquetas.text,
-                    alProgresar: (enviado, total) {
-                      if (total > 0) {
+                onPressed: _estaCargando || (_controladorTexto.text.trim().isEmpty && _archivosSeleccionados.isEmpty)
+                    ? null
+                    : () async {
                         setState(() {
-                          _progresoSubida = enviado / total;
+                          _estaCargando = true;
+                          _progresoSubida = 0;
                         });
-                      }
-                    },
-                  );
-                  if (mounted) {
-                    if (exitoso) {
-                      Navigator.pop(context);
-                    } else {
-                      setState(() => _estaCargando = false);
-                      final error = Provider.of<PostProvider>(context, listen: false).errorMessage ?? 'Error al publicar';
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(error),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                    }
-                  }
-                },
+                        final exitoso = await widget.onPublicar(
+                          _controladorTexto.text,
+                          _archivosSeleccionados,
+                          _controladorEtiquetas.text,
+                          alProgresar: (enviado, total) {
+                            if (total > 0) {
+                              setState(() {
+                                _progresoSubida = enviado / total;
+                              });
+                            }
+                          },
+                        );
+                        if (mounted) {
+                          if (exitoso) {
+                            Navigator.pop(context);
+                          } else {
+                            setState(() => _estaCargando = false);
+                            // Mostramos el mensaje real del backend (incluyendo rechazo por IA)
+                            final postProvider = Provider.of<PostProvider>(context, listen: false);
+                            final error = postProvider.errorMessage?.isNotEmpty == true
+                                ? postProvider.errorMessage!
+                                : 'Contenido no permitido o error al publicar 🚫';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(error),
+                                backgroundColor: Colors.redAccent,
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                          }
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF28B50), 
                   foregroundColor: Colors.white,

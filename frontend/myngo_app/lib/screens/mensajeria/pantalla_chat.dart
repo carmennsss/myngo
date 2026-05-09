@@ -601,7 +601,6 @@ class _PantallaChatState extends State<PantallaChat> {
                   break;
                 }
               }
-              // Si no lo encontramos por ID, pillamos el primero que no seamos nosotros
               if (otroParticipante == null) {
                 for (var p in _sala!.participantes) {
                   if (p.usuarioId != _miId) {
@@ -610,10 +609,10 @@ class _PantallaChatState extends State<PantallaChat> {
                   }
                 }
               }
-              // Último recurso: el primero de la lista
               otroParticipante ??= _sala!.participantes.firstOrNull;
             }
-            avatarUrl = otroParticipante?.usuario?.urlAvatar;
+            // Prioridad: 1. Avatar personalizado de la sala, 2. Avatar del otro usuario
+            avatarUrl = _sala!.avatarS3 ?? otroParticipante?.usuario?.urlAvatar;
           }
         }
 

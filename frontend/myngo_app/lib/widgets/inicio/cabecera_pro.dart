@@ -151,6 +151,7 @@ class CabeceraPro extends StatelessWidget {
                 SizedBox(width: isMobile ? 16 : 24),
               ],
               const BotonIdioma(),
+              const SizedBox(width: 8),
               _UserProfileHeader(
                 name: nombreUsuario,
                 avatarUrl: avatarUrl,

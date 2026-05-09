@@ -169,7 +169,9 @@ class _GridMediaItemState extends State<_GridMediaItem> {
   @override
   Widget build(BuildContext context) {
     if (widget.tipo == 'V') {
-      return ReproductorVideoPost(url: widget.url);
+      return ClipRect(
+        child: ReproductorVideoPost(url: widget.url),
+      );
     }
 
     return Stack(

@@ -316,19 +316,28 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: widget.colorTexto.withOpacity(0.05),
+                          color: widget.colorTexto.computeLuminance() > 0.5 
+                              ? Colors.black.withOpacity(0.05) 
+                              : Colors.white.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: widget.colorTexto.withOpacity(0.2)),
                         ),
                         child: TextField(
                           controller: _comentarioController,
                           focusNode: _comentarioFocus,
-                          style: GoogleFonts.inter(color: widget.colorTexto, fontSize: 14),
+                          style: GoogleFonts.inter(
+                            color: widget.colorTexto.computeLuminance() > 0.5 ? Colors.black87 : Colors.white, 
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                           decoration: InputDecoration(
                             hintText: !widget.esMiembro 
                                 ? 'Únete para comentar 🐾' 
                                 : (_comentarioPadre != null ? 'Escribe tu respuesta...' : 'Añadir un comentario...'),
-                            hintStyle: GoogleFonts.inter(color: widget.colorTexto.withOpacity(0.5), fontSize: 14),
+                            hintStyle: GoogleFonts.inter(
+                              color: (widget.colorTexto.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.5), 
+                              fontSize: 14
+                            ),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(vertical: 12),
