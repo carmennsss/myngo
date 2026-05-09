@@ -24,6 +24,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Backend Tests
+        env:
+          SECRET_KEY: 'dummy-secret-key-for-testing'
         run: |
           cd backend/myngo_api
           pytest --cov=. --cov-report=xml
