@@ -36,7 +36,7 @@ class ComunidadSerializer(serializers.ModelSerializer):
         model = Comunidad
         fields = [
             'id', 'nombre', 'descripcion', 'creador', 'creador_nombre',
-            'url_portada', 'url_avatar', 'url_fondo', 'fondo_posts_config',
+            'url_portada', 'url_avatar', 'url_fondo', 'url_marco', 'fondo_posts_config',
             'fuente_comunidad', 'es_publica', 'es_verificada', 'rating_medio',
             'min_rating_acceso', 'color_tema', 'fecha_creacion', 'es_miembro',
             'es_pendiente', 'conteo_pendiente_admin', 'mi_rol', 'miembros_count',
