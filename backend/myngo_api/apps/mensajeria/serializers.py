@@ -165,6 +165,7 @@ class SalaChatSerializer(serializers.ModelSerializer):
     personalizacion = PersonalizacionChatSerializer(source='personalizacion_v2', read_only=True)
     otro_usuario_id = serializers.SerializerMethodField()
     num_miembros = serializers.SerializerMethodField()
+    creador = serializers.PrimaryKeyRelatedField(read_only=True, allow_null=True)
 
     class Meta:
         model = SalaChat

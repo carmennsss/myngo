@@ -1072,7 +1072,7 @@ class _PantallaChatState extends State<PantallaChat> {
               'Participantes del Chat',
               style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -1081,6 +1081,7 @@ class _PantallaChatState extends State<PantallaChat> {
                 itemBuilder: (context, index) {
                   final p = _sala!.participantes[index];
                   final esYo = p.usuarioId == _miId;
+                  final soyAdmin = _sala!.creador == _miId;
                   
                   return ListTile(
                     leading: Builder(
@@ -1098,24 +1099,87 @@ class _PantallaChatState extends State<PantallaChat> {
                       }
                     ),
                     title: Text(
-                      esYo ? '${p.nombreAMostrar} (Tú)' : p.nombreAMostrar,
+                      p.nombreAMostrar,
                       style: GoogleFonts.outfit(fontWeight: esYo ? FontWeight.bold : FontWeight.normal),
                     ),
-                    subtitle: Text(esYo ? 'Conectado' : 'Participante'),
-                    trailing: !esYo ? IconButton(
-                      icon: const Icon(Icons.person_outline),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        final identifier = p.usuario?.nombreUsuario ?? p.usuarioId.toString();
-                        context.push('/inicio/perfiles/$identifier');
-                      },
-                    ) : null,
+                    subtitle: Text(esYo ? 'Tú' : (p.usuario?.nombreUsuario ?? '')),
+                    trailing: (soyAdmin && !esYo) 
+                      ? IconButton(
+                          icon: const Icon(Icons.person_remove_outlined, color: Colors.red),
+                          onPressed: () => _confirmarExpulsion(context, p),
+                        )
+                      : null,
+                    onTap: () {
+                      if (!esYo && p.usuarioId != null) {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => PantallaDetallePerfil(idOrUsername: p.usuarioId!)));
+                      }
+                    },
                   );
                 },
               ),
             ),
+            if (_sala != null && _sala!.esGrupal) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.exit_to_app_rounded, color: Colors.red),
+                title: Text('Abandonar sala', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                onTap: () => _confirmarSalidaSala(context),
+              ),
+              const SizedBox(height: 20),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmarSalidaSala(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('¿Abandonar sala?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: const Text('Dejarás de recibir mensajes de este chat. Podrás volver a entrar si alguien te invita o si es pública.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Cerrar diálogo
+              Navigator.pop(context); // Cerrar bottom sheet
+              final exito = await _servicio.abandonarSala(_sala!.id);
+              if (exito && mounted) {
+                Navigator.pop(context); // Salir del chat
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Has abandonado la sala 🐾')));
+              }
+            },
+            child: const Text('ABANDONAR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmarExpulsion(BuildContext context, ParticipanteChat p) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('¿Expulsar a ${p.nombreAMostrar}?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text('Se eliminará a ${p.nombreAMostrar} de esta sala de chat.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final exito = await _servicio.expulsarMiembro(_sala!.id, p.usuarioId!);
+              if (exito && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${p.nombreAMostrar} ha sido expulsado 🐾')));
+                _cargarDatos(); // Recargar para ver la lista actualizada
+              }
+            },
+            child: const Text('EXPULSAR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
