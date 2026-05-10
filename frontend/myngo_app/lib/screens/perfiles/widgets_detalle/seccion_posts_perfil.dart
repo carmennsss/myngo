@@ -210,24 +210,27 @@ class _TarjetaPostPerfil extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    constraints: const BoxConstraints(minHeight: 120, maxHeight: 400),
+                    constraints: const BoxConstraints(minHeight: 120, maxHeight: 280),
                     width: double.infinity,
                     color: Colors.black.withOpacity(0.03),
-                    child: post.media.first['tipo'] == 'V'
-                        ? MiniaturaVideo(url: post.media.first['url'] ?? '')
-                        : CachedNetworkImage(
-                            imageUrl: post.media.first['url'] ?? '',
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              height: 180,
-                              color: Colors.black.withOpacity(0.05),
-                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      child: post.media.first['tipo'] == 'V'
+                          ? MiniaturaVideo(url: post.media.first['url'] ?? '')
+                          : CachedNetworkImage(
+                              imageUrl: post.media.first['url'] ?? '',
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                height: 180,
+                                color: Colors.black.withOpacity(0.05),
+                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50))),
+                              ),
+                              errorWidget: (context, url, error) => const SizedBox(
+                                height: 120,
+                                child: Icon(Icons.broken_image_rounded, color: Colors.grey)
+                              ),
                             ),
-                            errorWidget: (context, url, error) => const SizedBox(
-                              height: 120,
-                              child: Icon(Icons.broken_image_rounded, color: Colors.grey)
-                            ),
-                          ),
+                    ),
                   ),
                   if (post.media.length > 1)
                     Positioned(

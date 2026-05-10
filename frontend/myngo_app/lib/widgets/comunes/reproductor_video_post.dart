@@ -217,11 +217,16 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
       key: Key(widget.url),
       onVisibilityChanged: _handleVisibilityChanged,
       child: Container(
-        color: Colors.transparent,
+        color: Colors.black, // Fondo negro para las barras si el vídeo no encaja
         child: Center(
-          child: AspectRatio(
-            aspectRatio: _chewieController?.aspectRatio ?? _videoController.value.aspectRatio,
-            child: Chewie(controller: _chewieController!),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              // Usamos un tamaño base grande para que el renderizado sea nítido
+              width: 1000,
+              height: 1000 / (_chewieController?.aspectRatio ?? _videoController.value.aspectRatio).clamp(0.1, 10.0),
+              child: Chewie(controller: _chewieController!),
+            ),
           ),
         ),
       ),

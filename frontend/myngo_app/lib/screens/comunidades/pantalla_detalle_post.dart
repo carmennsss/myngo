@@ -126,7 +126,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
               ),
             ),
             Text(
-              'en ${_post!.comunidadNombre}',
+              _post!.comunidadId > 0 ? 'en ${_post!.comunidadNombre}' : 'Publicación personal',
               style: GoogleFonts.outfit(
                 color: colorSubtexto,
                 fontSize: 12,

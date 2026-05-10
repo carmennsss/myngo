@@ -11,12 +11,14 @@ class AccionesYComentariosPost extends StatefulWidget {
   final Publicacion post;
   final Color colorTexto;
   final bool esMiembro;
+  final String? fuente;
 
   const AccionesYComentariosPost({
     super.key,
     required this.post,
     this.colorTexto = Colors.white,
     this.esMiembro = true,
+    this.fuente,
   });
 
   @override
@@ -42,7 +44,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
 
   late bool _dioLike;
   late int _likesCount;
-  late  int? _comentariosCount;
+  late int _comentariosCount;
   bool _estaGuardado = false;
   int? _currentUserId;
 
@@ -58,9 +60,9 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
   }
 
   Future<void> _obtenerUsuario() async {
-    final user = await _servicioUsuarios.obtenerPerfilLocal();
-    if (user != null && mounted) {
-      setState(() => _currentUserId = user.id);
+    final id = await _servicioUsuarios.obtenerIdUsuario();
+    if (id != null && mounted) {
+      setState(() => _currentUserId = id);
     }
   }
 
@@ -200,12 +202,20 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
       final res = await _servicioInteraccion.eliminarComentario(comentario.id);
       if (res.exito && mounted) {
         setState(() {
+          final comentarioABorrar = _comentarios.firstWhere((c) => c.id == comentario.id);
+          // Restamos el comentario y todas sus respuestas anidadas del contador
+          int totalBorrados = 1 + comentarioABorrar.respuestas.length;
+          
           _comentarios.removeWhere((c) => c.id == comentario.id);
+          // Por si acaso era una respuesta de otro comentario
           for (var p in _comentarios) {
+            final antes = p.respuestas.length;
             p.respuestas.removeWhere((r) => r.id == comentario.id);
+            if (p.respuestas.length < antes) totalBorrados = 1; 
           }
-          _comentariosCount = (_comentariosCount ?? 1) - 1;
-          widget.post.comentariosCount = _comentariosCount!;
+          
+          _comentariosCount = (_comentariosCount - totalBorrados).clamp(0, 999999);
+          widget.post.comentariosCount = _comentariosCount;
         });
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
@@ -228,6 +238,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 color: _dioLike ? Colors.red : widget.colorTexto.withOpacity(0.7),
                 label: _likesCount.toString(),
                 textColor: widget.colorTexto,
+                fuente: widget.fuente,
                 onTap: () async {
                   if (!widget.esMiembro) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -282,6 +293,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 color: widget.colorTexto.withOpacity(0.7),
                 label: _comentariosCount.toString(),
                 textColor: widget.colorTexto,
+                fuente: widget.fuente,
                 onTap: () {
                   setState(() {
                     _mostrandoInputComentario = !_mostrandoInputComentario;
@@ -295,6 +307,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 color: _estaGuardado ? const Color(0xFFF28B50) : widget.colorTexto.withOpacity(0.7),
                 label: '',
                 textColor: widget.colorTexto,
+                fuente: widget.fuente,
                 onTap: () async {
                   if (!widget.esMiembro) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -342,7 +355,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                       children: [
                         Text(
                           'Respondiendo a @${_comentarioPadre!.autorNombre}',
-                          style: GoogleFonts.inter(color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 8),
                         InkWell(
@@ -367,7 +380,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                         child: TextField(
                           controller: _comentarioController,
                           focusNode: _comentarioFocus,
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
                             color: widget.colorTexto.computeLuminance() > 0.5 ? Colors.black87 : Colors.white, 
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -376,7 +389,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                             hintText: !widget.esMiembro 
                                 ? 'Únete para comentar 🐾' 
                                 : (_comentarioPadre != null ? 'Escribe tu respuesta...' : 'Añadir un comentario...'),
-                            hintStyle: GoogleFonts.inter(
+                            hintStyle: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
                               color: (widget.colorTexto.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.5), 
                               fontSize: 14
                             ),
@@ -417,7 +430,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
             child: Center(
               child: Text(
                 'Sin comentarios todavía',
-                style: GoogleFonts.inter(color: widget.colorTexto.withOpacity(0.5)),
+                style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: widget.colorTexto.withOpacity(0.5)),
               ),
             ),
           )
@@ -438,6 +451,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 onReply: _prepararRespuesta,
                 onDelete: _eliminarComentario,
                 currentUserId: _currentUserId,
+                fuente: widget.fuente,
               );
             },
           ),
@@ -450,7 +464,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                   : TextButton(
                       onPressed: () => _cargarComentarios(),
                       child: Text('Cargar más comentarios 🐾', 
-                        style: GoogleFonts.outfit(color: widget.colorTexto.withOpacity(0.6), fontWeight: FontWeight.bold)
+                        style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: widget.colorTexto.withOpacity(0.6), fontWeight: FontWeight.bold)
                       ),
                     ),
               ),
@@ -469,12 +483,15 @@ class _ActionIcon extends StatelessWidget {
   final Color textColor;
   final VoidCallback onTap;
 
+  final String? fuente;
+
   const _ActionIcon({
     required this.icon,
     required this.color,
     required this.label,
     required this.textColor,
     required this.onTap,
+    this.fuente,
   });
 
   @override
@@ -490,7 +507,7 @@ class _ActionIcon extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.inter(color: textColor, fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.getFont(fuente ?? 'Outfit', color: textColor, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ],
         ),

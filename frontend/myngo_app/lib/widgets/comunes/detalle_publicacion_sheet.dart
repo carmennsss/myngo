@@ -130,6 +130,9 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     final colorTexto = esFondoClaro ? Colors.black87 : Colors.white;
     final colorSubtexto = esFondoClaro ? Colors.black54 : Colors.grey;
 
+    // Prioridad: 1. Fuente de contexto (perfil), 2. Fuente del estilo del post, 3. Outfit
+    final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
+
     // Color efectivo de fondo para el Scaffold (no puede ser gradiente, usamos el color promedio)
     final bgColor = estilo != null ? EstiloPostHelper.effectiveBgColor(estilo) : const Color(0xFF121212);
 
@@ -196,7 +199,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                             children: [
                               Text(
                                 '@${publicacion.autorNombre}',
-                                style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                                style: GoogleFonts.getFont(fuenteEfectiva,
                                   color: colorTexto,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -211,7 +214,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                           ),
                           Text(
                             fecha,
-                            style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 12),
+                            style: GoogleFonts.getFont(fuenteEfectiva, color: colorSubtexto, fontSize: 12),
                           ),
                         ],
                       ),
@@ -249,7 +252,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                 child: Text(
                   publicacion.titulo,
-                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                  style: GoogleFonts.getFont(fuenteEfectiva,
                     color: colorTexto,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -263,7 +266,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 padding: EdgeInsets.fromLTRB(16, publicacion.titulo.isEmpty ? 16 : 8, 16, 16),
                 child: Text(
                   publicacion.contenidoTexto,
-                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                  style: GoogleFonts.getFont(fuenteEfectiva,
                     color: colorTexto.withOpacity(0.9),
                     fontSize: 15,
                     height: 1.6,
@@ -281,7 +284,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                     const SizedBox(width: 6),
                     Text(
                       publicacion.comunidadNombre,
-                      style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.getFont(fuenteEfectiva, color: colorSubtexto, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -291,6 +294,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
             AccionesYComentariosPost(
               post: publicacion,
               colorTexto: colorTexto,
+              fuente: fuenteEfectiva,
             ),
 
             const SizedBox(height: 24),
