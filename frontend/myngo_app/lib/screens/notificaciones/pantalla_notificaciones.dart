@@ -35,8 +35,14 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     _cargarNotificaciones();
   }
 
-  // Tipos que requieren acción del usuario: no se marcan leídas automáticamente
-  static const _tiposPeticion = {'PETICION_CO_ADMIN', 'PETICION_UNION', 'PETICION_SEGUIMIENTO'};
+  // Tipos que requieren acción o atención especial: no se marcan leídas automáticamente
+  static const _tiposPeticion = {
+    'PETICION_CO_ADMIN', 
+    'PETICION_UNION', 
+    'PETICION_SEGUIMIENTO', 
+    'CONTENIDO_REPORTADO',
+    'NUEVO_REPORTE'
+  };
 
   Future<void> _cargarNotificaciones() async {
     final respuesta = await _servicioNotificaciones.listarNotificaciones();
@@ -46,7 +52,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         _estaCargando = false;
       });
 
-      // Solo marcamos como leídas las que NO son peticiones pendientes
+      // Solo marcamos como leídas las que NO son de atención especial
       final tieneNoLeidasNormales = _notificaciones.any(
         (n) => !n.leida && !_tiposPeticion.contains(n.tipo),
       );
@@ -56,12 +62,10 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         if (mounted) {
           setState(() {
             _notificaciones = _notificaciones.map((n) {
-              // Las peticiones pendientes conservan su estado leída=false
               if (_tiposPeticion.contains(n.tipo)) return n;
               return n.copyWith(leida: true);
             }).toList();
           });
-          // Notificar al padre para que refresque el badge
           widget.onNotificacionesLeidas?.call();
         }
       }
@@ -316,7 +320,7 @@ class _TarjetaNotificacion extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          DateFormat('dd MMM · HH:mm').format(notif.fechaNotificacion),
+                          DateFormat('dd MMM · HH:mm').format(notif.fechaNotificacion.toLocal()),
                           style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade500),
                         ),
                       ],

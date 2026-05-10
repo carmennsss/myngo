@@ -33,8 +33,8 @@ class TagComunidad(models.Model):
 class Comunidad(models.Model):
     """Comunidad temática de la plataforma Myngo.
 
-    Las comunidades pueden ser públicas o privadas, disponer de tienda
-    de mejoras, y ser personalizadas visualmente por sus administradores
+    Las comunidades pueden ser públicas o privadas
+    y ser personalizadas visualmente por sus administradores
     (avatar, portada, fondo, fuente tipográfica y colores del feed).
     """
 

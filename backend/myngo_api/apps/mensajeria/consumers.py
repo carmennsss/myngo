@@ -336,7 +336,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
             count = await self.decrementar_contador_presencia()
 
             # Solo si no quedan conexiones activas, marcamos como offline
-            if count == 0:
+            if count <= 0:
                 await self.establecer_usuario_online(False)
                 await self.channel_layer.group_send(
                     self.group_name,
@@ -345,6 +345,10 @@ class PresenceConsumer(AsyncWebsocketConsumer):
                         'status': 'DESCONECTADO', 'last_seen': timezone.now().isoformat()
                     }
                 )
+            
+            # Limpieza inmediata de cache al llegar a 0
+            if count == 0:
+                await self.limpiar_cache_usuario()
             
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
@@ -443,6 +447,13 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     def get_online_user_ids(self):
         return list(Perfil.objects.filter(esta_online=True).values_list('usuario_id', flat=True))
 
+    @database_sync_to_async
+    def limpiar_cache_usuario(self):
+        try:
+            cache.delete(self.counter_key)
+        except:
+            pass
+
 
 class NotificacionesChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -462,3 +473,5 @@ class NotificacionesChatConsumer(AsyncWebsocketConsumer):
     async def new_message_notification(self, event): await self.send(text_data=json.dumps(event))
 
     async def new_chat_notification(self, event): await self.send(text_data=json.dumps(event))
+
+    async def generic_notification(self, event): await self.send(text_data=json.dumps(event))

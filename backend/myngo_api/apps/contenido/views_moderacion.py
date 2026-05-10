@@ -27,6 +27,7 @@ class ReporteListCreate(generics.ListCreateAPIView):
         # 1. Identificar al autor del contenido reportado para avisarle
         autor_reportado = None
         try:
+            print(f"DEBUG REPORTE: Tipo={reporte.tipo_objeto}, ID={reporte.objeto_id}", flush=True)
             if reporte.tipo_objeto == 'POST':
                 from .models import Publicacion
                 obj = Publicacion.objects.get(id=reporte.objeto_id)
@@ -43,18 +44,23 @@ class ReporteListCreate(generics.ListCreateAPIView):
                 from comunidades.models import Comunidad
                 obj = Comunidad.objects.get(id=reporte.objeto_id)
                 autor_reportado = obj.creador
-        except Exception:
-            pass # Si el objeto ya no existe, no hacemos nada
+            print(f"DEBUG REPORTE: Autor detectado = {autor_reportado}", flush=True)
+        except Exception as e:
+            print(f"DEBUG REPORTE ERROR: {str(e)}", flush=True)
 
         # 2. Enviar notificación al autor reportado (ANÓNIMA)
-        if autor_reportado and autor_reportado != self.request.user:
-            Notificacion.objects.create(
-                usuario=autor_reportado,
-                tipo='CONTENIDO_REPORTADO', # Tipo nuevo para el frontend
-                mensaje=f"Tu contenido ({reporte.tipo_objeto.lower()}) ha sido reportado por un usuario y está siendo revisado por los administradores de Myngo. Por favor, asegúrate de cumplir las normas de la comunidad.",
-                referencia_comunidad=reporte.comunidad,
-                referencia_id=reporte.objeto_id
-            )
+        if autor_reportado:
+            try:
+                Notificacion.objects.create(
+                    usuario=autor_reportado,
+                    tipo='CONTENIDO_REPORTADO',
+                    mensaje=f"Tu contenido ({reporte.tipo_objeto.lower()}) ha sido reportado por un usuario y está siendo revisado por los administradores. Por favor, asegúrate de cumplir las normas.",
+                    referencia_comunidad=reporte.comunidad, # Puede ser None
+                    referencia_id=reporte.objeto_id
+                )
+                print(f"DEBUG REPORTE: Notificación enviada a {autor_reportado.nombre_usuario}", flush=True)
+            except Exception as e:
+                print(f"DEBUG REPORTE ERROR NOTIF: {str(e)}", flush=True)
 
         # 3. Notificar a los moderadores de la comunidad (si aplica)
         if reporte.comunidad:
