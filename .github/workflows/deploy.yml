@@ -51,7 +51,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0' # O la versión estable que estés usando
           channel: 'stable'
 
       - name: Install Dependencies
@@ -64,7 +63,6 @@ jobs:
           cd frontend/myngo_app
           flutter test --coverage
 
-      # Reporte de cobertura en PR
       - name: Publish Coverage Report
         if: github.event_name == 'pull_request'
         uses: romeovs/lcov-reporter-action@v0.3.1
@@ -83,7 +81,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
 
       - name: Install Patrol CLI
@@ -115,7 +112,7 @@ jobs:
           cd backend/myngo_api
           python manage.py migrate
           python manage.py runserver 0.0.0.0:8000 &
-          sleep 10 
+          sleep 10
 
       - name: Run Patrol E2E Integration Tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -124,7 +121,6 @@ jobs:
           script: |
             cd frontend/myngo_app
             flutter pub get
-            # Ejecutar solo flujos básicos para CI, excluyendo sesiones masivas manuales
             patrol test --target integration_test/patrol/auth_flow_test.dart
             patrol test --target integration_test/patrol/chat_flow_test.dart
             patrol test --target integration_test/patrol/comunidad_flow_test.dart
