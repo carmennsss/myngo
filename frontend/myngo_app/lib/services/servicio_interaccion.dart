@@ -136,4 +136,25 @@ class ServicioInteraccion {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
+
+  /// Elimina un comentario por su ID.
+  Future<RespuestaApi<bool>> eliminarComentario(int comentarioId) async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('$_urlBase/comentarios/$comentarioId/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200 || respuesta.statusCode == 204) {
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Comentario eliminado',
+          datos: true,
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al eliminar comentario');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
 }

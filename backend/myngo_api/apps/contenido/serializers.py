@@ -470,6 +470,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
     autor_marco = serializers.SerializerMethodField()
     autor_fondo = serializers.SerializerMethodField()
     respuestas = serializers.SerializerMethodField()
+    puedo_borrar = serializers.SerializerMethodField()
 
     class Meta:
         """Configuración del modelo y campos."""
@@ -477,7 +478,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'publicacion', 'autor', 'autor_nombre', 'autor_foto',
             'autor_marco', 'autor_fondo', 'contenido', 'padre',
-            'respuestas', 'fecha_creacion'
+            'respuestas', 'puedo_borrar', 'fecha_creacion'
         ]
         read_only_fields = ['autor', 'publicacion']
 
@@ -568,6 +569,34 @@ class ComentarioSerializer(serializers.ModelSerializer):
             return default_storage.url(path.lstrip('/'))
         except Exception:
             return None
+
+    def get_puedo_borrar(self, obj):
+        """Indica si el usuario actual tiene permiso para borrar este comentario.
+        
+        Permitido si es el autor o si es admin/moderador de la comunidad.
+        """
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+            
+        # Caso 1: Es el autor del comentario
+        if obj.autor_id == request.user.id:
+            return True
+            
+        # Caso 2: Es admin/moderador de la comunidad donde se hizo el post
+        if obj.publicacion.comunidad:
+            comunidad = obj.publicacion.comunidad
+            if comunidad.creador_id == request.user.id:
+                return True
+                
+            from comunidades.models import MiembrosComunidad
+            return MiembrosComunidad.objects.filter(
+                usuario=request.user,
+                comunidad=comunidad,
+                rol__in=['Administrador', 'Moderador']
+            ).exists()
+            
+        return False
 
 
 class ReporteSerializer(serializers.ModelSerializer):

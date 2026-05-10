@@ -14,8 +14,8 @@ class Comentario {
   final int? padreId;
   final List<Comentario> respuestas;
 
-  /// Indica si el comentario ha pasado el filtro de seguridad de la IA.
   final bool esValidoIa;
+  final bool puedoBorrar;
 
   final DateTime fechaCreacion;
 
@@ -31,6 +31,7 @@ class Comentario {
     this.padreId,
     this.respuestas = const [],
     required this.esValidoIa,
+    required this.puedoBorrar,
     required this.fechaCreacion,
   });
 
@@ -52,6 +53,7 @@ class Comentario {
               .toList()
           : [],
       esValidoIa: json['es_valido_ia'] ?? true,
+      puedoBorrar: json['puedo_borrar'] ?? false,
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.tryParse(json['fecha_creacion'].toString()) ??
               DateTime.now()
