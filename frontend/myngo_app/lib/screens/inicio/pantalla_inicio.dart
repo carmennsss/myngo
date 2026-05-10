@@ -29,6 +29,7 @@ import '../../widgets/inicio/cabecera_pro.dart';
 import '../../widgets/inicio/sidebar_izquierdo.dart';
 import '../../widgets/inicio/feed_publicaciones.dart';
 import '../../widgets/inicio/barra_contexto_comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 export '../../widgets/inicio/lateral_derecho.dart';
 
@@ -342,8 +343,8 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final screenWidth = MediaQuery.of(context).size.width;
         final isMobile = screenWidth < 800;
 
@@ -395,8 +396,9 @@ class PantallaInicioState extends State<PantallaInicio> {
                           ),
                         Expanded(
                           flex: 5,
+                          child: widget.navigationShell != null
                                ? widget.navigationShell!
-                              : Center(child: Text(tr('errorNavigationError'), style: const TextStyle(color: Colors.white))),
+                               : Center(child: Text(tr('errorNavigationError'), style: const TextStyle(color: Colors.white))),
                         ),
                       ],
                     ),
@@ -589,8 +591,7 @@ class _ToastMensajeState extends State<_ToastMensaje>
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) => Positioned(
+    return Positioned(
         top: MediaQuery.of(context).padding.top + 16,
         left: 16,
         right: 16,
@@ -718,7 +719,6 @@ class _ToastMensajeState extends State<_ToastMensaje>
             ),
           ),
         ),
-      ),
     );
   }
 }

@@ -8,6 +8,7 @@ import '../pantalla_personalizar_perfil.dart';
 import '../../../models/usuario.dart';
 import '../../../providers/chat_provider.dart';
 import '../../inicio/pantalla_inicio.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la información textual y acciones de un perfil.
 class InfoPerfil extends StatelessWidget {
@@ -126,8 +127,8 @@ class InfoPerfil extends StatelessWidget {
         final color = _getColorEstado(displayEstado);
         final bool esPropio = currentUserId == usuario.id;
 
-        return TranslationWidget(
-          builder: (context, tr) => Builder(
+        return Builder(builder: (context) {
+        return Builder(
             builder: (statusContext) {
               return GestureDetector(
                 onTapDown: esPropio
@@ -201,8 +202,8 @@ class InfoPerfil extends StatelessWidget {
                 ),
               );
             },
-          ),
-        );
+          );
+        });
       },
     );
   }

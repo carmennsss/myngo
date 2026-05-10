@@ -11,6 +11,7 @@ import 'package:tolgee/tolgee.dart';
 import '../../inicio/pantalla_inicio.dart';
 
 import '../../../widgets/comunes/profile_preview.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la cabecera visual de una comunidad (portada, avatar y rol).
 class HeaderDetalleComunidad extends StatefulWidget {

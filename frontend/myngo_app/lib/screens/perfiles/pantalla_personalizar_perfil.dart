@@ -10,6 +10,7 @@ import '../../widgets/comunes/profile_preview.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_perfiles.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -115,7 +116,6 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
 
     if (mounted) {
       setState(() => _isLoading = false);
-      final tr = Tolgee.of(context).tr;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(res.exito ? tr('customProfileSuccess') : res.mensaje),
@@ -127,7 +127,6 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         notificarMejoraEquipada(); // Notificar para que Detalle Perfil se recargue
       }
     }
-  }
   }
 
   void _actualizarAtributoEstilo(String clave, dynamic valor) {
@@ -156,9 +155,10 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                             (_perfilId != null && (_previewColorTema != '#C35E34' || _previewFuentePerfil != 'Outfit')); 
                             // Simplificado, idealmente comparar con valores iniciales
 
-    return TranslationWidget(
-      builder: (context, tr) => Scaffold(
-        backgroundColor: const Color(0xFFFEF5F1),
+    return Builder(
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
         body: Stack(
           children: [
             Column(
@@ -181,7 +181,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                       _buildInventoryGrid('Avatar', tr),
                       _buildInventoryGrid('Marco', tr),
                       _buildInventoryGrid('Fondo', tr),
-                      _buildPersonalizacionPanel(tr),
+                      _buildPersonalizacionPanel(),
                     ],
                   ),
                 ),
@@ -206,8 +206,8 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
               ),
           ],
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildHeader(BuildContext context, Function tr) {
@@ -385,7 +385,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         if (tipo == 'Fondo') 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: _buildCustomUploadCard(tr('customProfileCustomBgTitle'), tr('customProfileCustomBgSubtitle'), Icons.add_photo_alternate_rounded, () => _mostrarDialogoSobreFondoPersonalizado(tr)),
+            child: _buildCustomUploadCard(tr('customProfileCustomBgTitle'), tr('customProfileCustomBgSubtitle'), Icons.add_photo_alternate_rounded, () => _mostrarDialogoSobreFondoPersonalizado()),
           ),
         Expanded(
           child: GridView.builder(
@@ -406,7 +406,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                 detalles: detalles,
                 estaEquipada: estaEquipada,
                 onTap: () => _actualizarPreview(tipo, detalles),
-                onEquipar: () => _equiparMejora(detalles['id'], tipo, detalles['url_recurso'], tr),
+                onEquipar: () => _equiparMejora(detalles['id'], tipo, detalles['url_recurso']),
                 onDesequipar: () => _desequiparMejora(detalles['id'], tipo),
               );
             },
@@ -452,7 +452,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  void _mostrarDialogoSobreFondoPersonalizado(Function tr) {
+  void _mostrarDialogoSobreFondoPersonalizado() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -487,14 +487,14 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildPersonalizacionPanel(Function tr) {
+  Widget _buildPersonalizacionPanel() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Sección de Tema (Nuevo)
-          _buildThemeSection(tr),
+          _buildThemeSection(),
           
           const SizedBox(height: 32),
           const Divider(),
@@ -518,7 +518,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildThemeSection(Function tr) {
+  Widget _buildThemeSection() {
     final List<String> coloresTema = ['#C35E34', '#248EA6', '#9B59B6', '#2ECC71', '#F1C40F', '#E74C3C', '#34495E'];
     
     return Column(
@@ -582,7 +582,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         const SizedBox(height: 24),
         Text(tr('customProfileThemeProfileFont'), style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
-        _buildFontSelector(tr, isPost: false),
+        _buildFontSelector(isPost: false),
       ],
     );
   }
@@ -639,7 +639,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildFontSelector(String Function(String) tr, {bool isPost = true}) {
+  Widget _buildFontSelector({required bool isPost}) {
     final fuentes = ['Outfit', 'Roboto', 'Inter', 'Lobster', 'Dancing Script', 'Indie Flower'];
     final fuenteActual = isPost ? (_previewEstilo?['fuente'] ?? 'Outfit') : _previewFuentePerfil;
 
@@ -685,9 +685,10 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       children: [
         Text(titulo, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 12),
-        TranslationWidget(
-          builder: (context, tr) => GridView.builder(
-            shrinkWrap: true,
+        Builder(
+          builder: (context) {
+            return GridView.builder(
+              shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 120, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1),
             itemCount: filtradas.length,
@@ -697,13 +698,13 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                 detalles: item['mejora_detalles'],
                 estaEquipada: item['esta_equipada'] == true,
                 onTap: () => _actualizarPreview(tipo, item['mejora_detalles']),
-                onEquipar: () => _equiparMejora(item['mejora_detalles']['id'], tipo, item['mejora_detalles']['url_recurso'], tr),
+                onEquipar: () => _equiparMejora(item['mejora_detalles']['id'], tipo, item['mejora_detalles']['url_recurso']),
                 onDesequipar: () => _desequiparMejora(item['mejora_detalles']['id'], tipo),
                 compacto: true,
               );
             },
-          ),
-        ),
+          );
+        }),
       ],
     );
   }
@@ -748,7 +749,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Future<void> _equiparMejora(int mejoraId, String? tipo, String? url, String Function(String) tr) async {
+  Future<void> _equiparMejora(int mejoraId, String? tipo, String? url) async {
     String? destino;
     
     // Si es un fondo, preguntar dónde equiparlo
@@ -811,7 +812,6 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     
     if (mounted) {
       setState(() => _isLoading = false);
-      final tr = Tolgee.of(context).tr;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(respuesta.exito ? tr('profileUnequipSuccess') : respuesta.mensaje),
@@ -929,11 +929,13 @@ class _InventoryItemCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: TranslationWidget(
-                  builder: (context, tr) => Text(
-                    estaEquipada ? tr('profileUnequip') : tr('profileEquip'),
-                    style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900),
-                  ),
+                child: Builder(
+                  builder: (context) {
+                    return Text(
+                      estaEquipada ? tr('profileUnequip') : tr('profileEquip'),
+                      style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900),
+                    );
+                  }
                 ),
               ),
             ),

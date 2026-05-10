@@ -12,6 +12,7 @@ import '../../screens/galeria/dialogo_selector_imagen.dart';
 import '../comunes/menu_opciones_contenido.dart';
 import '../comunes/estado_vacio_cargando.dart';
 import 'dart:ui' as ui;
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class MasonryGridGaleria extends StatefulWidget {
   final int? comunidadId;
@@ -140,8 +141,8 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         Widget contenido;
         
         if (_items == null && _cargando) {
@@ -399,113 +400,6 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
       ),
     ),
   );
-}
-
-  Widget _buildTile(ImagenGaleria item, double aspect) {
-    return GestureDetector(
-      onTap: !widget.esMiembro ? null : () {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (context) => PantallaDetalleImagen(imagen: item)
-        ));
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF1E1E1E),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Imagen con blur si no es miembro
-            if (!widget.esMiembro)
-              ImageFiltered(
-                imageFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
-                child: ImageFiltered(
-                  imageFilter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8), 
-                  child: _buildInnerTileContent(item, aspect),
-                ),
-              )
-            else
-              _buildInnerTileContent(item, aspect),
-
-            // Menu de opciones en la esquina superior derecha (Solo miembros)
-            if (widget.esMiembro)
-              Positioned(
-                top: 2,
-                right: 2,
-                child: MenuOpcionesContenido(
-                  tipoObjeto: 'IMAGEN',
-                  objetoId: item.id,
-                  autorId: item.propietarioId,
-                  comunidadId: item.comunidadId,
-                  creadorComunidadId: item.creadorComunidadId,
-                  onEliminado: () {
-                    setState(() {
-                      _items?.remove(item);
-                    });
-                  },
-                ),
-              ),
-            // Botón de descarga rápida (Solo miembros)
-            if (widget.esMiembro)
-              Positioned(
-                bottom: 4,
-                right: 4,
-                child: GestureDetector(
-                  onTap: () async {
-                    final url = Uri.parse(item.urlArchivo);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.black45,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.download_rounded, color: Colors.white, size: 18),
-                  ),
-                ),
-              ),
-            
-            // Candado central si no es miembro
-            if (!widget.esMiembro)
-              const Positioned.fill(
-                child: Center(
-                  child: Icon(Icons.lock_rounded, color: Colors.white, size: 32),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInnerTileContent(ImagenGaleria item, double aspect) {
-    if (item.tipoArchivo == 'V') {
-      return AspectRatio(
-        aspectRatio: aspect,
-        child: Container(
-          color: Colors.black26,
-          child: const Center(
-            child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 40),
-          ),
-        ),
-      );
-    } else {
-      return CachedNetworkImage(
-        imageUrl: item.urlArchivo,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Container(
-          color: Colors.grey[900],
-          height: 150,
-          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-        errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
-      );
-    }
-  }
 }
 
   Widget _buildTile(ImagenGaleria item, double aspect) {

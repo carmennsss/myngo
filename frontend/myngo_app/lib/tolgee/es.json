@@ -110,6 +110,7 @@
   "chatDeleteAction": "Borrar para mí",
   "chatDeleteError": "Error al borrar el mensaje",
   "chatDeleteForEveryone": "Eliminar para todos",
+  "chatDeleteRoomAction": "Eliminar chat permanentemente",
   "chatDeleteRoomProcessing": "Procesando eliminación... 🐾",
   "chatDeleteRoomWarning": "Esta acción borrará todos los mensajes, fotos y participantes para siempre. No se puede deshacer.",
   "chatDeletedMessage": "Este mensaje fue eliminado",

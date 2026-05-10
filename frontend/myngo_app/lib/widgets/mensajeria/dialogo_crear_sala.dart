@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/usuario.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 class DialogoCrearSala extends StatefulWidget {
@@ -36,12 +37,11 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
       return u.nombreUsuario.toLowerCase().contains(_busqueda.toLowerCase());
     }).toList();
 
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         // Si el título es el por defecto (Nuevo Chat 🐾), lo localizamos
         final tituloFinal = widget.titulo == 'Nuevo Chat 🐾' ? tr('chatNew') : widget.titulo;
-
-    return Container(
+        return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -229,6 +229,8 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import '../../../models/publicacion.dart';
 import '../../../widgets/inicio/tarjeta_post.dart';
 import '../../../widgets/comunes/estado_vacio_cargando.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra el feed de publicaciones de una comunidad.
 class SeccionPostsComunidad extends StatelessWidget {
@@ -39,8 +40,8 @@ class SeccionPostsComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (estaCargando || publicaciones == null) {
           const loading = Center(
               child: Padding(

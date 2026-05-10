@@ -5,6 +5,7 @@ import '../../../models/usuario.dart';
 import '../../../services/servicio_mejoras.dart';
 import '../../../utils/mejoras_notifier.dart';
 import '../../../utils/estilo_post_helper.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra una pestaña del catálogo de mejoras filtrada por tipo.
 class ListaMejorasTab extends StatefulWidget {
@@ -74,8 +75,8 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
   @override
   Widget build(BuildContext context) {
     final filtradas = _mejorasFiltradas;
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (filtradas.isEmpty) {
           return _buildEmptyState(tr);
         }
@@ -103,7 +104,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
               onEquipar: () => _equipar(mejora, tr),
               onComprar: () => _confirmarCompra(mejora, tr),
               onToggleVisibilidad: () => _toggleVisibilidad(mejora),
-              onEditPrice: (p) => _editarPrecio(mejora, p, tr),
+              onEditPrice: (p) => _editarPrecio(mejora, p),
             );
           },
         );
@@ -433,7 +434,7 @@ class _MejoraCard extends StatelessWidget {
                 ],
               ),
             ),
-            _buildFooter(),
+            _buildFooter(context),
           ],
         ),
       ),
@@ -547,7 +548,6 @@ class _MejoraCard extends StatelessWidget {
     );
   }
   Widget _buildFooter(BuildContext context) {
-    final tr = Tolgee.of(context).tr;
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(

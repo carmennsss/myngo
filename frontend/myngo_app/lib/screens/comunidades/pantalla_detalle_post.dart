@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import '../../models/publicacion.dart';
 import '../../services/servicio_comunidades.dart';
@@ -12,6 +12,7 @@ import '../../widgets/comunes/grid_imagenes_post.dart';
 import '../../widgets/comunes/acciones_y_comentarios_post.dart';
 import '../../utils/estilo_post_helper.dart';
 import '../../widgets/comunes/hover_profile_card.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaDetallePost extends StatefulWidget {
   final int? id;
@@ -69,8 +70,8 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final locale = Localizations.localeOf(context).toString();
         
         if (_estaCargandoPost || _post == null) {

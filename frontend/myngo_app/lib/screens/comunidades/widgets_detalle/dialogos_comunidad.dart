@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 import '../../../services/servicio_galeria.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 /// Clase de utilidad para mostrar diálogos comunes en la comunidad.
@@ -21,9 +22,8 @@ class DialogosComunidad {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TranslationWidget(
-        builder: (context, tr) => StatefulBuilder(
-          builder: (context, setModalState) => Container(
+      builder: (context) => StatefulBuilder(builder: (context, setModalState) {
+        return Container(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
               left: 24,
@@ -142,9 +142,8 @@ class DialogosComunidad {
                 const SizedBox(height: 24),
               ],
             ),
-          ),
-        ),
-      ),
+          );
+      }),
     );
 
   }

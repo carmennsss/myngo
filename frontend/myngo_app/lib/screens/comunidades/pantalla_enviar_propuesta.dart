@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/comunidad.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../services/servicio_usuarios.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaEnviarPropuesta extends StatefulWidget {
   final Comunidad comunidad;
@@ -64,7 +65,7 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
   Future<void> _enviar() async {
     if (_imagenSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(TranslationWidget.of(context).tr('proposalSelectImageError'))),
+        SnackBar(content: Text(tr('proposalSelectImageError'))),
       );
       return;
     }
@@ -101,8 +102,8 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
     return FutureBuilder<int?>(
       future: ServicioUsuarios().obtenerIdUsuario(),
       builder: (context, snapshot) {
-        return TranslationWidget(
-          builder: (context, tr) {
+        return Builder(
+      builder: (context) {
             final bool esCreador = snapshot.data != null && snapshot.data == widget.comunidad.creadorId;
             
             return Scaffold(

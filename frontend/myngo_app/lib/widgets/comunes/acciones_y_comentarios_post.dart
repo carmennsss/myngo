@@ -7,6 +7,7 @@ import '../../services/servicio_usuarios.dart';
 import 'comentario_item.dart';
 import 'bottom_sheet_colecciones.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class AccionesYComentariosPost extends StatefulWidget {
   final Publicacion post;
@@ -174,8 +175,8 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

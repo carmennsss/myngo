@@ -4,6 +4,7 @@ import '../../../models/comunidad.dart';
 import '../../../widgets/comunes/post_preview.dart';
 import '../../../widgets/comunes/profile_preview.dart';
 import '../../../utils/configuracion.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la previsualización dinámica de las mejoras seleccionadas.
 /// Cuando [comunidad] no es null, muestra la cabecera de la comunidad (avatar + fondo)
@@ -122,7 +123,6 @@ class TiendaPreviewSection extends StatelessWidget {
   }
 
   Widget _buildProfilePreview(BuildContext context) {
-    final tr = Tolgee.of(context).tr;
     return ProfilePreview(
       fondoUrl: _getAbsoluteUrl(previewFondo),
       avatarUrl: _getAbsoluteUrl(previewAvatar),
@@ -133,7 +133,6 @@ class TiendaPreviewSection extends StatelessWidget {
   }
 
   Widget _buildPostPreview(BuildContext context) {
-    final tr = Tolgee.of(context).tr;
     return PostPreview(
       estilo: previewEstiloPost,
       avatarUrl: _getAbsoluteUrl(previewAvatar),

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +10,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../utils/configuracion.dart';
 import '../../utils/extensiones_color.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaPersonalizacionComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -242,7 +243,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               child: TextButton.icon(
                 onPressed: () => _seleccionarImagen(tipo),
                 icon: const Icon(Icons.edit, size: 16),
-                label: Text(TranslationWidget.of(context).tr('personalizeChangeBtn'), style: GoogleFonts.getFont(_fuenteSeleccionada)),
+                label: Text(tr('personalizeChangeBtn'), style: GoogleFonts.getFont(_fuenteSeleccionada)),
               ),
             ),
           )
@@ -255,8 +256,8 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   Widget build(BuildContext context) {
     final esOscuro = Theme.of(context).brightness == Brightness.dark;
     
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
@@ -348,7 +349,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   children: [
                     _buildSectionTitle(tr('personalizePreview')),
                     const SizedBox(height: 12),
-                    _buildLivePreview(esOscuro, tr),
+                    _buildLivePreview(esOscuro),
                     const SizedBox(height: 24),
                     _buildPanelOpciones(esOscuro, tr),
                     const SizedBox(height: 40),
@@ -408,7 +409,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]
                   ),
                 ),
-                onTap: _mostrarSelectorColorAvanzado,
+                onTap: () => _mostrarSelectorColorAvanzado(tr),
               ),
             ],
           ),
@@ -932,7 +933,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       ],
     );
   }
-  void _mostrarSelectorColorAvanzado() {
+  void _mostrarSelectorColorAvanzado(String Function(String) tr) {
     final coloresPredefinidos = [
       '#C35E34', '#248EA6', '#F28B50', '#7A918D', 
       '#D95F43', '#4A4440', '#9BBAB7', '#E8D5C4',
@@ -1027,7 +1028,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                       colorTemporal = nuevoColor;
                       hexController.text = nuevoColor.toHex().replaceFirst('#', '');
                     });
-                  }),
+                  }, tr),
                   const SizedBox(height: 20),
                   // Input Hex
                   TextField(
@@ -1080,7 +1081,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
-  Widget _buildHSLSliders(Color color, ValueChanged<Color> onChanged) {
+  Widget _buildHSLSliders(Color color, ValueChanged<Color> onChanged, String Function(String) tr) {
     final hsl = HSLColor.fromColor(color);
     return Column(
       children: [

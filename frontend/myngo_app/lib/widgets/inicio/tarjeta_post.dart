@@ -14,6 +14,7 @@ import '../comunes/bottom_sheet_colecciones.dart';
 import '../dialogo_crear_post.dart';
 import '../../utils/estilo_post_helper.dart';
 import '../../services/servicio_comunidades.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class TarjetaPost extends StatefulWidget {
   final Publicacion post;
@@ -180,8 +181,8 @@ class _TarjetaPostState extends State<TarjetaPost> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final estilo = widget.post.autorEstiloPost;
         final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
         final textColor = esFondoClaro ? const Color(0xFF4A4440) : Colors.white;

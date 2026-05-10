@@ -6,6 +6,7 @@ import 'package:tolgee/tolgee.dart';
 import '../../models/comunidad.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import '../../models/usuario.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class SidebarIzquierdo extends StatelessWidget {
   final bool estaLogueado;
@@ -167,7 +168,7 @@ class SidebarIzquierdo extends StatelessWidget {
                     style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)
                   ),
                   Text(
-                    tr('rankMaxPoints', '5000 MAX'), 
+                    tr('rankMaxPoints'), 
                     style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey.shade400, fontWeight: FontWeight.w900)
                   ),
                 ],

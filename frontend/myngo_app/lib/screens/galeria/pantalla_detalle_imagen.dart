@@ -10,6 +10,7 @@ import '../../services/servicio_comunidades.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/gestor_descargas.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaDetalleImagen extends StatefulWidget {
   final ImagenGaleria imagen;
@@ -85,8 +86,9 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) => Scaffold(
+    return Builder(
+      builder: (context) {
+        return Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
           children: [
@@ -147,8 +149,8 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
             ),
           ],
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildPanelInformacion(dynamic tr) {

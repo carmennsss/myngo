@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:mime/mime.dart';
 import 'package:tolgee/tolgee.dart';
 import '../providers/post_provider.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
@@ -74,8 +75,8 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom, 

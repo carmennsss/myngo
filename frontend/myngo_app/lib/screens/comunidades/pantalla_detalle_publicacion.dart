@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import '../../models/publicacion.dart';
 import '../../models/comentario.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_interaccion.dart';
 import '../../widgets/inicio/tarjeta_post.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaDetallePublicacion extends StatefulWidget {
   final int? publicacionId;
@@ -99,7 +100,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
             _pub = _pub!.copyWith(comentariosCount: _comentarios.length);
           }
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(TranslationWidget.of(context).tr('commentSent'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commentSent'))));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
       }
@@ -108,8 +109,8 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: const Color(0xFF121212),
           appBar: AppBar(

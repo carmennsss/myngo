@@ -9,6 +9,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../models/usuario.dart';
 import 'tarjeta_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 enum FeedMode { social, gallery }
 
@@ -221,8 +222,8 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           body: Stack(

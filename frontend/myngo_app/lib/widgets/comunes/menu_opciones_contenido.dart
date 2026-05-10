@@ -6,6 +6,7 @@ import 'package:myngo_app/services/servicio_galeria.dart';
 import 'package:myngo_app/services/servicio_comunidades.dart';
 import 'package:myngo_app/models/respuesta_api.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class MenuOpcionesContenido extends StatelessWidget {
   final String tipoObjeto; // 'POST', 'IMAGEN', 'COMUNIDAD', 'COMENTARIO'
@@ -35,8 +36,8 @@ class MenuOpcionesContenido extends StatelessWidget {
   Widget build(BuildContext context) {
     final servicioUsuarios = ServicioUsuarios();
     
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return FutureBuilder<int?>(
           future: servicioUsuarios.obtenerIdUsuario(),
           builder: (context, snapshot) {

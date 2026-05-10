@@ -7,6 +7,7 @@ import '../../../widgets/comunes/estado_vacio_cargando.dart';
 import '../../../widgets/comunes/detalle_publicacion_sheet.dart';
 import '../../../utils/estilo_post_helper.dart';
 import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la grilla de publicaciones de un usuario.
 class SeccionPostsPerfil extends StatefulWidget {
@@ -99,11 +100,13 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
   @override
   Widget build(BuildContext context) {
     if (widget.esPrivado) {
-      return TranslationWidget(
-        builder: (context, tr) => EstadoVacioCargando(
-          icon: Icons.lock_rounded,
-          message: tr('profilePrivateSubtitle'),
-        ),
+      return Builder(
+        builder: (context) {
+          return EstadoVacioCargando(
+            icon: Icons.lock_rounded,
+            message: tr('profilePrivateSubtitle'),
+          );
+        }
       );
     }
 
@@ -113,11 +116,13 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
     }
 
     if (_posts.isEmpty) {
-      return TranslationWidget(
-        builder: (context, tr) => EstadoVacioCargando(
-          icon: Icons.grid_view_rounded,
-          message: tr('profileEmptyPosts'),
-        ),
+      return Builder(
+        builder: (context) {
+          return EstadoVacioCargando(
+            icon: Icons.grid_view_rounded,
+            message: tr('profileEmptyPosts'),
+          );
+        }
       );
     }
 

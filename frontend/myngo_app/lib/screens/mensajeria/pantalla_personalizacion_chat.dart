@@ -8,6 +8,7 @@ import '../../services/servicio_mensajeria.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:tolgee/tolgee.dart';
 import '../../utils/configuracion.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Painter eficiente para preview de patrones
 class _PatternPreviewPainter extends CustomPainter {
@@ -183,12 +184,12 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
       if (exito) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(TranslationWidget.of(context).tr('chatPersonalizationSaved')))
+          SnackBar(content: Text(tr('chatPersonalizationSaved')))
         );
 
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(TranslationWidget.of(context).tr('chatPersonalizationError')))
+          SnackBar(content: Text(tr('chatPersonalizationError')))
         );
 
       }
@@ -213,7 +214,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
         
         if (nuevaUrl == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(TranslationWidget.of(context).tr('chatImageUploadError')))
+            SnackBar(content: Text(tr('chatImageUploadError')))
           );
 
         }
@@ -223,8 +224,8 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           appBar: AppBar(
             title: Text(tr('chatPersonalization'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),

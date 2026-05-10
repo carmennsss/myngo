@@ -14,6 +14,7 @@ import '../comunes/hover_profile_card.dart';
 import '../dialogo_crear_post.dart';
 import '../../services/servicio_comunidades.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class DialogoDetallePublicacion extends StatefulWidget {
   final Publicacion post;
@@ -60,8 +61,8 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final estilo = widget.post.autorEstiloPost;
         final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
         final colorTexto = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;

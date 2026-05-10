@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 import '../../../widgets/campo_texto_personalizado.dart';
 
 import '../../../widgets/boton_carga.dart';
@@ -9,6 +9,7 @@ import '../../../models/comunidad.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Modal para la creación de nuevas comunidades.
 class FormularioCreacionComunidad extends StatefulWidget {
@@ -116,7 +117,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
           Navigator.pop(context, true);
           widget.alConfirmar();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(TranslationWidget.of(context).tr('communityCreatedSuccess')), backgroundColor: Colors.green),
+            SnackBar(content: Text(tr('communityCreatedSuccess')), backgroundColor: Colors.green),
           );
 
         } else {
@@ -130,8 +131,8 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 24,

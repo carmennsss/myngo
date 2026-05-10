@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../../models/comunidad.dart';
 import '../../../models/sala_chat.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra las salas de chat disponibles en la comunidad.
 class SeccionChatComunidad extends StatelessWidget {
@@ -33,8 +34,8 @@ class SeccionChatComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (estaCargando && salasChat == null) {
           final loading = const Center(
               child: CircularProgressIndicator(color: Color(0xFFF28B50)));

@@ -12,6 +12,7 @@ import '../perfiles/pantalla_detalle_perfil.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:intl/intl.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaNotificaciones extends StatefulWidget {
   final VoidCallback? onNotificacionesLeidas;
@@ -158,8 +159,8 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
 
     return DefaultTabController(
       length: 3,
-      child: TranslationWidget(
-        builder: (context, tr) => Scaffold(
+      child: Builder(builder: (context) {
+        return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1), // Peach Cream Universal
           appBar: AppBar(
             backgroundColor: Colors.transparent,
@@ -200,8 +201,8 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
               _buildListaTab(sistema, tr('notificationEmptyAlerts'), Icons.notifications_none_rounded, tr),
             ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 

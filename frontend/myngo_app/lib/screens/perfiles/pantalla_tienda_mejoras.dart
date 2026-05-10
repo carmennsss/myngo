@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,6 +14,7 @@ import '../comunidades/pantalla_enviar_propuesta.dart';
 // Widgets extraídos
 import 'widgets_tienda/tienda_preview_section.dart';
 import 'widgets_tienda/lista_mejoras_tab.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Pantalla de tienda de mejoras visuales (Avatares, Marcos, Fondos, Estilos).
 ///
@@ -87,7 +88,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     await _cargarDatosUsuario();
     if (widget.comunidad != null) {
       _tabIndex = 1;
-      await _checkRol();
     }
     await _cargarDatosTienda();
   }
@@ -116,7 +116,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     }
   }
 
-  void _handleTabChange(String Function(String) tr) {
+  void _handleTabChange() {
     if (!_subTabController.indexIsChanging) {
       final tipos = [
         tr('storeTypeAvatar'),
@@ -130,7 +130,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     }
   }
 
-  Future<void> _cargarDatosTienda(String Function(String) tr) async {
+  Future<void> _cargarDatosTienda() async {
     if (!mounted) return;
     setState(() => _cargandoTienda = true);
 
@@ -164,11 +164,11 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         // Actualizamos listeners si es necesario
-        _subTabController.removeListener(() => _handleTabChange(tr));
-        _subTabController.addListener(() => _handleTabChange(tr));
+        _subTabController.removeListener(_handleTabChange);
+        _subTabController.addListener(_handleTabChange);
 
         final bool esAncho = MediaQuery.of(context).size.width > 1000;
 
@@ -320,7 +320,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
       usuarioActual: _usuarioActual,
       mejoras: _mejorasCatalogo,
       misMejoras: _misMejoras,
-      onRefresh: () => _cargarDatosTienda(tr),
+      onRefresh: () => _cargarDatosTienda(),
       onPuntosActualizados: (p) {
         widget.onPuntosActualizados?.call(p);
         _cargarDatosUsuario();

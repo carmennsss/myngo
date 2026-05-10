@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import '../../services/servicio_comunidades.dart';
 import '../../models/comunidad.dart';
@@ -9,6 +9,7 @@ import 'widgets/tarjeta_comunidad.dart';
 import 'widgets/formulario_creacion_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaComunidades extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
@@ -68,8 +69,8 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           body: RefreshIndicator(

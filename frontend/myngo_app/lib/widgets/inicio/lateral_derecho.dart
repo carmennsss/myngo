@@ -4,14 +4,15 @@ import 'package:tolgee/tolgee.dart';
 import '../../models/comunidad.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class LateralDerecho extends StatelessWidget {
   const LateralDerecho({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Container(
           margin: const EdgeInsets.fromLTRB(0, 16, 16, 16),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),

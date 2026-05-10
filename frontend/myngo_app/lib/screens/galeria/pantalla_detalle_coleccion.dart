@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tolgee/tolgee.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/coleccion.dart';
@@ -11,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'pantalla_detalle_imagen.dart';
 import '../../utils/gestor_descargas.dart';
 import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaDetalleColeccion extends StatefulWidget {
   final Coleccion coleccion;
@@ -168,69 +170,6 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     }
   }
 
-  Future<void> _cambiarPrivacidad() async {
-    if (!_puedeEditar) return;
-    setState(() => _procesando = true);
-    final nuevaPrivacidad = !_coleccion.esPrivada;
-    final res = await _servicio.editarColeccion(
-      _coleccion.id,
-      {'es_privada': nuevaPrivacidad},
-    );
-    if (mounted) {
-      setState(() {
-        _procesando = false;
-        if (res.exito) {
-          _coleccion.esPrivada = nuevaPrivacidad;
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.exito ? 'Privacidad actualizada 🐾' : res.mensaje),
-          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _editarNombre() async {
-    final controller = TextEditingController(text: _coleccion.nombreColeccion);
-    final nuevoNombre = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Renombrar colección', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'Nuevo nombre'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC35E34)),
-            child: const Text('Guardar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (nuevoNombre != null && nuevoNombre.isNotEmpty && nuevoNombre != _coleccion.nombreColeccion) {
-      setState(() => _procesando = true);
-      final res = await _servicio.editarColeccion(
-        _coleccion.id,
-        {'nombre_coleccion': nuevoNombre},
-      );
-      if (mounted) {
-        setState(() {
-          _procesando = false;
-          if (res.exito) {
-            _coleccion.nombreColeccion = nuevoNombre;
-          }
-        });
-      }
-    }
-  }
-
   Future<void> _confirmarEliminarColeccion(dynamic tr) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -276,27 +215,6 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
         ),
       );
       if (res.exito) Navigator.pop(context, true); // devuelve true para que la galería refresque
-    }
-  }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(resVinculo.mensaje, style: GoogleFonts.outfit()),
-              backgroundColor: resVinculo.exito ? const Color(0xFF248EA6) : Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } else {
-        setState(() => _procesando = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(resSubida.mensaje, style: GoogleFonts.outfit()),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     }
   }
 
@@ -427,6 +345,8 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
       ),
     );
   }
+
+
 
   void _mostrarMenuImagen(BuildContext context, ImagenGaleria imagen, dynamic tr) {
     if (!_puedeEditar) return; // Sin permiso: no mostrar menú

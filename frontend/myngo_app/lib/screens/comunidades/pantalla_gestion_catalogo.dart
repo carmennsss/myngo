@@ -4,7 +4,8 @@ import '../../models/comunidad.dart';
 import '../../models/catalogo_mejoras.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 class PantallaGestionCatalogo extends StatefulWidget {
@@ -60,8 +61,8 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           appBar: AppBar(

@@ -35,6 +35,7 @@ import 'widgets_detalle/seccion_chat_comunidad.dart';
 import 'widgets_detalle/lista_miembros_comunidad.dart';
 import 'widgets_detalle/preview_comunidad.dart';
 import 'widgets_detalle/dialogos_comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Pantalla principal de detalle de una comunidad.
 class PantallaDetalleComunidad extends StatefulWidget {

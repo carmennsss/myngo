@@ -12,7 +12,8 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../utils/configuracion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 class PantallaListaChats extends StatefulWidget {
@@ -198,8 +199,8 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       return nombre.contains(query);
     }).toList();
 
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: const Color(0xFFFBF9F8),
           floatingActionButton: FloatingActionButton.extended(

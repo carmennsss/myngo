@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -17,6 +17,7 @@ import 'pantalla_moderacion_tienda.dart';
 import 'pantalla_personalizacion_comunidad.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaAdminComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -89,8 +90,8 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
@@ -305,7 +306,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     if (res.exito) {
       _cargarDatos(silencioso: true);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(TranslationWidget.of(context).tr('adminRoleUpdated'), style: GoogleFonts.outfit()),
+        content: Text(tr('adminRoleUpdated'), style: GoogleFonts.outfit()),
         backgroundColor: const Color(0xFF248EA6),
         behavior: SnackBarBehavior.floating,
       ));
@@ -320,12 +321,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text(TranslationWidget.of(context).tr('adminDeleteCommunityTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFD95F43))),
-        content: Text(TranslationWidget.of(context).tr('adminDeleteCommunityDesc', {'name': widget.comunidad.nombre}), style: GoogleFonts.outfit()),
+        title: Text(tr('adminDeleteCommunityTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFD95F43))),
+        content: Text(tr('adminDeleteCommunityDesc', {'name': widget.comunidad.nombre}), style: GoogleFonts.outfit()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context), 
-            child: Text(TranslationWidget.of(context).tr('commonCancel'), style: TextStyle(color: Colors.grey.shade600))
+            child: Text(tr('commonCancel'), style: TextStyle(color: Colors.grey.shade600))
           ),
 
           ElevatedButton(
@@ -346,7 +347,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${tr('commonErrorPrefix')}${res.mensaje}'), backgroundColor: Colors.red));
                 }
               },
-              child: Text(TranslationWidget.of(context).tr('adminDeleteCommunityConfirm')),
+              child: Text(tr('adminDeleteCommunityConfirm')),
             ),
           ],
         ),
@@ -408,7 +409,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     if (resBorrado?.exito == true) {
        _cargarDatos(silencioso: true);
        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-         content: Text(TranslationWidget.of(context).tr('adminContentDeleted'), style: GoogleFonts.outfit()),
+         content: Text(tr('adminContentDeleted'), style: GoogleFonts.outfit()),
          backgroundColor: const Color(0xFF248EA6),
          behavior: SnackBarBehavior.floating,
        ));
@@ -596,7 +597,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 // Selector de color eliminado de aquí, ahora está en Personalización Avanzada
 
   Future<void> _guardarAjustes() async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(TranslationWidget.of(context).tr('adminSaving'))));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('adminSaving'))));
 
     
     final res = await _servicioComunidades.actualizarComunidad(
@@ -612,14 +613,14 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     if (mounted) {
       if (res.exito && res.datos != null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(TranslationWidget.of(context).tr('adminUpdatedSettings')),
+          content: Text(tr('adminUpdatedSettings')),
           backgroundColor: Colors.green,
         ));
         Navigator.pop(context, res.datos); // Devuelve la comunidad actualizada
 
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${TranslationWidget.of(context).tr('commonErrorPrefix')}${res.mensaje}'),
+          content: Text('${tr('commonErrorPrefix')}${res.mensaje}'),
           backgroundColor: Colors.red,
         ));
       }

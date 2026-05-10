@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/usuario.dart';
 import '../../../utils/estilo_post_helper.dart';
 import '../../inicio/pantalla_inicio.dart';
 import '../../../widgets/boton_idioma.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la cabecera visual de un perfil (fondo, avatar, marco y estado).
 class HeaderDetallePerfil extends StatelessWidget {
@@ -47,8 +48,8 @@ class HeaderDetallePerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
         final Color colorCard = esOscuro ? const Color(0xFF1E1E1E) : Colors.white;
         final Color colorGradTop =

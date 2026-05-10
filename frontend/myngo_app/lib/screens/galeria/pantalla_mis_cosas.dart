@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -11,6 +11,7 @@ import '../../widgets/galeria/masonry_grid_galeria.dart';
 import 'dart:math' as math;
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaMisCosas extends StatefulWidget {
   final int usuarioId;
@@ -60,45 +61,43 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
     super.dispose();
   }
 
-    return TranslationWidget(
-      builder: (context, tr) {
-        if (_cargando) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
-        }
+  @override
+  Widget build(BuildContext context) {
+    if (_cargando) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+    }
 
-        return Container(
-          color: const Color(0xFFFEF5F1),
-          child: Column(
-            children: [
-              Container(
-                color: Colors.white,
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: const Color(0xFFC35E34),
-                  indicatorWeight: 4,
-                  labelColor: const Color(0xFFC35E34),
-                  unselectedLabelColor: Colors.grey.shade400,
-                  labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
-                  unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
-                  tabs: [
-                    Tab(icon: const Icon(Icons.photo_library_rounded), text: tr('myStuffTabImages')),
-                    Tab(icon: const Icon(Icons.folder_special_rounded), text: tr('myStuffTabCollections')),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildMisImagenes(),
-                    _buildMisColecciones(tr),
-                  ],
-                ),
-              ),
-            ],
+    return Container(
+      color: const Color(0xFFFEF5F1),
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: const Color(0xFFC35E34),
+              indicatorWeight: 4,
+              labelColor: const Color(0xFFC35E34),
+              unselectedLabelColor: Colors.grey.shade400,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
+              unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+              tabs: [
+                Tab(icon: const Icon(Icons.photo_library_rounded), text: tr('myStuffTabImages')),
+                Tab(icon: const Icon(Icons.folder_special_rounded), text: tr('myStuffTabCollections')),
+              ],
+            ),
           ),
-        );
-      }
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildMisImagenes(),
+                _buildMisColecciones(),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -107,7 +106,7 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
     return MasonryGridGaleria(usuarioId: widget.usuarioId);
   }
 
-  Widget _buildMisColecciones(String Function(String) tr) {
+  Widget _buildMisColecciones() {
     if (_misColecciones.isEmpty) {
       return _buildVistaVacia(tr('myStuffEmptyCollections'));
     }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,6 +9,7 @@ import '../../../models/coleccion.dart';
 import '../../../widgets/galeria/masonry_grid_galeria.dart';
 import '../../../widgets/comunes/estado_vacio_cargando.dart';
 import '../../galeria/pantalla_detalle_coleccion.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que gestiona la vista de galería y colecciones de una comunidad.
 class SeccionGaleriaComunidad extends StatefulWidget {
@@ -46,8 +47,8 @@ class _SeccionGaleriaComunidadState extends State<SeccionGaleriaComunidad> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (widget.comoSliver) {
           return SliverFillRemaining(
             child: _buildContenido(tr),

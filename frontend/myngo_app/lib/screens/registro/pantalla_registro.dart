@@ -10,6 +10,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../utils/configuracion.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaRegistro extends StatefulWidget {
   const PantallaRegistro({super.key});
@@ -71,8 +72,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
 
   Widget _buildContenido(BuildContext context, BoxConstraints constraints) {
     final isDesktop = constraints.maxWidth > 900;
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (isDesktop) {
           return Row(
             children: [
@@ -356,8 +357,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return TranslationWidget(
-          builder: (context, tr) {
+        return Builder(
+      builder: (context) {
             return StatefulBuilder(
               builder: (context, setDialogState) {
                 return AlertDialog(
@@ -523,8 +524,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Container(
       decoration: BoxDecoration(
         color: Colors.white,

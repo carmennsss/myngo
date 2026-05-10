@@ -4,6 +4,7 @@ import '../../widgets/campo_texto_personalizado.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../widgets/boton_carga.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaRecuperarContrasena extends StatefulWidget {
   const PantallaRecuperarContrasena({super.key});
@@ -59,8 +60,8 @@ class _PantallaRecuperarContrasenaState
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: Container(

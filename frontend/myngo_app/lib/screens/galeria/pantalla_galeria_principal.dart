@@ -7,6 +7,7 @@ import '../../models/coleccion.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaGaleriaPrincipal extends StatefulWidget {
   final int? comunidadId;
@@ -68,8 +69,9 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) => Scaffold(
+    return Builder(
+      builder: (context) {
+        return Scaffold(
         backgroundColor: const Color(0xFFFEF5F1),
         appBar: AppBar(
           title: Text(
@@ -129,8 +131,8 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
                 onPressed: () => _mostrarDialogoCrearColeccion(tr),
               )
             : null,
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildColeccionesTab(dynamic tr) {

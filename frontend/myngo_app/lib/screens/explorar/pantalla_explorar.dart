@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
@@ -13,6 +13,7 @@ import '../comunidades/pantalla_detalle_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaExplorar extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
@@ -208,8 +209,8 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           body: RefreshIndicator(

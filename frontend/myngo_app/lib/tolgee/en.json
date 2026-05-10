@@ -105,6 +105,7 @@
   "chatDeleteAction": "Delete for me",
   "chatDeleteError": "Error deleting message",
   "chatDeleteForEveryone": "Delete for everyone",
+  "chatDeleteRoomAction": "Delete chat permanently",
   "chatDeleteRoomProcessing": "Processing deletion... 🐾",
   "chatDeleteRoomWarning": "This action will delete all messages, photos, and participants forever. It cannot be undone.",
   "chatDeletedMessage": "This message was deleted",

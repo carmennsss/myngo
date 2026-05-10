@@ -10,6 +10,7 @@ import '../../../utils/configuracion.dart';
 import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
 import 'package:mime/mime.dart';
 import 'dart:math' as math;
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra las colecciones (carpetas) de un usuario en su perfil.
 class SeccionColeccionesPerfil extends StatelessWidget {
@@ -35,11 +36,13 @@ class SeccionColeccionesPerfil extends StatelessWidget {
     }
 
     if (colecciones!.isEmpty) {
-      return TranslationWidget(
-        builder: (context, tr) => EstadoVacioCargando(
-          icon: Icons.folder_open_rounded,
-          message: tr('profileEmptyFolders'),
-        ),
+      return Builder(
+        builder: (context) {
+          return EstadoVacioCargando(
+            icon: Icons.folder_open_rounded,
+            message: tr('profileEmptyFolders'),
+          );
+        }
       );
     }
 
@@ -194,8 +197,8 @@ class SeccionColeccionesPerfil extends StatelessWidget {
   void _confirmarCambioPrivacidad(BuildContext context, Coleccion coleccion) {
     showDialog(
       context: context,
-      builder: (ctx) => TranslationWidget(
-        builder: (context, tr) => AlertDialog(
+      builder: (ctx) {
+        return AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Row(
@@ -247,8 +250,8 @@ class SeccionColeccionesPerfil extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

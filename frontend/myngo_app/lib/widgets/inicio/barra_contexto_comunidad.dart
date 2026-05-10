@@ -5,6 +5,7 @@ import 'package:tolgee/tolgee.dart';
 import '../../models/comunidad.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../screens/comunidades/pantalla_admin_comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class BarraContextoComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -59,8 +60,8 @@ class _BarraContextoComunidadState extends State<BarraContextoComunidad> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final esCreador = widget.miId != null && widget.miId == widget.comunidad.creadorId;
         
         String rolLabel;

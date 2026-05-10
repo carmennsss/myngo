@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 import '../../services/servicio_usuarios.dart';
 
 import '../../models/usuario.dart';
 import 'pantalla_detalle_perfil.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaPerfiles extends StatefulWidget {
   const PantallaPerfiles({super.key});
@@ -52,8 +53,8 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           body: Column(

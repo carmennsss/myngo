@@ -5,6 +5,7 @@ import '../../services/servicio_galeria.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_interaccion.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class BottomSheetColecciones extends StatefulWidget {
   final int? imagenId;
@@ -143,8 +144,8 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
           decoration: const BoxDecoration(color: Color(0xFF1E1E1E), borderRadius: BorderRadius.vertical(top: Radius.circular(28))),

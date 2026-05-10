@@ -25,8 +25,9 @@ import 'package:mime/mime.dart';
 import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
-import '../../tolgee/translation_widget.dart';
-import '../../tolgee/tolgee_static.dart';
+import 'package:tolgee/tolgee.dart';
+
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 // Painter eficiente para patrones de fondo
@@ -207,8 +208,8 @@ class _PantallaChatState extends State<PantallaChat> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => TranslationWidget(
-        builder: (context, tr) => Container(
+      builder: (_) => Builder(builder: (context) {
+        return Container(
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -270,8 +271,8 @@ class _PantallaChatState extends State<PantallaChat> {
               ],
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -476,8 +477,8 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   Widget _buildBarraRespuesta() {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final esEdicion = _mensajeEdicion != null;
         final msg = esEdicion ? _mensajeEdicion! : _mensajeRespuesta!;
 
@@ -550,8 +551,8 @@ class _PantallaChatState extends State<PantallaChat> {
         }
         return Future.value(true);
       },
-      child: TranslationWidget(
-        builder: (context, tr) => Scaffold(
+      child: Builder(builder: (context) {
+        return Scaffold(
           backgroundColor: colorFondo,
           appBar: AppBar(
             title: _buildAppBarTitle(tr),
@@ -584,9 +585,8 @@ class _PantallaChatState extends State<PantallaChat> {
               ),
             ],
           ),
-          body: _buildBody(tr),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -1063,8 +1063,7 @@ class _PantallaChatState extends State<PantallaChat> {
   void _mostrarMiembros(BuildContext context) {
     if (_sala == null) return;
     
-    // Obtenemos tr del contexto
-    final tr = Tolgee.of(context).translate;
+    // Tr se usa de manera global
 
     // Si es un chat de comunidad, mostramos el componente existente
     if (_sala!.esGrupal && _sala!.comunidadId != 0) {
@@ -1167,8 +1166,8 @@ class _PantallaChatState extends State<PantallaChat> {
               if (!_sala!.esGrupal) const Divider(), // Separador si no lo puso el bloque anterior
               ListTile(
                 leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                title: Text('Eliminar chat permanentemente', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
-                onTap: () => _confirmarEliminarSala(context),
+                title: Text(tr('chatDeleteRoomAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                onTap: () => _confirmarEliminarSala(context, tr),
               ),
               const SizedBox(height: 20),
             ],
@@ -1455,7 +1454,7 @@ class _PantallaChatState extends State<PantallaChat> {
   }
 
   String _formatFechaCompleta(DateTime fecha) {
-    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} ${trStatic('at')} ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
+    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} ${tr('at')} ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
   }
 
 
@@ -1766,8 +1765,8 @@ class _PantallaChatState extends State<PantallaChat> {
         // Contenido
         Column(
           children: [
-            Expanded(child: _buildListaMensajes()),
-            _buildInputArea(),
+            Expanded(child: _buildListaMensajes(tr)),
+            _buildInputArea(tr),
             if (_mostrarEmojiPicker) _buildEmojiPicker(),
           ],
         ),

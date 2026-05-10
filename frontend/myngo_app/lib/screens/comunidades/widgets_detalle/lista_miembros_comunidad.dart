@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../tolgee/translation_widget.dart';
+import 'package:tolgee/tolgee.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -13,6 +13,7 @@ import '../../../providers/chat_provider.dart';
 import '../../../widgets/comunes/boton_tactil.dart';
 import '../../perfiles/pantalla_detalle_perfil.dart';
 import '../../../models/usuario.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class ListaMiembrosComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -95,8 +96,8 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (_estaCargando) {
           final loading = const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
           return widget.comoSliver ? SliverFillRemaining(child: loading) : loading;
