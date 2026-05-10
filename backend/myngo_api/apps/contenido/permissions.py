@@ -16,6 +16,16 @@ class IsAuthorOrAdmin(permissions.BasePermission):
             
         # O si es admin/moderador de la comunidad
         comunidad = getattr(obj, 'comunidad', None)
+        
+        # Caso especial para Comentarios: el dueño del post también puede borrarlo
+        from .models import Comentario
+        if isinstance(obj, Comentario):
+            if obj.publicacion.autor == request.user:
+                return True
+            # Si el comentario es en una comunidad, heredamos la comunidad del post
+            if not comunidad:
+                comunidad = obj.publicacion.comunidad
+
         if comunidad:
             if comunidad.creador == request.user:
                 return True

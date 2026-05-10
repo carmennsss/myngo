@@ -227,10 +227,17 @@ class PublicacionCreate(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         """Procesa la creación de una publicación y sus imágenes asociadas."""
+        print("\n" + "="*50, flush=True)
+        print(">>> REQUERIMIENTO DE CREACIÓN RECIBIDO <<<", flush=True)
         titulo = request.data.get('titulo', '') or ''
         contenido_texto = request.data.get('contenido_texto', '') or ''
         texto = f"{titulo} {contenido_texto}".strip()
+        print(f">>> TEXTO A VALIDAR: '{texto}'", flush=True)
+        
         es_valido = validar_contenido_toxico(texto)
+        print(f">>> RESULTADO VALIDACIÓN IA: {es_valido}", flush=True)
+        print("="*50 + "\n", flush=True)
+
         if not es_valido:
             return Response(
                 {'error': 'El contenido de la publicación incumple nuestras normas comunitarias (lenguaje ofensivo o inapropiado).'},

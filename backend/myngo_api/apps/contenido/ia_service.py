@@ -66,7 +66,7 @@ def _es_malicioso(prediccion):
         return False
     umbral = LABEL_THRESHOLDS.get(label, 0.25)
     if score >= umbral:
-        print(f'Moderación IA: BLOQUEO por "{label}" (score {score:.3f} >= {umbral})')
+        print(f'Moderación IA: BLOQUEO por "{label}" (score {score:.3f} >= {umbral})', flush=True)
         return True
     return False
 
@@ -85,7 +85,7 @@ def validar_contenido_toxico(texto):
     }
 
     try:
-        print(f'Moderación IA: analizando "{texto[:60]}..."')
+        print(f'Moderación IA: analizando "{texto[:60]}..."', flush=True)
         for intento in range(2):
             response = requests.post(API_URL, headers=headers, json=payload, timeout=12)
             if response.status_code == 200:
@@ -96,14 +96,14 @@ def validar_contenido_toxico(texto):
                 for prediccion in predictions:
                     if _es_malicioso(prediccion):
                         return False
-                print('Moderación IA: Contenido aprobado')
+                print('Moderación IA: Contenido aprobado', flush=True)
                 return True
             elif response.status_code == 503:
                 time.sleep(3)
                 continue
             else:
-                print(f'Moderación IA: Error {response.status_code} - El servicio no está disponible o el token ha fallado. Dejando pasar por seguridad.')
+                print(f'Moderación IA: Error {response.status_code} - El servicio no está disponible o el token ha fallado. Dejando pasar por seguridad.', flush=True)
                 return True
     except Exception as e:
-        print(f'Moderación IA: Error {e}')
+        print(f'Moderación IA: Error {e}', flush=True)
     return True
