@@ -12,22 +12,18 @@ from .serializers import ComentarioSerializer, ReporteSerializer
 
 
 class ReporteListCreate(generics.ListCreateAPIView):
-    """Lista todos los reportes o crea uno nuevo.
-
-    Al crear, notifica a los moderadores de la comunidad afectada.
-    """
+    """Permite ver todos los reportes existentes o crear uno nuevo si ves algo que incumple las normas."""
 
     queryset = Reporte.objects.all()
     serializer_class = ReporteSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        """Guarda el reporte y avisa automáticamente tanto al autor del contenido como a los moderadores."""
         reporte = serializer.save(informador=self.request.user)
         
-        # 1. Identificar al autor del contenido reportado para avisarle
         autor_reportado = None
         try:
-            print(f"DEBUG REPORTE: Tipo={reporte.tipo_objeto}, ID={reporte.objeto_id}", flush=True)
             if reporte.tipo_objeto == 'POST':
                 from .models import Publicacion
                 obj = Publicacion.objects.get(id=reporte.objeto_id)
@@ -44,25 +40,21 @@ class ReporteListCreate(generics.ListCreateAPIView):
                 from comunidades.models import Comunidad
                 obj = Comunidad.objects.get(id=reporte.objeto_id)
                 autor_reportado = obj.creador
-            print(f"DEBUG REPORTE: Autor detectado = {autor_reportado}", flush=True)
-        except Exception as e:
-            print(f"DEBUG REPORTE ERROR: {str(e)}", flush=True)
+        except Exception:
+            pass
 
-        # 2. Enviar notificación al autor reportado (ANÓNIMA)
         if autor_reportado:
             try:
                 Notificacion.objects.create(
                     usuario=autor_reportado,
                     tipo='CONTENIDO_REPORTADO',
                     mensaje=f"Tu contenido ({reporte.tipo_objeto.lower()}) ha sido reportado por un usuario y está siendo revisado por los administradores. Por favor, asegúrate de cumplir las normas.",
-                    referencia_comunidad=reporte.comunidad, # Puede ser None
+                    referencia_comunidad=reporte.comunidad,
                     referencia_id=reporte.objeto_id
                 )
-                print(f"DEBUG REPORTE: Notificación enviada a {autor_reportado.nombre_usuario}", flush=True)
-            except Exception as e:
-                print(f"DEBUG REPORTE ERROR NOTIF: {str(e)}", flush=True)
+            except Exception:
+                pass
 
-        # 3. Notificar a los moderadores de la comunidad (si aplica)
         if reporte.comunidad:
             mods = MiembrosComunidad.objects.filter(
                 comunidad=reporte.comunidad, rol__in=['Administrador', 'Moderador']
@@ -82,10 +74,7 @@ from .permissions import IsAuthorOrAdmin
 
 
 class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
-    """Recupera, actualiza o elimina un comentario específico.
-
-    Al eliminar como administrador, notifica al autor del comentario.
-    """
+    """Maneja un comentario individual. Si un admin lo borra, el autor recibe un aviso con el motivo."""
 
     queryset = Comentario.objects.all()
     serializer_class = ComentarioSerializer
@@ -109,7 +98,7 @@ class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ResolverReporteView(APIView):
-    """Permite a moderadores o al creador de la comunidad resolver o desestimar un reporte."""
+    """Permite a los jefes de la comunidad (admins/mods) cerrar reportes como resueltos o falsas alarmas."""
 
     permission_classes = [permissions.IsAuthenticated]
 

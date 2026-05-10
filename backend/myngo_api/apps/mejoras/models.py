@@ -10,10 +10,9 @@ from usuarios.models import Usuario
 
 
 class Voto(models.Model):
-    """Voto de estrellas emitido por un usuario hacia otro usuario o comunidad.
-
-    Cada votante puede emitir como máximo un voto por receptor al día.
-    El campo ``estrellas`` acepta valores entre 0 y 5.
+    """
+    Registra la valoración otorgada por un usuario a otro perfil o comunidad.
+    Controla la integridad del sistema permitiendo una calificación diaria por receptor.
     """
 
     class Meta:
@@ -47,10 +46,9 @@ class Voto(models.Model):
 
 
 class CatalogoMejoras(models.Model):
-    """Item del catálogo de la tienda, global o específico de una comunidad.
-
-    El campo ``datos_extra`` almacena propiedades visuales en JSON
-    (p.ej. configuración de estilo para posts).
+    """
+    Define los artículos disponibles para su adquisición mediante puntos. Incluye 
+    mejoras visuales globales y elementos específicos de comunidades.
     """
 
     class Meta:
@@ -81,10 +79,9 @@ class CatalogoMejoras(models.Model):
 
 
 class PeticionMejora(models.Model):
-    """Propuesta de un usuario para añadir un item a la tienda de su comunidad.
-
-    Los administradores o moderadores la revisan y la aprueban o rechazan.
-    Si se aprueba, se crea automáticamente un ``CatalogoMejoras``.
+    """
+    Gestiona las propuestas de creación de nuevos artículos para la tienda. 
+    Permite un flujo de aprobación por parte de los administradores de la comunidad.
     """
 
     ESTADOS = [
@@ -114,10 +111,9 @@ class PeticionMejora(models.Model):
 
 
 class MejoraUsuario(models.Model):
-    """Registro de un item del catálogo adquirido por un usuario.
-
-    El campo ``esta_equipada`` indica si la mejora está actualmente
-    activa en el perfil del usuario.
+    """
+    Representa la propiedad de un artículo del catálogo por parte de un usuario, 
+    gestionando su estado de equipamiento en el perfil.
     """
 
     class Meta:

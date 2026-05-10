@@ -100,7 +100,6 @@ def limpiar_archivo_s3(sender, instance, **kwargs):
     if instance.url_s3:
         try:
             instance.url_s3.delete(save=False)
-        except Exception as e:
-            # No bloqueamos el borrado de la BD si falla S3, pero lo logueamos
-            print(f"Error al eliminar archivo de S3: {str(e)}")
+        except Exception:
+            pass
 

@@ -27,7 +27,6 @@ class PeticionMejoraCreate(generics.CreateAPIView):
         user = self.request.user
         peticion = serializer.save(usuario=user)
         
-        # Si el usuario es el creador, aprobamos automáticamente y creamos el item
         if peticion.comunidad.creador == user:
             peticion.estado = 'APROBADO'
             peticion.save()
@@ -40,11 +39,10 @@ class PeticionMejoraCreate(generics.CreateAPIView):
                 creador=user,
                 esta_activo=True
             )
-            return # No enviamos notificaciones si es el propio creador quien añade fondos
+            return
 
         from notificaciones.models import Notificacion
         
-        # Obtener moderadores y administradores de la tabla de membresía
         mods = MiembrosComunidad.objects.filter(
             comunidad=peticion.comunidad,
             rol__in=['Administrador', 'Moderador']
@@ -52,12 +50,11 @@ class PeticionMejoraCreate(generics.CreateAPIView):
         
         destinatarios = {mod.usuario for mod in mods}
         
-        # Incluir también al creador de la comunidad si existe
         if peticion.comunidad.creador:
             destinatarios.add(peticion.comunidad.creador)
             
         for usuario in destinatarios:
-            if usuario == user: continue # No notificarse a uno mismo
+            if usuario == user: continue
             Notificacion.objects.create(
                 usuario=usuario,
                 tipo='NUEVA_PROPUESTA_TIENDA',
@@ -84,7 +81,6 @@ class PeticionMejoraModeracionList(generics.ListAPIView):
         """
         comunidad_id = self.kwargs.get('comunidad_id')
         
-        # Verificar si es el creador directo
         from comunidades.models import Comunidad
         try:
             comunidad = Comunidad.objects.get(id=comunidad_id)
@@ -92,7 +88,6 @@ class PeticionMejoraModeracionList(generics.ListAPIView):
         except Comunidad.DoesNotExist:
             es_creador = False
 
-        # Verificar si es moderador en la tabla de membresía
         es_mod = MiembrosComunidad.objects.filter(
             usuario=self.request.user,
             comunidad_id=comunidad_id,
@@ -128,7 +123,6 @@ class PeticionMejoraModerar(APIView):
         except PeticionMejora.DoesNotExist:
             return Response({'error': 'Petición no encontrada'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Verificar permisos (Moderador o Creador)
         es_creador = peticion.comunidad.creador == request.user
         es_mod = MiembrosComunidad.objects.filter(
             usuario=request.user,

@@ -13,10 +13,9 @@ def chat_image_path(instance, filename):
 
 
 class SalaChat(models.Model):
-    """Sala de conversación para usuarios.
-
-    Puede estar vinculada a una comunidad o ser una sala privada global.
-    Las salas pueden ser grupales o individuales (DM).
+    """
+    Define un espacio de comunicación entre usuarios. Puede ser un canal general
+    de comunidad, un chat grupal privado o una conversación directa (DM).
     """
 
     class Meta:
@@ -49,7 +48,10 @@ class SalaChat(models.Model):
 
 
 class PersonalizacionChat(models.Model):
-    """Configuración visual compartida de una sala de chat."""
+    """
+    Almacena la configuración visual de una sala de chat, permitiendo definir 
+    colores, gradientes, patrones de fondo y estilos de las burbujas de mensaje.
+    """
     
     class Meta:
         db_table = 'chat_personalizacion'
@@ -91,7 +93,10 @@ class ApodoPersonalizado(models.Model):
 
 
 class ParticipanteChat(models.Model):
-    """Relación de pertenencia de un usuario a una sala de chat."""
+    """
+    Registra la vinculación de un usuario con una sala de chat específica, 
+    permitiendo gestionar apodos locales y la fecha de unión.
+    """
 
     class Meta:
         db_table = 'participantes_chat'
@@ -106,9 +111,9 @@ class ParticipanteChat(models.Model):
 
 
 class MensajeChat(models.Model):
-    """Mensaje individual enviado dentro de una sala de chat.
-
-    Soporta texto, imágenes, vídeos y mensajes de sistema.
+    """
+    Representa una unidad de comunicación enviada en una sala. Admite diversos 
+    formatos de contenido (texto, multimedia o sistema) y gestiona estados de lectura.
     """
     TIPO_CHOICES = (
         ('TEXTO', 'Texto'),

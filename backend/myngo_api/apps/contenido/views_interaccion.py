@@ -87,14 +87,14 @@ class InicioFeed(generics.ListAPIView):
         ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
 
         if usuario:
-            # 1. Mis comunidades
+            # Comunidades a las que pertenece el usuario
             mis_comunidades_ids = list(
                 MiembrosComunidad.objects.filter(
                     usuario=usuario
                 ).values_list('comunidad_id', flat=True)
             )
 
-            # 2. Mis amigos (seguimiento aceptado)
+            # Usuarios seguidos con estado aceptado
             mis_amigos_ids = list(
                 Seguimiento.objects.filter(
                     seguidor=usuario,
@@ -103,7 +103,7 @@ class InicioFeed(generics.ListAPIView):
                 ).values_list('seguido_usuario_id', flat=True)
             )
 
-            # 3. Filtro social
+            # Filtros de privacidad y visibilidad
             qs = qs.filter(
                 Q(autor=usuario) |                          # Mis posts
                 Q(autor_id__in=mis_amigos_ids) |            # Posts de mis amigos

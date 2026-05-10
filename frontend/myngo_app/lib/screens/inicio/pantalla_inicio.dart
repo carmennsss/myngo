@@ -526,12 +526,22 @@ class PantallaInicioState extends State<PantallaInicio> {
               onTap: () { Navigator.pop(context); _alPulsarNav(4); },
             ),
             ListTile(
-              leading: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+              leading: Badge(
+                label: Text(context.watch<ChatProvider>().totalNoLeidos.toString()),
+                isLabelVisible: _estaLogueado && context.watch<ChatProvider>().totalNoLeidos > 0,
+                backgroundColor: const Color(0xFFC35E34),
+                child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+              ),
               title: Text(tr('navigationChats'), style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(3); },
             ),
             ListTile(
-              leading: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
+              leading: Badge(
+                label: Text(_notificacionesSinLeer.toString()),
+                isLabelVisible: _estaLogueado && _notificacionesSinLeer > 0,
+                backgroundColor: const Color(0xFFC35E34),
+                child: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
+              ),
               title: Text(tr('navigationNotifications'), style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(2); },
             ),

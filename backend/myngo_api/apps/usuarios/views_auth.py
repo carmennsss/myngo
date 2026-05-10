@@ -168,8 +168,8 @@ class LoginUsuario(APIView):
                 if hasattr(usuario, 'perfil'):
                     try:
                         usuario.perfil.recalcular_puntos()
-                    except Exception as e:
-                        print(f"Error al recalcular puntos para {email}: {e}")
+                    except Exception:
+                        pass
                 
                 usuario.last_login = timezone.now()
                 usuario.save(update_fields=['last_login'])

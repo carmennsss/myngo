@@ -182,7 +182,7 @@ class EditarPerfil(APIView):
             imagen_nueva.save()
             perfil.avatar = imagen_nueva.url_s3.name
             
-            # Desequipar avatares del inventario
+            # Desactivamos avatares previos del inventario al subir uno nuevo
             from mejoras.models import MejoraUsuario
             MejoraUsuario.objects.filter(
                 usuario=request.user,
@@ -226,8 +226,7 @@ class EditarPerfil(APIView):
             imagen_nueva.save()
             perfil.fondo_perfil = imagen_nueva.url_s3.name
 
-            # Desequipar fondos (feed) del inventario
-            # Nota: El frontend suele usar fondo_perfil para el feed
+            # Sincronizamos el estado del inventario para fondos y feeds
             from mejoras.models import MejoraUsuario
             MejoraUsuario.objects.filter(
                 usuario=request.user,
@@ -289,10 +288,14 @@ class RankingUsuarios(APIView):
 
 
 class CambiarPassword(APIView):
-    """Permite a un usuario autenticado cambiar su contraseña."""
+    """
+    Permite a los usuarios actualizar su contraseña de acceso. Al completar el cambio,
+    se envía un correo electrónico de seguridad para notificar al usuario.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        """Procesa el cambio de contraseña y envía la notificación por email."""
         usuario = request.user
         nueva_password = request.data.get('nueva_password')
 
@@ -339,18 +342,21 @@ class CambiarPassword(APIView):
 
 
 class EliminarCuenta(APIView):
-    """Permite a un usuario eliminar su cuenta."""
+    """
+    Gestiona el borrado de cuentas de usuario. Para preservar la integridad de los datos,
+    las cuentas se desactivan y anonimizan en lugar de eliminarse físicamente de la base de datos.
+    """
     permission_classes = [IsAuthenticated]
 
     def delete(self, request):
+        """Inactiva al usuario, ofusca sus datos personales y limpia su perfil público."""
         usuario = request.user
         
         # Eliminar comunidades creadas por el usuario
         from comunidades.models import Comunidad
         Comunidad.objects.filter(creador=usuario).delete()
 
-        # En lugar de eliminar físicamente para mantener las salas de chat intactas,
-        # desactivamos la cuenta y ofuscamos los datos personales.
+        # Anonimización de datos para preservar la integridad de la base de datos
         import uuid
         identificador = str(uuid.uuid4())[:8]
         usuario.is_active = False

@@ -87,15 +87,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     attachments_data=attachments_data
                 )
 
-                # Usamos el serializador para que los datos sean idénticos a la API REST
                 from .serializers import MensajeChatSerializer
                 serializer_data = await self.get_serializer_data(msg)
 
-                # Aseguramos que la media enviada sea la que acabamos de guardar
                 if saved_attachments:
                     serializer_data['media'] = saved_attachments
 
-                # Añadimos client_id que no está en el serializador pero es útil para el frontend
                 serializer_data['client_id'] = data.get('client_id')
                 serializer_data['type'] = 'chat_message'
 
@@ -246,7 +243,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_serializer_data(self, msg):
         from .serializers import MensajeChatSerializer
-        # Necesitamos el contexto del request para que las URLs sean absolutas
         return MensajeChatSerializer(msg).data
 
     @database_sync_to_async
@@ -307,7 +303,6 @@ class PresenceConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        # Incrementar contador de conexiones activas de forma segura
         count = await self.incrementar_contador_presencia()
 
         # Solo si es la primera conexión, marcamos como online oficialmente
@@ -332,7 +327,6 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if not self.user.is_anonymous:
-            # Decrementar contador de forma segura
             count = await self.decrementar_contador_presencia()
 
             # Solo si no quedan conexiones activas, marcamos como offline
@@ -357,7 +351,6 @@ class PresenceConsumer(AsyncWebsocketConsumer):
         message_type = data.get('type')
         if message_type == 'heartbeat':
             await self.actualizar_heartbeat()
-            # Opcional: limpiar fantasmas cada cierto tiempo o en cada heartbeat
             fantasmas_ids = await self.limpiar_fantasmas()
             for f_id in fantasmas_ids:
                 await self.channel_layer.group_send(
@@ -430,8 +423,6 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def limpiar_fantasmas(self):
         try:
-            # Los fantasmas son aquellos que NO se han desconectado limpiamente
-            # (su contador de cache podría ser > 0 o 0, pero no han enviado heartbeat)
             umbral = timezone.now() - timezone.timedelta(minutes=2)
             fantasmas = Perfil.objects.filter(esta_online=True, last_seen__lt=umbral)
             fantasmas_ids = list(fantasmas.values_list('usuario_id', flat=True))
