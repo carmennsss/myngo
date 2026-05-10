@@ -33,8 +33,9 @@ class ProfilePreview extends StatelessWidget {
     this.fuentePerfil,
   });
 
-  // Carga una imagen desde URL, archivo local o bytes, tanto en web como en móvil
+  Widget _buildImage(dynamic source, {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
     if (source == null) return errorWidget ?? const SizedBox.shrink();
+
     if (source is String && source.isNotEmpty) {
       if (source.startsWith('http')) {
         return CachedNetworkImage(
@@ -137,9 +138,9 @@ class ProfilePreview extends StatelessWidget {
     return _buildAvatarWithFrame();
   }
 
-  // Construye el avatar circular con el marco encima (si tiene uno equipado)
+  Widget _buildAvatarWithFrame() {
+    final double avatarSize = size * 0.50;
 
-    final double avatarSize = size * 0.50; 
     final double marcoSize = size;
 
     return SizedBox(

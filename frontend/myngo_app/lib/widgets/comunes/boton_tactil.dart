@@ -43,19 +43,22 @@ class _BotonTactilState extends State<BotonTactil> with SingleTickerProviderStat
     super.dispose();
   }
 
-  // Arranca la animación de encogimiento al bajar el dedo
+  void _onTapDown(TapDownDetails details) {
     if (widget.onTap != null) _controller.forward();
+
   }
 
-  // Vuelve a su tamaño y dispara el onTap al soltar
+  void _onTapUp(TapUpDetails details) {
     if (widget.onTap != null) {
+
       _controller.reverse();
       widget.onTap!();
     }
   }
 
-  // Si el usuario mueve el dedo fuera, vuelve al tamaño normal sin ejecutar nada
+  void _onTapCancel() {
     if (widget.onTap != null) _controller.reverse();
+
   }
 
   @override

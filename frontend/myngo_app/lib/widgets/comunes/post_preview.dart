@@ -21,8 +21,9 @@ class PostPreview extends StatelessWidget {
     this.nombreUsuario = 'Usuario',
   });
 
-  // Carga una imagen desde URL de red, archivo local o bytes (compatible web y móvil)
+  Widget _buildImage(dynamic source, {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
     if (source == null) return errorWidget ?? const SizedBox.shrink();
+
     if (source is String && source.isNotEmpty) {
       if (source.startsWith('http')) {
         return CachedNetworkImage(

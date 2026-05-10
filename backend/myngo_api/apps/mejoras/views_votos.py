@@ -51,7 +51,8 @@ class VotoAPIView(APIView):
             return Response({'error': 'Falta receptor.'}, status=status.HTTP_400_BAD_REQUEST)
 
         total_votos = Voto.objects.filter(**count_filter).count()
-        
+
+        if not votante:
             return Response({
                 "ha_votado_hoy": False,
                 "puntuacion_actual": None,
