@@ -20,8 +20,8 @@ class IsAuthorOrAdmin(permissions.BasePermission):
             if comunidad.creador == request.user:
                 return True
             
-            from comunidades.models import Miembros_comunidades
-            return Miembros_comunidades.objects.filter(
+            from comunidades.models import MiembrosComunidad
+            return MiembrosComunidad.objects.filter(
                 usuario=request.user, 
                 comunidad=comunidad, 
                 rol__in=['Administrador', 'Moderador']

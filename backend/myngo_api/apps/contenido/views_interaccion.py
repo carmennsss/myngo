@@ -14,6 +14,7 @@ from django.core.files.storage import default_storage
 from notificaciones.models import Notificacion
 from usuarios.models import Seguimiento
 
+from .ia_service import validar_contenido_toxico
 from .models import (
     Comentario, Coleccion, ImagenGaleria, MeGusta, PostGuardado,
     Publicacion, Reporte,
@@ -211,6 +212,11 @@ class ComentarioListCreate(generics.ListCreateAPIView):
             ).exists()
             if not es_miembro:
                 raise permissions.PermissionDenied('Debes ser miembro de la comunidad para comentar 🐾')
+
+        # Moderación IA para comentarios
+        texto = serializer.validated_data.get('contenido_texto', '')
+        if not validar_contenido_toxico(texto):
+            raise serializers.ValidationError({'error': 'Tu comentario infringe las normas de la comunidad.'})
 
         # Aseguramos que el padre se asigne correctamente si viene en los datos
         padre_id = self.request.data.get('padre')

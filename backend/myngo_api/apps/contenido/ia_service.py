@@ -102,7 +102,7 @@ def validar_contenido_toxico(texto):
                 time.sleep(3)
                 continue
             else:
-                print(f'Moderación IA: Error {response.status_code}')
+                print(f'Moderación IA: Error {response.status_code} - El servicio no está disponible o el token ha fallado. Dejando pasar por seguridad.')
                 return True
     except Exception as e:
         print(f'Moderación IA: Error {e}')

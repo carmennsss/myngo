@@ -38,6 +38,9 @@ class ReporteListCreate(generics.ListCreateAPIView):
                     )
 
 
+from .permissions import IsAuthorOrAdmin
+
+
 class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
     """Recupera, actualiza o elimina un comentario específico.
 
@@ -46,7 +49,7 @@ class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Comentario.objects.all()
     serializer_class = ComentarioSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

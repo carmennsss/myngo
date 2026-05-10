@@ -42,8 +42,9 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
 
   late bool _dioLike;
   late int _likesCount;
-  late int _comentariosCount;
+  late  int? _comentariosCount;
   bool _estaGuardado = false;
+  int? _currentUserId;
 
   @override
   void initState() {
@@ -53,6 +54,14 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     _comentariosCount = widget.post.comentariosCount;
     _estaGuardado = widget.post.usuarioGuardoPost;
     _cargarComentarios(reiniciar: true);
+    _obtenerUsuario();
+  }
+
+  Future<void> _obtenerUsuario() async {
+    final user = await _servicioUsuarios.obtenerPerfilLocal();
+    if (user != null && mounted) {
+      setState(() => _currentUserId = user.id);
+    }
   }
 
   @override
@@ -169,6 +178,39 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
       _mostrandoInputComentario = true;
     });
     _comentarioFocus.requestFocus();
+  }
+
+  Future<void> _eliminarComentario(Comentario comentario) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar comentario?'),
+        content: const Text('Esta acción no se puede deshacer y borrará todas sus respuestas.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      final res = await _servicioInteraccion.eliminarComentario(comentario.id);
+      if (res.exito && mounted) {
+        setState(() {
+          _comentarios.removeWhere((c) => c.id == comentario.id);
+          for (var p in _comentarios) {
+            p.respuestas.removeWhere((r) => r.id == comentario.id);
+          }
+          _comentariosCount = (_comentariosCount ?? 1) - 1;
+          widget.post.comentariosCount = _comentariosCount!;
+        });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+      }
+    }
   }
 
   @override
@@ -394,6 +436,8 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 textColor: widget.colorTexto,
                 subTextColor: subColor,
                 onReply: _prepararRespuesta,
+                onDelete: _eliminarComentario,
+                currentUserId: _currentUserId,
               );
             },
           ),

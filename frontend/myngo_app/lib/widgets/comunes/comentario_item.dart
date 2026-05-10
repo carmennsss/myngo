@@ -12,6 +12,8 @@ class ComentarioItem extends StatelessWidget {
   final Color? textColor;
   final Color? subTextColor;
   final Function(Comentario)? onReply;
+  final Function(Comentario)? onDelete;
+  final int? currentUserId;
   final bool esRespuesta;
 
   const ComentarioItem({
@@ -21,6 +23,8 @@ class ComentarioItem extends StatelessWidget {
     this.textColor,
     this.subTextColor,
     this.onReply,
+    this.onDelete,
+    this.currentUserId,
     this.esRespuesta = false,
   });
 
@@ -125,6 +129,17 @@ class ComentarioItem extends StatelessWidget {
                             fontSize: esRespuesta ? 12 : 13,
                           ),
                         ),
+                        if (comentario.puedoBorrar && onDelete != null) ...[
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => onDelete!(comentario),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 16,
+                              color: Colors.redAccent.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -165,6 +180,9 @@ class ComentarioItem extends StatelessWidget {
             textColor: textColor,
             subTextColor: subTextColor,
             esRespuesta: true,
+            currentUserId: currentUserId,
+            onDelete: onDelete,
+            onReply: onReply,
           )),
       ],
     );
