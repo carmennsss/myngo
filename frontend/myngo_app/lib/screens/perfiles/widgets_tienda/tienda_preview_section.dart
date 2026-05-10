@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/usuario.dart';
+import '../../../models/comunidad.dart';
 import '../../../widgets/comunes/post_preview.dart';
 import '../../../widgets/comunes/profile_preview.dart';
 import '../../../utils/configuracion.dart';
@@ -8,6 +9,7 @@ import 'package:myngo_app/utils/tr_helper.dart';
 /// Widget que muestra la previsualización dinámica de las mejoras seleccionadas.
 class TiendaPreviewSection extends StatelessWidget {
   final Usuario? usuarioActual;
+  final Comunidad? comunidad;
   final String? previewAvatar;
   final String? previewMarco;
   final String? previewFondo;
@@ -16,6 +18,7 @@ class TiendaPreviewSection extends StatelessWidget {
   const TiendaPreviewSection({
     super.key,
     this.usuarioActual,
+    this.comunidad,
     this.previewAvatar,
     this.previewMarco,
     this.previewFondo,

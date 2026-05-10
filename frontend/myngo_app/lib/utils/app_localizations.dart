@@ -13,7 +13,7 @@ class AppLocalizations {
     return _instance;
   }
 
-  String tr(String key, [Map<String, dynamic>? args]) {
+  String tr(String key, [Map<String, Object>? args]) {
     final result = TolgeeTranslationsStrategy.instance.translate(key) ?? key;
     if (args == null) return result;
     return MessageFormat(result).format(args);

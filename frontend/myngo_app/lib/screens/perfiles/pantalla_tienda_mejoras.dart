@@ -12,18 +12,21 @@ import '../../services/servicio_usuarios.dart';
 // Widgets extraídos
 import 'widgets_tienda/tienda_preview_section.dart';
 import 'widgets_tienda/lista_mejoras_tab.dart';
+import '../comunidades/pantalla_enviar_propuesta.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
 // Tienda de mejoras visuales: Avatares, Marcos, Fondos y Estilos de post.
 // Muestra una previsualización en vivo mientras el usuario navega por el catálogo.
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;
+  final Comunidad? comunidad;
   final Function(String)? onCategoryChanged;
   final Function(int)? onPuntosActualizados;
 
   const PantallaTiendaMejoras({
     super.key,
     this.esVistaIntegrada = false,
+    this.comunidad,
     this.onCategoryChanged,
     this.onPuntosActualizados,
   });
@@ -190,11 +193,12 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: TiendaPreviewSection(
               usuarioActual: _usuarioActual,
+              comunidad: widget.comunidad,
               previewAvatar: _previewAvatar,
               previewMarco: _previewMarco,
               previewFondo: _previewFondo,
               previewEstiloPost: _previewEstiloPost,
-                ),
+            ),
           ),
         );
 
@@ -230,6 +234,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: TiendaPreviewSection(
                       usuarioActual: _usuarioActual,
+                      comunidad: widget.comunidad,
                       previewAvatar: _previewAvatar,
                       previewMarco: _previewMarco,
                       previewFondo: _previewFondo,
@@ -256,24 +261,10 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           )
         : Scaffold(
             backgroundColor: const Color(0xFFFEF5F1),
-            appBar: _buildAppBar(),
+            appBar: _buildAppBar(tr),
             body: content,
+            floatingActionButton: _buildFAB(tr),
           );
-        return widget.esVistaIntegrada
-            ? Container(
-                constraints: BoxConstraints(
-                  minHeight: 400,
-                  maxHeight: esAncho ? 800 : 1200, 
-                ),
-                color: const Color(0xFFFEF5F1), 
-                child: content
-              )
-            : Scaffold(
-                backgroundColor: const Color(0xFFFEF5F1),
-                appBar: _buildAppBar(tr),
-                body: content,
-                floatingActionButton: _buildFAB(tr),
-              );
       }
     );
   }
@@ -315,6 +306,9 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
       mejoras: _mejorasCatalogo,
       misMejoras: _misMejoras,
       onRefresh: () => _cargarDatosTienda(),
+      modoGestion: _esModerador,
+      comunidadId: widget.comunidad?.id,
+      esModerador: _esModerador,
       onPuntosActualizados: (p) {
         widget.onPuntosActualizados?.call(p);
         _cargarDatosUsuario();
@@ -334,7 +328,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   }
 
 
-  PreferredSizeWidget _buildAppBar(String Function(String, [Map<String, String>?]) tr) {
+  PreferredSizeWidget _buildAppBar(dynamic tr) {
     return AppBar(
       backgroundColor: const Color(0xFFFEF5F1),
       elevation: 0,
@@ -355,7 +349,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     // Si eres la creadora (por ID) o tienes rol de Administrador, tienes control total
     final bool esCreador = (_usuarioActual != null && _usuarioActual!.id == widget.comunidad!.creadorId) ||
                            widget.comunidad!.miRol == 'Administrador' ||
-                           _esModerador; // Si es moderador/admin en esta vista, le damos el botón de gestión
+                           _esModerador; 
 
     return FloatingActionButton.extended(
       onPressed: () => Navigator.push(
@@ -369,4 +363,8 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     );
   }
 
+  bool get _esModerador {
+    if (widget.comunidad == null) return false;
+    return widget.comunidad!.miRol == 'Moderador' || widget.comunidad!.miRol == 'Administrador';
+  }
 }

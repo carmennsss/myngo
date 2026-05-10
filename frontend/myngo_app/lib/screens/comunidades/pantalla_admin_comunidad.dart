@@ -15,6 +15,7 @@ import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
 
 import 'pantalla_personalizacion_comunidad.dart';
+import 'pantalla_moderacion_tienda.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
@@ -37,6 +38,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   TabController? _tabController;
   Map<String, dynamic>? _datos;
   bool _cargando = true;
+  bool _tiendaHabilitada = false;
 
 
   late TextEditingController _nombreCtrl;
@@ -56,6 +58,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     _nombreCtrl = TextEditingController(text: widget.comunidad.nombre);
     _descCtrl = TextEditingController(text: widget.comunidad.descripcion);
     _colorSeleccionado = widget.comunidad.colorTema.toHex();
+    _tiendaHabilitada = widget.comunidad.tiendaHabilitada;
 
     
 

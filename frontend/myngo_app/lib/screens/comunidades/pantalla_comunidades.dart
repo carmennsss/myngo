@@ -201,8 +201,6 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
   }
 
   Widget _buildSliverGridComunidades(String Function(String, [Map<String, dynamic>?]) tr) {
-  // Grid adaptativo de tarjetas de comunidad con estado vacío
-  Widget _buildSliverGridComunidades() {
     if (_comunidades.isEmpty) {
       return SliverFillRemaining(
         child: Center(

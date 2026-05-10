@@ -25,6 +25,7 @@ import 'package:mime/mime.dart';
 import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Painter eficiente para patrones de fondo
 class PatternPainter extends CustomPainter {
