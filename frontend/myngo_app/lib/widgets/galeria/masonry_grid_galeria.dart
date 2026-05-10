@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:tolgee/tolgee.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
@@ -10,6 +12,7 @@ import '../../screens/galeria/pantalla_detalle_imagen.dart';
 import '../../screens/galeria/dialogo_selector_imagen.dart';
 import '../comunes/menu_opciones_contenido.dart';
 import '../comunes/estado_vacio_cargando.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 // Grid de estilo masonry (columnas de altura variable) para la galería de fotos y vídeos.

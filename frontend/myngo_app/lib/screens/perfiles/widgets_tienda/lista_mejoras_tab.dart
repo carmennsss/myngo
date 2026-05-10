@@ -13,6 +13,9 @@ class ListaMejorasTab extends StatefulWidget {
   final Usuario? usuarioActual;
   final List<CatalogoMejoras> mejoras;
   final List<dynamic> misMejoras;
+  final bool modoGestion;
+  final int? comunidadId;
+  final bool esModerador;
   final VoidCallback onRefresh;
   final Function(int)? onPuntosActualizados;
   final Function(CatalogoMejoras) onPreviewRequested;
@@ -23,6 +26,9 @@ class ListaMejorasTab extends StatefulWidget {
     this.usuarioActual,
     required this.mejoras,
     required this.misMejoras,
+    this.modoGestion = false,
+    this.comunidadId,
+    this.esModerador = false,
     required this.onRefresh,
     this.onPuntosActualizados,
     required this.onPreviewRequested,
@@ -372,19 +378,25 @@ class _MejoraCard extends StatelessWidget {
   final CatalogoMejoras mejora;
   final bool laTiene;
   final bool estaEquipada;
+  final bool modoGestion;
   final Usuario? usuarioActual;
   final VoidCallback onPreview;
   final VoidCallback onEquipar;
   final VoidCallback onComprar;
+  final VoidCallback onToggleVisibilidad;
+  final Function(int) onEditPrice;
 
   const _MejoraCard({
     required this.mejora,
     required this.laTiene,
     required this.estaEquipada,
+    this.modoGestion = false,
     this.usuarioActual,
     required this.onPreview,
     required this.onEquipar,
     required this.onComprar,
+    required this.onToggleVisibilidad,
+    required this.onEditPrice,
   });
 
   @override
@@ -416,7 +428,7 @@ class _MejoraCard extends StatelessWidget {
                   _buildImagePreview(estaActivo),
                   if (estaEquipada) _buildEquippedIndicator(),
                   if (!estaActivo) _buildHiddenIndicator(),
-
+                  if (modoGestion) _buildModeratorActions(),
                 ],
               ),
             ),
@@ -686,6 +698,26 @@ class _OpcionDestino extends StatelessWidget {
             const Icon(Icons.chevron_right_rounded, color: Colors.grey),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({required this.icon, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(color: color.withOpacity(0.9), shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white, size: 14),
       ),
     );
   }

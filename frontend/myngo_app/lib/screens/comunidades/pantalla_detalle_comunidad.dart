@@ -28,6 +28,7 @@ import '../../models/usuario.dart';
 import 'widgets_detalle/header_detalle_comunidad.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'widgets_detalle/seccion_galeria_comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 import 'widgets_detalle/seccion_chat_comunidad.dart';
 import 'widgets_detalle/lista_miembros_comunidad.dart';
 import 'widgets_detalle/preview_comunidad.dart';
@@ -707,11 +708,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       builder: (context) => DialogoCrearPost(
         titulo: tr('postNewPublicationTitle'),
 
-        onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+        onPublicar: (titulo, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final provider = Provider.of<PostProvider>(context, listen: false);
           final exito = await provider.crearPost(
             comunidadId: _comunidad!.id,
-            titulo: title,
+            titulo: titulo,
             texto: texto,
             imagenes: imagenes,
             etiquetas: etiquetas,

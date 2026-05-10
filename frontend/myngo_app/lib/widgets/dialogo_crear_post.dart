@@ -126,6 +126,18 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
               Text(widget.titulo, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 24),
               TextField(
+                controller: _controladorTitulo,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: tr('postTitleHint'),
+                  hintStyle: GoogleFonts.inter(color: Colors.grey),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  filled: true,
+                  fillColor: const Color(0xFF121212),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
                 controller: _controladorTexto,
                 maxLines: 4,
                 style: GoogleFonts.inter(color: Colors.white),
@@ -235,6 +247,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                         _progresoSubida = 0;
                       });
                       final exitoso = await widget.onPublicar(
+                        _controladorTitulo.text,
                         _controladorTexto.text,
                         _archivosSeleccionados,
                         _controladorEtiquetas.text,
