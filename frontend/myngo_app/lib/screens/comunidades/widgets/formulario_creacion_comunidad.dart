@@ -92,8 +92,8 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
         id: 0,
         nombre: _controladorNombre.text.trim(),
         descripcion: _controladorDescripcion.text.trim(),
-        creadorNombre: '', // Lo asigna el backend
-        urlPortada: '', // Se enviará vía Multipart si hay imagen
+        creadorNombre: '',
+        urlPortada: '',
         esPublica: _esPublica,
         esVerificada: false,
         esMiembro: true,
@@ -203,7 +203,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
               ),
               const SizedBox(height: 16),
               
-              // --- SECCIÓN DE TAGS ---
+
               Text(
                 'Etiquetas (máx. 5)',
                 style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
@@ -281,7 +281,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
               ),
               const SizedBox(height: 16),
               
-              // --- REQUISITO DE RANKING ---
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(

@@ -191,7 +191,7 @@ class SidebarIzquierdo extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Patrón de fondo (Patas de gato)
+
           Positioned.fill(
             child: Opacity(
               opacity: 0.15,
@@ -209,7 +209,7 @@ class SidebarIzquierdo extends StatelessWidget {
               ),
             ),
           ),
-          // Contenido scrollable
+
           Theme(
             data: Theme.of(context).copyWith(
               scrollbarTheme: Theme.of(context).scrollbarTheme.copyWith(
@@ -267,7 +267,7 @@ class _TarjetaSidebar extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
-            // Decoración sutil de fondo (Patrón de patas)
+
             Positioned(
               right: -30,
               bottom: -20,
@@ -292,7 +292,7 @@ class _TarjetaSidebar extends StatelessWidget {
                 ),
               ),
             ),
-            // Contenido real
+
             Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
@@ -442,7 +442,7 @@ void _mostrarDialogoComunidades(
                 ),
                 child: Column(
                   children: [
-                    // Cabecera Premium
+
                     Container(
                       padding: const EdgeInsets.fromLTRB(32, 32, 24, 24),
                       decoration: BoxDecoration(

@@ -11,6 +11,8 @@ import '../../utils/configuracion.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
 
+// Pantalla de creación de cuenta. Similar al login en estructura, pero con el formulario
+// de registro y el paso extra del diálogo de aceptación de normas de la comunidad.
 class PantallaRegistro extends StatefulWidget {
   const PantallaRegistro({super.key});
 
@@ -23,6 +25,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
   double _ratioMirada = 0.5;
 
+  // Notifica el nuevo estado del gato animado al padre para sincronizar la animación
   void _onGatosChange(EstadoMonstruo estado, double ratio) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -69,6 +72,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  // Monta el layout adaptativo (columna en móvil, dos columnas en escritorio)
   Widget _buildContenido(BuildContext context, BoxConstraints constraints) {
     final isDesktop = constraints.maxWidth > 900;
     return TranslationWidget(
@@ -205,6 +209,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   }
 }
 
+// Circulo difuso decorativo del fondo
 class _BurbujaDecorativa extends StatelessWidget {
   final double size;
   final Color color;
@@ -230,6 +235,8 @@ class _BurbujaDecorativa extends StatelessWidget {
   }
 }
 
+// Formulario de registro: nombre, email, contraseña y botón de creación de cuenta.
+// Antes de enviar, obliga al usuario a leer y aceptar las normas de la comunidad (PDF).
 class TarjetaRegistro extends StatefulWidget {
   final Offset posicionMouse;
   final Function(EstadoMonstruo, double)? onGatosChange;
@@ -280,6 +287,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     super.dispose();
   }
 
+  // Mueve los ojos del gato según qué campo tiene el foco
   void _alCambiarEnfoque() {
     if (_nodoEnfoquePassword.hasFocus) {
       _estadoGatos = _esPasswordVisible
@@ -296,10 +304,12 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     _notificarCambioGato();
   }
 
+  // Dispara el callback para que el padre repinte el gato
   void _notificarCambioGato() {
     widget.onGatosChange?.call(_estadoGatos, _ratioMirada);
   }
 
+  // Cuando el usuario activa/desactiva ver la pass, el gato se tapa los ojos o vuelve a mirar
   void _alCambiarVisibilidadPassword(bool esVisible) {
     setState(() {
       _esPasswordVisible = esVisible;
@@ -312,6 +322,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     }
   }
 
+  // Mueve los ojos del gato siguiendo el cursor mientras escribes
   void _actualizarPosicionMirada(String valor) {
     if (_nodoEnfoqueEmail.hasFocus || _nodoEnfoqueNombre.hasFocus) {
       setState(() {
@@ -321,6 +332,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     }
   }
 
+  // Valida el formulario y, si pasa, abre el diálogo de aceptación de normas
   Future<void> _crearCuenta() async {
     _nodoEnfoqueNombre.unfocus();
     _nodoEnfoqueEmail.unfocus();
@@ -340,6 +352,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     }
   }
 
+  // Muestra el PDF de normas de la comunidad y los radio buttons de aceptar/rechazar
   Future<void> _mostrarDialogoReglas() async {
     bool acepto = false;
     bool declino = false;
@@ -472,6 +485,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     );
   }
 
+  // Manda los datos al servidor y redirige al login si el registro fue exitoso
   Future<void> _procesarRegistro() async {
     _estaCargando.value = true;
     _estadoGatos = EstadoMonstruo.calculando;

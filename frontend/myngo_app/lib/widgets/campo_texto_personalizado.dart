@@ -1,45 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Widget de campo de texto altamente personalizado con soporte para microinteracciones.
-/// 
-/// Incluye soporte para enmascaramiento de contraseñas, validación reactiva
-/// y estilos siguiendo las líneas de diseño de Material 3.
+
+
+// Campo de texto con estilo propio de Myngo (borde, icono, validación).
+// Lo reutilizamos en los formularios de login, registro y edición de perfil.
 class CampoTextoPersonalizado extends StatefulWidget {
-  /// Texto de sugerencia que aparece sobre el campo.
+  // El texto que flota encima del campo (etiqueta)
   final String etiqueta;
 
-  /// Icono descriptivo que se muestra al inicio del campo.
+  // Icono a la izquierda para dar contexto visual
   final IconData icono;
 
-  /// Controlador para gestionar el valor del texto.
+  // Controlador para leer y escribir el valor del campo
   final TextEditingController controlador;
 
-  /// Nodo de enfoque para gestionar el estado de atención del widget.
+  // Para saber si el campo tiene el foco y cambiar colores
   final FocusNode nodoEnfoque;
 
-  /// Indica si el campo es para una contraseña (oculta el texto).
+  // Si es true, oculta el texto con asteriscos y muestra el botón del ojo
   final bool esContrasena;
 
-  /// Callback opcional que se dispara al cambiar el texto.
+  // Qué hacer cuando el usuario escribe algo
   final Function(String)? alCambiar;
 
-  /// Callback que se dispara al alternar la visibilidad de la contraseña.
+  // Para notificar al padre cuando se activa/desactiva ver la contraseña
   final ValueChanged<bool>? alCambiarVisibilidad;
 
-  /// Tipo de entrada de teclado (ej. email, número).
+  // Tipo de teclado que aparece (email, numérico, etc.)
   final TextInputType? tipoTeclado;
 
-  /// Función opcional para validar el contenido del campo.
+  // Validador para mostrar mensajes de error bajo el campo
   final String? Function(String?)? validador;
 
-  /// Máximo número de líneas (para áreas de texto).
+  // Cuántas líneas puede crecer (para bio o comentarios largos)
   final int? maxLineas;
 
-  /// Mínimo número de líneas.
+  // Altura mínima del campo
   final int? minLineas;
 
-  /// Sugerencias de autocompletado para el sistema (ej. email, password).
+  // Hints para que el móvil sugiera el email guardado o la contraseña
   final Iterable<String>? autofillHints;
 
   const CampoTextoPersonalizado({
@@ -63,7 +63,7 @@ class CampoTextoPersonalizado extends StatefulWidget {
 }
 
 class _CampoTextoPersonalizadoState extends State<CampoTextoPersonalizado> {
-  /// Controla internamente si el texto está oculto o visible.
+  // Estado local: si la contraseña está visible o no
   bool _textoOculto = true;
 
   @override

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+// Fila de 5 estrellas interactivas para votar la reputación de alguien.
+// Pulsando en una estrella se actualiza la puntuación y se avisa al padre via onRatingChanged.
 class SelectorEstrellas extends StatefulWidget {
-  final int initialRating;
-  final Function(int) onRatingChanged;
+  final int initialRating; // Puntuación con la que arranca el widget
+  final Function(int) onRatingChanged; // Callback cuando el usuario cambia la nota
 
   const SelectorEstrellas({
     super.key,

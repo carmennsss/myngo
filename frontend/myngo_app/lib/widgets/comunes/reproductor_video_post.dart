@@ -3,7 +3,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-/// Controlador global para asegurar que solo un vídeo se reproduzca a la vez.
+
 class GlobalVideoManager {
   static VideoPlayerController? _activeController;
 
@@ -54,7 +54,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
   Future<void> _initializePlayer() async {
     try {
       VideoFormat? formatHint;
-      // Dejamos que el reproductor detecte el formato automáticamente
+
       _videoController = VideoPlayerController.networkUrl(
         Uri.parse(widget.url),
         formatHint: formatHint,
@@ -65,10 +65,8 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
       
-      // Añadir listener para capturar errores asíncronos
       _videoController.addListener(() {
         if (_videoController.value.hasError && !_error) {
-          debugPrint('[Video] Error detectado en listener: ${_videoController.value.errorDescription}');
           if (mounted) setState(() => _error = true);
         }
       });
@@ -77,11 +75,11 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
       
       if (!mounted) return;
 
-      debugPrint('[Video] Inicializado OK. Aspect ratio: ${_videoController.value.aspectRatio}');
+
 
       _chewieController = ChewieController(
         videoPlayerController: _videoController,
-        autoPlay: false, // Controlado por VisibilityDetector
+        autoPlay: false,
         looping: widget.loop,
         aspectRatio: _videoController.value.aspectRatio > 0 
             ? _videoController.value.aspectRatio 
@@ -90,7 +88,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
         autoInitialize: true,
         allowedScreenSleep: false,
         errorBuilder: (context, errorMessage) {
-          debugPrint('[Video] Error Chewie: $errorMessage');
+
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -133,7 +131,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
         });
       }
     } catch (e) {
-      debugPrint('[Video] ERROR inicializando: $e  |  URL: ${widget.url}');
+
       if (mounted) {
         setState(() {
           _error = true;
@@ -155,7 +153,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
 
     final double visibleFraction = info.visibleFraction;
     
-    if (visibleFraction > 0.6) { // Si más del 60% es visible
+    if (visibleFraction > 0.6) {
       if (widget.autoPlay && !_videoController.value.isPlaying) {
         GlobalVideoManager.pauseOther(_videoController);
         _videoController.play();
@@ -217,12 +215,12 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
       key: Key(widget.url),
       onVisibilityChanged: _handleVisibilityChanged,
       child: Container(
-        color: Colors.black, // Fondo negro para las barras si el vídeo no encaja
+        color: Colors.black,
         child: Center(
           child: FittedBox(
             fit: BoxFit.contain,
             child: SizedBox(
-              // Usamos un tamaño base grande para que el renderizado sea nítido
+
               width: 1000,
               height: 1000 / (_chewieController?.aspectRatio ?? _videoController.value.aspectRatio).clamp(0.1, 10.0),
               child: Chewie(controller: _chewieController!),

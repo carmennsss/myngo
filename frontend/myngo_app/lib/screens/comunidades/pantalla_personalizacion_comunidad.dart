@@ -9,6 +9,8 @@ import '../../utils/configuracion.dart';
 import '../../utils/extensiones_color.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 
+// Editor visual avanzado de la identidad de una comunidad: avatar, portada, fondo global,
+// colores del feed, patrones, fuente y etiquetas, con previsualización en tiempo real.
 class PantallaPersonalizacionComunidad extends StatefulWidget {
   final Comunidad comunidad;
   final Function(Comunidad) onComunidadActualizada;
@@ -67,6 +69,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   List<Map<String, dynamic>> _sugerenciasTags = [];
   bool _mostrandoSugerencias = false;
 
+  // Autocompletado de tags mientras el admin escribe en el campo de etiquetas
   Future<void> _buscarSugerencias(String query) async {
     if (query.isEmpty) {
       setState(() {
@@ -84,6 +87,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     }
   }
 
+  // Añade un tag limpio a la lista local (máximo 5)
   void _anadirTag(String nombre) {
     final limpio = nombre.trim().toLowerCase();
     if (limpio.isNotEmpty && !_tagsSeleccionados.contains(limpio) && _tagsSeleccionados.length < 5) {
@@ -122,6 +126,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     }
   }
 
+  // Abre el picker de imágenes y asigna el archivo al slot correcto (avatar, portada o fondo)
   Future<void> _seleccionarImagen(String tipo) async {
     final ImagePicker picker = ImagePicker();
     final XFile? imagen = await picker.pickImage(source: ImageSource.gallery);
@@ -135,6 +140,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     }
   }
 
+  // Construye el fondoConfig y llama al servicio para persistir todos los cambios
   Future<void> _guardarCambios() async {
     setState(() => _estaGuardando = true);
 
@@ -170,11 +176,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
       if (res.exito && res.datos is Comunidad) {
         widget.onComunidadActualizada(res.datos as Comunidad);
-        Navigator.pop(context);
       }
     }
   }
 
+  // Paleta de colores predefinidos para seleccionar el color de fondo o tema
   Widget _buildSelectorColor(String titulo, Color colorActual, ValueChanged<Color> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,6 +212,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       ],
     );
   }
+  // Área de subida de imagen con previsualización del archivo local o la URL remota
   Widget _buildImageUploader(String titulo, String subtitulo, String tipo, XFile? archivoLocal, String? urlRemota) {
     final String fullUrl = urlRemota != null && urlRemota.isNotEmpty
         ? (urlRemota.startsWith('http') ? urlRemota : '${Configuracion.baseUrl}${urlRemota.startsWith('/') ? '' : '/'}$urlRemota')
@@ -294,7 +301,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Panel de opciones (Izquierda)
+
                 Expanded(
                   flex: 3,
                   child: SingleChildScrollView(
@@ -302,7 +309,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     child: _buildPanelOpciones(esOscuro),
                   ),
                 ),
-                // Live Preview (Derecha - Sticky)
+
                 Expanded(
                   flex: 2,
                   child: Container(
@@ -342,7 +349,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
             );
           }
 
-          // Móvil
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -377,6 +384,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
+  // Panel de opciones agrupadas: identidad visual, diseño del feed y detalles extras
   Widget _buildPanelOpciones(bool esOscuro) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -511,6 +519,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
+  // Botón de selección del tipo de fondo del feed (sólido / gradiente / patrón)
   Widget _buildTipoBoton(String label, String value, IconData icon) {
     final seleccionado = _tipoFondoPosts == value;
     final esOscuro = Theme.of(context).brightness == Brightness.dark;
@@ -605,6 +614,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
+  // Previsualización completa estilo miniatura de la comunidad para pantallas anchas
   Widget _buildLivePreviewLarge(bool esOscuro) {
     final String fullAvatarUrl = widget.comunidad.urlAvatar != null && widget.comunidad.urlAvatar!.isNotEmpty
         ? (widget.comunidad.urlAvatar!.startsWith('http') ? widget.comunidad.urlAvatar! : '${Configuracion.baseUrl}${widget.comunidad.urlAvatar!.startsWith('/') ? '' : '/'}${widget.comunidad.urlAvatar!}')
@@ -625,12 +635,12 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
         borderRadius: BorderRadius.circular(32),
         child: Stack(
           children: [
-            // El fondo del feed
+
             Positioned.fill(child: _buildBackgroundPreview()),
             
             Column(
               children: [
-                // Simulación de AppBar / Header
+
                 Container(
                   height: 140,
                   width: double.infinity,
@@ -655,7 +665,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   ),
                 ),
                 
-                // Info de Comunidad Mock
+
                 Transform.translate(
                   offset: const Offset(0, -30),
                   child: Padding(
@@ -663,7 +673,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // Avatar Mock
+
                         Container(
                           width: 70,
                           height: 70,
@@ -713,7 +723,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   ),
                 ),
 
-                // Mock del TabBar
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
@@ -724,7 +734,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   ),
                 ),
 
-                // Mock de Contenido (Posts)
+
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(20),
@@ -736,7 +746,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               ],
             ),
             
-            // Botón de guardado flotante mock
+
             Positioned(
               bottom: 20,
               right: 20,
@@ -762,6 +772,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
+  // Pestaña de navegación simulada en la previsualización
   Widget _buildMockTab(String text, bool active, bool esOscuro) {
     return Container(
       margin: const EdgeInsets.only(right: 20),
@@ -780,6 +791,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
+  // Post ficticio para rellenar la previsualización del feed
   Widget _buildMockPost(bool esOscuro) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

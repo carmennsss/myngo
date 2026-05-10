@@ -6,6 +6,8 @@ import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_interaccion.dart';
 import '../../widgets/inicio/tarjeta_post.dart';
 
+// Vista ampliada de una publicación con su sección de comentarios inline.
+// Se puede abrir pasando un objeto Publicacion o simplemente su ID.
 class PantallaDetallePublicacion extends StatefulWidget {
   final int? publicacionId;
   final Publicacion? publicacion;
@@ -43,6 +45,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     }
   }
 
+  // Descarga los datos de la publicación desde el servidor si no se recibió el objeto
   Future<void> _cargarPublicacion() async {
     if (widget.publicacionId == null) return;
     setState(() { _cargando = true; _error = null; });
@@ -60,6 +63,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     }
   }
 
+  // Carga los comentarios y actualiza el contador de la publicación
   Future<void> _cargarComentarios() async {
     if (_pub == null) return;
     setState(() => _cargandoComentarios = true);
@@ -68,7 +72,6 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
       setState(() {
         _comentarios = res.datos ?? [];
         _cargandoComentarios = false;
-        // Actualizamos el conteo local por si acaso el de la tarjeta difiere
         if (_pub != null) {
           _pub = _pub!.copyWith(comentariosCount: _comentarios.length);
         }
@@ -76,10 +79,12 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     }
   }
 
+  // Devuelve la publicación actualizada (con el nuevo conteo de comentarios) al salir
   void _volverConDatos() {
     Navigator.pop(context, _pub);
   }
 
+  // Envía el comentario y lo inserta en la lista local sin recargar todo
   Future<void> _enviarComentario() async {
     final texto = _comentarioController.text.trim();
     if (texto.isEmpty || _pub == null) return;
@@ -130,6 +135,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     );
   }
 
+  // Cuerpo principal: muestra la TarjetaPost seguida de la lista de comentarios
   Widget _buildContenido() {
     if (_cargando) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     if (_error != null) return _buildErrorState();
@@ -145,7 +151,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
           children: [
             TarjetaPost(
               post: _pub!,
-              onJoin: () {}, // Vista detalle
+              onJoin: () {},
               onEliminado: () => Navigator.pop(context, true),
             ),
             const SizedBox(height: 24),
@@ -153,13 +159,14 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
               style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildListaComentarios(),
-            const SizedBox(height: 100), // Espacio para el input
+            const SizedBox(height: 100),
           ],
         ),
       ),
     );
   }
 
+  // Lista de comentarios con avatar, autor y contenido
   Widget _buildListaComentarios() {
     if (_cargandoComentarios && _comentarios.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
@@ -220,6 +227,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     );
   }
 
+  // Barra de texto fija en la parte inferior para escribir y enviar comentarios
   Widget _buildInputComentario() {
     return Container(
       padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 12),

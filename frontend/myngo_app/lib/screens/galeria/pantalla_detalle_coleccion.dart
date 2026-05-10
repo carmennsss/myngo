@@ -223,7 +223,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
 
     setState(() => _procesando = true);
     
-    // 1. Subir a la galería general de la comunidad (o perfil)
+    // Subir a la galería general de la comunidad (o perfil)
     final resSubida = await _servicio.subirImagenGaleria(
       image,
       idComunidad: _coleccion.comunidadId,
@@ -232,7 +232,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
 
     if (mounted) {
       if (resSubida.exito && resSubida.datos != null) {
-        // 2. Vincular a esta colección específica
+        // Vincular a esta colección específica
         final resVinculo = await _servicio.gestionarImagenEnColeccion(
           idColeccion: _coleccion.id,
           idImagen: resSubida.datos!.id,

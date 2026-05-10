@@ -64,7 +64,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
     final colorTexto = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
     final colorSubtexto = esFondoClaro ? Colors.grey.shade600 : Colors.white70;
     
-    // Prioridad: 1. Fuente de contexto (perfil), 2. Fuente del estilo del post, 3. Outfit
+
     final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
 
     return Dialog(

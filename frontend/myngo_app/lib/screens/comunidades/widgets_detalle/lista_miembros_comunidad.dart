@@ -156,7 +156,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
         
         return BotonTactil(
           onTap: () {
-            // Navegar al perfil del usuario
+
             Navigator.push(
               context, 
               MaterialPageRoute(
@@ -200,7 +200,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                             urlAvatar = '${Configuracion.baseUrl}${urlAvatar.startsWith('/') ? '' : '/'}$urlAvatar';
                           }
                         }
-                        // Si no hay avatar, mostrar placeholder directamente
+
                         if (urlAvatar == null || urlAvatar.isEmpty) {
                           return CircleAvatar(
                             radius: 26,
@@ -309,7 +309,6 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
   }
 
   String _normalizarRol(String rol) {
-    // El backend devuelve 'Administrador' para el creador, lo normalizamos
     if (rol.toLowerCase() == 'administrador') return 'Creador';
     return rol;
   }

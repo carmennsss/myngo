@@ -89,7 +89,7 @@ class ChatProvider extends ChangeNotifier {
       _salas = salas;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error en ChatProvider.cargarSalas: $e');
+
     }
   }
 

@@ -99,7 +99,7 @@ class HeaderDetallePerfil extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Fondo de pantalla (usa fondoPerfilLocal si existe, si no, deja ver el fondo global)
+
             if (fondoPerfilLocal != null && fondoPerfilLocal!.isNotEmpty)
               Image.network(
                 fondoPerfilLocal!,
@@ -121,7 +121,7 @@ class HeaderDetallePerfil extends StatelessWidget {
                 ),
               ),
 
-            // Avatar centrado
+
             Center(
               child: Stack(
                 clipBehavior: Clip.none,
@@ -134,9 +134,9 @@ class HeaderDetallePerfil extends StatelessWidget {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // 1. EL AVATAR (Capa inferior)
+
                           Container(
-                            width: 110, // Reducido un poco para que el marco respire
+                            width: 110,
                             height: 110,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
@@ -174,7 +174,7 @@ class HeaderDetallePerfil extends StatelessWidget {
                                   ),
                           ),
 
-                          // 2. EL MARCO (Capa superior - Overlay)
+
                           if (marcoLocal != null && marcoLocal!.isNotEmpty)
                             Positioned.fill(
                               child: IgnorePointer(
@@ -185,7 +185,7 @@ class HeaderDetallePerfil extends StatelessWidget {
                               ),
                             ),
 
-                          // 3. INDICADOR DE ESTADO
+
                           _StatusIndicator(
                             usuario: usuario,
                             currentUserId: currentUserId,

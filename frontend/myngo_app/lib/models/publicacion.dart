@@ -173,7 +173,7 @@ class Publicacion {
         usuarioEsMiembro: json['usuario_es_miembro'] ?? true,
       );
     } catch (e) {
-      debugPrint('Error parsing Publicacion: $e');
+
       return Publicacion(
         id: 0,
         autorId: 0,

@@ -32,6 +32,9 @@ import '../../widgets/inicio/barra_contexto_comunidad.dart';
 
 export '../../widgets/inicio/lateral_derecho.dart';
 
+// Shell principal de la app. Gestiona la navegación lateral, el feed central
+// y la barra de contexto de comunidad. También mantiene el estado de sesión,
+// notificaciones y mensajes sin leer en tiempo real.
 class PantallaInicio extends StatefulWidget {
   final StatefulNavigationShell? navigationShell;
   const PantallaInicio({super.key, this.navigationShell});
@@ -223,7 +226,7 @@ class PantallaInicioState extends State<PantallaInicio> {
       builder: (_) => _ToastMensaje(
         sender: 'Myngo',
         preview: mensaje,
-        avatar: null, // Podríamos poner un icono de campana
+        avatar: null,
         onTap: () {
           entry.remove();
           _alPulsarNav(2); // Ir a la pestaña de notificaciones
@@ -363,7 +366,7 @@ class PantallaInicioState extends State<PantallaInicio> {
       try {
         await ServicioUsuarios().actualizarOrdenComunidades(_miPerfilId!, _ordenGuardado);
       } catch (e) {
-        debugPrint('Error guardando orden en servidor: $e');
+
       }
     }
   }

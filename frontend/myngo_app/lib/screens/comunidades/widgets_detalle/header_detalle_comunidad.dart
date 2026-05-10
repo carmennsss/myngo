@@ -12,7 +12,7 @@ import '../../inicio/pantalla_inicio.dart';
 
 import '../../../widgets/comunes/profile_preview.dart';
 
-/// Widget que muestra la cabecera visual de una comunidad (portada, avatar y rol).
+
 class HeaderDetalleComunidad extends StatefulWidget {
   final Comunidad comunidad;
   final int? miId;
@@ -66,7 +66,7 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
     if (mounted) {
       setState(() {
         String rolObtenido = res.datos ?? 'Visitante';
-        // Sincronizamos el objeto comunidad con la realidad del servidor
+
         widget.comunidad.esMiembro = (rolObtenido != 'Visitante');
         
         // Normalizar: el backend devuelve 'Administrador' para el creador
@@ -83,7 +83,6 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
       try {
         return widget.tr(key);
       } catch (e) {
-        print('DEBUG: Error en traducción "$key", usando fallback');
         return fallback;
       }
     }
@@ -104,32 +103,27 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
               Navigator.pop(dialogContext); // Cerrar diálogo
               
               final comunidadId = widget.comunidad.id;
-              print('UI DEBUG: Iniciando proceso para abandonar comunidad $comunidadId');
               
               // SALIDA INMEDIATA Y ABSOLUTA
               widget.onCerrar();
               if (context.mounted) {
-                print('UI DEBUG: Forzando navegación a Inicio');
                 try {
                   context.go('/inicio');
                 } catch (e) {
-                  print('UI DEBUG Error en navegación: $e');
                 }
               }
 
               // Ejecutamos la baja en segundo plano
               ServicioComunidades().abandonarComunidad(comunidadId).then((res) {
-                print('UI DEBUG: Respuesta recibida - Éxito: ${res.exito}');
                 if (res.exito) {
                   // Intentamos refrescar el sidebar por múltiples vías
                   if (context.mounted) {
                     try {
-                      // 1. Vía ancestro directo
+                      // Vía ancestro directo
                       context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
-                      // 2. Vía navegación (al volver a inicio se debería refrescar)
+                      // Vía navegación
                       context.go('/inicio');
                     } catch (e) {
-                      print('UI DEBUG Error en refresco: $e');
                       context.go('/inicio');
                     }
                   }
@@ -202,7 +196,7 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
       width: double.infinity,
       child: Stack(
         children: [
-          // Fondo con imagen de portada
+
           if (widget.comunidad.urlPortada.isNotEmpty)
             Positioned.fill(
               child: CachedNetworkImage(

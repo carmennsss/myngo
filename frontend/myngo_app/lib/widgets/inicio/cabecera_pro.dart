@@ -11,7 +11,7 @@ import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 
-/// Cabecera superior de la pantalla de inicio con logo, navegación y perfil de usuario.
+
 class CabeceraPro extends StatelessWidget {
   final bool estaLogueado;
   final String? nombreUsuario;

@@ -11,9 +11,8 @@ import '../../services/servicio_usuarios.dart';
 import 'widgets_tienda/tienda_preview_section.dart';
 import 'widgets_tienda/lista_mejoras_tab.dart';
 
-/// Pantalla de tienda de mejoras visuales (Avatares, Marcos, Fondos, Estilos).
-///
-/// Permite previsualizar y comprar mejoras tanto globales como exclusivas de comunidad.
+// Tienda de mejoras visuales: Avatares, Marcos, Fondos y Estilos de post.
+// Muestra una previsualización en vivo mientras el usuario navega por el catálogo.
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;
   final Function(String)? onCategoryChanged;
@@ -68,11 +67,13 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     super.dispose();
   }
 
+  // Carga primero los datos del usuario y luego el catálogo de mejoras
   Future<void> _inicializarTienda() async {
     await _cargarDatosUsuario();
     await _cargarDatosTienda();
   }
 
+  // Trae los datos del usuario logueado y pre-carga los valores de previsualización
   Future<void> _cargarDatosUsuario() async {
     final res = await ServicioUsuarios().obtenerDatosPropios();
     if (mounted && res.exito) {
@@ -88,6 +89,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     }
   }
 
+  // Notifica a la pantalla padre la categoría activa cuando cambia la pestaña
   void _handleTabChange() {
     if (!_subTabController.indexIsChanging) {
       final tipos = ['Avatar', 'Marco', 'Fondo', 'Estilo Post'];
@@ -97,6 +99,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     }
   }
 
+  // Descarga el catálogo global y las mejoras ya compradas por el usuario
   Future<void> _cargarDatosTienda() async {
     if (!mounted) return;
     setState(() => _cargandoTienda = true);
@@ -240,6 +243,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           );
   }
 
+  // Barra de pestañas (Avatares / Marcos / Fondos / Estilos Post)
   Widget _buildTabBar() {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -266,6 +270,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     );
   }
 
+  // Cada pestaña pasa el tipo de mejora al ListaMejorasTab y gestiona la previsualización
   Widget _buildTab(String tipo) {
     return ListaMejorasTab(
       tipo: tipo,

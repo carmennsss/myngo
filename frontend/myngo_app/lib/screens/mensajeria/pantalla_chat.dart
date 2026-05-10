@@ -26,7 +26,7 @@ import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
 
-// Painter eficiente para patrones de fondo
+
 class PatternPainter extends CustomPainter {
   final String patternType;
   
@@ -34,7 +34,7 @@ class PatternPainter extends CustomPainter {
   
   @override
   void paint(Canvas canvas, Size size) {
-    // Protección ultra-defensiva contra tamaños infinitos, NaN o absurdamente grandes
+
     if (!size.width.isFinite || !size.height.isFinite || 
         size.width <= 0 || size.height <= 0 || 
         size.width > 10000 || size.height > 10000) {
@@ -44,7 +44,7 @@ class PatternPainter extends CustomPainter {
     final paint = Paint()..color = Colors.white;
     const double spacing = 60.0;
     
-    // Si spacing es por algún motivo 0, evitamos el bucle infinito
+
     if (spacing <= 0) return;
     
     switch (patternType) {
@@ -162,7 +162,7 @@ class _PantallaChatState extends State<PantallaChat> {
   bool _puedeCargarMas = true;
   int? _miId;
   
-  // Estados de presencia
+
   Map<int, String> _estadosPresencia = {};
   
   bool _mostrarEmojiPicker = false;
@@ -288,13 +288,13 @@ class _PantallaChatState extends State<PantallaChat> {
           _puedeCargarMas = false;
         }
 
-        // Marcamos la sala como activa para que se limpien los no leídos
+
         if (mounted) {
           Provider.of<ChatProvider>(context, listen: false).setSalaActiva(_sala!.id);
         }
       }
     } catch (e) {
-      debugPrint('Error cargando chat: $e');
+
     } finally {
       if (mounted) setState(() => _estaCargando = false);
     }
@@ -322,7 +322,7 @@ class _PantallaChatState extends State<PantallaChat> {
         });
       }
     } catch (e) {
-      debugPrint('Error cargando más mensajes: $e');
+
     } finally {
       if (mounted) setState(() => _estaCargandoMas = false);
     }
@@ -337,7 +337,7 @@ class _PantallaChatState extends State<PantallaChat> {
         if (type == 'chat_message') {
           final nuevoMsg = MensajeChat.fromJson(datos);
           _mensajes.insert(0, nuevoMsg);
-          // Si estamos viendo el chat, marcamos como leído en tiempo real
+
           _servicio.marcarMensajesLeidosWS();
         } else if (type == 'room_updated') {
           _sala = SalaChat.fromJson(datos['data']);
@@ -404,7 +404,7 @@ class _PantallaChatState extends State<PantallaChat> {
       if (edicionId != null) {
         final exito = await _servicio.editarMensaje(edicionId, texto);
         if (exito) {
-          // Actualización optimista local por si el WebSocket tarda
+
           setState(() {
             final idx = _mensajes.indexWhere((m) => m.id == edicionId);
             if (idx != -1) {
@@ -417,7 +417,7 @@ class _PantallaChatState extends State<PantallaChat> {
           });
         }
       } else {
-        // Lógica de archivos adjuntos
+
         List<Map<String, dynamic>> attachments = [];
         if (_archivosSeleccionados.isNotEmpty) {
           setState(() => _estaSubiendoMedia = true);
@@ -441,7 +441,7 @@ class _PantallaChatState extends State<PantallaChat> {
 
         String tipoFinal = 'TEXTO';
         if (attachments.isNotEmpty) {
-          // Si solo hay un archivo y es video, marcamos como VIDEO. Si hay varios o imagen, IMAGEN.
+
           if (attachments.length == 1 && attachments.first['tipo'] == 'V') {
             tipoFinal = 'VIDEO';
           } else {
@@ -556,7 +556,7 @@ class _PantallaChatState extends State<PantallaChat> {
                       MaterialPageRoute(builder: (_) => PantallaPersonalizacionChat(sala: _sala!)),
                     );
                     if (actualizado == true) {
-                      // Solo recargamos si hubo cambios, pero sin bloquear toda la UI si es posible
+
                       _cargarDatos();
                     }
                   },
@@ -611,7 +611,7 @@ class _PantallaChatState extends State<PantallaChat> {
               }
               otroParticipante ??= _sala!.participantes.firstOrNull;
             }
-            // Prioridad: 1. Avatar personalizado de la sala, 2. Avatar del otro usuario
+
             avatarUrl = _sala!.avatarS3 ?? otroParticipante?.usuario?.urlAvatar;
           }
         }
@@ -1040,7 +1040,7 @@ class _PantallaChatState extends State<PantallaChat> {
   void _mostrarMiembros(BuildContext context) {
     if (_sala == null) return;
     
-    // Si es un chat de comunidad, mostramos el componente existente
+
     if (_sala!.esGrupal && _sala!.comunidadId != 0) {
       showModalBottomSheet(
         context: context,
@@ -1062,7 +1062,7 @@ class _PantallaChatState extends State<PantallaChat> {
       return;
     }
 
-    // Si es un chat privado (DM), mostramos los participantes directamente
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1166,19 +1166,17 @@ class _PantallaChatState extends State<PantallaChat> {
             onPressed: () async {
               final salaId = _sala?.id;
               
-              // 1. Cerrar diálogo usando SU PROPIO contexto
+              // Cerrar diálogo
               Navigator.pop(dialogContext);
               
-              // 2. Salida absoluta a la lista de mensajes
+              // Salida a la lista de mensajes
               if (context.mounted) {
                 context.go('/mensajes');
               }
               
-              // 3. Ejecutar borrado en segundo plano
+              // Ejecutar borrado en segundo plano
               if (salaId != null) {
-                print('DEBUG: Solicitando ELIMINAR sala $salaId');
                 _servicio.eliminarSala(salaId).then((exito) {
-                  print('DEBUG: Resultado eliminación sala: $exito');
                   if (exito) {
                     // ELIMINACIÓN DEFINITIVA DE LA LISTA GLOBAL
                     if (context.mounted) {
@@ -1219,19 +1217,17 @@ class _PantallaChatState extends State<PantallaChat> {
             onPressed: () async {
               final salaId = _sala?.id;
               
-              // 1. Cerrar diálogo usando SU PROPIO contexto
+              // Cerrar diálogo
               Navigator.pop(dialogContext);
               
-              // 2. Salida absoluta
+              // Salida
               if (context.mounted) {
                 context.go('/mensajes');
               }
               
-              // 3. Ejecutar abandono
+              // Ejecutar abandono
               if (salaId != null) {
-                print('DEBUG: Solicitando ABANDONAR sala $salaId');
                 _servicio.abandonarSala(salaId).then((exito) {
-                  print('DEBUG: Resultado abandono sala: $exito');
                   if (!exito && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('No se pudo abandonar la sala. ¿Eres el creador?'), backgroundColor: Colors.orange)
@@ -1453,7 +1449,7 @@ class _PantallaChatState extends State<PantallaChat> {
       final exito = await _servicio.borrarMensaje(msg.id, paraTodos: paraTodos);
       if (exito) {
         if (!paraTodos) {
-          // Si es borrado local, lo quitamos de la lista manualmente
+
           setState(() {
             _mensajes.removeWhere((m) => m.id == msg.id);
           });
@@ -1625,7 +1621,7 @@ class _PantallaChatState extends State<PantallaChat> {
       }
       return Color(int.parse(cleanHex, radix: 16));
     } catch (e) {
-      debugPrint('Error parsing color $hex: $e');
+
       return null;
     }
   }
@@ -1712,7 +1708,7 @@ class _PantallaChatState extends State<PantallaChat> {
 
     return Stack(
       children: [
-        // Fondo base
+
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(

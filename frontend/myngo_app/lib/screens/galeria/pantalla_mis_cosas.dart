@@ -10,6 +10,8 @@ import 'dart:math' as math;
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 
+// Vista de los recursos propios del usuario: sus imágenes y sus colecciones.
+// Se incrusta dentro del perfil como una pestaña lateral.
 class PantallaMisCosas extends StatefulWidget {
   final int usuarioId;
 
@@ -34,6 +36,7 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
     _cargarDatos();
   }
 
+  // Carga en paralelo las colecciones del usuario para poblar las pestañas
   Future<void> _cargarDatos() async {
     setState(() => _cargando = true);
     
@@ -98,10 +101,12 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
   );
 }
 
+  // La pestaña de imágenes reutiliza el masonry grid ya existente
   Widget _buildMisImagenes() {
     return MasonryGridGaleria(usuarioId: widget.usuarioId);
   }
 
+  // Muestra las colecciones como tarjetas rotadas levemente para dar sensación de apilamiento
   Widget _buildMisColecciones() {
     if (_misColecciones.isEmpty) {
       return _buildVistaVacia('Aún no has creado ninguna colección 📂');
@@ -185,6 +190,7 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
     );
   }
 
+  // Placeholder cuando la pestaña no tiene contenido aún
   Widget _buildVistaVacia(String mensaje) {
     return Center(
       child: Column(

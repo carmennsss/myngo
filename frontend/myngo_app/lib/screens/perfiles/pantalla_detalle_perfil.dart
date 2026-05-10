@@ -22,7 +22,7 @@ import '../../widgets/dialogo_crear_post.dart';
 import '../../widgets/selector_estrellas.dart';
 import '../mensajeria/pantalla_chat.dart';
 
-// Widgets extraídos
+
 import 'widgets_detalle/header_detalle_perfil.dart';
 import 'widgets_detalle/info_perfil.dart';
 import 'widgets_detalle/seccion_posts_perfil.dart';
@@ -282,7 +282,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       setState(() {
         List<Coleccion> lista = res.exito ? (res.datos ?? []) : [];
         
-        // FILTRO DE PRIVACIDAD: Si no es mi perfil, oculto las privadas
+
         if (_currentUserId != _usuario!.id) {
           lista = lista.where((c) => !c.esPrivada).toList();
         }
@@ -534,7 +534,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   Widget _buildLockedProfileView(dynamic tr) {
     final Color themeColor = EstiloPostHelper.parseHex(_usuario?.colorTema) ?? const Color(0xFF248EA6);
     
-    // Función de seguridad para evitar que Tolgee rompa la app si no encuentra la clave
+
     String safeTr(String key, String fallback) {
       try {
         final res = tr(key);

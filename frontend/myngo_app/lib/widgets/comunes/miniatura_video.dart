@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-/// Un widget ligero que muestra el primer fotograma de un vídeo como miniatura.
-/// Ideal para grids de galería y perfiles.
+
+// Miniatura estática de un vídeo para mostrar en grids o listas.
+// Carga el primer fotograma del vídeo solo cuando el widget entra en pantalla,
+// para no gastar red ni batería con vídeos que el usuario no ve.
 class MiniaturaVideo extends StatefulWidget {
   final String url;
   final BoxFit fit;
@@ -29,7 +31,7 @@ class _MiniaturaVideoState extends State<MiniaturaVideo> {
     super.initState();
   }
 
-  Future<void> _init() async {
+  // Inicializa el reproductor y lo deja en el primer frame del vídeo para usarlo como thumbnail
     if (_initialized || _cargando || _error) return;
     
     setState(() => _cargando = true);
@@ -51,7 +53,7 @@ class _MiniaturaVideoState extends State<MiniaturaVideo> {
         });
       }
     } catch (e) {
-      debugPrint('[MiniaturaVideo] Error: $e');
+
       if (mounted) {
         setState(() {
           _error = true;

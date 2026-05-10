@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../models/usuario.dart';
 import 'package:flutter/services.dart';
 
+// Pantalla de ajustes de cuenta: nombre de usuario, privacidad, contraseña y zona de peligro.
+// Cada sección tiene su propia validación antes de llamar al servicio.
 class PantallaConfiguracionCuenta extends StatefulWidget {
   const PantallaConfiguracionCuenta({super.key});
 
@@ -37,6 +39,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     super.dispose();
   }
 
+  // Carga los datos actuales del usuario para pre-rellenar los campos
   Future<void> _cargarDatos() async {
     setState(() => _isLoading = true);
     final res = await _servicioUsuarios.obtenerDatosPropios();
@@ -51,6 +54,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     }
   }
 
+  // Valida que el nombre nuevo sea distinto, tenga ≥3 caracteres y no tenga espacios
   Future<void> _cambiarNombreUsuario() async {
     final nuevoNombre = _usernameController.text.replaceAll(' ', '');
     if (nuevoNombre.isEmpty || nuevoNombre == _usuarioActual?.nombreUsuario) return;
@@ -82,6 +86,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
       }
   }
 
+  // Valida la contraseña con regex (mayúsculas, números y símbolos) y la confirma
   Future<void> _cambiarContrasena() async {
     final pass = _passController.text.replaceAll(' ', '');
     final passConfirm = _passConfirmController.text.replaceAll(' ', '');
@@ -133,6 +138,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     }
   }
 
+  // Muestra un diálogo de confirmación antes de cambiar la visibilidad del perfil
   Future<void> _cambiarPrivacidad(bool hacerPublico) async {
     final confirmacion = await showDialog<bool>(
       context: context,
@@ -187,6 +193,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     }
   }
 
+  // Acción destructiva: pide doble confirmación y elimina la cuenta definitivamente
   Future<void> _eliminarCuenta() async {
     final confirmacion = await showDialog<bool>(
       context: context,
@@ -422,6 +429,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     );
   }
 
+  // Título de sección (Perfil Público, Seguridad, Zona de Peligro...)
   Widget _buildSectionTitle(String title, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(left: 8, bottom: 8),
@@ -436,6 +444,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     );
   }
 
+  // Contenedor visual de tarjeta blanca con borde opcional (para la zona de peligro)
   Widget _buildCard({required Widget child, Color? borderColor}) {
     return Container(
       padding: const EdgeInsets.all(20),

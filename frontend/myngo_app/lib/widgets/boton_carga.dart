@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Botón con estilo gradiente que integra un indicador de progreso.
-/// 
-/// Este componente reacciona a un [ValueNotifier] para mostrar un 
-/// [CircularProgressIndicator] cuando se inicia una operación asíncrona,
-/// deshabilitando las interacciones del usuario automáticamente.
+// Botón naranja con gradiente que usamos en los formularios de login y registro.
+// Cuando se está procesando algo muestra un spinner en vez del texto, y bloquea el tap.
 class BotonCarga extends StatelessWidget {
-  /// Función que se ejecuta al pulsar el botón.
+  // Qué hacer cuando el usuario pulsa
   final VoidCallback alPresionar;
 
-  /// Escucha los cambios de estado (cargando/no cargando).
+  // Controla si está en modo carga (true = spinner, false = texto)
   final ValueNotifier<bool> notificadorCargando;
 
-  /// Texto opcional que se muestra en el botón.
+  // El texto del botón (por defecto 'CONTINUAR')
   final String? texto;
 
   const BotonCarga({

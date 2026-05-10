@@ -119,7 +119,7 @@ class _SeccionPostsPerfilState extends State<SeccionPostsPerfil> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Lógica de columnas más refinada para evitar que los posts se vean "gigantes"
+        // Columnas adaptadas para evitar que los posts se vean demasiado grandes
         int columnas = 2;
         if (constraints.maxWidth > 1200) {
           columnas = 4;
