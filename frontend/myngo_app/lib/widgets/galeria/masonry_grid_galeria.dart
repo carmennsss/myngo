@@ -1,24 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../models/imagen_galeria.dart';
-import '../../services/servicio_galeria.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../screens/galeria/pantalla_detalle_imagen.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../screens/galeria/dialogo_selector_imagen.dart';
-import '../comunes/menu_opciones_contenido.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../screens/galeria/pantalla_detalle_imagen.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../screens/galeria/dialogo_selector_imagen.dart';
 import '../comunes/menu_opciones_contenido.dart';
 import '../comunes/estado_vacio_cargando.dart';
@@ -66,7 +55,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     super.dispose();
   }
 
-  // Pide la siguiente tanda de imágenes al servidor y las añade al grid
+  Future<void> _cargarMas() async {
     if (_cargando) return;
     if (!mounted) return;
     setState(() {
@@ -102,7 +91,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     setState(() => _cargando = false);
   }
 
-  // Abre el selector del dispositivo para elegir una foto/vídeo y subirlo a la galería
+  Future<void> _seleccionarYSubir(bool esVideo) async {
     final picker = ImagePicker();
     final pickedFile = esVideo 
         ? await picker.pickVideo(source: ImageSource.gallery)
@@ -230,7 +219,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     );
   }
 
-  // Muestra el menú contextual (subir imagen, subir vídeo, crear colección)
+  void _mostrarMenuOpciones(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -311,7 +300,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     );
   }
 
-  // Abre el selector interno de Myngo para reutilizar una foto ya subida y meterla en un álbum
+  Future<void> _abrirSelectorGaleriaMyngo(BuildContext context) async {
     final ImagenGaleria? seleccionada = await showModalBottomSheet<ImagenGaleria>(
       context: context,
       isScrollControlled: true,
@@ -342,7 +331,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     }
   }
 
-  // Dialogo para que el usuario cree un nuevo álbum con nombre y privacidad
+  void _mostrarDialogoNuevaColeccion(BuildContext context) {
     final nombreCtrl = TextEditingController();
     bool esPrivada = false;
     showModalBottomSheet(
@@ -411,7 +400,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   );
 }
 
-  // Tarjeta individual de la galeria con la imagen y sus botones (descarga, opciones, blur si no miembro)
+  Widget _buildTile(ImagenGaleria item, double aspect) {
     return GestureDetector(
       onTap: !widget.esMiembro ? null : () {
         Navigator.push(context, MaterialPageRoute(
@@ -492,7 +481,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     );
   }
 
-  // Renderiza el contenido de la tarjeta: imagen real o placeholder de vídeo
+  Widget _buildInnerTileContent(ImagenGaleria item, double aspect) {
     if (item.tipoArchivo == 'V') {
       return AspectRatio(
         aspectRatio: aspect,

@@ -31,8 +31,9 @@ class _MiniaturaVideoState extends State<MiniaturaVideo> {
     super.initState();
   }
 
-  // Inicializa el reproductor y lo deja en el primer frame del vídeo para usarlo como thumbnail
+  Future<void> _init() async {
     if (_initialized || _cargando || _error) return;
+
     
     setState(() => _cargando = true);
     

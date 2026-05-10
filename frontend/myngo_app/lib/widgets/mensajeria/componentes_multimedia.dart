@@ -120,8 +120,9 @@ class ChatMediaGrid extends StatelessWidget {
     );
   }
 
-  // Cuando hay más de un adjunto, los monta como un PageView deslizable con contador
+  Widget _buildCarousel(BuildContext context) {
     return SizedBox(
+
       height: 250,
       child: Stack(
         children: [
@@ -159,8 +160,9 @@ class ChatMediaGrid extends StatelessWidget {
 
 
 
-  // Muestra una sola imagen o el thumb del vídeo. Al tocarlo abre el lightbox a pantalla completa
+  Widget _buildItem(BuildContext context, ChatAttachment att, {double? height}) {
     return GestureDetector(
+
       onTap: () {
         Navigator.push(
           context,
@@ -290,8 +292,9 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
     _initPlayer();
   }
 
-  // Inicia el reproductor de vídeo y monta los controles de Chewie
+  Future<void> _initPlayer() async {
     if (widget.url.isEmpty) return;
+
     _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
     await _videoPlayerController.initialize();
     _chewieController = ChewieController(
