@@ -340,6 +340,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
                                             return TarjetaPost(
                                               key: ValueKey('post_grid_${post.id}'),
                                               post: post,
+                                              contextoVisual: 'galeria',
                                               onJoin: () => _unirseAComunidad(post.comunidadId, index),
                                               onComunidadSelected: widget.onComunidadSelected,
                                               onProfileSelected: widget.onProfileSelected,

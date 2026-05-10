@@ -22,6 +22,7 @@ class TarjetaPost extends StatefulWidget {
   final VoidCallback? onJoin;
   final bool estaEnComunidad;
   final VoidCallback? onEliminado;
+  final String? contextoVisual;
   final String? fuente;
   final bool esMiembroComunidad;
 
@@ -33,6 +34,7 @@ class TarjetaPost extends StatefulWidget {
     this.onJoin,
     this.estaEnComunidad = false,
     this.onEliminado,
+    this.contextoVisual,
     this.fuente,
     this.esMiembroComunidad = true,
   });
@@ -75,6 +77,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       builder: (context) => DialogoDetallePublicacion(
         post: widget.post,
         esMiembro: widget.esMiembroComunidad,
+        contextoVisual: widget.contextoVisual,
         fuente: widget.fuente,
       ),
     ).then((_) {
@@ -187,6 +190,9 @@ class _TarjetaPostState extends State<TarjetaPost> {
     final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
     final textColor = esFondoClaro ? const Color(0xFF4A4440) : Colors.white;
     final subTextColor = esFondoClaro ? Colors.black54 : Colors.white70;
+    
+    // Prioridad: 1. Fuente de contexto (perfil), 2. Fuente del estilo del post, 3. Outfit
+    final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -293,7 +299,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 GestureDetector(
-                                  onTap: widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
+                                  onTap: widget.post.comunidadId > 0 && widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
                                     id: widget.post.comunidadId, 
                                     nombre: widget.post.comunidadNombre, 
                                     descripcion: '', 
@@ -305,7 +311,10 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                     fechaCreacion: DateTime.now(), 
                                     ratingMedio: 0.0,
                                     creadorId: widget.post.creadorComunidadId ?? 0)) : null,
-                                  child: Text(widget.post.comunidadNombre, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
+                                  child: Text(
+                                    widget.post.comunidadId > 0 ? widget.post.comunidadNombre : 'Post personal 🐾', 
+                                    style: GoogleFonts.getFont(fuenteEfectiva, color: textColor, fontWeight: FontWeight.w900, fontSize: 15)
+                                  ),
                                 ),
                                 GestureDetector(
                                   onTap: () {
@@ -337,7 +346,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                         ),
                                       ],
                                     ),
-                                    style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 13),
+                                    style: GoogleFonts.getFont(fuenteEfectiva, fontSize: 13),
                                   ),
                                 ),
                               ],
@@ -356,28 +365,30 @@ class _TarjetaPostState extends State<TarjetaPost> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      if (widget.post.titulo.isNotEmpty)
-                        Text(widget.post.titulo, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
-                      if (widget.post.contenidoTexto.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.post.contenidoTexto,
-                          style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: subTextColor, fontSize: 15),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (widget.post.contenidoTexto.length > 100)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              'Leer más...',
-                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
-                                color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                      if (widget.contextoVisual != 'galeria') ...[
+                        if (widget.post.titulo.isNotEmpty)
+                          Text(widget.post.titulo, style: GoogleFonts.getFont(fuenteEfectiva, color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
+                        if (widget.post.contenidoTexto.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.post.contenidoTexto,
+                            style: GoogleFonts.getFont(fuenteEfectiva, color: subTextColor, fontSize: 15),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (widget.post.contenidoTexto.length > 100)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Leer más...',
+                                style: GoogleFonts.getFont(fuenteEfectiva,
+                                  color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
+                        ],
                       ],
                       if (widget.post.media.isNotEmpty)
                         Padding(

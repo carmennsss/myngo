@@ -39,7 +39,7 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
     if (widget.media.isEmpty) return const SizedBox.shrink();
 
     final isMobile = MediaQuery.of(context).size.width < 800;
-    final maxHeight = isMobile ? 220.0 : 340.0;
+    final maxHeight = isMobile ? 240.0 : 360.0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),

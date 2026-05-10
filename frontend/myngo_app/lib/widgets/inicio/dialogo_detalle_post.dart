@@ -19,6 +19,7 @@ class DialogoDetallePublicacion extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onProfileSelected;
   final bool esMiembro;
+  final String? contextoVisual;
   final String? fuente;
 
   const DialogoDetallePublicacion({
@@ -27,6 +28,7 @@ class DialogoDetallePublicacion extends StatefulWidget {
     this.onComunidadSelected,
     this.onProfileSelected,
     this.esMiembro = true,
+    this.contextoVisual,
     this.fuente,
   });
 
@@ -61,6 +63,9 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
     final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
     final colorTexto = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
     final colorSubtexto = esFondoClaro ? Colors.grey.shade600 : Colors.white70;
+    
+    // Prioridad: 1. Fuente de contexto (perfil), 2. Fuente del estilo del post, 3. Outfit
+    final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -86,15 +91,22 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                     children: [
                       Text(
                         'Publicación',
-                        style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontWeight: FontWeight.bold, fontSize: 16, color: colorTexto),
+                        style: GoogleFonts.getFont(fuenteEfectiva, fontWeight: FontWeight.bold, fontSize: 16, color: colorTexto),
                       ),
                       const SizedBox(width: 8),
                       TextButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          context.go('/inicio/comunidades/${widget.post.comunidadId}');
+                          if (widget.post.comunidadId > 0) {
+                            context.go('/inicio/comunidades/${widget.post.comunidadId}');
+                          } else {
+                            context.go('/inicio/perfiles/${widget.post.autorNombre}');
+                          }
                         },
-                        label: Text('Ver comunidad', style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 12, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
+                        label: Text(
+                          widget.post.comunidadId > 0 ? 'Ver comunidad' : 'Ver perfil', 
+                          style: GoogleFonts.getFont(fuenteEfectiva, fontSize: 12, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)
+                        ),
                         icon: const Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xFFC35E34)),
                         style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                       ),
@@ -230,11 +242,11 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                                   children: [
                                     Text(
                                       widget.post.autorNombre,
-                                      style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontWeight: FontWeight.bold, color: colorTexto, fontSize: 15),
+                                      style: GoogleFonts.getFont(fuenteEfectiva, fontWeight: FontWeight.bold, color: colorTexto, fontSize: 15),
                                     ),
                                     Text(
                                       '@${widget.post.autorNombre.toLowerCase().replaceAll(' ', '')} · ${_formatRelativeDate(widget.post.fechaCreacion)}',
-                                      style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 13),
+                                      style: GoogleFonts.getFont(fuenteEfectiva, color: colorSubtexto, fontSize: 13),
                                     ),
                                   ],
                                 ),
@@ -242,17 +254,19 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          if (widget.post.titulo.isNotEmpty) ...[
+                          if (widget.contextoVisual != 'galeria') ...[
+                            if (widget.post.titulo.isNotEmpty) ...[
+                              Text(
+                                widget.post.titulo,
+                                style: GoogleFonts.getFont(fuenteEfectiva, fontSize: 18, fontWeight: FontWeight.bold, height: 1.3, color: colorTexto),
+                              ),
+                              const SizedBox(height: 6),
+                            ],
                             Text(
-                              widget.post.titulo,
-                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 18, fontWeight: FontWeight.bold, height: 1.3, color: colorTexto),
+                              widget.post.contenidoTexto,
+                              style: GoogleFonts.getFont(fuenteEfectiva, fontSize: 16, height: 1.4, color: colorTexto),
                             ),
-                            const SizedBox(height: 6),
                           ],
-                          Text(
-                            widget.post.contenidoTexto,
-                            style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 16, height: 1.4, color: colorTexto),
-                          ),
                           if (widget.post.media.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             ClipRRect(
@@ -271,6 +285,7 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             post: widget.post,
                             colorTexto: colorTexto,
                             esMiembro: widget.post.usuarioEsMiembro,
+                            fuente: fuenteEfectiva,
                           ),
                         ],
                       ),
