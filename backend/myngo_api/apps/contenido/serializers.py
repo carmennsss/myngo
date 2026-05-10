@@ -573,7 +573,8 @@ class ComentarioSerializer(serializers.ModelSerializer):
     def get_puedo_borrar(self, obj):
         """Indica si el usuario actual tiene permiso para borrar este comentario.
         
-        Permitido si es el autor o si es admin/moderador de la comunidad.
+        Permitido si es el autor del comentario, si es el autor de la publicación,
+        o si es admin/moderador de la comunidad.
         """
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
@@ -582,8 +583,12 @@ class ComentarioSerializer(serializers.ModelSerializer):
         # Caso 1: Es el autor del comentario
         if obj.autor_id == request.user.id:
             return True
+
+        # Caso 2: Es el autor de la publicación original
+        if obj.publicacion.autor_id == request.user.id:
+            return True
             
-        # Caso 2: Es admin/moderador de la comunidad donde se hizo el post
+        # Caso 3: Es admin/moderador de la comunidad donde se hizo el post
         if obj.publicacion.comunidad:
             comunidad = obj.publicacion.comunidad
             if comunidad.creador_id == request.user.id:

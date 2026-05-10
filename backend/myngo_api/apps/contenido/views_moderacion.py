@@ -23,6 +23,40 @@ class ReporteListCreate(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         reporte = serializer.save(informador=self.request.user)
+        
+        # 1. Identificar al autor del contenido reportado para avisarle
+        autor_reportado = None
+        try:
+            if reporte.tipo_objeto == 'POST':
+                from .models import Publicacion
+                obj = Publicacion.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.autor
+            elif reporte.tipo_objeto == 'COMENTARIO':
+                from .models import Comentario
+                obj = Comentario.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.autor
+            elif reporte.tipo_objeto == 'IMAGEN':
+                from .models import ImagenGaleria
+                obj = ImagenGaleria.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.propietario
+            elif reporte.tipo_objeto == 'COMUNIDAD':
+                from comunidades.models import Comunidad
+                obj = Comunidad.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.creador
+        except Exception:
+            pass # Si el objeto ya no existe, no hacemos nada
+
+        # 2. Enviar notificación al autor reportado (ANÓNIMA)
+        if autor_reportado and autor_reportado != self.request.user:
+            Notificacion.objects.create(
+                usuario=autor_reportado,
+                tipo='CONTENIDO_REPORTADO', # Tipo nuevo para el frontend
+                mensaje=f"Tu contenido ({reporte.tipo_objeto.lower()}) ha sido reportado por un usuario y está siendo revisado por los administradores de Myngo. Por favor, asegúrate de cumplir las normas de la comunidad.",
+                referencia_comunidad=reporte.comunidad,
+                referencia_id=reporte.objeto_id
+            )
+
+        # 3. Notificar a los moderadores de la comunidad (si aplica)
         if reporte.comunidad:
             mods = MiembrosComunidad.objects.filter(
                 comunidad=reporte.comunidad, rol__in=['Administrador', 'Moderador']
