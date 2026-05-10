@@ -8,6 +8,12 @@ import 'servicio_usuarios.dart';
 // Gestiona la bandeja de entrada de notificaciones de la app.
 // Nos sirve para ver quién nos ha seguido, avisos de comunidades y marcar los avisos como leídos.
 class ServicioNotificaciones {
+  final http.Client? _httpClient;
+
+  ServicioNotificaciones({http.Client? httpClient}) : _httpClient = httpClient;
+
+  http.Client get client => _httpClient ?? http.Client();
+
   // Ruta base del servidor para las notificaciones
   static const String _urlNotificaciones = '${Configuracion.baseUrl}/notificaciones/';
   
@@ -25,7 +31,7 @@ class ServicioNotificaciones {
   // Pide al servidor todas las notificaciones (leídas y no leídas) del usuario
   Future<RespuestaApi<List<Notificacion>>> listarNotificaciones() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse(_urlNotificaciones),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -48,7 +54,7 @@ class ServicioNotificaciones {
   // Permite aceptar o rechazar solicitudes (ej. de seguimiento) directamente desde la campanita
   Future<RespuestaApi<void>> responderSolicitudInteractiva(int idNotificacion, String accion) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlNotificaciones$idNotificacion/responder/'),
         headers: await _obtenerCabeceras(),
         body: json.encode({'accion': accion}),
@@ -67,7 +73,7 @@ class ServicioNotificaciones {
   // Limpia la bandeja marcando todo como leído de golpe
   Future<RespuestaApi<void>> marcarTodasComoLeidas() async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('${_urlNotificaciones}marcar-leidas/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -84,7 +90,7 @@ class ServicioNotificaciones {
   // Marca una sola notificación como leída (cuando pinchas en ella)
   Future<RespuestaApi<void>> marcarComoLeida(int idNotificacion) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlNotificaciones$idNotificacion/marcar-leida/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
@@ -101,7 +107,7 @@ class ServicioNotificaciones {
   // Nos dice cuántas notificaciones nuevas hay para poner el globito rojo en la campana
   Future<int> obtenerConteoNoLeidas() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlNotificaciones}no-leidas/count/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));

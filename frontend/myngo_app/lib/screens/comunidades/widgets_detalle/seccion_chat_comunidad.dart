@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tolgee/tolgee.dart';
+
 import 'package:go_router/go_router.dart';
 import '../../../models/comunidad.dart';
 import '../../../models/sala_chat.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra las salas de chat disponibles en la comunidad.
 class SeccionChatComunidad extends StatelessWidget {
@@ -31,46 +34,51 @@ class SeccionChatComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (estaCargando && salasChat == null) {
-      final loading = const Center(
-          child: CircularProgressIndicator(color: Color(0xFFF28B50)));
-      return comoSliver ? SliverFillRemaining(child: loading) : loading;
-    }
-
-    // Buscamos cuál es la sala general para no repetirla en la lista de abajo
-    SalaChat? salaGeneral;
-    try {
-      salaGeneral = (salasChat ?? []).firstWhere((s) => s.nombre.toLowerCase().contains('general'));
-    } catch (_) {
-      try {
-        salaGeneral = (salasChat ?? []).firstWhere((s) => s.esGrupal);
-      } catch (_) {}
-    }
-
-    final salasFiltradas = (salasChat ?? []).where((s) => s.esGrupal && s.id != salaGeneral?.id).toList();
-    final itemCount = (salasChat != null) ? salasFiltradas.length + 2 : 1;
-
-    if (comoSliver) {
-      return SliverPadding(
-        padding: const EdgeInsets.all(24),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildItem(context, index, salasFiltradas),
-            childCount: itemCount,
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(24),
-      itemCount: itemCount,
-      itemBuilder: (context, index) => _buildItem(context, index, salasFiltradas),
+    return Builder(
+      builder: (context) {
+        if (estaCargando && salasChat == null) {
+          final loading = const Center(
+              child: CircularProgressIndicator(color: Color(0xFFF28B50)));
+          return comoSliver ? SliverFillRemaining(child: loading) : loading;
+        }
+    
+        // Buscamos cuál es la sala general para no repetirla en la lista de abajo
+        SalaChat? salaGeneral;
+        try {
+          salaGeneral = (salasChat ?? []).firstWhere((s) => s.nombre.toLowerCase().contains('general'));
+        } catch (_) {
+          try {
+            salaGeneral = (salasChat ?? []).firstWhere((s) => s.esGrupal);
+          } catch (_) {}
+        }
+    
+        final salasFiltradas = (salasChat ?? []).where((s) => s.esGrupal && s.id != salaGeneral?.id).toList();
+        final itemCount = (salasChat != null) ? salasFiltradas.length + 2 : 1;
+    
+        if (comoSliver) {
+          return SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _buildItem(context, index, salasFiltradas, tr),
+                childCount: itemCount,
+              ),
+            ),
+          );
+        }
+    
+        return ListView.builder(
+          padding: const EdgeInsets.all(24),
+          itemCount: itemCount,
+          itemBuilder: (context, index) => _buildItem(context, index, salasFiltradas, tr),
+        );
+      }
     );
   }
 
-  Widget _buildItem(BuildContext context, int index, List<SalaChat> salasFiltradas) {
-    if (index == 0) return _buildChatHeader(context);
+
+  Widget _buildItem(BuildContext context, int index, List<SalaChat> salasFiltradas, String Function(String, [Map<String, dynamic>?]) tr) {
+    if (index == 0) return _buildChatHeader(context, tr);
     
     if (salasChat == null) {
       return const Center(child: Padding(
@@ -79,7 +87,7 @@ class SeccionChatComunidad extends StatelessWidget {
       ));
     }
 
-    if (index == 1) return _buildGeneralChatTile(context);
+    if (index == 1) return _buildGeneralChatTile(context, tr);
 
     final sala = salasFiltradas[index - 2];
     return _SalaChatTile(
@@ -90,14 +98,15 @@ class SeccionChatComunidad extends StatelessWidget {
     );
   }
 
-  Widget _buildChatHeader(BuildContext context) {
+
+  Widget _buildChatHeader(BuildContext context, String Function(String, [Map<String, dynamic>?]) tr) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Salas de Chat',
+            tr('chatRooms'),
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -116,7 +125,7 @@ class SeccionChatComunidad extends StatelessWidget {
                 icon: const Icon(Icons.add_circle_outline,
                     size: 20, color: Color(0xFF248EA6)),
                 label: Text(
-                  'Crear Sala',
+                  tr('chatCreateRoom'),
                   style: GoogleFonts.outfit(
                     color: const Color(0xFF248EA6),
                     fontWeight: FontWeight.bold,
@@ -130,7 +139,8 @@ class SeccionChatComunidad extends StatelessWidget {
     );
   }
 
-  Widget _buildGeneralChatTile(BuildContext context) {
+
+  Widget _buildGeneralChatTile(BuildContext context, String Function(String, [Map<String, dynamic>?]) tr) {
     // Buscar la sala general real:
     // Que contenga "general"
     // O la primera sala grupal que encuentre
@@ -140,7 +150,7 @@ class SeccionChatComunidad extends StatelessWidget {
         (s) => s.esGrupal,
         orElse: () => SalaChat(
           id: -1, 
-          nombre: 'Buscando sala...', 
+          nombre: tr('chatSearchingRooms'), 
           comunidadId: comunidad.id, 
           esGrupal: true, 
           fechaCreacion: DateTime.now()
@@ -168,14 +178,14 @@ class SeccionChatComunidad extends StatelessWidget {
           child: const Icon(Icons.forum_rounded, color: Colors.white, size: 20),
         ),
         title: Text(
-          salaEncontrada ? 'Chat General ✨' : 'No hay salas disponibles 🐾',
+          salaEncontrada ? tr('chatGeneralTitle') : tr('chatNoRoomsAvailable'),
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w900,
             color: colorTextoPrincipal,
           ),
         ),
         subtitle: Text(
-          salaEncontrada ? '¡Habla con toda la comunidad!' : 'Prueba a crear una sala nueva.',
+          salaEncontrada ? tr('chatGeneralSubtitle') : tr('chatCreateNewSuggestion'),
           style: GoogleFonts.outfit(
             color: colorTextoSecundario,
             fontSize: 13,
@@ -188,14 +198,14 @@ class SeccionChatComunidad extends StatelessWidget {
         onTap: () {
           if (!salaEncontrada) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No hay una sala general en esta comunidad 🐾'))
+              SnackBar(content: Text(tr('chatNoGeneralRoom')))
             );
             return;
           }
           context.push(
             '/mensajes/sala/${salaGeneral.id}',
             extra: {
-              'nombre': 'Chat General ✨ ${comunidad.nombre}',
+              'nombre': '${tr('chatGeneralTitle')} ${comunidad.nombre}',
               'comunidad_id': comunidad.id,
               'sala': {'id': salaGeneral.id, '_otro_usuario_id': null}
             },
@@ -204,6 +214,7 @@ class SeccionChatComunidad extends StatelessWidget {
       ),
     );
   }
+
 }
 
 class _SalaChatTile extends StatelessWidget {

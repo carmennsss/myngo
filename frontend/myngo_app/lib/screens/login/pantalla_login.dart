@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Pantalla de entrada a Myngo. En escritorio muestra los gatos animados a la izquierda
 // y el formulario a la derecha; en móvil todo va en columna.
@@ -37,8 +38,8 @@ class _PantallaLoginState extends State<PantallaLogin> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return MouseRegion(
           onHover: (evento) {
             setState(() {

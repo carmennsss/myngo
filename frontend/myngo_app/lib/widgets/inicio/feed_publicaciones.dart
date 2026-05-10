@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tolgee/tolgee.dart';
 import '../../models/comunidad.dart';
 import '../../models/publicacion.dart';
 import '../../services/servicio_inicio.dart';
@@ -8,6 +9,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../models/usuario.dart';
 import 'tarjeta_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 enum FeedMode { social, gallery }
 
@@ -134,14 +136,14 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
     }
   }
 
-  Future<void> _unirseAComunidad(int comunidadId, int index) async {
+  Future<void> _unirseAComunidad(int comunidadId, int index, dynamic tr) async {
     if (!_estaLogueado) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('¡Vaya! Debes iniciar miau-sesión para unirte 🐾', style: GoogleFonts.outfit()),
+        content: Text(tr('communityJoinNeedLogin'), style: GoogleFonts.outfit()),
         backgroundColor: const Color(0xFFC35E34),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'ENTRAR',
+          label: tr('authLoginLinkAction').toUpperCase(),
           textColor: Colors.white,
           onPressed: () => Navigator.pushNamed(context, '/login'),
         ),
@@ -152,7 +154,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
     final res = await _servicioComunidades.unirseAComunidad(comunidadId);
     if (res.exito && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('¡Miau-unido con éxito! 🐾', style: GoogleFonts.outfit()),
+        content: Text(tr('communityJoinedMsg'), style: GoogleFonts.outfit()),
         backgroundColor: const Color(0xFF248EA6),
         behavior: SnackBarBehavior.floating,
       ));
@@ -162,12 +164,12 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
     }
   }
 
-  Widget _buildTabs() {
+  Widget _buildTabs(dynamic tr) {
     return Row(
       children: [
-        _buildTabItem('Para ti', FeedMode.social),
+        _buildTabItem(tr('feedSocialTab'), FeedMode.social),
         const SizedBox(width: 24),
-        _buildTabItem('Galería', FeedMode.gallery),
+        _buildTabItem(tr('communityTabsGallery'), FeedMode.gallery),
       ],
     );
   }
@@ -217,189 +219,193 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: PatronFondo(),
-            ),
-          ),
-          RefreshIndicator(
-            onRefresh: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
-            color: const Color(0xFFF29C50),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildTabs(),
+    return Builder(
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: PatronFondo(),
+                ),
+              ),
+              RefreshIndicator(
+                onRefresh: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
+                color: const Color(0xFFF29C50),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
                         ],
                       ),
-                      if (_mode == FeedMode.gallery) ...[
-                        const SizedBox(height: 12),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 800),
-                          child: TextField(
-                            controller: _searchController,
-                            onSubmitted: (valor) => _cargarPosts(busqueda: valor.isNotEmpty ? valor : null),
-                            style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
-                            decoration: InputDecoration(
-                              hintText: 'Busca en el universo Myngo... 🐾',
-                              prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFF29C50)),
-                              fillColor: const Color(0xFFF5F5F5),
-                              filled: true,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildTabs(tr),
+                            ],
+                          ),
+                          if (_mode == FeedMode.gallery) ...[
+                            const SizedBox(height: 12),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 800),
+                              child: TextField(
+                                controller: _searchController,
+                                onSubmitted: (valor) => _cargarPosts(busqueda: valor.isNotEmpty ? valor : null),
+                                style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
+                                decoration: InputDecoration(
+                                  hintText: tr('messageSearchHint'),
+                                  prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFF29C50)),
+                                  fillColor: const Color(0xFFF5F5F5),
+                                  filled: true,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: (_cargando || _posts == null)
-                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFF29C50)))
-                      : (_error != null || _posts!.isEmpty)
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    _error != null ? Icons.wifi_off_rounded : Icons.search_off_rounded,
-                                    size: 80,
-                                    color: Colors.grey.withOpacity(0.5),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                                    child: Text(
-                                      _error != null 
-                                          ? (_error!.contains('Tiempo de espera') 
-                                              ? '¡Miau! No hemos podido conectar a tiempo 😿\nRevisa tu conexión e inténtalo de nuevo.'
-                                              : _error!)
-                                          : 'Aún no hay publicaciones aquí 😿',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16),
-                                    ),
-                                  ),
-                                  if (_error != null) ...[
-                                    const SizedBox(height: 24),
-                                    ElevatedButton.icon(
-                                      onPressed: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
-                                      icon: const Icon(Icons.refresh_rounded),
-                                      label: const Text('REINTENTAR'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFF29C50),
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: (_cargando || _posts == null)
+                          ? const Center(child: CircularProgressIndicator(color: Color(0xFFF29C50)))
+                          : (_error != null || _posts!.isEmpty)
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        _error != null ? Icons.wifi_off_rounded : Icons.search_off_rounded,
+                                        size: 80,
+                                        color: Colors.grey.withOpacity(0.5),
                                       ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            )
-                              : CustomScrollView(
-                                  controller: _scrollController,
-                                  physics: const BouncingScrollPhysics(),
-                                  slivers: [
-                                    if (_mode == FeedMode.gallery)
-                                      SliverPadding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        sliver: SliverMasonryGrid.count(
-                                          crossAxisCount: MediaQuery.of(context).size.width < 600 ? 1 : (MediaQuery.of(context).size.width < 900 ? 2 : 4),
-                                          mainAxisSpacing: 12,
-                                          crossAxisSpacing: 12,
-                                          childCount: _posts!.length,
-                                          itemBuilder: (context, index) {
-                                            final post = _posts![index];
-                                            return TarjetaPost(
-                                              key: ValueKey('post_grid_${post.id}'),
-                                              post: post,
-                                              contextoVisual: 'galeria',
-                                              onJoin: () => _unirseAComunidad(post.comunidadId, index),
-                                              onComunidadSelected: widget.onComunidadSelected,
-                                              onProfileSelected: widget.onProfileSelected,
-                                              onEliminado: () {
-                                                if (mounted) {
-                                                  setState(() {
-                                                    _posts!.removeWhere((p) => p.id == post.id);
-                                                  });
-                                                }
-                                              },
-                                            );
-                                          },
+                                      const SizedBox(height: 16),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                                        child: Text(
+                                          _error != null 
+                                              ? (_error!.contains('Tiempo de espera') 
+                                                  ? tr('errorNetworkConnection')
+                                                  : _error!)
+                                              : tr('noGatosMessage'),
+                                          textAlign: TextAlign.center,
+                                          style: GoogleFonts.outfit(color: Colors.grey, fontSize: 16),
                                         ),
-                                      )
-                                    else
-                                      SliverPadding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
-                                        sliver: SliverList(
-                                          delegate: SliverChildBuilderDelegate(
-                                            (context, index) {
-                                              final post = _posts![index];
-                                              return Align(
-                                                alignment: Alignment.topCenter,
-                                                child: ConstrainedBox(
-                                                  constraints: const BoxConstraints(maxWidth: 650),
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.only(bottom: 12),
-                                                    child: TarjetaPost(
-                                                      key: ValueKey('post_list_${post.id}'),
-                                                      post: post,
-                                                      onJoin: () => _unirseAComunidad(post.comunidadId, index),
-                                                      onComunidadSelected: widget.onComunidadSelected,
-                                                      onProfileSelected: widget.onProfileSelected,
-                                                      onEliminado: () {
-                                                        if (mounted) {
-                                                          setState(() {
-                                                            _posts!.removeWhere((p) => p.id == post.id);
-                                                          });
-                                                        }
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            childCount: _posts!.length,
+                                      ),
+                                      if (_error != null) ...[
+                                        const SizedBox(height: 24),
+                                        ElevatedButton.icon(
+                                          onPressed: () => _cargarPosts(busqueda: _searchController.text.isNotEmpty ? _searchController.text : null),
+                                          icon: const Icon(Icons.refresh_rounded),
+                                          label: Text(tr('commonRetry')),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFF29C50),
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                           ),
                                         ),
-                                      ),
-                                    if (_cargandoMas)
-                                      const SliverToBoxAdapter(
-                                        child: Center(child: Padding(padding: EdgeInsets.all(24.0), child: CircularProgressIndicator(color: Color(0xFFF29C50)))),
-                                      ),
-                                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                                  ],
-                                ),
+                                      ],
+                                    ],
+                                  ),
+                                )
+                                  : CustomScrollView(
+                                      controller: _scrollController,
+                                      physics: const BouncingScrollPhysics(),
+                                      slivers: [
+                                        if (_mode == FeedMode.gallery)
+                                          SliverPadding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            sliver: SliverMasonryGrid.count(
+                                              crossAxisCount: MediaQuery.of(context).size.width < 600 ? 1 : (MediaQuery.of(context).size.width < 900 ? 2 : 4),
+                                              mainAxisSpacing: 12,
+                                              crossAxisSpacing: 12,
+                                              childCount: _posts!.length,
+                                              itemBuilder: (context, index) {
+                                                final post = _posts![index];
+                                                return TarjetaPost(
+                                                  key: ValueKey('post_grid_${post.id}'),
+                                                  post: post,
+                                                  contextoVisual: 'galeria',
+                                              onJoin: () => _unirseAComunidad(post.comunidadId, index, tr),
+                                                  onComunidadSelected: widget.onComunidadSelected,
+                                                  onProfileSelected: widget.onProfileSelected,
+                                                  onEliminado: () {
+                                                    if (mounted) {
+                                                      setState(() {
+                                                        _posts!.removeWhere((p) => p.id == post.id);
+                                                      });
+                                                    }
+                                                  },
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        else
+                                          SliverPadding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
+                                            sliver: SliverList(
+                                              delegate: SliverChildBuilderDelegate(
+                                                (context, index) {
+                                                  final post = _posts![index];
+                                                  return Align(
+                                                    alignment: Alignment.topCenter,
+                                                    child: ConstrainedBox(
+                                                      constraints: const BoxConstraints(maxWidth: 650),
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.only(bottom: 12),
+                                                        child: TarjetaPost(
+                                                          key: ValueKey('post_list_${post.id}'),
+                                                          post: post,
+                                                          onJoin: () => _unirseAComunidad(post.comunidadId, index, tr),
+                                                          onComunidadSelected: widget.onComunidadSelected,
+                                                          onProfileSelected: widget.onProfileSelected,
+                                                          onEliminado: () {
+                                                            if (mounted) {
+                                                              setState(() {
+                                                                _posts!.removeWhere((p) => p.id == post.id);
+                                                              });
+                                                            }
+                                                          },
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                childCount: _posts!.length,
+                                              ),
+                                            ),
+                                          ),
+                                        if (_cargandoMas)
+                                          const SliverToBoxAdapter(
+                                            child: Center(child: Padding(padding: EdgeInsets.all(24.0), child: CircularProgressIndicator(color: Color(0xFFF29C50)))),
+                                          ),
+                                        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                                      ],
+                                    ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

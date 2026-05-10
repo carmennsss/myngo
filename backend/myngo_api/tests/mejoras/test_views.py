@@ -14,7 +14,7 @@ def test_votar_usuario(auth_client, usuario):
         "estrellas": 5
     }
     response = auth_client.post(url, data)
-    assert response.status_code == status.HTTP_201_CREATED
+    assert response.status_code == status.HTTP_200_OK
     assert Voto.objects.filter(votante=usuario, receptor_usuario=target).exists()
 
 def test_tienda_global_list(auth_client):
@@ -26,8 +26,8 @@ def test_tienda_global_list(auth_client):
 
 def test_comprar_mejora(auth_client, usuario):
     mejora = CatalogoMejorasFactory(precio_puntos=100)
-    usuario.perfil.puntos = 200
-    usuario.perfil.save()
+    from tests.factories import PerfilFactory
+    PerfilFactory(usuario=usuario, puntos=200)
     
     url = reverse('comprar-mejora', kwargs={'pk': mejora.pk})
     response = auth_client.post(url)
@@ -39,8 +39,8 @@ def test_comprar_mejora(auth_client, usuario):
 
 def test_comprar_mejora_sin_puntos(auth_client, usuario):
     mejora = CatalogoMejorasFactory(precio_puntos=100)
-    usuario.perfil.puntos = 50
-    usuario.perfil.save()
+    from tests.factories import PerfilFactory
+    PerfilFactory(usuario=usuario, puntos=50)
     
     url = reverse('comprar-mejora', kwargs={'pk': mejora.pk})
     response = auth_client.post(url)

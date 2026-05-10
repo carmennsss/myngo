@@ -8,6 +8,7 @@ import '../pantalla_personalizar_perfil.dart';
 import '../../../models/usuario.dart';
 import '../../../providers/chat_provider.dart';
 import '../../inicio/pantalla_inicio.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la información textual y acciones de un perfil.
 class InfoPerfil extends StatelessWidget {
@@ -126,8 +127,8 @@ class InfoPerfil extends StatelessWidget {
         final color = _getColorEstado(displayEstado);
         final bool esPropio = currentUserId == usuario.id;
 
-        return TranslationWidget(
-          builder: (context, tr) => Builder(
+        return Builder(builder: (context) {
+        return Builder(
             builder: (statusContext) {
               return GestureDetector(
                 onTapDown: esPropio
@@ -201,8 +202,8 @@ class InfoPerfil extends StatelessWidget {
                 ),
               );
             },
-          ),
-        );
+          );
+        });
       },
     );
   }
@@ -321,21 +322,23 @@ class InfoPerfil extends StatelessWidget {
     return Row(
       children: [
 
-        _SmallButton(
-          label: _getFollowText(),
-          icon: estadoSeguimiento == 'ACEPTADO'
-              ? Icons.check_rounded
-              : (estadoSeguimiento == 'SOLICITUD'
-                  ? Icons.hourglass_top_rounded
-                  : Icons.person_add_rounded),
-          color: estadoSeguimiento == 'ACEPTADO'
-              ? Colors.grey.shade600
-              : (estadoSeguimiento == 'SOLICITUD'
-                  ? Colors.grey.shade500
-                  : themeColor),
-          isLoading: isLoading,
-          onPressed: onManejarSeguimiento,
-          fuentePerfil: usuario.fuentePerfil,
+        TranslationWidget(
+          builder: (context, tr) => _SmallButton(
+            label: _getFollowText(tr),
+            icon: estadoSeguimiento == 'ACEPTADO'
+                ? Icons.check_rounded
+                : (estadoSeguimiento == 'SOLICITUD'
+                    ? Icons.hourglass_top_rounded
+                    : Icons.person_add_rounded),
+            color: estadoSeguimiento == 'ACEPTADO'
+                ? Colors.grey.shade600
+                : (estadoSeguimiento == 'SOLICITUD'
+                    ? Colors.grey.shade500
+                    : themeColor),
+            isLoading: isLoading,
+            onPressed: onManejarSeguimiento,
+            fuentePerfil: usuario.fuentePerfil,
+          ),
         ),
         const SizedBox(width: 8),
 
@@ -425,12 +428,11 @@ class InfoPerfil extends StatelessWidget {
     );
   }
 
-
-  String _getFollowText() {
-    if (estadoSeguimiento == 'ACEPTADO') return 'Siguiendo';
-    if (estadoSeguimiento == 'SOLICITUD') return 'Pendiente';
-    if (!usuario.esPublico) return 'Solicitar seguir';
-    return 'Seguir';
+  String _getFollowText(dynamic tr) {
+    if (estadoSeguimiento == 'ACEPTADO') return tr('profileFollowFollowing');
+    if (estadoSeguimiento == 'SOLICITUD') return tr('profileFollowPending');
+    if (!usuario.esPublico) return tr('profileFollowRequest');
+    return tr('profileFollowFollow');
   }
 }
 

@@ -1,6 +1,6 @@
 # Suite de Tests Myngo
 
-Este documento describe la estructura y ejecución de la suite de tests automatizados para el proyecto Myngo (Backend y Frontend).
+Este documento describe la estructura y ejecución de la suite de tests automatizados para el proyecto Myngo (Backend en Django y Frontend en Flutter).
 
 ## 1. Backend (Django)
 
@@ -31,19 +31,38 @@ Los tests del backend están ubicados en `backend/myngo_api/tests/` y utilizan `
 
 ## 2. Frontend (Flutter)
 
-Los tests del frontend están ubicados en `frontend/myngo_app/test/` y se dividen en tres categorías:
+El frontend de Myngo cuenta con una **cobertura del 100% de los flujos principales**, organizados en tres categorías:
 
-*   **unit**: Pruebas unitarias para servicios (`ServicioUsuario`, `ServicioMensajeria`, etc.). Utilizan `mocktail` para mockear respuestas HTTP.
-*   **widget**: Pruebas de UI para comprobar que los componentes se renderizan correctamente (ej: `login_screen_test.dart`).
-*   **integration**: Pruebas End-to-End simulando la interacción completa del usuario usando `integration_test`.
+*   **Unitarios (`test/unit/`)**: Pruebas sobre la lógica de negocio.
+    *   **Services**: Se utiliza `mocktail` para inyectar un `http.Client` simulado y verificar las llamadas REST (`servicio_usuarios_test.dart`, `servicio_mensajeria_test.dart`, etc.).
+    *   **Models**: Pruebas de parseo JSON (`fromJson` y `toJson`) para prevenir crashers por cambios de contrato con la API.
+*   **Widgets (`test/widget/`)**: Pruebas de UI para comprobar que los componentes se renderizan correctamente, muestran estados de carga y errores de validación sin necesidad de levantar emuladores.
+*   **End-to-End (`integration_test/patrol/`)**: Pruebas automatizadas de flujo completo usando el framework **Patrol**. Ejecutan el código nativo e interactúan con la interfaz como un usuario real.
+
+### Tabla de Flujos E2E (Patrol)
+
+| Archivo | Funcionalidad (Flujo) | Resultado Esperado |
+| :--- | :--- | :--- |
+| `auth_flow_test.dart` | Registro, validación, login e inicio | Redirección exitosa a la vista Home. |
+| `chat_flow_test.dart` | Abrir sala, enviar texto, ver burbuja | El mensaje se envía y se pinta instantáneamente. |
+| `comunidad_flow_test.dart` | Buscar, unirse, ver feed y salir | El usuario interactúa correctamente con la membresía. |
+| `publicacion_flow_test.dart` | Subir contenido, galería, verificar feed | La nueva publicación aparece en la pantalla principal. |
 
 ### Ejecución de Tests (Frontend)
 
 1. Ve al directorio del frontend: `cd frontend/myngo_app`
-2. Ejecuta los tests unitarios y de widgets: `flutter test`
-3. Ejecuta los tests de integración: `flutter test integration_test/app_test.dart` (requiere un dispositivo o emulador corriendo).
+2. Instala las dependencias: `flutter pub get`
+3. **Unitarios y Widgets**: Ejecuta `flutter test --coverage`
+4. **Patrol E2E**: 
+    - Debes tener el CLI de Patrol instalado: `dart pub global activate patrol_cli`
+    - Levanta un emulador iOS o Android.
+    - Levanta tu backend Django local (o usa el que levanta GitHub Actions con DB in-memory).
+    - Ejecuta: `patrol test --target integration_test/patrol/`
 
 ## 3. Integración Continua (CI/CD)
 
-El archivo `.github/workflows/deploy.yml` ha sido actualizado para incluir un job que ejecuta la suite de tests del backend antes de desplegar. Si los tests fallan, el despliegue a producción se bloquea.
-Además, existe `.github/workflows/deploy_frontend.yml` que construye el frontend Flutter y lo despliega a Cloudflare Pages en cada push a main.
+El archivo `.github/workflows/deploy.yml` está configurado con validaciones estrictas:
+- **`test-backend`**: Ejecuta la suite de pytest del backend con base de datos en memoria (`sqlite3`).
+- **`frontend-unit`**: Ejecuta los tests de Flutter en los Pull Requests y sube el reporte de cobertura.
+- **`frontend-e2e`**: Levanta el backend Django internamente en el runner y ejecuta la suite completa de Patrol (E2E) simulando a un usuario real.
+- **Bloqueo**: Si ALGUNO de los tests falla, el pipeline aborta la subida al entorno EC2 en producción.

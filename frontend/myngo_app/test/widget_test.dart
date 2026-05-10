@@ -8,19 +8,28 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:myngo_app/main.dart';
-import 'package:provider/provider.dart';
+import 'package:myngo_app/providers/chat_provider.dart';
 import 'package:myngo_app/providers/post_provider.dart';
+import 'package:myngo_app/providers/locale_notifier.dart';
+import 'package:provider/provider.dart';
+import 'package:tolgee/tolgee.dart';
 
 void main() {
+  setUpAll(() async {
+    await Tolgee.init();
+  });
+
   testWidgets('App smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => PostProvider()),
+          ChangeNotifierProvider(create: (_) => ChatProvider()),
+          ChangeNotifierProvider(create: (_) => LocaleNotifier()),
         ],
         child: const MiAplicacion(),
       ),
     );
-    expect(find.byType(MiAplicacion), findsNothing); // La app carga correctamente
+    expect(find.byType(MiAplicacion), findsOneWidget);
   });
 }

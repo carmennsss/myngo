@@ -9,6 +9,7 @@ import '../../../utils/estilo_post_helper.dart';
 import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
 import 'seccion_colecciones_perfil.dart';
 import '../../../models/coleccion.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra las publicaciones guardadas y las colecciones del usuario.
 class SeccionGuardadosPerfil extends StatefulWidget {
@@ -118,43 +119,51 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
   }
 
   Widget _buildToggle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      child: Container(
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _ToggleButton(
-                label: 'Publicaciones',
-                selected: !_mostrarCarpetas,
-                colorTema: widget.colorTema,
-                onTap: () => setState(() => _mostrarCarpetas = false),
-              ),
+    return Builder(
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20),
             ),
-            Expanded(
-              child: _ToggleButton(
-                label: 'Carpetas',
-                selected: _mostrarCarpetas,
-                colorTema: widget.colorTema,
-                onTap: () => setState(() => _mostrarCarpetas = true),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ToggleButton(
+                    label: tr('profileTabPosts'),
+                    selected: !_mostrarCarpetas,
+                    colorTema: widget.colorTema,
+                    onTap: () => setState(() => _mostrarCarpetas = false),
+                  ),
+                ),
+                Expanded(
+                  child: _ToggleButton(
+                    label: tr('profileTabFolders'),
+                    selected: _mostrarCarpetas,
+                    colorTema: widget.colorTema,
+                    onTap: () => setState(() => _mostrarCarpetas = true),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildPosts() {
     if (widget.publicaciones!.isEmpty) {
-      return const EstadoVacioCargando(
-        icon: Icons.bookmark_border_rounded,
-        message: 'No tienes publicaciones guardadas en esta sección.',
+      return Builder(
+        builder: (context) {
+          return EstadoVacioCargando(
+            icon: Icons.bookmark_border_rounded,
+            message: tr('profileEmptySaved'),
+          );
+        }
       );
     }
     return LayoutBuilder(
@@ -216,27 +225,31 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
   Widget _buildFilters() {
     if (widget.comunidadesFiltro.isEmpty) return const SizedBox();
 
-    return Container(
-      height: 40,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          _FilterChip(
-            label: 'Todos',
-            selected: widget.filtroComunidadId == null,
-            colorTema: widget.colorTema,
-            onSelected: () => widget.onFiltroChanged(null),
-          ),
-          ...widget.comunidadesFiltro.map((c) => _FilterChip(
-                label: c['nombre'],
-                selected: widget.filtroComunidadId == c['id'],
+    return Builder(
+      builder: (context) {
+        return Container(
+          height: 40,
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              _FilterChip(
+                label: tr('profileFilterAll'),
+                selected: widget.filtroComunidadId == null,
                 colorTema: widget.colorTema,
-                onSelected: () => widget.onFiltroChanged(c['id']),
-              )),
-        ],
-      ),
+                onSelected: () => widget.onFiltroChanged(null),
+              ),
+              ...widget.comunidadesFiltro.map((c) => _FilterChip(
+                    label: c['nombre'],
+                    selected: widget.filtroComunidadId == c['id'],
+                    colorTema: widget.colorTema,
+                    onSelected: () => widget.onFiltroChanged(c['id']),
+                  )),
+            ],
+          ),
+        );
+      },
     );
   }
 }

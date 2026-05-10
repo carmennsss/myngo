@@ -4,7 +4,7 @@ from channels.testing import WebsocketCommunicator
 from django.urls import re_path
 from channels.routing import URLRouter
 from channels.generic.websocket import AsyncWebsocketConsumer
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.authtoken.models import Token
 from .factories import UsuarioFactory
 
 pytestmark = pytest.mark.asyncio
@@ -26,8 +26,8 @@ application = TokenAuthMiddleware(
 async def test_token_auth_middleware_valid_token():
     from asgiref.sync import sync_to_async
     usuario = await sync_to_async(UsuarioFactory)()
-    refresh = await sync_to_async(RefreshToken.for_user)(usuario)
-    token = str(refresh.access_token)
+    token_obj, _ = await sync_to_async(Token.objects.get_or_create)(user=usuario)
+    token = token_obj.key
     
     communicator = WebsocketCommunicator(application, f"/ws/test/?token={token}")
     connected, _ = await communicator.connect()

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/usuario.dart';
+import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
+
 
 // Bottom sheet para crear una sala de chat nueva.
 // Permite poner nombre, buscar y seleccionar participantes, y en comunidades elegir si el chat será público o privado.
@@ -36,7 +39,11 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
       return u.nombreUsuario.toLowerCase().contains(_busqueda.toLowerCase());
     }).toList();
 
-    return Container(
+    return Builder(
+      builder: (context) {
+        // Si el título es el por defecto (Nuevo Chat 🐾), lo localizamos
+        final tituloFinal = widget.titulo == 'Nuevo Chat 🐾' ? tr('chatNew') : widget.titulo;
+        return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -224,6 +231,8 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           ),
         ],
       ),
+        );
+      },
     );
   }
 }

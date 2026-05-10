@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tolgee/tolgee.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +13,7 @@ import '../../../providers/chat_provider.dart';
 import '../../../widgets/comunes/boton_tactil.dart';
 import '../../perfiles/pantalla_detalle_perfil.dart';
 import '../../../models/usuario.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class ListaMiembrosComunidad extends StatefulWidget {
   final Comunidad comunidad;
@@ -93,57 +96,63 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
 
   @override
   Widget build(BuildContext context) {
-    if (_estaCargando) {
-      final loading = const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
-      return widget.comoSliver ? SliverFillRemaining(child: loading) : loading;
-    }
-
-    if (_miembros.isEmpty) {
-      final empty = Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people_outline, size: 64, color: Colors.grey.withOpacity(0.3)),
-            const SizedBox(height: 16),
-            Text('No hay miembros en esta comunidad 🐾', style: GoogleFonts.outfit(color: Colors.grey)),
-          ],
-        ),
-      );
-      return widget.comoSliver ? SliverFillRemaining(child: empty) : empty;
-    }
-
-    if (widget.comoSliver) {
-      return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildMemberItem(context, index),
-            childCount: _miembros.length + (_estaCargandoMas ? 1 : 0),
+    return Builder(
+      builder: (context) {
+        if (_estaCargando) {
+          final loading = const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
+          return widget.comoSliver ? SliverFillRemaining(child: loading) : loading;
+        }
+    
+        if (_miembros.isEmpty) {
+          final empty = Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 64, color: Colors.grey.withOpacity(0.3)),
+                const SizedBox(height: 16),
+                Text(tr('communityNoMembers'), style: GoogleFonts.outfit(color: Colors.grey)),
+              ],
+            ),
+          );
+          return widget.comoSliver ? SliverFillRemaining(child: empty) : empty;
+        }
+    
+        if (widget.comoSliver) {
+          return SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _buildMemberItem(context, index, tr),
+                childCount: _miembros.length + (_estaCargandoMas ? 1 : 0),
+              ),
+            ),
+          );
+        }
+    
+        return RefreshIndicator(
+          onRefresh: _cargarMiembros,
+          color: const Color(0xFFC35E34),
+          child: ListView.builder(
+            controller: _scrollController,
+            primary: false,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: _miembros.length + (_estaCargandoMas ? 1 : 0),
+            itemBuilder: (context, index) => _buildMemberItem(context, index, tr),
           ),
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _cargarMiembros,
-      color: const Color(0xFFC35E34),
-      child: ListView.builder(
-        controller: _scrollController,
-        primary: false,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: _miembros.length + (_estaCargandoMas ? 1 : 0),
-        itemBuilder: (context, index) => _buildMemberItem(context, index),
-      ),
+        );
+      }
     );
   }
 
-  Widget _buildMemberItem(BuildContext context, int index) {
+
+  Widget _buildMemberItem(BuildContext context, int index, String Function(String, [Map<String, dynamic>?]) tr) {
     if (index == _miembros.length) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Center(child: CircularProgressIndicator(color: Color(0xFFC35E34))),
       );
     }
+
     final m = _miembros[index];
     final userId = m['usuario_id'] ?? m['usuario'];
     final nombre = m['usuario_nombre'] ?? 'Michi';
@@ -280,7 +289,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          rol.toUpperCase(),
+                          (rol == 'Creador' ? tr('commonCreator') : (rol == 'Moderador' ? tr('commonModerator') : tr('commonMember'))).toUpperCase(),
                           style: GoogleFonts.outfit(
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
@@ -290,12 +299,13 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                         ),
                       ),
                       Text(
-                        'Miembro desde ${DateFormat('dd/MM/yyyy').format(DateTime.parse(m['fecha_union'] ?? DateTime.now().toIso8601String()))}',
+                        tr('communityMemberSince', {'date': DateFormat('dd/MM/yyyy').format(DateTime.parse(m['fecha_union'] ?? DateTime.now().toIso8601String()))}),
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: Colors.grey.shade600,
                         ),
                       ),
+
                     ],
                   ),
                 ),

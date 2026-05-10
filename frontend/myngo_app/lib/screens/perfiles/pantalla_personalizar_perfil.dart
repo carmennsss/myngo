@@ -10,6 +10,7 @@ import '../../widgets/comunes/profile_preview.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_perfiles.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -117,7 +118,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res.exito ? '¡Perfil personalizado con éxito! ✨' : res.mensaje),
+          content: Text(res.exito ? tr('customProfileSuccess') : res.mensaje),
           backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
         ),
       );
@@ -154,59 +155,62 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
                             (_perfilId != null && (_previewColorTema != '#C35E34' || _previewFuentePerfil != 'Outfit')); 
                             // Simplificado, idealmente comparar con valores iniciales
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1),
-      body: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header Premium
-              _buildHeader(context),
-              
-              // Área de Vista Previa con Glassmorphism
-              _buildPreviewArea(context),
-
-              // Selector de Categorías (Tabs)
-              _buildCategorySelector(),
-
-              // Contenido de la Categoría
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildInventoryGrid('Avatar'),
-                    _buildInventoryGrid('Marco'),
-                    _buildInventoryGrid('Fondo'),
-                    _buildPersonalizacionPanel(),
-                  ],
+    return Builder(
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+        body: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header Premium
+                _buildHeader(context, tr),
+                
+                // Área de Vista Previa con Glassmorphism
+                _buildPreviewArea(context, tr),
+  
+                // Selector de Categorías (Tabs)
+                _buildCategorySelector(tr),
+  
+                // Contenido de la Categoría
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildInventoryGrid('Avatar', tr),
+                      _buildInventoryGrid('Marco', tr),
+                      _buildInventoryGrid('Fondo', tr),
+                      _buildPersonalizacionPanel(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            
+            // Botón Flotante de Guardar (Solo si hay cambios)
+            if (tieneCambios)
+              Positioned(
+                bottom: 32,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _buildSaveButton(tr),
                 ),
               ),
-            ],
-          ),
-          
-          // Botón Flotante de Guardar (Solo si hay cambios)
-          if (tieneCambios)
-            Positioned(
-              bottom: 32,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _buildSaveButton(),
+            
+            if (_isLoading)
+              Container(
+                color: Colors.black26,
+                child: const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 5)),
               ),
-            ),
-          
-          if (_isLoading)
-            Container(
-              color: Colors.black26,
-              child: const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 5)),
-            ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, Function tr) {
     return Container(
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, bottom: 10, left: 16, right: 16),
       decoration: BoxDecoration(
@@ -221,7 +225,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           ),
           const SizedBox(width: 8),
           Text(
-            'Personalizar Perfil',
+            tr('customProfileTitle'),
             style: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.w900,
@@ -257,7 +261,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildPreviewArea(BuildContext context) {
+  Widget _buildPreviewArea(BuildContext context, Function tr) {
     final imageProvider = _buildImageProvider(_previewFondoPerfil);
     
     return Container(
@@ -277,7 +281,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       ),
       child: Column(
         children: [
-          _buildPreviewHeader(),
+          _buildPreviewHeader(tr),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -342,7 +346,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildCategorySelector() {
+  Widget _buildCategorySelector(Function tr) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(4),
@@ -362,17 +366,17 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         unselectedLabelColor: Colors.grey.shade600,
         labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
         unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
-        tabs: const [
-          Tab(text: 'Avatares'),
-          Tab(text: 'Marcos'),
-          Tab(text: 'Fondos'),
-          Tab(text: 'Tema y Estilo'),
+        tabs: [
+          Tab(text: tr('customProfileTabAvatars')),
+          Tab(text: tr('customProfileTabFrames')),
+          Tab(text: tr('customProfileTabBackgrounds')),
+          Tab(text: tr('customProfileTabThemeStyle')),
         ],
       ),
     );
   }
 
-  Widget _buildInventoryGrid(String tipo) {
+  Widget _buildInventoryGrid(String tipo, Function tr) {
     // Eliminado el CircularProgressIndicator redundante de aquí
     final filtradas = _misMejoras.where((m) => m['mejora_detalles'] != null && m['mejora_detalles']['tipo'].toString().toLowerCase() == tipo.toLowerCase()).toList();
 
@@ -381,7 +385,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         if (tipo == 'Fondo') 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: _buildCustomUploadCard('Fondo personalizado', 'Sube tu propia imagen para el banner o el feed', Icons.add_photo_alternate_rounded, () => _mostrarDialogoSobreFondoPersonalizado()),
+            child: _buildCustomUploadCard(tr('customProfileCustomBgTitle'), tr('customProfileCustomBgSubtitle'), Icons.add_photo_alternate_rounded, () => _mostrarDialogoSobreFondoPersonalizado()),
           ),
         Expanded(
           child: GridView.builder(
@@ -462,18 +466,18 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Imagen Personalizada 🎨', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(tr('customProfileDialogImageTitle'), style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Elige dónde quieres aplicar tu propia imagen:', style: GoogleFonts.outfit(color: Colors.grey)),
+            Text(tr('customProfileDialogImageDesc'), style: GoogleFonts.outfit(color: Colors.grey)),
             const SizedBox(height: 24),
             ListTile(
               leading: const Icon(Icons.view_day_rounded, color: Color(0xFFC35E34)),
-              title: const Text('Banner de Cabecera'),
+              title: Text(tr('customProfileDialogBanner')),
               onTap: () { Navigator.pop(context); _subirImagenPersonalizada('banner'); },
             ),
             ListTile(
               leading: const Icon(Icons.grid_view_rounded, color: Color(0xFF248EA6)),
-              title: const Text('Fondo de Perfil (Feed)'),
+              title: Text(tr('customProfileDialogFeed')),
               onTap: () { Navigator.pop(context); _subirImagenPersonalizada('fondo_feed'); },
             ),
             const SizedBox(height: 16),
@@ -496,19 +500,19 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           const Divider(),
           const SizedBox(height: 16),
           
-          Text('Estilo de Publicación', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440))),
+          Text(tr('customProfileSectionPostStyle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440))),
           const SizedBox(height: 8),
-          Text('Personaliza cómo se ven tus posts en el feed', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
+          Text(tr('customProfileSectionPostStyleDesc'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
           const SizedBox(height: 20),
           
-          Text('Colores y Borde', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(tr('customProfileSectionColorsBorder'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 12),
-          _buildColorPickerRow('Fondo', 'fondo', ['#FFFFFF', '#FBE9E0', '#E0F2F1', '#F3E5F5', '#E3F2FD', '#121212']),
+          _buildColorPickerRow(tr('customProfileColorLabelBg'), 'fondo', ['#FFFFFF', '#FBE9E0', '#E0F2F1', '#F3E5F5', '#E3F2FD', '#121212']),
           const SizedBox(height: 16),
-          _buildColorPickerRow('Borde', 'borde', ['#C35E34', '#248EA6', '#9B59B6', '#2ECC71', '#F1C40F', '#000000']),
+          _buildColorPickerRow(tr('customProfileColorLabelBorder'), 'borde', ['#C35E34', '#248EA6', '#9B59B6', '#2ECC71', '#F1C40F', '#000000']),
           
           const SizedBox(height: 24),
-          _buildInventoryGridSection('Estilo Post', 'Tus estilos comprados'),
+          _buildInventoryGridSection('Estilo Post', tr('customProfileThemePurchasedStyles')),
         ],
       ),
     );
@@ -520,12 +524,12 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tema del Perfil', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440))),
+        Text(tr('customProfileSectionTheme'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF4A4440))),
         const SizedBox(height: 8),
-        Text('Define el color principal y la fuente de tu perfil', style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
+        Text(tr('customProfileSectionThemeDesc'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey)),
         const SizedBox(height: 20),
         
-        Text('Color Principal', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(tr('customProfileThemeMainColor'), style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         SizedBox(
           height: 45,
@@ -576,7 +580,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
         ),
         
         const SizedBox(height: 24),
-        Text('Fuente del Perfil', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(tr('customProfileThemeProfileFont'), style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         _buildFontSelector(isPost: false),
       ],
@@ -635,7 +639,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     );
   }
 
-  Widget _buildFontSelector({bool isPost = true}) {
+  Widget _buildFontSelector({required bool isPost}) {
     final fuentes = ['Outfit', 'Roboto', 'Inter', 'Lobster', 'Dancing Script', 'Indie Flower'];
     final fuenteActual = isPost ? (_previewEstilo?['fuente'] ?? 'Outfit') : _previewFuentePerfil;
 
@@ -654,7 +658,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
           icon: Icon(Icons.font_download_rounded, color: isPost ? const Color(0xFFC35E34) : EstiloPostHelper.parseHex(_previewColorTema)),
           items: ['Outfit', ...fuentes.where((f) => f != 'Outfit')].map((f) => DropdownMenuItem(
             value: f,
-            child: Text(f == 'Outfit' ? '$f (Default)' : f, style: GoogleFonts.getFont(f, color: const Color(0xFF4A4440))),
+            child: Text(f == 'Outfit' ? '$f (${tr('customProfileDefault')})' : f, style: GoogleFonts.getFont(f, color: const Color(0xFF4A4440))),
           )).toList(),
           onChanged: (val) {
             if (isPost) {
@@ -681,23 +685,26 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       children: [
         Text(titulo, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 120, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1),
-          itemCount: filtradas.length,
-          itemBuilder: (context, index) {
-            final item = filtradas[index];
-            return _InventoryItemCard(
-              detalles: item['mejora_detalles'],
-              estaEquipada: item['esta_equipada'] == true,
-              onTap: () => _actualizarPreview(tipo, item['mejora_detalles']),
-              onEquipar: () => _equiparMejora(item['mejora_detalles']['id'], tipo, item['mejora_detalles']['url_recurso']),
-              onDesequipar: () => _desequiparMejora(item['mejora_detalles']['id'], tipo),
-              compacto: true,
-            );
-          },
-        ),
+        Builder(
+          builder: (context) {
+            return GridView.builder(
+              shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 120, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1),
+            itemCount: filtradas.length,
+            itemBuilder: (context, index) {
+              final item = filtradas[index];
+              return _InventoryItemCard(
+                detalles: item['mejora_detalles'],
+                estaEquipada: item['esta_equipada'] == true,
+                onTap: () => _actualizarPreview(tipo, item['mejora_detalles']),
+                onEquipar: () => _equiparMejora(item['mejora_detalles']['id'], tipo, item['mejora_detalles']['url_recurso']),
+                onDesequipar: () => _desequiparMejora(item['mejora_detalles']['id'], tipo),
+                compacto: true,
+              );
+            },
+          );
+        }),
       ],
     );
   }
@@ -723,14 +730,14 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     });
   }
 
-  Widget _buildPreviewHeader() {
+  Widget _buildPreviewHeader(Function tr) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Icon(Icons.remove_red_eye_rounded, size: 12, color: Colors.grey),
         const SizedBox(width: 6),
         Text(
-          'VISTA PREVIA',
+          tr('customProfilePreview'),
           style: GoogleFonts.outfit(
             fontSize: 10,
             fontWeight: FontWeight.w900,
@@ -757,18 +764,18 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Equipar Fondo 🖼️', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(tr('customProfileEquipBgTitle'), style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('¿Dónde quieres equipar este fondo de tu inventario?', style: GoogleFonts.outfit(color: Colors.grey)),
+              Text(tr('customProfileEquipBgDesc'), style: GoogleFonts.outfit(color: Colors.grey)),
               const SizedBox(height: 24),
               ListTile(
                 leading: const Icon(Icons.view_day_rounded, color: Color(0xFFC35E34)),
-                title: const Text('Banner de Cabecera'),
+                title: Text(tr('customProfileDialogBanner')),
                 onTap: () => Navigator.pop(context, 'banner'),
               ),
               ListTile(
                 leading: const Icon(Icons.grid_view_rounded, color: Color(0xFF248EA6)),
-                title: const Text('Fondo de Perfil (Feed)'),
+                title: Text(tr('customProfileDialogFeed')),
                 onTap: () => Navigator.pop(context, 'fondo_feed'),
               ),
               const SizedBox(height: 16),
@@ -807,7 +814,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(respuesta.mensaje),
+          content: Text(respuesta.exito ? tr('profileUnequipSuccess') : respuesta.mensaje),
           backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : Colors.red,
         ),
       );
@@ -826,17 +833,48 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     }
   }
 
-  Widget _buildSaveButton() {
-    return ElevatedButton.icon(
-      onPressed: _guardarCambios,
-      icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-      label: Text('GUARDAR ESTILO', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF248EA6),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-        elevation: 8,
-        shadowColor: const Color(0xFF248EA6).withOpacity(0.4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildSaveButton(Function tr) {
+    return Container(
+      width: 280,
+      height: 64,
+      decoration: BoxDecoration(
+        color: const Color(0xFFC35E34),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFFC35E34).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _guardarCambios,
+          borderRadius: BorderRadius.circular(32),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 28),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tr('customProfileSaveButton'),
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 16),
+                      ),
+                      Text(
+                        tr('customProfileSaveButtonDesc'),
+                        style: GoogleFonts.outfit(color: Colors.white70, fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -891,9 +929,13 @@ class _InventoryItemCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: Text(
-                  estaEquipada ? 'DESEQUIPAR' : 'EQUIPAR',
-                  style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900),
+                child: Builder(
+                  builder: (context) {
+                    return Text(
+                      estaEquipada ? tr('profileUnequip') : tr('profileEquip'),
+                      style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900),
+                    );
+                  }
                 ),
               ),
             ),

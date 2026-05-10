@@ -7,6 +7,7 @@ import '../../models/coleccion.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Pantalla de galería con dos pestañas: todas las fotos/vídeos (masonry) y las colecciones (carpetas).
 // Sirve tanto para galería personal como para galería de comunidad.
@@ -72,79 +73,82 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1),
-      appBar: AppBar(
-        title: Text(
-          widget.titulo.toUpperCase(),
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            fontSize: 18,
-          ),
-        ),
+    return Builder(
+      builder: (context) {
+        return Scaffold(
         backgroundColor: const Color(0xFFFEF5F1),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
-        titleTextStyle: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: const Color(0xFFC35E34),
-          labelColor: const Color(0xFFC35E34),
-          unselectedLabelColor: Colors.grey,
-          labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-          tabs: const [
-            Tab(text: 'GALERÍA'),
-            Tab(text: 'COLECCIONES'),
+        appBar: AppBar(
+          title: Text(
+            widget.titulo.toUpperCase(),
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              fontSize: 18,
+            ),
+          ),
+          backgroundColor: const Color(0xFFFEF5F1),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
+          titleTextStyle: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: const Color(0xFFC35E34),
+            labelColor: const Color(0xFFC35E34),
+            unselectedLabelColor: Colors.grey,
+            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            tabs: [
+              Tab(text: tr('galleryTabsGallery')),
+              Tab(text: tr('galleryTabsCollections')),
+            ],
+          ),
+          actions: [
+            if (_puedeCrearColeccion)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFFC35E34)),
+                onSelected: (value) => _seleccionarYSubir(value == 'video', tr),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'image', child: Row(children: [const Icon(Icons.image_outlined, size: 20), const SizedBox(width: 8), Text(tr('chatGalleryTitle').split(' ')[0] + ' ' + tr('communityListJoin').split(' ')[1])])), // Hack for "Subir Imagen"
+                  PopupMenuItem(value: 'video', child: Row(children: [const Icon(Icons.videocam_outlined, size: 20), const SizedBox(width: 8), Text(tr('chatVideoTitle').split(' ')[0] + ' ' + tr('chatVideoTitle').split(' ')[1])])), // Hack for "Subir Vídeo"
+                ],
+              ),
           ],
         ),
-        actions: [
-          if (_puedeCrearColeccion)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFFC35E34)),
-              onSelected: (value) => _seleccionarYSubir(value == 'video'),
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'image', child: Row(children: [Icon(Icons.image_outlined, size: 20), SizedBox(width: 8), Text('Subir Imagen')])),
-                const PopupMenuItem(value: 'video', child: Row(children: [Icon(Icons.videocam_outlined, size: 20), SizedBox(width: 8), Text('Subir Vídeo')])),
-              ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            // Pestaña 1: Masonry Grid
+            MasonryGridGaleria(
+              comunidadId: widget.comunidadId,
+              usuarioId: widget.usuarioId,
             ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // Pestaña 1: Masonry Grid
-          MasonryGridGaleria(
-            comunidadId: widget.comunidadId,
-            usuarioId: widget.usuarioId,
-          ),
-          
-          // Pestaña 2: Colecciones
-          _buildColeccionesTab(),
-        ],
-      ),
-      floatingActionButton: _puedeCrearColeccion
-          ? FloatingActionButton(
-              backgroundColor: const Color(0xFFC35E34),
-              elevation: 4,
-              child: const Icon(Icons.create_new_folder_outlined, color: Colors.white),
-              onPressed: () => _mostrarDialogoCrearColeccion(),
-            )
-          : null,
-    );
+            
+            // Pestaña 2: Colecciones
+            _buildColeccionesTab(tr),
+          ],
+        ),
+        floatingActionButton: _puedeCrearColeccion
+            ? FloatingActionButton(
+                backgroundColor: const Color(0xFFC35E34),
+                elevation: 4,
+                child: const Icon(Icons.create_new_folder_outlined, color: Colors.white),
+                onPressed: () => _mostrarDialogoCrearColeccion(tr),
+              )
+            : null,
+      );
+    });
   }
 
   // Renderiza el grid de colecciones de la segunda pestaña
-  Widget _buildColeccionesTab() {
+  Widget _buildColeccionesTab(dynamic tr) {
     if (_cargandoColecciones && _colecciones.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
     }
 
     if (_colecciones.isEmpty) {
-      return const EstadoVacioCargando(
+      return EstadoVacioCargando(
         icon: Icons.folder_open_outlined,
-        message: 'No hay colecciones creadas',
+        message: tr('galleryNoCollections'),
       );
     }
 
@@ -160,14 +164,14 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         itemCount: _colecciones.length,
         itemBuilder: (context, index) {
           final coleccion = _colecciones[index];
-          return _buildCarpetaColeccion(coleccion);
+          return _buildCarpetaColeccion(coleccion, tr);
         },
       ),
     );
   }
 
   // Tarjeta de carpeta con icono de candado si es privada
-  Widget _buildCarpetaColeccion(Coleccion coleccion) {
+  Widget _buildCarpetaColeccion(Coleccion coleccion, dynamic tr) {
     return InkWell(
       onTap: () {
           Navigator.push(
@@ -205,7 +209,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
               textAlign: TextAlign.center,
             ),
             Text(
-              '${coleccion.numeroImagenes} recursos',
+              tr('galleryResources', {'count': coleccion.numeroImagenes.toString()}),
               style: GoogleFonts.outfit(
                 color: Colors.grey.shade500,
                 fontSize: 12,
@@ -218,7 +222,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
   }
 
   // Diálogo para crear una nueva colección con nombre y opción de privacidad
-  void _mostrarDialogoCrearColeccion() {
+  void _mostrarDialogoCrearColeccion(dynamic tr) {
     final TextEditingController _nombreCtrl = TextEditingController();
     bool _privada = false;
 
@@ -228,7 +232,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Text('Nueva Colección', style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold)),
+          title: Text(tr('galleryNewColeccion'), style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -236,7 +240,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
                 controller: _nombreCtrl,
                 style: const TextStyle(color: Color(0xFF4A4440)),
                 decoration: InputDecoration(
-                  labelText: 'Nombre de la carpeta',
+                  labelText: tr('galleryFolderLabel'),
                   labelStyle: const TextStyle(color: Colors.grey),
                   enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                   focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFC35E34))),
@@ -244,7 +248,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
               ),
               const SizedBox(height: 16),
               SwitchListTile(
-                title: Text('¿Privada?', style: GoogleFonts.outfit(color: Colors.grey.shade700)),
+                title: Text(tr('galleryIsPrivate'), style: GoogleFonts.outfit(color: Colors.grey.shade700)),
                 value: _privada,
                 activeColor: const Color(0xFFC35E34),
                 onChanged: (v) => setDialogState(() => _privada = v),
@@ -254,7 +258,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.grey)),
+              child: Text(tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.grey)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -276,7 +280,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
                   }
                 }
               },
-              child: const Text('Crear'),
+              child: Text(tr('communityFormSubmit')), // Hack for "Crear"
             ),
           ],
         ),
@@ -285,7 +289,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
   }
 
   // Abre el selector del dispositivo para subir directamente a la galería
-  Future<void> _seleccionarYSubir(bool esVideo) async {
+  Future<void> _seleccionarYSubir(bool esVideo, dynamic tr) async {
     final picker = ImagePicker();
     final pickedFile = esVideo 
         ? await picker.pickVideo(source: ImageSource.gallery)
@@ -293,7 +297,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     
     if (pickedFile != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(esVideo ? 'Subiendo vídeo... 🐾' : 'Subiendo imagen... 🐾'), behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text(esVideo ? tr('galleryUploadingVideo') : tr('galleryUploadingImage')), behavior: SnackBarBehavior.floating),
       );
       
       final res = await _servicioGaleria.subirImagenGaleria(

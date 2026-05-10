@@ -12,6 +12,9 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../utils/configuracion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
+
 
 // Pantalla que lista todos los chats del usuario, tanto personales como de comunidad.
 // Escucha el ChatProvider para actualizarse cuando llegan nuevos mensajes.
@@ -145,10 +148,11 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     }
 
     return {
-      'nombre': sala['nombre'] ?? 'Chat',
+      'nombre': sala['nombre'],
       'avatar': sala['avatar_s3'],
     };
   }
+
 
 
   void _mostrarDialogoCrearSala() async {
@@ -206,99 +210,104 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       return nombre.contains(query);
     }).toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFBF9F8),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _mostrarDialogoCrearSala,
-        backgroundColor: const Color(0xFFC35E34),
-        icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
-        label: Text(
-          'Nuevo Chat',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: const Color(0xFFC35E34),
-          onRefresh: () => chatProvider.cargarSalas(),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Mensajes',
-                        style: GoogleFonts.outfit(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF2D2D2D),
-                          letterSpacing: -1,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+    return Builder(
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFBF9F8),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: _mostrarDialogoCrearSala,
+            backgroundColor: const Color(0xFFC35E34),
+            icon: const Icon(Icons.add_comment_rounded, color: Colors.white),
+            label: Text(
+              tr('chatNew'),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ),
+          body: SafeArea(
+            child: RefreshIndicator(
+              color: const Color(0xFFC35E34),
+              onRefresh: () => chatProvider.cargarSalas(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+    
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tr('chatMessages'),
+                            style: GoogleFonts.outfit(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF2D2D2D),
+                              letterSpacing: -1,
                             ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Buscar chats...',
-                            hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 15),
-                            prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onChanged: (_) => setState(() {}), // Forzar rebuild para filtrar
-                        ),
+                          const SizedBox(height: 16),
+    
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: tr('chatSearchHint'),
+                                hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 15),
+                                prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onChanged: (_) => setState(() {}), // Forzar rebuild para filtrar
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-
-
-              if (_cargando && salas.isEmpty)
-                SliverFillRemaining(
-                  child: _buildCargando(),
-                )
-              else if (salasFiltradas.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildEstadoVacio(),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.only(bottom: 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return _buildSalaItem(salasFiltradas[index], index);
-                      },
-                      childCount: salasFiltradas.length,
                     ),
                   ),
-                ),
-            ],
+    
+    
+                  if (_cargando && salas.isEmpty)
+                    SliverFillRemaining(
+                      child: _buildCargando(),
+                    )
+                  else if (salasFiltradas.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEstadoVacio(tr),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 100),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            return _buildSalaItem(salasFiltradas[index], index, tr);
+                          },
+                          childCount: salasFiltradas.length,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
+
 
 
   Widget _buildCargando() {
@@ -330,7 +339,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     );
   }
 
-  Widget _buildEstadoVacio() {
+  Widget _buildEstadoVacio(String Function(String, [Map<String, dynamic>?]) tr) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -338,7 +347,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           Icon(Icons.chat_bubble_outline_rounded, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            _searchController.text.isEmpty ? 'Sin conversaciones' : 'No se encontró nada',
+            _searchController.text.isEmpty ? tr('chatNoConversations') : tr('chatNoSearchResults'),
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -348,8 +357,8 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           const SizedBox(height: 8),
           Text(
             _searchController.text.isEmpty 
-              ? '¡Empieza a conectar con otros Myngos! 🐾'
-              : 'Prueba con otro nombre',
+              ? tr('chatStartConnecting')
+              : tr('chatTryAnotherName'),
             style: GoogleFonts.outfit(color: Colors.grey.shade400),
           ),
         ],
@@ -357,216 +366,164 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     );
   }
 
-  Widget _buildSalaItem(Map<String, dynamic> sala, int index) {
+
+  Widget _buildSalaItem(Map<String, dynamic> sala, int index, String Function(String, [Map<String, dynamic>?]) tr) {
     final datos = _datosInterlocutor(sala);
-    final nombre = datos['nombre'] ?? 'Chat';
+    final nombreRaw = datos['nombre'];
+    final nombre = (nombreRaw == null || nombreRaw == 'Chat vacío') ? tr('chatEmpty') : nombreRaw;
     final avatarUrl = datos['avatar'];
     
     final ultimoMsg = sala['ultimo_mensaje'] as Map<String, dynamic>?;
-    final preview = ultimoMsg != null ? (ultimoMsg['content'] ?? '') as String : 'Sin mensajes aún';
+    final preview = ultimoMsg != null ? (ultimoMsg['content'] ?? '') as String : tr('chatNoMessagesYet');
     final hora = ultimoMsg != null ? _formatearFecha(ultimoMsg['fecha_envio']) : '';
     final noLeidos = (sala['mensajes_no_leidos'] as num?)?.toInt() ?? 0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            final chatProvider = context.read<ChatProvider>();
-            await context.push('/mensajes/sala/${sala['id']}', extra: {'nombre': nombre, 'sala': sala});
-            if (mounted) await chatProvider.cargarSalas();
-            if (mounted) setState(() {});
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: noLeidos > 0 ? const Color(0xFFFBF4F1) : Colors.transparent,
-              border: Border.all(
-                color: noLeidos > 0 ? const Color(0xFFF5EBE6) : Colors.transparent,
+
+    return TweenAnimationBuilder<double>(
+      duration: Duration(milliseconds: 300 + (index * 50)),
+      tween: Tween(begin: 0, end: 1),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(opacity: value, child: child),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              await context.push('/mensajes/sala/${sala['id']}', extra: {'nombre': nombre, 'sala': sala});
+              if (mounted) _cargar();
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: noLeidos > 0 ? const Color(0xFFFBF4F1) : Colors.transparent,
+                border: Border.all(
+                  color: noLeidos > 0 ? const Color(0xFFF5EBE6) : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Avatar
+                  Hero(
+                    tag: 'avatar_sala_${sala['id'] ?? index}',
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: noLeidos > 0 ? const Color(0xFFC35E34) : Colors.grey.shade200,
+                          width: 2,
+                        ),
+                        image: (avatarUrl != null && avatarUrl.isNotEmpty)
+                            ? DecorationImage(
+                                image: CachedNetworkImageProvider(
+                                  avatarUrl.startsWith('http') ? avatarUrl : Uri.encodeFull('${Configuracion.baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}$avatarUrl'),
+                                ), 
+                                fit: BoxFit.cover
+                              )
+                            : null,
+                        color: const Color(0xFFF5EBE6),
+                      ),
+                      child: (avatarUrl == null || avatarUrl.isEmpty)
+                          ? Center(
+                              child: Text(
+                                nombre.isNotEmpty ? nombre.replaceAll('@', '')[0].toUpperCase() : '?',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFC35E34),
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Texto
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                nombre,
+                                style: GoogleFonts.outfit(
+                                  fontWeight: noLeidos > 0 ? FontWeight.w800 : FontWeight.w600,
+                                  fontSize: 17,
+                                  color: const Color(0xFF2D2D2D),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              hora,
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: noLeidos > 0 ? const Color(0xFFC35E34) : Colors.grey.shade500,
+                                fontWeight: noLeidos > 0 ? FontWeight.w700 : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                preview,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  color: noLeidos > 0 ? const Color(0xFF4A4440) : Colors.grey.shade500,
+                                  fontWeight: noLeidos > 0 ? FontWeight.w600 : FontWeight.normal,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            Consumer<ChatProvider>(
+                              builder: (context, chat, child) {
+                                final liveNoLeidos = chat.noLeidosEnSala(sala['id']);
+                                // Usamos el máximo entre lo que vino de la API y lo que tiene el provider en tiempo real
+                                final displayNoLeidos = liveNoLeidos > 0 ? liveNoLeidos : noLeidos;
+                                
+                                if (displayNoLeidos == 0) return const SizedBox.shrink();
+                                
+                                return Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFC35E34),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    displayNoLeidos.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-
-                _AvatarSala(
-                  avatarUrl: avatarUrl,
-                  nombre: nombre,
-                  noLeidos: noLeidos,
-                  heroTag: 'avatar_sala_${sala['id'] ?? index}',
-                ),
-                const SizedBox(width: 16),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              nombre,
-                              style: GoogleFonts.outfit(
-                                fontWeight: noLeidos > 0 ? FontWeight.w800 : FontWeight.w600,
-                                fontSize: 17,
-                                color: const Color(0xFF2D2D2D),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(
-                            hora,
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: noLeidos > 0 ? const Color(0xFFC35E34) : Colors.grey.shade500,
-                              fontWeight: noLeidos > 0 ? FontWeight.w700 : FontWeight.normal,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              preview,
-                              style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                color: noLeidos > 0 ? const Color(0xFF4A4440) : Colors.grey.shade500,
-                                fontWeight: noLeidos > 0 ? FontWeight.w600 : FontWeight.normal,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          Consumer<ChatProvider>(
-                            builder: (context, chat, child) {
-                              final liveNoLeidos = chat.noLeidosEnSala(sala['id']);
-                              final displayNoLeidos = liveNoLeidos > 0 ? liveNoLeidos : noLeidos;
-                              if (displayNoLeidos == 0) return const SizedBox.shrink();
-                              return Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFC35E34),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  displayNoLeidos.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-/// cambia su propia URL.
-class _AvatarSala extends StatefulWidget {
-  final String? avatarUrl;
-  final String nombre;
-  final int noLeidos;
-  final String heroTag;
-
-  const _AvatarSala({
-    required this.avatarUrl,
-    required this.nombre,
-    required this.noLeidos,
-    required this.heroTag,
-  });
-
-  @override
-  State<_AvatarSala> createState() => _AvatarSalaState();
-}
-
-class _AvatarSalaState extends State<_AvatarSala> {
-  @override
-  void didUpdateWidget(_AvatarSala oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.avatarUrl != widget.avatarUrl && oldWidget.avatarUrl != null) {
-      final oldResolved = oldWidget.avatarUrl!.startsWith('http')
-          ? oldWidget.avatarUrl!
-          : Uri.encodeFull(
-              '${Configuracion.baseUrl}${oldWidget.avatarUrl!.startsWith('/') ? '' : '/'}${oldWidget.avatarUrl!}');
-      CachedNetworkImage.evictFromCache(oldResolved);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final url = widget.avatarUrl;
-    final resolvedUrl = (url != null && url.isNotEmpty)
-        ? (url.startsWith('http')
-            ? url
-            : Uri.encodeFull(
-                '${Configuracion.baseUrl}${url.startsWith('/') ? '' : '/'}$url'))
-        : null;
-
-    return Hero(
-      tag: widget.heroTag,
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: widget.noLeidos > 0 ? const Color(0xFFC35E34) : Colors.grey.shade200,
-            width: 2,
-          ),
-          color: const Color(0xFFF5EBE6),
-        ),
-        child: ClipOval(
-          child: resolvedUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: resolvedUrl,
-                  fit: BoxFit.cover,
-                  width: 64,
-                  height: 64,
-                  placeholder: (_, __) => const SizedBox.shrink(),
-                  errorWidget: (_, __, ___) => _Inicial(nombre: widget.nombre),
-                )
-              : _Inicial(nombre: widget.nombre),
-        ),
-      ),
-    );
-  }
-}
-
-class _Inicial extends StatelessWidget {
-  final String nombre;
-  const _Inicial({required this.nombre});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF5EBE6),
-      child: Center(
-        child: Text(
-          nombre.isNotEmpty ? nombre.replaceAll('@', '')[0].toUpperCase() : '?',
-          style: GoogleFonts.outfit(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFC35E34),
           ),
         ),
       ),

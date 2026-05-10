@@ -3,6 +3,7 @@ import '../../../models/usuario.dart';
 import '../../../widgets/comunes/post_preview.dart';
 import '../../../widgets/comunes/profile_preview.dart';
 import '../../../utils/configuracion.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la previsualización dinámica de las mejoras seleccionadas.
 class TiendaPreviewSection extends StatelessWidget {
@@ -37,14 +38,14 @@ class TiendaPreviewSection extends StatelessWidget {
               Flexible(
                 child: Transform.scale(
                   scale: scale,
-                  child: _buildProfilePreview(),
+                  child: _buildProfilePreview(context),
                 ),
               ),
               const SizedBox(width: 20),
               Flexible(
                 child: Transform.scale(
                   scale: scale,
-                  child: _buildPostPreview(),
+                  child: _buildPostPreview(context),
                 ),
               ),
             ],
@@ -53,12 +54,12 @@ class TiendaPreviewSection extends StatelessWidget {
             children: [
               Transform.scale(
                 scale: scale,
-                child: _buildProfilePreview(),
+                child: _buildProfilePreview(context),
               ),
               const SizedBox(height: 12),
               Transform.scale(
                 scale: scale,
-                child: _buildPostPreview(),
+                child: _buildPostPreview(context),
               ),
             ],
           );
@@ -84,22 +85,35 @@ class TiendaPreviewSection extends StatelessWidget {
     return '$base$cleanPath';
   }
 
-  Widget _buildProfilePreview() {
+  Widget _buildComunidadPreview() {
+    final fondo = _getAbsoluteUrl(previewFondo ?? comunidad!.urlFondo ?? comunidad!.urlPortada);
+    final avatar = _getAbsoluteUrl(previewAvatar ?? comunidad!.urlAvatar ?? comunidad!.urlPortada);
+
+    return ProfilePreview(
+      fondoUrl: fondo,
+      avatarUrl: avatar,
+      marcoUrl: _getAbsoluteUrl(previewMarco),
+      nombreUsuario: comunidad!.nombre,
+      puntos: 0,
+    );
+  }
+
+  Widget _buildProfilePreview(BuildContext context) {
     return ProfilePreview(
       fondoUrl: _getAbsoluteUrl(previewFondo),
       avatarUrl: _getAbsoluteUrl(previewAvatar),
       marcoUrl: _getAbsoluteUrl(previewMarco),
-      nombreUsuario: usuarioActual?.nombreUsuario ?? 'Usuario',
+      nombreUsuario: usuarioActual?.nombreUsuario ?? tr('user'),
       puntos: usuarioActual?.puntos ?? 0,
     );
   }
 
-  Widget _buildPostPreview() {
+  Widget _buildPostPreview(BuildContext context) {
     return PostPreview(
       estilo: previewEstiloPost,
       avatarUrl: _getAbsoluteUrl(previewAvatar),
       marcoUrl: _getAbsoluteUrl(previewMarco),
-      nombreUsuario: usuarioActual?.nombreUsuario ?? 'Usuario',
+      nombreUsuario: usuarioActual?.nombreUsuario ?? tr('user'),
     );
   }
 }

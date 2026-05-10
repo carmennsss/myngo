@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:mime/mime.dart';
+import 'package:tolgee/tolgee.dart';
 import '../providers/post_provider.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
@@ -54,14 +56,32 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
     super.dispose();
   }
 
-  Future<void> _validarYAgregarArchivo(XFile archivo) async {
-    // Añadimos inmediatamente para que el botón se active sin lag
+  Future<void> _validarYAgregarArchivo(XFile archivo, dynamic tr) async {
+    final bytes = await archivo.length();
+    final mb = bytes / (1024 * 1024);
+    
+    if (mb > 100) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tr('postFileTooLarge', {
+              'name': archivo.name,
+              'size': mb.toStringAsFixed(1),
+              'limit': '100'
+            })),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       if (_archivosSeleccionados.length < 4) {
         _archivosSeleccionados.add(archivo);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Máximo 4 archivos por post')),
+          SnackBar(content: Text(tr('postMaxFilesError'))),
         );
       }
     });
@@ -89,213 +109,193 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom, 
-        left: 24, right: 24, top: 24
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E), 
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32))
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(widget.titulo, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _controladorTitulo,
-            maxLines: 1,
-            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              hintText: 'Título (opcional)',
-              hintStyle: GoogleFonts.inter(color: Colors.grey.withOpacity(0.5)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              filled: true,
-              fillColor: const Color(0xFF121212),
-            ),
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom, 
+            left: 24, right: 24, top: 24
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _controladorTexto,
-            maxLines: 4,
-            style: GoogleFonts.inter(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: '¿Qué estás pensando, miau?',
-              hintStyle: GoogleFonts.inter(color: Colors.grey),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              filled: true,
-              fillColor: const Color(0xFF121212),
-            ),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E1E), 
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32))
           ),
-          const SizedBox(height: 16),
-          if (_archivosSeleccionados.isNotEmpty)
-            Column(
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _archivosSeleccionados.map((file) {
-                    final mimeType = lookupMimeType(file.name) ?? (file.path.contains('video') ? 'video/mp4' : 'image/jpeg');
-                    final esVideo = mimeType.startsWith('video/');
-                    return Stack(
-                      children: [
-                        Container(
-                          height: 100,
-                          width: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.black26,
-                            borderRadius: BorderRadius.circular(12),
-                            image: esVideo ? null : DecorationImage(
-                              image: kIsWeb 
-                                  ? NetworkImage(file.path) as ImageProvider
-                                  : FileImage(File(file.path)),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          child: esVideo ? _VideoPreview(file: file) : null,
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _archivosSeleccionados.remove(file);
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.close, color: Colors.white, size: 16),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _controladorEtiquetas,
-                  style: GoogleFonts.inter(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Etiquetas (ej. arte, animales, juegos...)',
-                    hintStyle: GoogleFonts.inter(color: Colors.grey),
-                    prefixIcon: const Icon(Icons.sell_outlined, color: Colors.grey),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    filled: true,
-                    fillColor: const Color(0xFF1E1E1E),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                onPressed: () async {
-                  final imgs = await ImagePicker().pickMultiImage();
-                  if (imgs.isNotEmpty) {
-                    for (var img in imgs) {
-                      await _validarYAgregarArchivo(img);
-                    }
-                  }
-                },
-                tooltip: 'Subir imágenes',
-                icon: const Icon(Icons.image_search_rounded, color: Color(0xFFF29C50)),
-              ),
-              IconButton(
-                onPressed: () async {
-                  final video = await ImagePicker().pickVideo(source: ImageSource.gallery);
-                  if (video != null) {
-                    await _validarYAgregarArchivo(video);
-                  }
-                },
-                tooltip: 'Subir vídeo',
-                icon: const Icon(Icons.videocam_outlined, color: Color(0xFFF29C50)),
-              ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: _estaCargando || (_controladorTexto.text.trim().isEmpty && _archivosSeleccionados.isEmpty)
-                    ? null
-                    : () async {
-                        setState(() {
-                          _estaCargando = true;
-                          _progresoSubida = 0;
-                        });
-                        final exitoso = await widget.onPublicar(
-                          _controladorTitulo.text,
-                          _controladorTexto.text,
-                          _archivosSeleccionados,
-                          _controladorEtiquetas.text,
-                          alProgresar: (enviado, total) {
-                            if (total > 0) {
-                              setState(() {
-                                _progresoSubida = enviado / total;
-                              });
-                            }
-                          },
-                        );
-                        if (mounted) {
-                          if (exitoso) {
-                            Navigator.pop(context);
-                          } else {
-                            setState(() => _estaCargando = false);
-                            // Mostramos el mensaje real del backend (incluyendo rechazo por IA)
-                            final postProvider = Provider.of<PostProvider>(context, listen: false);
-                            final error = postProvider.errorMessage?.isNotEmpty == true
-                                ? postProvider.errorMessage!
-                                : 'Contenido no permitido o error al publicar 🚫';
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(error),
-                                backgroundColor: Colors.redAccent,
-                                duration: const Duration(seconds: 4),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF28B50), 
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              Text(widget.titulo, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _controladorTexto,
+                maxLines: 4,
+                style: GoogleFonts.inter(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: tr('postHint'),
+                  hintStyle: GoogleFonts.inter(color: Colors.grey),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  filled: true,
+                  fillColor: const Color(0xFF121212),
                 ),
-                child: _estaCargando 
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            value: _progresoSubida > 0 ? _progresoSubida : null,
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${(_progresoSubida * 100).toInt()}%',
-                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    )
-                  : Text(widget.initialTexto != null ? 'Guardar Cambios' : 'Publicar', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               ),
+              const SizedBox(height: 16),
+              if (_archivosSeleccionados.isNotEmpty)
+                Column(
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _archivosSeleccionados.map((file) {
+                        final mimeType = lookupMimeType(file.name) ?? (file.path.contains('video') ? 'video/mp4' : 'image/jpeg');
+                        final esVideo = mimeType.startsWith('video/');
+                        return Stack(
+                          children: [
+                            Container(
+                              height: 100,
+                              width: 100,
+                              decoration: BoxDecoration(
+                                color: Colors.black26,
+                                borderRadius: BorderRadius.circular(12),
+                                image: esVideo ? null : DecorationImage(
+                                  image: kIsWeb 
+                                      ? NetworkImage(file.path) as ImageProvider
+                                      : FileImage(File(file.path)),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              child: esVideo ? _VideoPreview(file: file) : null,
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _archivosSeleccionados.remove(file);
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _controladorEtiquetas,
+                      style: GoogleFonts.inter(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: tr('tagsHint'),
+                        hintStyle: GoogleFonts.inter(color: Colors.grey),
+                        prefixIcon: const Icon(Icons.sell_outlined, color: Colors.grey),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E1E),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () async {
+                      final imgs = await ImagePicker().pickMultiImage();
+                      if (imgs.isNotEmpty) {
+                        for (var img in imgs) {
+                          await _validarYAgregarArchivo(img, tr);
+                        }
+                      }
+                    },
+                    tooltip: tr('uploadImagesTooltip'),
+                    icon: const Icon(Icons.image_search_rounded, color: Color(0xFFF29C50)),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      final video = await ImagePicker().pickVideo(source: ImageSource.gallery);
+                      if (video != null) {
+                        await _validarYAgregarArchivo(video, tr);
+                      }
+                    },
+                    tooltip: tr('uploadVideoTooltip'),
+                    icon: const Icon(Icons.videocam_outlined, color: Color(0xFFF29C50)),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: (_estaCargando || _controladorTexto.text.trim().isEmpty && _archivosSeleccionados.isEmpty) ? null : () async {
+                      setState(() {
+                        _estaCargando = true;
+                        _progresoSubida = 0;
+                      });
+                      final exitoso = await widget.onPublicar(
+                        _controladorTexto.text,
+                        _archivosSeleccionados,
+                        _controladorEtiquetas.text,
+                        alProgresar: (enviado, total) {
+                          if (total > 0) {
+                            setState(() {
+                              _progresoSubida = enviado / total;
+                            });
+                          }
+                        },
+                      );
+                      if (mounted) {
+                        if (exitoso) {
+                          Navigator.pop(context);
+                        } else {
+                          setState(() => _estaCargando = false);
+                          final error = Provider.of<PostProvider>(context, listen: false).errorMessage ?? tr('errorActionFailed');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF28B50), 
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: _estaCargando 
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                value: _progresoSubida > 0 ? _progresoSubida : null,
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${(_progresoSubida * 100).toInt()}%',
+                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        )
+                      : Text(widget.initialTexto != null ? tr('commonSaveChanges') : tr('commonPublish'), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
             ],
           ),
-          const SizedBox(height: 24),
-        ],
-      ),
-      ),
+        );
+      },
     );
   }
 }

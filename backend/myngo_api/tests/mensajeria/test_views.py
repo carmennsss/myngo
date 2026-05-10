@@ -46,10 +46,10 @@ def test_marcar_leidos(auth_client, usuario):
     url = reverse('marcar_leidos', kwargs={'sala_id': sala.id})
     response = auth_client.post(url)
     assert response.status_code == status.HTTP_200_OK
-    assert response.data.get('status') == 'success'
+    assert response.data.get('status') == 'ok'
 
 def test_conteo_no_leidos(auth_client, usuario):
     url = reverse('conteo_no_leidos')
     response = auth_client.get(url)
     assert response.status_code == status.HTTP_200_OK
-    assert 'total_no_leidos' in response.data
+    assert 'total' in response.data

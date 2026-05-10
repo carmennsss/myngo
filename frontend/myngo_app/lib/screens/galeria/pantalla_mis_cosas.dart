@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tolgee/tolgee.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/servicio_galeria.dart';
@@ -9,6 +11,7 @@ import '../../widgets/galeria/masonry_grid_galeria.dart';
 import 'dart:math' as math;
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Vista de los recursos propios del usuario: sus imágenes y sus colecciones.
 // Se incrusta dentro del perfil como una pestaña lateral.
@@ -81,25 +84,26 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
               unselectedLabelColor: Colors.grey.shade400,
               labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
               unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
-            tabs: const [
-              Tab(icon: Icon(Icons.photo_library_rounded), text: 'Mis Imágenes'),
-              Tab(icon: Icon(Icons.folder_special_rounded), text: 'Mis Colecciones'),
-            ],
+              tabs: [
+                Tab(icon: const Icon(Icons.photo_library_rounded), text: tr('myStuffTabImages')),
+                Tab(icon: const Icon(Icons.folder_special_rounded), text: tr('myStuffTabCollections')),
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildMisImagenes(),
-              _buildMisColecciones(),
-            ],
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildMisImagenes(),
+                _buildMisColecciones(),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
 
   // La pestaña de imágenes reutiliza el masonry grid ya existente
   Widget _buildMisImagenes() {
@@ -109,8 +113,9 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
   // Muestra las colecciones como tarjetas rotadas levemente para dar sensación de apilamiento
   Widget _buildMisColecciones() {
     if (_misColecciones.isEmpty) {
-      return _buildVistaVacia('Aún no has creado ninguna colección 📂');
+      return _buildVistaVacia(tr('myStuffEmptyCollections'));
     }
+
     
     final random = math.Random(42); // Fijo para evitar parpadeos, varía entre índices
 

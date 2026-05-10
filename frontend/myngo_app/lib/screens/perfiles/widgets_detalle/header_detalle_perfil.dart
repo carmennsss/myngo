@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:tolgee/tolgee.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/usuario.dart';
 import '../../../utils/estilo_post_helper.dart';
 import '../../inicio/pantalla_inicio.dart';
 import '../../../widgets/boton_idioma.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra la cabecera visual de un perfil (fondo, avatar, marco y estado).
 class HeaderDetallePerfil extends StatelessWidget {
@@ -45,182 +48,188 @@ class HeaderDetallePerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
-    final Color colorCard = esOscuro ? const Color(0xFF1E1E1E) : Colors.white;
-    final Color colorGradTop =
-        esOscuro ? const Color(0xFF1E1E1E) : const Color(0xFFF5EBE6);
+    return Builder(
+      builder: (context) {
+        final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
+        final Color colorCard = esOscuro ? const Color(0xFF1E1E1E) : Colors.white;
+        final Color colorGradTop =
+            esOscuro ? const Color(0xFF1E1E1E) : const Color(0xFFF5EBE6);
 
-    final String inicial = usuario.nombreUsuario.isNotEmpty
-        ? usuario.nombreUsuario[0].toUpperCase()
-        : '?';
+        final String inicial = usuario.nombreUsuario.isNotEmpty
+            ? usuario.nombreUsuario[0].toUpperCase()
+            : '?';
 
-    return SliverAppBar(
-      expandedHeight: 450,
-      pinned: true,
-      stretch: true,
-      backgroundColor: colorCard,
-      surfaceTintColor: Colors.transparent,
-      leading: esIntegrada
-          ? IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              onPressed: onBack,
-            )
-          : null,
-      actions: [
-        if (currentUserId == usuario.id)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.edit_note_rounded,
-                    color: Colors.white, size: 22),
-              ),
-              onPressed: onEditarPerfil,
-              tooltip: 'Personalizar Perfil',
-            ),
-          ),
-        const SizedBox(width: 8),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.parallax,
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-
-            if (fondoPerfilLocal != null && fondoPerfilLocal!.isNotEmpty)
-              Image.network(
-                fondoPerfilLocal!,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => Container(color: Colors.transparent),
-              )
-            else
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colorGradTop.withOpacity(0.8),
-                      colorGradTop.withOpacity(0.2)
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+        return SliverAppBar(
+          expandedHeight: 450,
+          pinned: true,
+          stretch: true,
+          backgroundColor: colorCard,
+          surfaceTintColor: Colors.transparent,
+          leading: esIntegrada
+              ? IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close_rounded,
+                        color: Colors.white, size: 20),
                   ),
+                  onPressed: onBack,
+                )
+              : null,
+          actions: [
+            if (currentUserId == usuario.id)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.edit_note_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+                  onPressed: onEditarPerfil,
+                  tooltip: tr('profileCustomizeTooltip'),
                 ),
               ),
+            const SizedBox(width: 8),
+          ],
+          flexibleSpace: FlexibleSpaceBar(
+            collapseMode: CollapseMode.parallax,
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+    
+                if (fondoPerfilLocal != null && fondoPerfilLocal!.isNotEmpty)
+                  Image.network(
+                    fondoPerfilLocal!,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => Container(color: Colors.transparent),
+                  )
+                else
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colorGradTop.withOpacity(0.8),
+                          colorGradTop.withOpacity(0.2)
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
 
-
-            Center(
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  GestureDetector(
-                    onTap: currentUserId == usuario.id ? onEditarAvatar : null,
-                    child: SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-
-                          Container(
-                            width: 110,
-                            height: 110,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              border: (marcoLocal == null || marcoLocal!.isEmpty)
-                                  ? Border.all(
-                                      color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6), width: 3)
-                                  : null,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: (avatarLocal != null && avatarLocal!.isNotEmpty)
-                                ? ClipOval(
-                                    child: Image.network(
-                                      avatarLocal!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50, color: Colors.grey),
+    
+                Center(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      GestureDetector(
+                        onTap: currentUserId == usuario.id ? onEditarAvatar : null,
+                        child: SizedBox(
+                          width: 160,
+                          height: 160,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+    
+                              Container(
+                                width: 110,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  border: (marcoLocal == null || marcoLocal!.isEmpty)
+                                      ? Border.all(
+                                          color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6), width: 3)
+                                      : null,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      blurRadius: 30,
+                                      offset: const Offset(0, 10),
                                     ),
-                                  )
-                                : Center(
-                                    child: Text(
-                                      inicial,
-                                      style: GoogleFonts.getFont(
-                                        usuario.fuentePerfil,
-                                        fontSize: 50,
-                                        fontWeight: FontWeight.bold,
-                                        color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6),
+                                  ],
+                                ),
+                                child: (avatarLocal != null && avatarLocal!.isNotEmpty)
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          avatarLocal!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50, color: Colors.grey),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          inicial,
+                                          style: GoogleFonts.getFont(
+                                            usuario.fuentePerfil,
+                                            fontSize: 50,
+                                            fontWeight: FontWeight.bold,
+                                            color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFF248EA6),
+                                          ),
+                                        ),
                                       ),
+                              ),
+
+    
+                              if (marcoLocal != null && marcoLocal!.isNotEmpty)
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: Image.network(
+                                      marcoLocal!,
+                                      fit: BoxFit.contain,
                                     ),
                                   ),
-                          ),
-
-
-                          if (marcoLocal != null && marcoLocal!.isNotEmpty)
-                            Positioned.fill(
-                              child: IgnorePointer(
-                                child: Image.network(
-                                  marcoLocal!,
-                                  fit: BoxFit.contain,
                                 ),
+
+    
+                              _StatusIndicator(
+                                usuario: usuario,
+                                currentUserId: currentUserId,
+                                colorCard: colorCard,
+                                getColorEstado: _getColorEstado,
+                                tr: tr,
                               ),
-                            ),
-
-
-                          _StatusIndicator(
-                            usuario: usuario,
-                            currentUserId: currentUserId,
-                            colorCard: colorCard,
-                            getColorEstado: _getColorEstado,
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (currentUserId == usuario.id)
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: onEditarAvatar,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFFF28B50),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.camera_alt_rounded,
-                              size: 18, color: Colors.white),
                         ),
                       ),
-                    ),
-                ],
-              ),
+                      if (currentUserId == usuario.id)
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: onEditarAvatar,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: EstiloPostHelper.parseHex(usuario.colorTema) ?? const Color(0xFFF28B50),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt_rounded,
+                                  size: 18, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
+
 }
 
 class _StatusIndicator extends StatelessWidget {
@@ -229,16 +238,21 @@ class _StatusIndicator extends StatelessWidget {
   final Color colorCard;
   final Color Function(String) getColorEstado;
 
+  final String Function(String) tr;
+
   const _StatusIndicator({
     required this.usuario,
     this.currentUserId,
     required this.colorCard,
     required this.getColorEstado,
+    required this.tr,
   });
+
 
   @override
   Widget build(BuildContext context) {
-    String displayEstado = usuario.estado ?? 'DESCONECTADO';
+    String displayEstado = usuario.estado ?? tr('statusDisconnected');
+
     try {
       final inicioState =
           context.findAncestorStateOfType<PantallaInicioState>();
@@ -267,9 +281,10 @@ class _StatusIndicator extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                     items: [
-                      _buildMenuItem('ACTIVO', 'Activo', Colors.greenAccent),
-                      _buildMenuItem('OCUPADO', 'Ocupado', Colors.redAccent),
+                      _buildMenuItem('ACTIVO', tr('statusActive'), Colors.greenAccent),
+                      _buildMenuItem('OCUPADO', tr('statusBusy'), Colors.redAccent),
                     ],
+
                   ).then((nuevoEstado) {
                     if (nuevoEstado != null) {
                       final inicioState =

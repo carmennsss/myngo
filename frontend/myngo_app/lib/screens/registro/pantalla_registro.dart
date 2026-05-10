@@ -10,6 +10,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../utils/configuracion.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Pantalla de creación de cuenta. Similar al login en estructura, pero con el formulario
 // de registro y el paso extra del diálogo de aceptación de normas de la comunidad.
@@ -75,8 +76,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   // Monta el layout adaptativo (columna en móvil, dos columnas en escritorio)
   Widget _buildContenido(BuildContext context, BoxConstraints constraints) {
     final isDesktop = constraints.maxWidth > 900;
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (isDesktop) {
           return Row(
             children: [
@@ -369,8 +370,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return TranslationWidget(
-          builder: (context, tr) {
+        return Builder(
+      builder: (context) {
             return StatefulBuilder(
               builder: (context, setDialogState) {
                 return AlertDialog(
@@ -505,7 +506,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
       _notificarCambioGato();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('¡Miau! Revisa tu correo para activar tu cuenta 📧'),
+          content: Text(tr('registrationSuccessEmail')),
           backgroundColor: const Color(0xFF248EA6),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -537,8 +538,8 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -646,7 +647,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                   ),
                   child: cargando 
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Text('REGISTRARME 🐾', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                    : Text(tr('authRegisterButton'), style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
                 );
               }
             ),

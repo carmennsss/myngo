@@ -31,6 +31,7 @@ import 'widgets_detalle/seccion_colecciones_perfil.dart';
 import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -355,8 +356,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   Widget build(BuildContext context) {
     final bool esPrivadoYNoSeguido = _esPrivadoYNoSeguido;
 
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         if (_cargandoPerfil || _usuario == null) {
           final loading = material.Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -444,7 +445,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                           tabBar: TabBar(
                             controller: _tabController,
                             tabs: [
-                              const Tab(text: 'Posts'),
+                              Tab(text: tr('postTabPosts')),
                               Tab(text: _currentUserId == _usuario!.id ? tr('profileTabsFavorites') : tr('profileTabsCollections')),
                             ],
                             labelStyle: GoogleFonts.getFont(_usuario!.fuentePerfil,
@@ -596,8 +597,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => TranslationWidget(
-        builder: (context, tr) => Container(
+      builder: (context) => Builder(builder: (context) {
+        return Container(
           decoration: const BoxDecoration(
             color: Color(0xFF1E1E1E),
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -658,8 +659,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               const SizedBox(height: 12),
             ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -667,8 +668,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final controller = TextEditingController(text: _biografiaLocal);
     showDialog(
       context: context,
-      builder: (ctx) => TranslationWidget(
-        builder: (ctx, tr) => AlertDialog(
+      builder: (ctx) => Builder(builder: (ctx) {
+        return AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(tr('profileEditBioTitle'),
@@ -711,8 +712,8 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                   style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -744,17 +745,17 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TranslationWidget(
-        builder: (context, translate) => DialogoCrearPost(
-          titulo: translate('postNewTitle'),
+      builder: (context) {
+        return DialogoCrearPost(
+          titulo: tr('postNewTitle'),
           onPublicar: (title, txt, archivos, tags, {void Function(int, int)? alProgresar}) async {
             final ok = await Provider.of<PostProvider>(context, listen: false)
                 .crearPost(comunidadId: widget.comunidadIdContexto, titulo: title, texto: txt, imagenes: archivos, etiquetas: tags);
             if (ok) _cargarPublicaciones();
             return ok;
           },
-        ),
-      ),
+        );
+      },
     );
   }
 

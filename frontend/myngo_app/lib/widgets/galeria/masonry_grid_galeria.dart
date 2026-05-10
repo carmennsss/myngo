@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:tolgee/tolgee.dart';
 import '../../models/imagen_galeria.dart';
 import '../../services/servicio_galeria.dart';
 import '../../screens/galeria/pantalla_detalle_imagen.dart';
@@ -91,7 +90,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     setState(() => _cargando = false);
   }
 
-  Future<void> _seleccionarYSubir(bool esVideo) async {
+  Future<void> _seleccionarYSubir(bool esVideo, dynamic tr) async {
     final picker = ImagePicker();
     final pickedFile = esVideo 
         ? await picker.pickVideo(source: ImageSource.gallery)
@@ -126,7 +125,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(nuevaImagen.tipoArchivo == 'V' ? '¡Vídeo añadido con éxito! 🐾' : '¡Imagen añadida con éxito! 🐾', style: GoogleFonts.outfit()), 
+            content: Text(nuevaImagen.tipoArchivo == 'V' ? tr('galleryVideoAdded') : tr('galleryImageAdded'), style: GoogleFonts.outfit()), 
             backgroundColor: const Color(0xFF248EA6),
             duration: const Duration(seconds: 2),
           ),
@@ -143,83 +142,87 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
 
   @override
   Widget build(BuildContext context) {
-    Widget contenido;
-    
-    if (_items == null && _cargando) {
-      contenido = const Center(
-        child: CircularProgressIndicator(color: Color(0xFF248EA6)),
-      );
-    } else if (_items == null || _items!.isEmpty) {
-      contenido = const EstadoVacioCargando(
-        icon: Icons.photo_library_rounded,
-        message: 'Aún no hay fotos aquí 🐾',
-      );
-    } else {
-      contenido = Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (ScrollNotification scrollInfo) {
-            if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
-              if (!_cargando && _hayMas) {
-                _cargarMas();
-              }
-            }
-            return false;
-          },
-          child: MasonryGridView.builder(
-            gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+    return Builder(
+      builder: (context) {
+        Widget contenido;
+        
+        if (_items == null && _cargando) {
+          contenido = const Center(
+            child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+          );
+        } else if (_items == null || _items!.isEmpty) {
+          contenido = EstadoVacioCargando(
+            icon: Icons.photo_library_rounded,
+            message: tr('galleryNoImages'),
+          );
+        } else {
+          contenido = Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+                  if (!_cargando && _hayMas) {
+                    _cargarMas();
+                  }
+                }
+                return false;
+              },
+              child: MasonryGridView.builder(
+                gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                ),
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                itemCount: _items!.length + (_hayMas ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == _items!.length) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+                      ),
+                    );
+                  }
+
+                  final item = _items![index];
+                  final double aspect = item.relacionAspecto > 0 ? item.relacionAspecto : (index % 3 == 0 ? 0.7 : 1.2);
+
+                  return _buildTile(item, aspect);
+                },
+              ),
             ),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            itemCount: _items!.length + (_hayMas ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == _items!.length) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: CircularProgressIndicator(color: Color(0xFF248EA6)),
-                  ),
-                );
-              }
+          );
+        }
 
-              final item = _items![index];
-              final double aspect = item.relacionAspecto > 0 ? item.relacionAspecto : (index % 3 == 0 ? 0.7 : 1.2);
-
-              return _buildTile(item, aspect);
-            },
-          ),
-        ),
-      );
-    }
-
-    return Stack(
-      children: [
-        contenido,
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton(
-            heroTag: 'fab_dual_masonry_${widget.coleccionId ?? widget.comunidadId ?? widget.usuarioId ?? 'gen'}_${identityHashCode(this)}',
-            backgroundColor: _subiendo ? Colors.grey : const Color(0xFF248EA6),
-            onPressed: (_subiendo || !widget.esMiembro) ? null : () => _mostrarMenuOpciones(context),
-            child: _subiendo 
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : Icon(widget.esMiembro ? Icons.add : Icons.lock_outline_rounded, color: Colors.white, size: 28),
-          ),
-        ),
-        if (_subiendo)
-          Container(
-            color: Colors.black26,
-            child: const Center(
-              child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+        return Stack(
+          children: [
+            contenido,
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: FloatingActionButton(
+                heroTag: 'fab_dual_masonry_${widget.coleccionId ?? widget.comunidadId ?? widget.usuarioId ?? 'gen'}_${identityHashCode(this)}',
+                backgroundColor: _subiendo ? Colors.grey : const Color(0xFF248EA6),
+                onPressed: (_subiendo || !widget.esMiembro) ? null : () => _mostrarMenuOpciones(context, tr),
+                child: _subiendo 
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : Icon(widget.esMiembro ? Icons.add : Icons.lock_outline_rounded, color: Colors.white, size: 28),
+              ),
             ),
-          ),
-      ],
+            if (_subiendo)
+              Container(
+                color: Colors.black26,
+                child: const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF248EA6)),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
-  void _mostrarMenuOpciones(BuildContext context) {
+  void _mostrarMenuOpciones(BuildContext context, dynamic tr) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -240,13 +243,13 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                 decoration: BoxDecoration(color: const Color(0xFFF28B50).withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFFF28B50)),
               ),
-              title: Text(widget.coleccionId != null ? 'Subir Foto a esta Carpeta' : 'Subir Imagen Cruda', 
+              title: Text(widget.coleccionId != null ? tr('galleryUploadPhotoToFolder') : tr('galleryUploadRawPhoto'), 
                 style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              subtitle: Text(widget.coleccionId != null ? 'Captura nueva que irá directo aquí' : 'Directo a tu galería local o de comunidad', 
+              subtitle: Text(widget.coleccionId != null ? tr('galleryUploadPhotoToFolderDesc') : tr('galleryUploadRawPhotoDesc'), 
                 style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
-                _seleccionarYSubir(false);
+                _seleccionarYSubir(false, tr);
               },
             ),
             const SizedBox(height: 12),
@@ -256,13 +259,13 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                 decoration: BoxDecoration(color: const Color(0xFFC35E34).withOpacity(0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.videocam_rounded, color: Color(0xFFC35E34)),
               ),
-              title: Text(widget.coleccionId != null ? 'Subir Vídeo a esta Carpeta' : 'Subir Vídeo Crudo', 
+              title: Text(widget.coleccionId != null ? tr('galleryUploadVideoToFolder') : tr('galleryUploadRawVideo'), 
                 style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              subtitle: Text('Comparte tus mejores momentos en movimiento', 
+              subtitle: Text(tr('galleryUploadVideoDesc'), 
                 style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
-                _seleccionarYSubir(true);
+                _seleccionarYSubir(true, tr);
               },
             ),
             const SizedBox(height: 12),
@@ -273,11 +276,11 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                   decoration: BoxDecoration(color: const Color(0xFF248EA6).withValues(alpha: 0.2), shape: BoxShape.circle),
                   child: const Icon(Icons.collections_bookmark_rounded, color: Color(0xFF248EA6)),
                 ),
-                title: Text('Añadir de mi Galería', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                subtitle: Text('Reaprovecha una foto que ya subiste', style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                title: Text(tr('galleryAddFromGallery'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                subtitle: Text(tr('galleryAddFromGalleryDesc'), style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
-                  _abrirSelectorGaleriaMyngo(context);
+                  _abrirSelectorGaleriaMyngo(context, tr);
                 },
               )
             else
@@ -287,11 +290,11 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                   decoration: BoxDecoration(color: const Color(0xFF248EA6).withValues(alpha: 0.2), shape: BoxShape.circle),
                   child: const Icon(Icons.create_new_folder_rounded, color: Color(0xFF248EA6)),
                 ),
-                title: Text('Nueva Colección', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                subtitle: Text('Organiza de forma pública o privada tus capturas', style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                title: Text(tr('galleryNewCollection'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                subtitle: Text(tr('galleryNewCollectionDesc'), style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
-                  _mostrarDialogoNuevaColeccion(context);
+                  _mostrarDialogoNuevaColeccion(context, tr);
                 },
               ),
           ],
@@ -300,7 +303,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     );
   }
 
-  Future<void> _abrirSelectorGaleriaMyngo(BuildContext context) async {
+  Future<void> _abrirSelectorGaleriaMyngo(BuildContext context, dynamic tr) async {
     final ImagenGaleria? seleccionada = await showModalBottomSheet<ImagenGaleria>(
       context: context,
       isScrollControlled: true,
@@ -321,7 +324,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           _items!.insert(0, seleccionada);
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('¡Añadida a la colección!', style: GoogleFonts.outfit()), backgroundColor: const Color(0xFF248EA6)),
+          SnackBar(content: Text(tr('galleryAddedToCollectionMsg'), style: GoogleFonts.outfit()), backgroundColor: const Color(0xFF248EA6)),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -331,7 +334,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     }
   }
 
-  void _mostrarDialogoNuevaColeccion(BuildContext context) {
+  void _mostrarDialogoNuevaColeccion(BuildContext context, dynamic tr) {
     final nombreCtrl = TextEditingController();
     bool esPrivada = false;
     showModalBottomSheet(
@@ -346,13 +349,13 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              Text('Nueva Colección', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(tr('galleryNewCollection'), style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 24),
               TextField(
                 controller: nombreCtrl,
                 style: GoogleFonts.outfit(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Nombre de la colección',
+                  hintText: tr('galleryCollectionNameHint'),
                   hintStyle: GoogleFonts.outfit(color: Colors.grey),
                   filled: true,
                   fillColor: const Color(0xFF121212),
@@ -361,8 +364,8 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
               ),
               const SizedBox(height: 16),
               SwitchListTile(
-                title: Text(esPrivada ? 'Privada' : 'Pública', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: Text(esPrivada ? 'Solo tú la verás' : 'Cualquiera podrá verla', style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
+                title: Text(esPrivada ? tr('commonPrivate') : tr('commonPublic'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: Text(esPrivada ? tr('galleryCollectionPrivateDesc') : tr('galleryCollectionPublicDesc'), style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
                 value: esPrivada,
                 activeColor: const Color(0xFF248EA6),
                 onChanged: (val) => setModalState(() => esPrivada = val),
@@ -382,13 +385,13 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                     if (mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(res.exito ? 'Colección creada' : res.mensaje),
+                        content: Text(res.exito ? tr('galleryCollectionCreatedMsg') : res.mensaje),
                         backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
                       ));
                     }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(vertical: 16)),
-                  child: Text('CREAR', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text(tr('commonCreate').toUpperCase(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
               const SizedBox(height: 24),
