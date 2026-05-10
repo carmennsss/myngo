@@ -15,10 +15,7 @@ from rest_framework import generics, pagination, permissions, status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
-try:
-    import magic
-except ImportError:
-    magic = None
+import mimetypes
 from django.core.exceptions import ValidationError
 
 from usuarios.models import Usuario
@@ -201,6 +198,7 @@ def marcar_leidos(request, sala_id):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def conteo_no_leidos(request):
+    """Obtiene el número total de mensajes no leídos del usuario en todas sus salas."""
     salas = SalaChat.objects.filter(miembros=request.user)
     no_leidos = MensajeChat.objects.filter(
         sala__in=salas
@@ -219,6 +217,7 @@ def conteo_no_leidos(request):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def agregar_miembro(request, pk):
+    """Añade un usuario a una sala de chat grupal existente."""
     try:
         sala = SalaChat.objects.get(pk=pk, miembros=request.user)
         if not sala.es_grupal:
@@ -245,6 +244,7 @@ def agregar_miembro(request, pk):
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticated])
 def editar_mensaje(request, mensaje_id):
+    """Modifica el contenido de un mensaje enviado previamente por el usuario."""
     try:
         mensaje = MensajeChat.objects.get(id=mensaje_id, emisor=request.user)
         nuevo_contenido = request.data.get('contenido')
@@ -271,6 +271,7 @@ def editar_mensaje(request, mensaje_id):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def borrar_mensaje(request, mensaje_id):
+    """Borra un mensaje localmente o para todos los participantes si el usuario es el emisor."""
     try:
         mensaje = MensajeChat.objects.get(id=mensaje_id)
         para_todos = request.data.get('para_todos', False)
@@ -512,7 +513,7 @@ def upload_chat_image(request, sala_id):
     Soporta hasta 4 archivos multimedia en un solo mensaje.
     """
     try:
-        # 1. Validar pertenencia a la sala
+        # Validamos que el usuario pertenezca a la sala
         sala = SalaChat.objects.get(id=sala_id, miembros=request.user)
         
         # Obtener archivos (múltiples nombres posibles para compatibilidad)
@@ -572,7 +573,7 @@ def upload_chat_image(request, sala_id):
             
             mensaje.save()
         
-        # 3. Notificar vía WebSocket a los miembros de la sala
+        # Notificamos el nuevo mensaje vía WebSocket
         serializer = MensajeChatSerializer(mensaje, context={'request': request})
         message_data = serializer.data
         
@@ -588,14 +589,12 @@ def upload_chat_image(request, sala_id):
             }
         )
         
-        # 4. Responder al frontend con el objeto completo
+        # Respuesta final al cliente
         return Response(message_data, status=status.HTTP_200_OK)
         
     except SalaChat.DoesNotExist:
         return Response({'error': 'Sala no encontrada o no eres miembro'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ChatMediaUploadView(generics.CreateAPIView):
@@ -613,24 +612,11 @@ class ChatMediaUploadView(generics.CreateAPIView):
         if not archivo:
             return Response({'error': 'No se proporcionó ningún archivo'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Validar tamaño
+        # Verificamos el tamaño del archivo
         size_mb = archivo.size / (1024 * 1024)
         
-        # Leemos los primeros bytes para detectar el MIME real
-        file_content = archivo.read(2048)
-        archivo.seek(0)
-        
-        mime = None
-        if magic:
-            try:
-                mime = magic.from_buffer(file_content, mime=True)
-            except Exception:
-                pass
-        
-        if not mime:
-            # Fallback a content_type o mimetypes
-            import mimetypes
-            mime = archivo.content_type or mimetypes.guess_type(archivo.name)[0] or 'application/octet-stream'
+        # Detección de MIME usando mimetypes y content_type del archivo
+        mime = archivo.content_type or mimetypes.guess_type(archivo.name)[0] or 'application/octet-stream'
 
         tipo_archivo = 'I'
         if mime.startswith('image/'):
@@ -644,7 +630,7 @@ class ChatMediaUploadView(generics.CreateAPIView):
         else:
             return Response({'error': 'Tipo de archivo no soportado'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 2. Crear ImagenGaleria
+        # Guardamos el archivo en la galería centralizada
         try:
             img_instancia = ImagenGaleria(
                 propietario=request.user,

@@ -7,10 +7,9 @@ from usuarios.models import Usuario
 
 
 class Notificacion(models.Model):
-    """Notificación individual para un usuario.
-
-    Almacena el tipo de evento, el mensaje descriptivo y referencias opcionales
-    a usuarios o comunidades relacionadas con la notificación.
+    """
+    Registra eventos relevantes para el usuario, como interacciones en sus posts, 
+    solicitudes de seguimiento o actualizaciones en sus comunidades.
     """
 
     class Meta:

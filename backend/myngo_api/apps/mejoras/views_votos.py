@@ -52,8 +52,6 @@ class VotoAPIView(APIView):
 
         total_votos = Voto.objects.filter(**count_filter).count()
         
-        # Si no hay votante autenticado, no hay cooldown personal
-        if not votante:
             return Response({
                 "ha_votado_hoy": False,
                 "puntuacion_actual": None,
@@ -61,12 +59,10 @@ class VotoAPIView(APIView):
                 "segundos_hasta_reset": 0
             })
 
-        # Calcular segundos hasta medianoche para el reset diario
         ahora = timezone.now()
         manana = ahora.replace(hour=0, minute=0, second=0, microsecond=0) + timezone.timedelta(days=1)
         segundos_hasta_medianoche = int((manana - ahora).total_seconds())
 
-        # Buscar el voto más reciente de este usuario a este receptor en el día actual
         ultimo_voto = Voto.objects.filter(
             votante=votante, 
             fecha_voto__date=ahora.date(),
@@ -122,7 +118,6 @@ class VotoAPIView(APIView):
         else:
             return Response({'error': 'Falta receptor.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Buscar si existe un voto hoy
         ahora = timezone.now()
         voto_hoy = Voto.objects.filter(fecha_voto__date=ahora.date(), **search_kwargs).first()
         
@@ -165,10 +160,10 @@ class VotoAPIView(APIView):
         Returns:
             Response: Confirmación de eliminación y nueva media.
         """
-        if request.user and request.user.is_authenticated:
-            votante = request.user
-        else:
-            votante = Usuario.objects.filter(pk=1).first() or Usuario.objects.first()
+        if not request.user or not request.user.is_authenticated:
+            return Response({'error': 'Debes iniciar sesión para votar.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        votante = request.user
 
         receptor_usuario_id = request.query_params.get('receptor_usuario')
         receptor_comunidad_id = request.query_params.get('receptor_comunidad')

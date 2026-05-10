@@ -203,14 +203,14 @@ class InicioGaleria(generics.ListAPIView):
         ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
 
         if usuario:
-            # 1. Mis comunidades = comunidades de las que soy miembro
+            # Comunidades donde el usuario es miembro
             mis_comunidades_ids = list(
                 MiembrosComunidad.objects.filter(
                     usuario=usuario
                 ).values_list('comunidad_id', flat=True)
             )
 
-            # 2. Mis amigos = usuarios que sigo con solicitud aceptada
+            # Usuarios que el usuario sigue con solicitud aceptada
             mis_amigos_ids = list(
                 Seguimiento.objects.filter(
                     seguidor=usuario,
@@ -219,8 +219,7 @@ class InicioGaleria(generics.ListAPIView):
                 ).values_list('seguido_usuario_id', flat=True)
             )
 
-            # 3. Filtro social: mostrar si cumple alguna condición
-            # IMPORTANTE: Los Q() deben estar bien balanceados para perfiles Y comunidades
+            # Aplicamos filtros de visibilidad social
             qs = qs.filter(
                 Q(autor=usuario) |                                  # Mis propios posts
                 Q(autor_id__in=mis_amigos_ids) |                    # Posts de mis amigos

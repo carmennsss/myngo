@@ -13,10 +13,9 @@ from django.utils import timezone
 
 
 class UsuarioManager(BaseUserManager):
-    """Gestor personalizado para el modelo Usuario.
-
-    Permite crear usuarios normales y superusuarios usando el
-    email como campo de identificación en lugar del nombre de usuario.
+    """
+    Gestor personalizado para la creación de usuarios. Configura el sistema para que
+    el email sea la llave principal de acceso en lugar del nombre de usuario.
     """
 
     def create_user(self, email, password=None, **extra_fields):
@@ -58,10 +57,9 @@ class UsuarioManager(BaseUserManager):
 
 
 class Usuario(AbstractBaseUser):
-    """Modelo principal de usuario de la plataforma Myngo.
-
-    Utiliza email como identificador único en lugar del nombre de usuario
-    estándar de Django. El rating se actualiza mediante el sistema de votos.
+    """
+    Representa la cuenta principal de un usuario en Myngo. Almacena la información
+    crítica de acceso, el estado de verificación y la reputación acumulada.
     """
 
     class Meta:
@@ -123,10 +121,9 @@ class Usuario(AbstractBaseUser):
 
 
 class Perfil(models.Model):
-    """Datos extendidos del usuario: avatar, fondo, puntos, estado online, etc.
-
-    Relacionado 1:1 con Usuario. Se crea automáticamente al registrar
-    un usuario nuevo mediante la vista de confirmación de email.
+    """
+    Almacena la información extendida y de personalización de un usuario. Incluye 
+    detalles visuales, biografía, puntos de recompensa y estado de presencia.
     """
 
     class Meta:
@@ -211,10 +208,9 @@ class Perfil(models.Model):
 
 
 class Seguimiento(models.Model):
-    """Relación de seguimiento entre usuarios o entre usuario y comunidad.
-
-    También se utiliza para gestionar solicitudes pendientes en perfiles
-    privados y comunidades privadas (estado 'SOLICITUD' → 'ACEPTADO').
+    """
+    Gestiona los vínculos sociales en la plataforma. Registra tanto el seguimiento 
+    entre usuarios como las solicitudes de unión a comunidades privadas.
     """
 
     class Meta:

@@ -17,26 +17,20 @@ from .serializers import PublicacionSerializer
 
 
 def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
-    """Lógica compartida para crear una publicación con archivos adjuntos."""
-    print(">>>> INICIANDO PROCESAMIENTO DE PUBLICACIÓN <<<<")
+    """Guarda una publicación junto con sus fotos o vídeos (máximo 4) en la base de datos y S3."""
     archivos = request.FILES.getlist('url_archivo_s3[]') or request.FILES.getlist('url_archivo_s3')
-    print(f">>>> ARCHIVOS RECIBIDOS: {len(archivos)}")
     
     with transaction.atomic():
         publicacion = serializer_instance.save(autor=request.user, es_valido_ia=es_valido_ia)
-        print(f">>>> PUBLICACIÓN GUARDADA ID: {publicacion.id}")
         
-        # Obtener relación de aspecto de forma segura
         try:
             rel_aspecto = float(request.data.get('relacion_aspecto', 1.0))
         except (TypeError, ValueError):
             rel_aspecto = 1.0
 
         for i, archivo in enumerate(archivos[:4]):
-            print(f">>>> PROCESANDO ARCHIVO {i+1}: {archivo.name} ({archivo.size} bytes)")
             
             if archivo.size > 200 * 1024 * 1024:
-                print(f">>>> ERROR: Archivo demasiado grande: {archivo.name}")
                 raise Exception(f"El archivo {archivo.name} supera el límite de 200MB.")
 
             tipo = 'I'
@@ -45,8 +39,6 @@ def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
             
             if content_type.startswith('video/') or extension in ['mp4', 'mov', 'avi', 'mkv', 'webm']:
                 tipo = 'V'
-            
-            print(f">>>> TIPO DETECTADO: {tipo} (Content-Type: {content_type})")
 
             try:
                 img_instancia = ImagenGaleria.objects.create(
@@ -57,7 +49,6 @@ def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
                     etiquetas=request.data.get('etiquetas', ''),
                     tipo_archivo=tipo,
                 )
-                print(f">>>> INSTANCIA IMAGEN CREADA ID: {img_instancia.id}")
                 
                 PublicacionImagen.objects.create(
                     publicacion=publicacion,
@@ -69,30 +60,21 @@ def procesar_creacion_publicacion(request, serializer_instance, es_valido_ia):
                     publicacion.imagen = img_instancia
                     publicacion.relacion_aspecto = rel_aspecto
                     publicacion.save()
-                    print(">>>> IMAGEN PRINCIPAL ASIGNADA")
             except Exception as e:
-                print(f">>>> ERROR AL GUARDAR EN S3/DB: {str(e)}")
-                import traceback
-                traceback.print_exc()
                 raise e
 
-        print(">>>> PROCESAMIENTO FINALIZADO CON ÉXITO")
         return publicacion
 
 
 class PaginacionGaleria(pagination.LimitOffsetPagination):
-    """Paginación estándar para listas de contenido. Límite por defecto: 20 items."""
+    """Gestiona la carga segmentada de publicaciones para optimizar el rendimiento."""
 
     default_limit = 20
     max_limit = 100
 
 
 class PublicacionList(generics.ListCreateAPIView):
-    """Lista publicaciones filtrando por comunidad, perfil o feed global.
-
-    Aplica controles de privacidad y anota conteos de likes, comentarios
-    y estado de interacción del usuario autenticado.
-    """
+    """Muestra el muro de posts filtrado por comunidad o perfil, añadiendo si te gusta o si lo tienes guardado."""
 
     serializer_class = PublicacionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -101,16 +83,11 @@ class PublicacionList(generics.ListCreateAPIView):
     pagination_class = PaginacionGaleria
 
     def create(self, request, *args, **kwargs):
-        """Procesa la creación de una publicación (soporte para POST en el listado)."""
-        # Delegamos en la lógica común
+        """Atajo para crear un post desde la misma lista."""
         return PublicacionCreate().create(request, *args, **kwargs)
 
     def get_queryset(self):
-        """Filtra y anota las publicaciones según los parámetros de la consulta.
-
-        Returns:
-            QuerySet: Publicaciones filtradas y anotadas con metadatos de interacción.
-        """
+        """Busca y prepara los posts que el usuario tiene permiso para ver."""
         from django.db.models import IntegerField
         user = self.request.user
         comunidad_id = self.request.query_params.get('comunidad_id')
@@ -187,7 +164,6 @@ class PublicacionList(generics.ListCreateAPIView):
                     return Publicacion.objects.none()
             return qs.filter(autor=perfil.usuario, comunidad__isnull=True).distinct().order_by('-fecha_creacion')
 
-        # Filtro por etiquetas (tags)
         tags_query = self.request.query_params.get('tags')
         if tags_query:
             tags = [t.strip() for t in tags_query.split(',') if t.strip()]
@@ -200,7 +176,8 @@ class PublicacionList(generics.ListCreateAPIView):
                         Q(contenido_texto__icontains=tag) | 
                         Q(imagenes__etiquetas__icontains=tag)
                     )
-            else: # OR por defecto
+            else:
+                # Búsqueda por coincidencia parcial (OR)
                 q_or = Q()
                 for tag in tags:
                     q_or |= Q(titulo__icontains=tag)
@@ -216,27 +193,18 @@ class PublicacionList(generics.ListCreateAPIView):
 
 
 class PublicacionCreate(generics.CreateAPIView):
-    """Crea una nueva publicación con hasta 4 imágenes adjuntas.
-
-    Valida el contenido mediante IA antes de guardar. Si la transacción
-    falla, se revierte automáticamente.
-    """
+    """Crea un nuevo post pasando primero por el filtro de seguridad de la IA."""
 
     serializer_class = PublicacionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        """Procesa la creación de una publicación y sus imágenes asociadas."""
-        print("\n" + "="*50, flush=True)
-        print(">>> REQUERIMIENTO DE CREACIÓN RECIBIDO <<<", flush=True)
+        """Valida que el texto sea apto y crea el post con sus archivos adjuntos."""
         titulo = request.data.get('titulo', '') or ''
         contenido_texto = request.data.get('contenido_texto', '') or ''
         texto = f"{titulo} {contenido_texto}".strip()
-        print(f">>> TEXTO A VALIDAR: '{texto}'", flush=True)
         
         es_valido = validar_contenido_toxico(texto)
-        print(f">>> RESULTADO VALIDACIÓN IA: {es_valido}", flush=True)
-        print("="*50 + "\n", flush=True)
 
         if not es_valido:
             return Response(
@@ -254,9 +222,6 @@ class PublicacionCreate(generics.CreateAPIView):
                 status=status.HTTP_201_CREATED,
             )
         except Exception as e:
-            import traceback
-            print(f"Error en PublicacionCreate: {str(e)}")
-            traceback.print_exc()
             return Response(
                 {'error': f'Error al crear la publicación: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST,
