@@ -198,14 +198,42 @@ class PantallaInicioState extends State<PantallaInicio> {
   void _conectarNotificacionesChat(ChatProvider chatProvider) {
     _servicioNotifChat.conectarNotificacionesPersonales((data) {
       if (!mounted) return;
-      if (data['type'] == 'new_message_notification') {
+      final type = data['type'];
+      
+      if (type == 'new_message_notification') {
         chatProvider.procesarNuevaNotificacion(data);
         if (chatProvider.salaActivaId != (data['sala_id'] as num).toInt()) {
           _mostrarToastMensaje(data);
         }
-      } else if (data['type'] == 'new_chat_notification') {
+      } else if (type == 'new_chat_notification') {
         chatProvider.notificarNuevaSala();
+      } else if (type == 'generic_notification') {
+        _cargarNotificacionesSinLeer();
+        _mostrarToastNotificacion(data);
       }
+    });
+  }
+
+  void _mostrarToastNotificacion(Map<String, dynamic> data) {
+    final mensaje = data['mensaje'] ?? 'Nueva notificación';
+    
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _ToastMensaje(
+        sender: 'Myngo',
+        preview: mensaje,
+        avatar: null, // Podríamos poner un icono de campana
+        onTap: () {
+          entry.remove();
+          _alPulsarNav(2); // Ir a la pestaña de notificaciones
+        },
+        onDismiss: () => entry.remove(),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 5), () {
+      if (entry.mounted) entry.remove();
     });
   }
 

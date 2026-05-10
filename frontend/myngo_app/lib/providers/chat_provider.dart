@@ -24,6 +24,7 @@ class ChatProvider extends ChangeNotifier {
 
   /// Limpia todo el estado del provider (usado al cerrar sesión).
   void limpiar() {
+    _servicioChat.dispose(); // Cierra WebSockets de chat, presencia y notificaciones
     _userId = null;
     _totalNoLeidos = 0;
     _noLeidosPorSala = {};

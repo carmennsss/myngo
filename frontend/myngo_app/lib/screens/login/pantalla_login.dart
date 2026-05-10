@@ -461,7 +461,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(40, 48, 40, 40),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
       child: Form(
         key: _llaveFormulario,
         child: Column(
@@ -525,33 +525,45 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                GestureDetector(
-                  onTap: () => setState(() => _recordarme = !_recordarme),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Checkbox(
-                          value: _recordarme,
-                          onChanged: (valor) => setState(() => _recordarme = valor!),
-                          activeColor: const Color(0xFFF28B50),
-                          side: BorderSide(color: Colors.grey.shade700, width: 2),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                Flexible(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _recordarme = !_recordarme),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _recordarme,
+                            onChanged: (valor) => setState(() => _recordarme = valor!),
+                            activeColor: const Color(0xFFF28B50),
+                            side: BorderSide(color: Colors.grey.shade700, width: 2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        widget.tr('authRememberMe'),
-                        style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 14),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            widget.tr('authRememberMe'),
+                            style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 TextButton(
                   onPressed: () => context.push('/recuperar_contrasena'),
-                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF29C50)),
-                  child: Text(widget.tr('authForgotPassword')),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFF29C50),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                  ),
+                  child: Text(
+                    widget.tr('authForgotPassword'),
+                    style: const TextStyle(fontSize: 13),
+                  ),
                 ),
               ],
             ),
@@ -562,19 +574,23 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
               texto: widget.tr('authLoginButton'),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   widget.tr('authRegisterLink'),
-                  style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
+                  style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 13),
                 ),
                 TextButton(
                   onPressed: () => context.push('/registro'),
-                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF29C50)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFF29C50),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   child: Text(
                     widget.tr('authRegisterButton').replaceAll(' 🐾', ''),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ],
