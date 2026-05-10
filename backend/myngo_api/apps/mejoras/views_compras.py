@@ -101,7 +101,6 @@ class EquipacionMejorasGlobales(APIView):
             perfil = Perfil.objects.get(usuario=user)
             tipo = mejora_u.mejora.tipo.casefold()
 
-            # Toggle: si ya está equipada, desequipar; si no, equipar
             mejora_u.esta_equipada = not mejora_u.esta_equipada
             va_a_equipar = mejora_u.esta_equipada
 
@@ -128,7 +127,6 @@ class EquipacionMejorasGlobales(APIView):
                         ).exclude(pk=mejora_u.pk).update(esta_equipada=False)
                         perfil.fondo = mejora_u.mejora.url_recurso.name
                 else:
-                    # Para el resto de tipos, solo uno equipado a la vez
                     MejoraUsuario.objects.filter(
                         usuario=user,
                         esta_equipada=True,
@@ -142,7 +140,6 @@ class EquipacionMejorasGlobales(APIView):
                     elif tipo in ['estilo_post', 'estilo post']:
                         perfil.estilo_post = mejora_u.mejora.datos_extra
             else:
-                # Desequipar: limpiar campo correspondiente del perfil
                 if tipo == 'fondo':
                     nombre_recurso = mejora_u.mejora.url_recurso.name
                     # Limpiamos ambos campos si coinciden para evitar inconsistencias
@@ -201,7 +198,6 @@ class EquipacionMejoraComunidad(APIView):
             comunidad = Comunidad.objects.get(pk=comunidad_id)
             mejora = CatalogoMejoras.objects.get(pk=mejora_id)
             
-            # Verificar permisos: Creador o Administrador (Moderador NO puede equipar por feedback)
             es_creador = comunidad.creador == request.user
             es_admin = MiembrosComunidad.objects.filter(
                 usuario=request.user,

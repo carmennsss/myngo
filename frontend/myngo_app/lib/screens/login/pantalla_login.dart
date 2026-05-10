@@ -10,6 +10,8 @@ import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Pantalla de entrada a Myngo. En escritorio muestra los gatos animados a la izquierda
+// y el formulario a la derecha; en móvil todo va en columna.
 class PantallaLogin extends StatefulWidget {
   const PantallaLogin({super.key});
 
@@ -22,6 +24,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
   EstadoMonstruo _estadoGatos = EstadoMonstruo.inactivo;
   double _ratioMirada = 0.5;
 
+  // Notifica el nuevo estado del gato animado al padre para sincronizar la animación
   void _onGatosChange(EstadoMonstruo estado, double ratio) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -73,6 +76,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
     );
   }
 
+  // Monta el layout adaptativo (columna en móvil, dos columnas en escritorio)
   Widget _buildContenido(BuildContext context, BoxConstraints constraints, dynamic tr) {
     final isDesktop = constraints.maxWidth > 900;
     
@@ -202,6 +206,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
   }
 }
 
+// Circulo difuso decorativo del fondo, no tiene lógica de negocio
 class _BurbujaDecorativa extends StatelessWidget {
   final double size;
   final Color color;
@@ -227,6 +232,8 @@ class _BurbujaDecorativa extends StatelessWidget {
   }
 }
 
+// El formulario de login: email, contraseña, "Recþrdame" y botón.
+// También controla el estado de los gatos (miran cuando escribes, se tapan con la pass).
 class TarjetaLogin extends StatefulWidget {
   final Offset posicionMouse;
   final Function(EstadoMonstruo, double)? onGatosChange;
@@ -261,6 +268,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     _cargarCredencialesGuardadas();
   }
 
+  // Si ya hay token guardado, salta directo al inicio sin mostrar el login
   Future<void> _checkExistingTokenAndRedirect() async {
     // Pequeño retardo para dar tiempo a que SharedPreferences se asiente si venimos de un logout
     await Future.delayed(const Duration(milliseconds: 300));
@@ -275,6 +283,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
+  // Rellena el email y la pass si el usuario marcó "Recþrdame" en una sesión anterior
   Future<void> _cargarCredencialesGuardadas() async {
     final prefs = await SharedPreferences.getInstance();
     final emailGuardado = prefs.getString('recordar_email');
@@ -309,6 +318,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     super.dispose();
   }
 
+  // Mueve los ojos del gato según qué campo tiene el foco
   void _alCambiarEnfoque() {
     if (_nodoEnfoquePassword.hasFocus) {
       _estadoGatos = _esPasswordVisible ? EstadoMonstruo.escondido : EstadoMonstruo.mirando;
@@ -322,10 +332,12 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     _notificarCambioGato();
   }
 
+  // Dispara el callback para que el padre repinte el gato
   void _notificarCambioGato() {
     widget.onGatosChange?.call(_estadoGatos, _ratioMirada);
   }
 
+  // Cuando el usuario activa/desactiva ver la pass, el gato se tapa los ojos o vuelve a mirar
   void _alCambiarVisibilidadPassword(bool esVisible) {
     setState(() {
       _esPasswordVisible = esVisible;
@@ -336,6 +348,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
+  // Mueve los ojos del gato siguiendo el cursor del ratón mientras escribes el email
   void _actualizarPosicionMirada(String valor) {
     if (_nodoEnfoqueEmail.hasFocus) {
       setState(() {
@@ -345,6 +358,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
     }
   }
 
+  // Llama al servicio de login y navega al inicio si va bien, o muestra el error si falla
   Future<void> _iniciarSesion() async {
     _nodoEnfoqueEmail.unfocus();
     _nodoEnfoquePassword.unfocus();
@@ -366,7 +380,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
         if (!mounted) return;
 
         if (respuesta.exito) {
-          debugPrint('[Login] Éxito para ${_controladorEmail.text}');
+
           final prefs = await SharedPreferences.getInstance();
           if (_recordarme) {
             await prefs.setString('recordar_email', _controladorEmail.text);
@@ -389,9 +403,9 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           );
           context.go('/inicio');
         } else {
-          debugPrint('[Login] Fallo: ${respuesta.mensaje}');
+
           if (respuesta.errores != null) {
-             debugPrint('[Login] Errores detallados: ${respuesta.errores}');
+
           }
           
           setState(() {
@@ -462,7 +476,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(40, 48, 40, 40),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
       child: Form(
         key: _llaveFormulario,
         child: Column(
@@ -526,33 +540,45 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                GestureDetector(
-                  onTap: () => setState(() => _recordarme = !_recordarme),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Checkbox(
-                          value: _recordarme,
-                          onChanged: (valor) => setState(() => _recordarme = valor!),
-                          activeColor: const Color(0xFFF28B50),
-                          side: BorderSide(color: Colors.grey.shade700, width: 2),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                Flexible(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _recordarme = !_recordarme),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _recordarme,
+                            onChanged: (valor) => setState(() => _recordarme = valor!),
+                            activeColor: const Color(0xFFF28B50),
+                            side: BorderSide(color: Colors.grey.shade700, width: 2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        widget.tr('authRememberMe'),
-                        style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 14),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            widget.tr('authRememberMe'),
+                            style: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 TextButton(
                   onPressed: () => context.push('/recuperar_contrasena'),
-                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF29C50)),
-                  child: Text(widget.tr('authForgotPassword')),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFF29C50),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                  ),
+                  child: Text(
+                    widget.tr('authForgotPassword'),
+                    style: const TextStyle(fontSize: 13),
+                  ),
                 ),
               ],
             ),
@@ -563,19 +589,23 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
               texto: widget.tr('authLoginButton'),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   widget.tr('authRegisterLink'),
-                  style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 14),
+                  style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 13),
                 ),
                 TextButton(
                   onPressed: () => context.push('/registro'),
-                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFF29C50)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFF29C50),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   child: Text(
                     widget.tr('authRegisterButton').replaceAll(' 🐾', ''),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ],

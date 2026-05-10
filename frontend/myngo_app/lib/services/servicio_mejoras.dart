@@ -7,10 +7,8 @@ import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import './servicio_usuarios.dart';
 
-/// Servicio encargado de gestionar el sistema de puntos, reputación y la tienda de cosméticos.
-///
-/// Administra las votaciones entre usuarios/comunidades, el catálogo de mejoras
-/// visuales (marcos, fondos, estilos) y el flujo de propuestas de nuevos artículos.
+// Controla los puntitos de reputación (votaciones) y la tienda de la app.
+// Maneja las compras de cosméticos (marcos, fondos) y el inventario del usuario.
 class ServicioMejoras {
   final http.Client? _httpClient;
 
@@ -18,12 +16,12 @@ class ServicioMejoras {
 
   http.Client get client => _httpClient ?? http.Client();
 
-  /// URL base para los endpoints del módulo de mejoras y reputación.
+  // Rutas base de la tienda y la reputación
   static const String _urlMejoras = '${Configuracion.baseUrl}/mejoras';
 
   final _servicioUsuarios = ServicioUsuarios();
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  // Adjunta la autorización a la petición
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -32,7 +30,7 @@ class ServicioMejoras {
     };
   }
 
-  /// Registra una valoración de estrellas para un usuario o una comunidad.
+  // Da estrellitas (vota) a otro usuario o a una comunidad
   Future<RespuestaApi> votar({
     int? idReceptorUsuario,
     int? idReceptorComunidad,
@@ -64,7 +62,7 @@ class ServicioMejoras {
     }
   }
 
-  /// Recupera el estado actual de la valoración y el tiempo de espera (cooldown) restante.
+  // Comprueba si ya le hemos dado reputación hoy a ese usuario/comunidad para bloquear el botón
   Future<RespuestaApi<Map<String, dynamic>>> obtenerEstadoVoto({
     int? idReceptorUsuario,
     int? idReceptorComunidad,
@@ -89,7 +87,7 @@ class ServicioMejoras {
     }
   }
 
-  /// Elimina un voto registrado hoy para un receptor.
+  // Quita el voto que le acabas de dar a alguien (si te arrepientes el mismo día)
   Future<RespuestaApi> eliminarVoto({
     int? idReceptorUsuario,
     int? idReceptorComunidad,
@@ -119,7 +117,7 @@ class ServicioMejoras {
     }
   }
 
-  /// Obtiene la lista de artículos cosméticos disponibles en la tienda global.
+  // Trae todo el catálogo de la tienda de cosméticos
   Future<RespuestaApi<List<CatalogoMejoras>>> obtenerMejorasGlobales() async {
     try {
       final respuesta = await client.get(
@@ -257,7 +255,7 @@ class ServicioMejoras {
     }
   }
 
-  /// Recupera el inventario completo de artículos adquiridos por el usuario actual.
+  // Trae la lista de todas las cosas que ya hemos comprado
   Future<RespuestaApi<List<dynamic>>> obtenerMisMejoras() async {
     try {
       final respuesta = await client.get(
@@ -275,7 +273,7 @@ class ServicioMejoras {
     }
   }
 
-  /// Activa o desactiva visualmente un cosmético del inventario.
+  // Te pones o te quitas un marco/fondo comprado
   Future<RespuestaApi> equiparMejora(int idMejora, {String? destino}) async {
     try {
       final respuesta = await client.post(

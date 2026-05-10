@@ -15,15 +15,12 @@ def agregar_miembro_a_chat_comunidad(sender, instance, created, **kwargs):
         comunidad = instance.comunidad
         usuario = instance.usuario
         
-        # Buscar la sala de chat principal de la comunidad
-        # Ahora usamos el campo es_general que es mucho más robusto
         sala = SalaChat.objects.filter(
             comunidad=comunidad, 
             es_grupal=True,
             es_general=True
         ).first()
         
-        # Fallback por si acaso hay salas antiguas sin el flag (opcional, pero seguro)
         if not sala:
             sala = SalaChat.objects.filter(
                 comunidad=comunidad, 
@@ -48,4 +45,3 @@ def crear_sala_chat_comunidad(sender, instance, created, **kwargs):
             es_publica=True,
             es_general=True # Marcamos esta como la sala principal
         )
-        # El creador se añade automáticamente si es miembro (manejado por el otro signal o manualmente)

@@ -5,6 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../utils/estilo_post_helper.dart';
 
+// Preview del perfil completo con avatar, marco, banner y nombre.
+// Se usa en la pantalla de personalizar perfil para ver cómo quedará todo antes de guardar.
 class ProfilePreview extends StatelessWidget {
   final dynamic avatarUrl; 
   final String? marcoUrl;
@@ -33,6 +35,7 @@ class ProfilePreview extends StatelessWidget {
 
   Widget _buildImage(dynamic source, {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
     if (source == null) return errorWidget ?? const SizedBox.shrink();
+
     if (source is String && source.isNotEmpty) {
       if (source.startsWith('http')) {
         return CachedNetworkImage(
@@ -44,10 +47,10 @@ class ProfilePreview extends StatelessWidget {
       }
     }
     
-    // Si es XFile o una ruta local
+
     try {
       if (kIsWeb) {
-        // En web, XFile.path es un Blob URL o similar
+
         final path = source is String ? source : (source as dynamic).path;
         return Image.network(path, fit: fit, errorBuilder: (_, __, ___) => errorWidget ?? const Icon(Icons.broken_image));
       } else {
@@ -61,7 +64,6 @@ class ProfilePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Si hay fondo, mostramos un diseño de "Cabecera de Perfil"
     if (fondoUrl != null && fondoUrl!.isNotEmpty) {
       final Color themeColor = EstiloPostHelper.parseHex(colorTema) ?? const Color(0xFFC35E34);
       final String fontFamily = fuentePerfil ?? 'Outfit';
@@ -73,7 +75,7 @@ class ProfilePreview extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              // 1. BANNER RECTANGULAR
+
               Container(
                 width: size * 2.5,
                 height: size * 0.8,
@@ -93,7 +95,7 @@ class ProfilePreview extends StatelessWidget {
                 ),
               ),
               
-              // 2. AVATAR + MARCO (Posicionado encima)
+
               Positioned(
                 top: size * 0.3,
                 child: _buildAvatarWithFrame(),
@@ -101,7 +103,7 @@ class ProfilePreview extends StatelessWidget {
             ],
           ),
           SizedBox(height: size * 0.55), 
-          // 3. NOMBRE Y PUNTOS
+
           if (nombreUsuario != null)
             Text(
               nombreUsuario!,
@@ -137,8 +139,8 @@ class ProfilePreview extends StatelessWidget {
   }
 
   Widget _buildAvatarWithFrame() {
-    // REDUCCIÓN CRÍTICA: El avatar al 50% para que el marco (100%) luzca todos sus detalles por encima
-    final double avatarSize = size * 0.50; 
+    final double avatarSize = size * 0.50;
+
     final double marcoSize = size;
 
     return SizedBox(
@@ -147,7 +149,7 @@ class ProfilePreview extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 1. EL AVATAR (Capa inferior)
+
           GestureDetector(
             onTap: onAvatarTap,
             child: Container(
@@ -163,7 +165,7 @@ class ProfilePreview extends StatelessWidget {
             ),
           ),
 
-          // 2. EL MARCO (CAPA SUPERIOR - OVERLAY)
+
           if (marcoUrl != null && marcoUrl!.isNotEmpty)
             Positioned.fill(
               child: IgnorePointer(

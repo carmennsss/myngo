@@ -12,13 +12,15 @@ import 'package:myngo_app/utils/tr_helper.dart';
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
+  final String? initialTitulo;
   final String? initialTexto;
   final String? initialEtiquetas;
-  final Future<bool> Function(String texto, List<XFile>? archivos, String etiquetas, {void Function(int, int)? alProgresar}) onPublicar;
+  final Future<bool> Function(String titulo, String texto, List<XFile>? archivos, String etiquetas, {void Function(int, int)? alProgresar}) onPublicar;
 
   const DialogoCrearPost({
     super.key,
     required this.titulo,
+    this.initialTitulo,
     this.initialTexto,
     this.initialEtiquetas,
     required this.onPublicar,
@@ -29,6 +31,7 @@ class DialogoCrearPost extends StatefulWidget {
 }
 
 class _DialogoCrearPostState extends State<DialogoCrearPost> {
+  late final TextEditingController _controladorTitulo;
   late final TextEditingController _controladorTexto;
   late final TextEditingController _controladorEtiquetas;
   List<XFile> _archivosSeleccionados = [];
@@ -38,8 +41,19 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
   @override
   void initState() {
     super.initState();
+    _controladorTitulo = TextEditingController(text: widget.initialTitulo);
     _controladorTexto = TextEditingController(text: widget.initialTexto);
     _controladorEtiquetas = TextEditingController(text: widget.initialEtiquetas);
+    // Listener para actualizar el estado del botón en tiempo real al escribir
+    _controladorTexto.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _controladorTitulo.dispose();
+    _controladorTexto.dispose();
+    _controladorEtiquetas.dispose();
+    super.dispose();
   }
 
   Future<void> _validarYAgregarArchivo(XFile archivo, dynamic tr) async {
@@ -71,6 +85,26 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
         );
       }
     });
+
+    if (_archivosSeleccionados.contains(archivo)) {
+      // Validamos el tamaño en segundo plano
+      final bytes = await archivo.length();
+      final mb = bytes / (1024 * 1024);
+      
+      if (mb > 100) {
+        if (mounted) {
+          setState(() {
+            _archivosSeleccionados.remove(archivo);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('El archivo ${archivo.name} es demasiado grande (${mb.toStringAsFixed(1)} MB). El límite es 100 MB.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override

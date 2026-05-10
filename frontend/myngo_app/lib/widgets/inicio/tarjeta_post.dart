@@ -23,6 +23,7 @@ class TarjetaPost extends StatefulWidget {
   final VoidCallback? onJoin;
   final bool estaEnComunidad;
   final VoidCallback? onEliminado;
+  final String? contextoVisual;
   final String? fuente;
   final bool esMiembroComunidad;
 
@@ -34,6 +35,7 @@ class TarjetaPost extends StatefulWidget {
     this.onJoin,
     this.estaEnComunidad = false,
     this.onEliminado,
+    this.contextoVisual,
     this.fuente,
     this.esMiembroComunidad = true,
   });
@@ -76,6 +78,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
       builder: (context) => DialogoDetallePublicacion(
         post: widget.post,
         esMiembro: widget.esMiembroComunidad,
+        contextoVisual: widget.contextoVisual,
         fuente: widget.fuente,
       ),
     ).then((_) {
@@ -161,14 +164,17 @@ class _TarjetaPostState extends State<TarjetaPost> {
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
         titulo: tr('postEditTitle'),
+        initialTitulo: widget.post.titulo,
         initialTexto: widget.post.contenidoTexto,
-        onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+        onPublicar: (title, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final res = await ServicioComunidades().actualizarPublicacion(
             idPublicacion: widget.post.id,
+            titulo: title,
             texto: texto,
           );
           if (res.exito) {
             setState(() {
+              widget.post.titulo = title;
               widget.post.contenidoTexto = texto;
             });
             return true;
@@ -187,6 +193,9 @@ class _TarjetaPostState extends State<TarjetaPost> {
         final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
         final textColor = esFondoClaro ? const Color(0xFF4A4440) : Colors.white;
         final subTextColor = esFondoClaro ? Colors.black54 : Colors.white70;
+    
+
+    final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -243,8 +252,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // 1. Avatar (Debajo)
-                            Container(
+                                Container(
                               width: 30,
                               height: 30,
                               decoration: const BoxDecoration(
@@ -268,8 +276,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                       ),
                                     ),
                             ),
-                            // 2. Marco (Encima)
-                            if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
+                                if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
                               Positioned.fill(
                                 child: CachedNetworkImage(
                                   imageUrl: widget.post.autorMarco!,
@@ -293,7 +300,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     GestureDetector(
-                                      onTap: widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
+                                      onTap: widget.post.comunidadId > 0 && widget.onComunidadSelected != null ? () => widget.onComunidadSelected!(Comunidad(
                                         id: widget.post.comunidadId, 
                                         nombre: widget.post.comunidadNombre, 
                                         descripcion: '', 
@@ -305,7 +312,10 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                         fechaCreacion: DateTime.now(), 
                                         ratingMedio: 0.0,
                                         creadorId: widget.post.creadorComunidadId ?? 0)) : null,
-                                      child: Text(widget.post.comunidadNombre, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.w900, fontSize: 15)),
+                                      child: Text(
+                                    widget.post.comunidadId > 0 ? widget.post.comunidadNombre : 'Post personal 🐾', 
+                                    style: GoogleFonts.getFont(fuenteEfectiva, color: textColor, fontWeight: FontWeight.w900, fontSize: 15)
+                                  ),
                                     ),
                                     GestureDetector(
                                       onTap: () {
@@ -337,7 +347,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                             ),
                                           ],
                                         ),
-                                        style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 13),
+                                        style: GoogleFonts.getFont(fuenteEfectiva, fontSize: 13),
                                       ),
                                     ),
                                   ],
@@ -356,36 +366,38 @@ class _TarjetaPostState extends State<TarjetaPost> {
                             ],
                           ),
                           const SizedBox(height: 4),
-                          if (widget.post.titulo.isNotEmpty)
-                            Text(widget.post.titulo, style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
-                          if (widget.post.contenidoTexto.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.post.contenidoTexto,
-                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: subTextColor, fontSize: 15),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (widget.post.contenidoTexto.length > 100)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  tr('postReadMore'),
-                                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
-                                    color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                          if (widget.contextoVisual != 'galeria') ...[
+                        if (widget.post.titulo.isNotEmpty)
+                              Text(widget.post.titulo, style: GoogleFonts.getFont(fuenteEfectiva, color: textColor, fontWeight: FontWeight.bold, fontSize: 16, height: 1.2)),
+                            if (widget.post.contenidoTexto.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.post.contenidoTexto,
+                                style: GoogleFonts.getFont(fuenteEfectiva, color: subTextColor, fontSize: 15),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (widget.post.contenidoTexto.length > 100)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    tr('postReadMore'),
+                                    style: GoogleFonts.getFont(fuenteEfectiva,
+                                      color: esFondoClaro ? const Color(0xFFC35E34) : Colors.white70,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
+                            ],
+                      ],
                           if (widget.post.media.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 12),
                               child: GridImagenesPost(
                                 media: widget.post.media,
                                 onTap: () => _mostrarDetalles(context),
-                                mostrarDescarga: false, // User requested to remove it from general card
+                                mostrarDescarga: false,
                               ),
                             ),
                           const SizedBox(height: 12),

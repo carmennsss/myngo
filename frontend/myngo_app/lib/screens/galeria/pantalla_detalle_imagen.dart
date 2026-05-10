@@ -12,6 +12,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../utils/gestor_descargas.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Visor a pantalla completa de una imagen o vídeo de la galería.
+// Muestra metadatos (post vinculado, carpetas), permite descargar y unirse a la comunidad de origen.
 class PantallaDetalleImagen extends StatefulWidget {
   final ImagenGaleria imagen;
 
@@ -37,6 +39,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     _cargarDetalles();
   }
 
+  // Descarga el archivo a través del gestor nativo del dispositivo
   Future<void> _descargarArchivo(dynamic tr) async {
     try {
       await GestorDescargas.descargar(widget.imagen.urlArchivo);
@@ -49,6 +52,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     }
   }
 
+  // Carga los metadatos extendidos (post vinculado, colecciones donde aparece)
   Future<void> _cargarDetalles() async {
     final res = await _servicioGaleria.obtenerDetalleImagenExtendido(widget.imagen.id);
     if (mounted && res.exito) {
@@ -61,6 +65,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     }
   }
 
+  // Envía la petición de unión a la comunidad propietaria de la imagen
   Future<void> _unirseAComunidad() async {
     if (widget.imagen.comunidadId == null) return;
     
@@ -153,6 +158,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     });
   }
 
+  // Panel inferior con autor, fecha, post vinculado y carpetas
   Widget _buildPanelInformacion(dynamic tr) {
     return Container(
       decoration: BoxDecoration(
@@ -223,6 +229,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     );
   }
 
+  // Chip con el nombre de la comunidad y botón de unión si no es miembro
   Widget _buildCommunityTag(dynamic tr) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -261,6 +268,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
     );
   }
 
+  // Construye las secciones de metadatos (post vinculado y carpetas) dinámicamente
   List<Widget> _buildSeccionesMetadatos(dynamic tr) {
     final List<Widget> widgets = [];
     
@@ -345,6 +353,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
   }
 }
 
+// Reproductor de vídeo con controles de Chewie para el visor de la galería
 class _VideoDetalle extends StatefulWidget {
   final String url;
   const _VideoDetalle({required this.url});

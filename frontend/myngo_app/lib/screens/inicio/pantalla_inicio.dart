@@ -33,6 +33,9 @@ import 'package:myngo_app/utils/tr_helper.dart';
 
 export '../../widgets/inicio/lateral_derecho.dart';
 
+// Shell principal de la app. Gestiona la navegación lateral, el feed central
+// y la barra de contexto de comunidad. También mantiene el estado de sesión,
+// notificaciones y mensajes sin leer en tiempo real.
 class PantallaInicio extends StatefulWidget {
   final StatefulNavigationShell? navigationShell;
   const PantallaInicio({super.key, this.navigationShell});
@@ -199,14 +202,42 @@ class PantallaInicioState extends State<PantallaInicio> {
   void _conectarNotificacionesChat(ChatProvider chatProvider) {
     _servicioNotifChat.conectarNotificacionesPersonales((data) {
       if (!mounted) return;
-      if (data['type'] == 'new_message_notification') {
+      final type = data['type'];
+      
+      if (type == 'new_message_notification') {
         chatProvider.procesarNuevaNotificacion(data);
         if (chatProvider.salaActivaId != (data['sala_id'] as num).toInt()) {
           _mostrarToastMensaje(data);
         }
-      } else if (data['type'] == 'new_chat_notification') {
+      } else if (type == 'new_chat_notification') {
         chatProvider.notificarNuevaSala();
+      } else if (type == 'generic_notification') {
+        _cargarNotificacionesSinLeer();
+        _mostrarToastNotificacion(data);
       }
+    });
+  }
+
+  void _mostrarToastNotificacion(Map<String, dynamic> data) {
+    final mensaje = data['mensaje'] ?? 'Nueva notificación';
+    
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _ToastMensaje(
+        sender: 'Myngo',
+        preview: mensaje,
+        avatar: null,
+        onTap: () {
+          entry.remove();
+          _alPulsarNav(2); // Ir a la pestaña de notificaciones
+        },
+        onDismiss: () => entry.remove(),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 5), () {
+      if (entry.mounted) entry.remove();
     });
   }
 
@@ -336,7 +367,7 @@ class PantallaInicioState extends State<PantallaInicio> {
       try {
         await ServicioUsuarios().actualizarOrdenComunidades(_miPerfilId!, _ordenGuardado);
       } catch (e) {
-        debugPrint('Error guardando orden en servidor: $e');
+
       }
     }
   }
@@ -368,6 +399,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                 onNavSelected: _alPulsarNav,
                 onProfileSelected: _seleccionarUsuario,
                 onStatusChanged: cambiarEstado,
+                onRefreshProfile: _inicializarDatos,
               ),
               Expanded(
                 child: Stack(
@@ -498,12 +530,22 @@ class PantallaInicioState extends State<PantallaInicio> {
               onTap: () { Navigator.pop(context); _alPulsarNav(4); },
             ),
             ListTile(
-              leading: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+              leading: Badge(
+                label: Text(context.watch<ChatProvider>().totalNoLeidos.toString()),
+                isLabelVisible: _estaLogueado && context.watch<ChatProvider>().totalNoLeidos > 0,
+                backgroundColor: const Color(0xFFC35E34),
+                child: Icon(Icons.chat_bubble_rounded, color: currentIndex == 3 ? colorPrincipal : Colors.grey),
+              ),
               title: Text(tr('navigationChats'), style: GoogleFonts.outfit(fontWeight: currentIndex == 3 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 3 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(3); },
             ),
             ListTile(
-              leading: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
+              leading: Badge(
+                label: Text(_notificacionesSinLeer.toString()),
+                isLabelVisible: _estaLogueado && _notificacionesSinLeer > 0,
+                backgroundColor: const Color(0xFFC35E34),
+                child: Icon(Icons.notifications_rounded, color: currentIndex == 2 ? colorPrincipal : Colors.grey),
+              ),
               title: Text(tr('navigationNotifications'), style: GoogleFonts.outfit(fontWeight: currentIndex == 2 ? FontWeight.bold : FontWeight.w500, color: currentIndex == 2 ? colorPrincipal : Colors.black87)),
               onTap: () { Navigator.pop(context); _alPulsarNav(2); },
             ),

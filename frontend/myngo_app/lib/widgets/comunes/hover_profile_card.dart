@@ -62,17 +62,17 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
     double dx = size.width + 12;
     double dy = -40;
     
-    // Si se sale por la derecha, mostrar a la izquierda
+
     if (position.dx + size.width + cardWidth + 20 > screenSize.width) {
       dx = -cardWidth - 12;
     }
     
-    // Si se sale por abajo, subirla
+
     if (position.dy + dy + cardHeight > screenSize.height) {
       dy = screenSize.height - (position.dy + cardHeight) - 20;
     }
     
-    // Si se sale por arriba
+
     if (position.dy + dy < 0) {
       dy = -position.dy + 10;
     }
@@ -117,7 +117,7 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                             : null,
                       ),
                     ),
-                    // Avatar con Marco
+
                     Transform.translate(
                       offset: const Offset(0, -30),
                       child: Padding(
@@ -202,7 +202,7 @@ class _HoverProfileCardState extends State<HoverProfileCard> {
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Builder(
                                 builder: (context) {
-                                  // Sincronizar con el estado live si es el usuario actual
+
                                   String displayEstado = widget.estado;
                                   try {
                                     final inicioState = context.findAncestorStateOfType<PantallaInicioState>();

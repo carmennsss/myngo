@@ -15,6 +15,8 @@ import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Pantalla de descubrimiento de la app. Tiene dos pestañas: Comunidades y Perfiles.
+// Incluye búsqueda con debounce, filtros por tags y estrellas, e infinite scroll.
 class PantallaExplorar extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
   final VoidCallback? onComunidadCreada;
@@ -61,6 +63,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     _scrollController.addListener(_alHacerScroll);
   }
 
+  // Activa la carga de más resultados cuando el usuario llega al final de la lista
   void _alHacerScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
       if (!_estaCargando && !_estaCargandoMas) {

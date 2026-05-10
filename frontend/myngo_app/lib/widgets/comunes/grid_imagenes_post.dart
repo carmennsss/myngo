@@ -7,7 +7,7 @@ import 'package:chewie/chewie.dart';
 import 'reproductor_video_post.dart';
 import '../../utils/gestor_descargas.dart';
 
-/// Reusable Twitter/X style media grid for posts (Images and Videos).
+
 class GridImagenesPost extends StatefulWidget {
   final List<Map<String, String>> media;
   final VoidCallback? onTap;
@@ -39,7 +39,7 @@ class _GridImagenesPostState extends State<GridImagenesPost> {
     if (widget.media.isEmpty) return const SizedBox.shrink();
 
     final isMobile = MediaQuery.of(context).size.width < 800;
-    final maxHeight = isMobile ? 220.0 : 340.0;
+    final maxHeight = isMobile ? 240.0 : 360.0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -169,7 +169,9 @@ class _GridMediaItemState extends State<_GridMediaItem> {
   @override
   Widget build(BuildContext context) {
     if (widget.tipo == 'V') {
-      return ReproductorVideoPost(url: widget.url);
+      return ClipRect(
+        child: ReproductorVideoPost(url: widget.url),
+      );
     }
 
     return Stack(
@@ -180,7 +182,6 @@ class _GridMediaItemState extends State<_GridMediaItem> {
             imageUrl: widget.url,
             fit: BoxFit.cover,
             errorWidget: (context, url, error) {
-              debugPrint("Error cargando fondo de imagen ($url): $error");
               return const SizedBox.shrink();
             },
           ),
@@ -200,7 +201,6 @@ class _GridMediaItemState extends State<_GridMediaItem> {
             child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF28B50)),
           ),
           errorWidget: (context, url, error) {
-            debugPrint("Error cargando imagen principal ($url): $error");
             return Container(
               color: Colors.grey.shade900,
               child: Center(

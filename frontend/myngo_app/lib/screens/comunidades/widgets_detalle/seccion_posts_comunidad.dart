@@ -62,7 +62,7 @@ class SeccionPostsComunidad extends StatelessWidget {
             // Hay imagen de fondo de comunidad: texto blanco con sombra implícita
             textColor = Colors.white.withOpacity(0.9);
           } else {
-            // Sin fondo: adaptar al tema (claro = oscuro, oscuro = blanco)
+    
             textColor = esAppClara ? const Color(0xFF4A4440) : Colors.white.withOpacity(0.8);
           }
     

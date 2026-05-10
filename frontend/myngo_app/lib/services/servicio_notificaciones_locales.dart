@@ -7,13 +7,13 @@ import '../router.dart';
 /// Se utiliza principalmente para emitir notificaciones visuales y sonoras
 /// cuando la aplicación está en segundo plano, facilitando la navegación rápida al chat.
 class ServicioNotificacionesLocales {
-  /// Plugin central para la gestión de notificaciones.
+  // El motor que lanza las notificaciones en el teléfono
   static final FlutterLocalNotificationsPlugin _pluginNotificaciones = FlutterLocalNotificationsPlugin();
 
-  /// Estado de inicialización del servicio.
+  // Saber si ya lo hemos arrancado o no
   static bool _estaInicializado = false;
 
-  /// Configura el sistema de notificaciones locales y define el comportamiento al pulsarlas.
+  // Prepara los canales de Android e iOS para que el móvil nos deje sonar y vibrar
   static Future<void> inicializar() async {
     if (_estaInicializado) return;
 
@@ -47,12 +47,8 @@ class ServicioNotificacionesLocales {
     _estaInicializado = true;
   }
 
-  /// Emite una notificación de nuevo mensaje en el sistema operativo.
-  ///
-  /// [id] Identificador único para evitar solapamientos.
-  /// [titulo] Encabezado de la notificación (nombre del remitente o sala).
-  /// [cuerpo] Contenido textual del mensaje recibido.
-  /// [payload] Datos opcionales (ID de sala) para la acción de redirección.
+  // Hace sonar el móvil y muestra un aviso arriba cuando llega un mensaje nuevo.
+  // El 'payload' guarda la sala para que al tocar la notificación te meta directo al chat.
   static Future<void> mostrarNotificacionMensaje({
     required int id,
     required String titulo,

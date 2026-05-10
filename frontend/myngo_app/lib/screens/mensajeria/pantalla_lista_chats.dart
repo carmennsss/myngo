@@ -16,6 +16,8 @@ import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
 
+// Pantalla que lista todos los chats del usuario, tanto personales como de comunidad.
+// Escucha el ChatProvider para actualizarse cuando llegan nuevos mensajes.
 class PantallaListaChats extends StatefulWidget {
   const PantallaListaChats({super.key});
 
@@ -40,6 +42,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     });
   }
 
+  // Se activa cada vez que el ChatProvider notifica un cambio (nuevo mensaje, sala nueva)
   void _onChatProviderChanged() {
     if (!mounted || _cargando) return;
     _cargar();
@@ -55,6 +58,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     super.dispose();
   }
 
+  // Carga el ID del usuario logueado y delega la carga de salas al ChatProvider
   Future<void> _cargar() async {
     if (!mounted) return;
     
@@ -73,7 +77,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         });
       }
     } catch (e) {
-      debugPrint('Error cargando chats: $e');
+
     } finally {
       if (mounted) {
         setState(() => _cargando = false);
@@ -99,49 +103,56 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   Map<String, String?> _datosInterlocutor(Map<String, dynamic> sala) {
     final myId = context.read<ChatProvider>().userId;
     final miembros = (sala['miembros_detalle'] as List?) ?? [];
-    
+
+
+    final avatarPersonalizado = sala['avatar_s3'] as String?;
+    final nombrePersonalizado = sala['nombre'] as String?;
+
     if (!sala['es_grupal'] && miembros.isNotEmpty) {
       Map<String, dynamic>? otro;
       try {
-        // Buscamos al otro usuario que no soy yo de forma segura
         for (var m in miembros) {
           if (m['id'] != myId) {
             otro = m;
             break;
           }
         }
-        // Si no hay otro, usamos el primero disponible
         otro ??= miembros.isNotEmpty ? miembros.first : null;
       } catch (_) {
         otro = miembros.isNotEmpty ? miembros.first : null;
       }
-      
-      if (otro == null) return {'nombre': 'Chat vacío', 'avatar': null}; // Se maneja en el builder con tr()
 
+      if (otro == null) return {'nombre': 'Chat vacío', 'avatar': avatarPersonalizado};
 
       final interlocutor = otro!;
-      // Guardamos el ID del otro usuario para usarlo al abrir el chat
       sala['_otro_usuario_id'] = interlocutor['id'];
-      
-      // Intentamos sacar el nombre más amigable posible
-      String nombreFinal = interlocutor['nombre_usuario'] ?? sala['nombre'] ?? 'Usuario';
-      // Si tenemos un nombre a mostrar o nombre real, lo usamos sin el @
-      if (interlocutor['nombre_completo'] != null && interlocutor['nombre_completo'].toString().isNotEmpty) {
+
+
+      String nombreFinal;
+      if (nombrePersonalizado != null && nombrePersonalizado.isNotEmpty) {
+        nombreFinal = nombrePersonalizado;
+      } else if (interlocutor['nombre_completo'] != null &&
+          interlocutor['nombre_completo'].toString().isNotEmpty) {
         nombreFinal = interlocutor['nombre_completo'];
-      } else if (interlocutor['nombre_usuario'] != null) {
-        nombreFinal = interlocutor['nombre_usuario'];
+      } else {
+        nombreFinal = interlocutor['nombre_usuario'] ?? sala['nombre'] ?? 'Usuario';
       }
-      
+
       return {
         'nombre': nombreFinal,
-        'avatar': interlocutor['url_avatar'],
+
+        'avatar': (avatarPersonalizado != null && avatarPersonalizado.isNotEmpty)
+            ? avatarPersonalizado
+            : interlocutor['url_avatar'],
       };
     }
+
     return {
-      'nombre': sala['nombre'], 
-      'avatar': sala['avatar_s3']
+      'nombre': sala['nombre'],
+      'avatar': sala['avatar_s3'],
     };
   }
+
 
 
   void _mostrarDialogoCrearSala() async {
@@ -176,7 +187,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
               });
             }
           } else if (mounted) {
-            // Si falla, al menos quitamos el cargando del diálogo (esto lo hace el diálogo solo al terminar el await)
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('No se pudo crear el chat 🐾'))
             );
@@ -219,7 +230,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  // Cabecera Premium
+    
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
@@ -236,7 +247,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Barra de búsqueda
+    
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -266,7 +277,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                     ),
                   ),
     
-                  // Lista de Chats
+    
                   if (_cargando && salas.isEmpty)
                     SliverFillRemaining(
                       child: _buildCargando(),

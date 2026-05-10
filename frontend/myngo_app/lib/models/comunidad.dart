@@ -123,7 +123,7 @@ class Comunidad {
             : DateTime.now(),
       );
     } catch (e) {
-      debugPrint('Error parsing Comunidad: $e');
+
       return Comunidad(
         id: 0,
         nombre: 'Error',

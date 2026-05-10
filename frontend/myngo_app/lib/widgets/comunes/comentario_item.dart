@@ -12,7 +12,10 @@ class ComentarioItem extends StatelessWidget {
   final Color? textColor;
   final Color? subTextColor;
   final Function(Comentario)? onReply;
+  final Function(Comentario)? onDelete;
+  final int? currentUserId;
   final bool esRespuesta;
+  final String? fuente;
 
   const ComentarioItem({
     super.key,
@@ -21,7 +24,10 @@ class ComentarioItem extends StatelessWidget {
     this.textColor,
     this.subTextColor,
     this.onReply,
+    this.onDelete,
+    this.currentUserId,
     this.esRespuesta = false,
+    this.fuente,
   });
 
   String _formatFecha(DateTime fecha) {
@@ -50,7 +56,7 @@ class ComentarioItem extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar con Hover Card
+
               HoverProfileCard(
                 nombre: comentario.autorNombre,
                 avatarUrl: comentario.autorFoto,
@@ -97,18 +103,18 @@ class ComentarioItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Contenido
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Cabecera: Nombre · Tiempo
+
                     Row(
                       children: [
                         Flexible(
                           child: Text(
                             comentario.autorNombre,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.getFont(fuente ?? 'Outfit',
                               fontWeight: FontWeight.bold,
                               fontSize: esRespuesta ? 13 : 14,
                               color: textColor,
@@ -120,18 +126,29 @@ class ComentarioItem extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '· ${_formatFecha(comentario.fechaCreacion)}',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.getFont(fuente ?? 'Outfit',
                             color: subTextColor ?? Colors.grey.shade600,
                             fontSize: esRespuesta ? 12 : 13,
                           ),
                         ),
+                        if (comentario.puedoBorrar && onDelete != null) ...[
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => onDelete!(comentario),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 16,
+                              color: Colors.redAccent.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // Texto
+
                     Text(
                       comentario.contenido,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.getFont(fuente ?? 'Outfit',
                         fontSize: esRespuesta ? 13 : 14,
                         height: 1.3,
                         color: textColor,
@@ -144,7 +161,7 @@ class ComentarioItem extends StatelessWidget {
                           onTap: () => onReply!(comentario),
                           child: Text(
                             'Responder',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.getFont(fuente ?? 'Outfit',
                               color: const Color(0xFFF28B50),
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -158,13 +175,17 @@ class ComentarioItem extends StatelessWidget {
             ],
           ),
         ),
-        // Renderizar respuestas
+
         if (comentario.respuestas.isNotEmpty)
           ...comentario.respuestas.map((resp) => ComentarioItem(
             comentario: resp,
             textColor: textColor,
             subTextColor: subTextColor,
             esRespuesta: true,
+            currentUserId: currentUserId,
+            onDelete: onDelete,
+            onReply: onReply,
+            fuente: fuente,
           )),
       ],
     );

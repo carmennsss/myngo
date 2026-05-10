@@ -14,7 +14,7 @@ import '../dialogo_crear_post.dart';
 import '../../services/servicio_comunidades.dart';
 
 
-/// Bottom sheet estilo Instagram que muestra el detalle completo de un post.
+
 class DetallePublicacionSheet extends StatefulWidget {
   final Publicacion publicacion;
   final String avatarUrl;
@@ -69,7 +69,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     if (mounted) {
       super.setState(() => _navegandoAPerfil = false);
       if (res.exito && res.datos != null) {
-        Navigator.pop(context); // Cerrar bottom sheet
+        Navigator.pop(context);
         if (widget.onProfileSelected != null) {
           widget.onProfileSelected!(res.datos!);
         } else {
@@ -93,14 +93,17 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
       barrierColor: Colors.black54,
       builder: (ctx) => DialogoCrearPost(
         titulo: 'Editar Miau-post 🐾',
+        initialTitulo: widget.publicacion.titulo,
         initialTexto: widget.publicacion.contenidoTexto,
-        onPublicar: (texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+        onPublicar: (title, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final res = await ServicioComunidades().actualizarPublicacion(
             idPublicacion: widget.publicacion.id,
+            titulo: title,
             texto: texto,
           );
           if (res.exito && mounted) {
             setState(() {
+              widget.publicacion.titulo = title;
               widget.publicacion.contenidoTexto = texto;
             });
             return true;
@@ -119,7 +122,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     final tieneImagen = publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty;
     final fecha = DateFormat('dd MMM yyyy · HH:mm').format(publicacion.fechaCreacion.toLocal());
 
-    // Usamos el avatar pasado o caemos al autorFoto de la publicación
+
     final String avatarEfectivo = (avatarUrl.isNotEmpty) ? avatarUrl : (publicacion.autorFoto ?? '');
 
     final estilo = publicacion.autorEstiloPost;
@@ -127,7 +130,10 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     final colorTexto = esFondoClaro ? Colors.black87 : Colors.white;
     final colorSubtexto = esFondoClaro ? Colors.black54 : Colors.grey;
 
-    // Color efectivo de fondo para el Scaffold (no puede ser gradiente, usamos el color promedio)
+
+    final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
+
+
     final bgColor = estilo != null ? EstiloPostHelper.effectiveBgColor(estilo) : const Color(0xFF121212);
 
     return DraggableScrollableSheet(
@@ -144,7 +150,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
           controller: scrollController,
           padding: EdgeInsets.zero,
           children: [
-            // ── Handle drag ──
+
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -157,7 +163,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
               ),
             ),
 
-            // ── Cabecera: avatar + nombre + menú ──
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -193,7 +199,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                             children: [
                               Text(
                                 '@${publicacion.autorNombre}',
-                                style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                                style: GoogleFonts.getFont(fuenteEfectiva,
                                   color: colorTexto,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -208,7 +214,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                           ),
                           Text(
                             fecha,
-                            style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 12),
+                            style: GoogleFonts.getFont(fuenteEfectiva, color: colorSubtexto, fontSize: 12),
                           ),
                         ],
                       ),
@@ -231,7 +237,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
               ),
             ),
 
-            // ── Imagen / Rejilla (si existe) ──
+
             if (publicacion.media.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -240,13 +246,13 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 ),
               ),
 
-            // ── Título ──
+
             if (publicacion.titulo.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                 child: Text(
                   publicacion.titulo,
-                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                  style: GoogleFonts.getFont(fuenteEfectiva,
                     color: colorTexto,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -254,13 +260,13 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 ),
               ),
 
-            // ── Contenido texto ──
+
             if (publicacion.contenidoTexto.isNotEmpty)
               Padding(
                 padding: EdgeInsets.fromLTRB(16, publicacion.titulo.isEmpty ? 16 : 8, 16, 16),
                 child: Text(
                   publicacion.contenidoTexto,
-                  style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                  style: GoogleFonts.getFont(fuenteEfectiva,
                     color: colorTexto.withOpacity(0.9),
                     fontSize: 15,
                     height: 1.6,
@@ -268,7 +274,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                 ),
               ),
 
-            // ── Comunidad Badge ──
+
             if (publicacion.comunidadNombre.isNotEmpty && publicacion.comunidadNombre != 'General')
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -278,16 +284,17 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
                     const SizedBox(width: 6),
                     Text(
                       publicacion.comunidadNombre,
-                      style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: colorSubtexto, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.getFont(fuenteEfectiva, color: colorSubtexto, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
 
-            // ── Stats: likes, comentarios interactivos ──
+
             AccionesYComentariosPost(
               post: publicacion,
               colorTexto: colorTexto,
+              fuente: fuenteEfectiva,
             ),
 
             const SizedBox(height: 24),

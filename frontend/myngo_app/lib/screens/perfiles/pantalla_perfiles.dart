@@ -9,6 +9,8 @@ import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Listado de todos los usuarios de la plataforma con buscador en tiempo real.
+// Desde aquí se navega al perfil detallado de cada uno.
 class PantallaPerfiles extends StatefulWidget {
   const PantallaPerfiles({super.key});
 
@@ -30,6 +32,7 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
     _cargarDatos();
   }
 
+  // Carga los usuarios y los filtra localmente según el texto de búsqueda
   Future<void> _cargarDatos({String? filtro}) async {
     super.setState(() => _estaCargando = true);
     
@@ -111,6 +114,7 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
     );
   }
 
+  // Grid de perfiles con estado vacío y pull-to-refresh
   Widget _buildGridPerfiles(String Function(String, [Map<String, dynamic>?]) tr) {
     if (_usuariosFiltrados.isEmpty) {
       return Center(

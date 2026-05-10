@@ -11,7 +11,10 @@ from usuarios.models import Usuario
 
 
 class TagComunidad(models.Model):
-    """Categoría o etiqueta temática para clasificar comunidades."""
+    """
+    Representa una categoría o etiqueta temática utilizada para organizar y 
+    filtrar las comunidades según sus intereses.
+    """
 
     class Meta:
         db_table = 'tags_comunidades'
@@ -31,11 +34,9 @@ class TagComunidad(models.Model):
 
 
 class Comunidad(models.Model):
-    """Comunidad temática de la plataforma Myngo.
-
-    Las comunidades pueden ser públicas o privadas, disponer de tienda
-    de mejoras, y ser personalizadas visualmente por sus administradores
-    (avatar, portada, fondo, fuente tipográfica y colores del feed).
+    """
+    Define un espacio de interacción temática. Incluye la configuración de privacidad,
+    las reglas de acceso por reputación y las opciones de personalización visual.
     """
 
     class Meta:
@@ -90,11 +91,9 @@ class Comunidad(models.Model):
 
 
 class MiembrosComunidad(models.Model):
-    """Relación entre un usuario y una comunidad con un rol asignado.
-
-    Un usuario puede ser Administrador, Moderador o Miembro.
-    El creador de la comunidad no aparece aquí; se identifica
-    directamente por el campo ``Comunidad.creador``.
+    """
+    Gestiona la relación de pertenencia de un usuario a una comunidad, asignando 
+    un rol que define sus permisos de administración y moderación.
     """
 
     ROLES = [

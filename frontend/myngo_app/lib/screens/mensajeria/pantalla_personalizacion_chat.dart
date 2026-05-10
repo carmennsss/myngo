@@ -1097,7 +1097,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
       }
       return Color(int.parse(cleanHex, radix: 16));
     } catch (e) {
-      debugPrint('Error parsing color $hex: $e');
+
       return null;
     }
   }

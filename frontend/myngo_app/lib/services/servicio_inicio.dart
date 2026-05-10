@@ -5,17 +5,15 @@ import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio encargado de la recuperación de contenido para los feeds principales.
-///
-/// Diferencia entre un feed visual centrado en imágenes (Galería de inicio)
-/// y un feed social basado en interacciones de texto y posts recientes.
+// Nos trae el contenido para llenar la pantalla principal.
+// Diferencia la vista de galería (fotos) de la vista social (muro estilo Twitter).
 class ServicioInicio {
-  /// URL base para los endpoints de contenido.
+  // URL de los endpoints de contenido
   static const String _urlBase = '${Configuracion.baseUrl}/contenido';
   
   final _servicioUsuarios = ServicioUsuarios();
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones.
+  // Prepara el token de sesión para que el servidor sepa quién está haciendo la petición
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -24,7 +22,7 @@ class ServicioInicio {
     };
   }
 
-  /// Obtiene publicaciones para el feed visual de la galería principal.
+  // Pide las imágenes más destacadas o recientes para la galería inicial
   Future<RespuestaApi<List<Publicacion>>> obtenerPostsInicio({
     int limit = 20,
     int offset = 0,
@@ -60,7 +58,7 @@ class ServicioInicio {
     }
   }
 
-  /// Obtiene publicaciones para el feed social de la plataforma.
+  // Pide las publicaciones de texto, debates o anuncios para el muro social
   Future<RespuestaApi<List<Publicacion>>> obtenerFeedSocial({
     int limit = 20,
     int offset = 0,

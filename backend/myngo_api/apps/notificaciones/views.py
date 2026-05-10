@@ -57,7 +57,6 @@ class ResponderSolicitudUnion(APIView):
 
         accion = request.data.get("accion")  # "ACEPTAR" o "RECHAZAR"
 
-        # Flujo de solicitud para unirse a una COMUNIDAD
         if notificacion.referencia_comunidad:
             try:
                 peticion = Seguimiento.objects.get(pk=notificacion.referencia_id)
@@ -92,7 +91,6 @@ class ResponderSolicitudUnion(APIView):
                 referencia_comunidad=peticion.seguida_comunidad
             )
 
-        # Flujo de solicitud de seguimiento de USUARIO PRIVADO
         elif notificacion.referencia_usuario:
             try:
                 seguimiento = Seguimiento.objects.get(pk=notificacion.referencia_id)
@@ -125,7 +123,6 @@ class ResponderSolicitudUnion(APIView):
         else:
             return Response({'error': 'Petición inválida'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Marcar notificación original como leída para quitarla de la lista de pendientes
         notificacion.leida = True
         notificacion.save()
 

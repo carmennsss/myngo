@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
-/// Cabecera superior de la pantalla de inicio con logo, navegación y perfil de usuario.
+
 class CabeceraPro extends StatelessWidget {
   final bool estaLogueado;
   final String? nombreUsuario;
@@ -27,6 +27,7 @@ class CabeceraPro extends StatelessWidget {
   final ValueChanged<int> onNavSelected;
   final Function(Usuario)? onProfileSelected;
   final Function(String)? onStatusChanged;
+  final VoidCallback? onRefreshProfile;
 
   const CabeceraPro({
     super.key,
@@ -43,6 +44,7 @@ class CabeceraPro extends StatelessWidget {
     required this.onNavSelected,
     this.onProfileSelected,
     this.onStatusChanged,
+    this.onRefreshProfile,
   });
 
   @override
@@ -150,6 +152,7 @@ class CabeceraPro extends StatelessWidget {
                 SizedBox(width: isMobile ? 16 : 24),
               ],
               const BotonIdioma(),
+              const SizedBox(width: 8),
               _UserProfileHeader(
                 name: nombreUsuario,
                 avatarUrl: avatarUrl,
@@ -159,6 +162,7 @@ class CabeceraPro extends StatelessWidget {
                 estado: estado,
                 onProfileSelected: onProfileSelected,
                 onStatusChanged: onStatusChanged,
+                onRefreshProfile: onRefreshProfile,
                 puntos: puntos,
                 isMobile: isMobile,
               ),
@@ -227,6 +231,7 @@ class _UserProfileHeader extends StatelessWidget {
   final String estado;
   final Function(Usuario)? onProfileSelected;
   final Function(String)? onStatusChanged;
+  final VoidCallback? onRefreshProfile;
   final bool isMobile;
 
   const _UserProfileHeader({
@@ -237,6 +242,7 @@ class _UserProfileHeader extends StatelessWidget {
     this.miId, 
     this.onProfileSelected, 
     this.onStatusChanged,
+    this.onRefreshProfile,
     this.puntos,
     this.estado = 'DESCONECTADO',
     this.isMobile = false,
@@ -287,7 +293,10 @@ class _UserProfileHeader extends StatelessWidget {
             }
           }
         } else if (value == 'config') {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('settingsAdjustmentsSoon'))));
+          await context.push('/configuracion');
+          if (context.mounted && onRefreshProfile != null) {
+            onRefreshProfile!();
+          }
         } else if (value == 'logout') {
           await ServicioUsuarios().cerrarSesion();
           if (context.mounted) {

@@ -142,8 +142,8 @@ class SeccionChatComunidad extends StatelessWidget {
 
   Widget _buildGeneralChatTile(BuildContext context, String Function(String, [Map<String, dynamic>?]) tr) {
     // Buscar la sala general real:
-    // 1. Que contenga "general"
-    // 2. O la primera sala grupal que encuentre
+    // Que contenga "general"
+    // O la primera sala grupal que encuentre
     final SalaChat? salaGeneral = (salasChat ?? []).firstWhere(
       (s) => s.nombre.toLowerCase().contains('general'),
       orElse: () => (salasChat ?? []).firstWhere(

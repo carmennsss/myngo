@@ -5,17 +5,15 @@ import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio encargado de gestionar las interacciones sociales en publicaciones.
-///
-/// Administra los "me gusta", el sistema de comentarios y la funcionalidad
-/// de guardar publicaciones para acceso rápido posterior.
+// Maneja las interacciones sociales con los posts.
+// Los likes, los comentarios, y la opción de guardar posts favoritos.
 class ServicioInteraccion {
-  /// URL base para las peticiones de interacción.
+  // URL base para las interacciones
   static const String _urlBase = '${Configuracion.baseUrl}/contenido';
 
   final _servicioUsuarios = ServicioUsuarios();
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones.
+  // Adjunta el token a la petición
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -24,7 +22,7 @@ class ServicioInteraccion {
     };
   }
 
-  /// Alterna el estado de "me gusta" en una publicación específica.
+  // Da o quita el like a un post (hace de interruptor)
   Future<RespuestaApi<Map<String, dynamic>>> alternarMeGusta(int publicacionId) async {
     try {
       final respuesta = await http.post(
@@ -52,7 +50,7 @@ class ServicioInteraccion {
     }
   }
 
-  /// Recupera los comentarios de una publicación con soporte para paginación.
+  // Trae los comentarios de un post para mostrarlos debajo de la foto
   Future<RespuestaApi<List<Comentario>>> obtenerComentarios(
     int publicacionId, {
     int limit = 10,
@@ -84,7 +82,7 @@ class ServicioInteraccion {
     }
   }
 
-  /// Publica un nuevo comentario en la plataforma.
+  // Envía el texto que acabas de escribir como comentario en un post
   Future<RespuestaApi<Comentario>> crearComentario(int publicacionId, String texto, {int? padreId}) async {
     try {
       final respuesta = await http.post(
@@ -116,7 +114,7 @@ class ServicioInteraccion {
     }
   }
 
-  /// Alterna si una publicación está guardada en el perfil del usuario.
+  // Guarda o quita un post de tu carpeta personal de favoritos (interruptor)
   Future<RespuestaApi<Map<String, dynamic>>> alternarGuardado(int publicacionId) async {
     try {
       final respuesta = await http.post(
@@ -132,6 +130,27 @@ class ServicioInteraccion {
         );
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar el guardado');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  // Borra tu comentario de un post
+  Future<RespuestaApi<bool>> eliminarComentario(int comentarioId) async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('$_urlBase/comentarios/$comentarioId/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (respuesta.statusCode == 200 || respuesta.statusCode == 204) {
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Comentario eliminado',
+          datos: true,
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al eliminar comentario');
     } catch (e) {
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }

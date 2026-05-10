@@ -17,11 +17,7 @@ from .models import (
 
 
 class PublicacionSerializer(serializers.ModelSerializer):
-    """Serializador detallado de publicaciones con metadatos de autor y comunidad.
-
-    Incluye lógica para resolver URLs de imágenes en S3 y estados de interacción
-    (likes, guardados) para el usuario autenticado.
-    """
+    """Convierte los posts de la base de datos a un formato que la app de Flutter entiende, incluyendo fotos y likes."""
 
     autor_perfil_id = serializers.ReadOnlyField(source='autor.perfil.id')
     autor_nombre = serializers.SerializerMethodField()
@@ -349,7 +345,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
 
 
 class ImagenGaleriaSerializer(serializers.ModelSerializer):
-    """Serializador de archivos multimedia de la galería."""
+    """Prepara las fotos y vídeos de la galería para que se vean correctamente en el perfil o comunidad."""
 
     url_archivo = serializers.SerializerMethodField()
     propietario_nombre = serializers.ReadOnlyField(source='propietario.nombre_usuario')
@@ -403,7 +399,7 @@ class ImagenGaleriaSerializer(serializers.ModelSerializer):
 
 
 class ColeccionSerializer(serializers.ModelSerializer):
-    """Serializador de colecciones personales o de comunidad."""
+    """Maneja las carpetas de fotos favoritas de los usuarios."""
 
     propietario_nombre = serializers.ReadOnlyField(source='usuario.nombre_usuario')
     numero_imagenes = serializers.SerializerMethodField()
@@ -463,13 +459,14 @@ class MeGustaSerializer(serializers.ModelSerializer):
 
 
 class ComentarioSerializer(serializers.ModelSerializer):
-    """Serializador de comentarios con metadatos del autor y soporte para respuestas."""
+    """Organiza los comentarios y sus respuestas para que aparezcan bien ordenados en el post."""
 
     autor_nombre = serializers.SerializerMethodField()
     autor_foto = serializers.SerializerMethodField()
     autor_marco = serializers.SerializerMethodField()
     autor_fondo = serializers.SerializerMethodField()
     respuestas = serializers.SerializerMethodField()
+    puedo_borrar = serializers.SerializerMethodField()
 
     class Meta:
         """Configuración del modelo y campos."""
@@ -477,7 +474,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'publicacion', 'autor', 'autor_nombre', 'autor_foto',
             'autor_marco', 'autor_fondo', 'contenido', 'padre',
-            'respuestas', 'fecha_creacion'
+            'respuestas', 'puedo_borrar', 'fecha_creacion'
         ]
         read_only_fields = ['autor', 'publicacion']
 
@@ -569,9 +566,42 @@ class ComentarioSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
+    def get_puedo_borrar(self, obj):
+        """Indica si el usuario actual tiene permiso para borrar este comentario.
+        
+        Permitido si es el autor del comentario, si es el autor de la publicación,
+        o si es admin/moderador de la comunidad.
+        """
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+            
+        # Caso 1: Es el autor del comentario
+        if obj.autor_id == request.user.id:
+            return True
+
+        # Caso 2: Es el autor de la publicación original
+        if obj.publicacion.autor_id == request.user.id:
+            return True
+            
+        # Caso 3: Es admin/moderador de la comunidad donde se hizo el post
+        if obj.publicacion.comunidad:
+            comunidad = obj.publicacion.comunidad
+            if comunidad.creador_id == request.user.id:
+                return True
+                
+            from comunidades.models import MiembrosComunidad
+            return MiembrosComunidad.objects.filter(
+                usuario=request.user,
+                comunidad=comunidad,
+                rol__in=['Administrador', 'Moderador']
+            ).exists()
+            
+        return False
+
 
 class ReporteSerializer(serializers.ModelSerializer):
-    """Serializador de reportes de contenido."""
+    """Envía los datos de las denuncias de contenido a los moderadores."""
 
     informador_nombre = serializers.ReadOnlyField(source='informador.nombre_usuario')
 

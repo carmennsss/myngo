@@ -13,12 +13,14 @@ import 'package:myngo_app/screens/comunidades/pantalla_detalle_publicacion.dart'
 import 'package:myngo_app/screens/galeria/pantalla_detalle_imagen.dart';
 import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
-import 'pantalla_moderacion_tienda.dart';
+
 import 'pantalla_personalizacion_comunidad.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Dashboard de administración de una comunidad. Agrupa en pestañas las solicitudes
+// de acceso pendientes, la gestión de miembros, los reportes activos y los ajustes generales.
 class PantallaAdminComunidad extends StatefulWidget {
   final Comunidad comunidad;
   final int initialTab;
@@ -36,12 +38,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   Map<String, dynamic>? _datos;
   bool _cargando = true;
 
-  // Controladores para Ajustes
+
   late TextEditingController _nombreCtrl;
   late TextEditingController _descCtrl;
   String? _colorSeleccionado;
   XFile? _nuevoBanner;
-  bool _tiendaHabilitada = false;
+
   final List<String> _tagsSeleccionados = [];
   final _controladorTag = TextEditingController();
   List<Map<String, dynamic>> _sugerenciasTags = [];
@@ -50,13 +52,13 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this, initialIndex: widget.initialTab);
+    _tabController = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
     _nombreCtrl = TextEditingController(text: widget.comunidad.nombre);
     _descCtrl = TextEditingController(text: widget.comunidad.descripcion);
     _colorSeleccionado = widget.comunidad.colorTema.toHex();
-    _tiendaHabilitada = widget.comunidad.tiendaHabilitada;
+
     
-    // Cargar tags iniciales
+
     for (var tag in widget.comunidad.tags) {
       final nombre = tag['nombre']?.toString();
       if (nombre != null && nombre.isNotEmpty) {
@@ -67,6 +69,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     _cargarDatos();
   }
 
+  // Carga el dashboard completo del servidor; en modo silencioso no muestra spinner
   Future<void> _cargarDatos({bool silencioso = false}) async {
     if (!silencioso) setState(() => _cargando = true);
     final res = await _servicioComunidades.obtenerDashboardAdmin(widget.comunidad.id);
@@ -140,6 +143,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
 
+  // Pestaña de solicitudes de acceso pendientes con botones de aceptar/rechazar
   Widget _buildSolicitudesTab(String Function(String, [Map<String, dynamic>?]) tr) {
     final dynamic rawSolicitudes = _datos != null ? _datos!['solicitudes_pendientes'] : null;
     final List solicitudes = (rawSolicitudes is List) ? rawSolicitudes : [];
@@ -172,6 +176,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     );
   }
 
+  // Pestaña de miembros con menú contextual para cambiar rol o expulsar
   Widget _buildMiembrosTab(String Function(String, [Map<String, dynamic>?]) tr) {
     final dynamic rawMiembros = _datos != null ? _datos!['miembros'] : null;
     final List miembros = (rawMiembros is List) ? rawMiembros : [];
@@ -213,6 +218,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     );
   }
 
+  // Pestaña de reportes activos con opciones de ignorar o borrar el contenido
   Widget _buildReportesTab(String Function(String, [Map<String, dynamic>?]) tr) {
     final dynamic rawReportes = _datos != null ? _datos!['reportes_activos'] : null;
     final List reportes = (rawReportes is List) ? rawReportes : [];
@@ -286,8 +292,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     );
   }
 
-  // --- HELPERS ---
 
+
+  // Acepta o rechaza una solicitud de acceso y recarga el listado en silencio
   Future<void> _responderPeticion(int id, bool aceptar) async {
     final res = await _servicioComunidades.responderPeticionAcceso(id, aceptar);
     if (res.exito) {
@@ -300,6 +307,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     }
   }
 
+  // Actualiza el rol de un miembro (Moderador / Miembro); la expulsión se maneja aparte
   Future<void> _cambiarRol(int miembroId, String rol) async {
     if (rol == 'Expulsar') return; 
     final res = await _servicioComunidades.gestionarRolMiembro(miembroId, rol);
@@ -314,6 +322,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
 
+  // Diálogo de confirmación antes de borrar la comunidad de forma permanente
   void _confirmarEliminarComunidad() {
     showDialog(
       context: context,
@@ -337,22 +346,22 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
             onPressed: () async {
               Navigator.pop(context);
               final res = await _servicioComunidades.eliminarComunidad(widget.comunidad.id);
-                if (res.exito && mounted) {
-                  // Notificar a la pantalla de inicio para refrescar el sidebar
-                  context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
-                  
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('adminContentDeleted'))));
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${tr('commonErrorPrefix')}${res.mensaje}'), backgroundColor: Colors.red));
-                }
-              },
-              child: Text(tr('adminDeleteCommunityConfirm')),
-            ),
-          ],
-        ),
-      );
-    }
+              if (res.exito && mounted) {
+                // Notificar a la pantalla de inicio para refrescar el sidebar
+                context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
+                
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Comunidad eliminada con éxito! 🐾')));
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${res.mensaje}'), backgroundColor: Colors.red));
+              }
+            },
+            child: const Text('BORRAR PERMANENTEMENTE'),
+          ),
+        ],
+      ),
+    );
+  }
 
 
   Future<void> _resolverReporte(int id, String estado) async {
@@ -360,6 +369,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     if (res.exito) _cargarDatos(silencioso: true);
   }
 
+  // Pide razón antes de borrar un contenido reportado (post, imagen o comentario)
   void _mostrarDialogoBorrado(int id, String tipo, int reporteId, String Function(String) tr) {
     final razonCtrl = TextEditingController();
     showDialog(
@@ -400,6 +410,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
 
+  // Elimina el contenido del tipo indicado y recarga los reportes en silencio
   Future<void> _moderarContenido(int id, String tipo, int reporteId, String razon) async {
     dynamic resBorrado;
     if (tipo == 'POST') resBorrado = await _servicioComunidades.eliminarPublicacionModeracion(id, razon: razon);
@@ -417,6 +428,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
 
+  // Busca tags existentes mientras el admin escribe en el campo de etiquetas
   Future<void> _buscarSugerencias(String query) async {
     if (query.isEmpty) {
       setState(() {
@@ -434,6 +446,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     }
   }
 
+  // Añade un tag a la lista local si no supera el límite de 5
   void _anadirTag(String nombre) {
     final limpio = nombre.trim().toLowerCase();
     if (limpio.isNotEmpty && !_tagsSeleccionados.contains(limpio) && _tagsSeleccionados.length < 5) {
@@ -445,6 +458,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     }
   }
 
+  // Pestaña de ajustes: nombre, descripción, banner, tags y zona de peligro
   Widget _buildAjustesTab(String Function(String) tr) {
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -560,7 +574,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                   comunidad: widget.comunidad,
                   onComunidadActualizada: (nueva) {
                     setState(() {
-                      // Actualizamos localmente lo que podamos
+
                     });
                     _cargarDatos(silencioso: true);
                   },
@@ -594,8 +608,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     );
   }
 
-// Selector de color eliminado de aquí, ahora está en Personalización Avanzada
 
+
+  // Guarda nombre, descripción, color, banner y tags en el servidor
   Future<void> _guardarAjustes() async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('adminSaving'))));
 
@@ -605,7 +620,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
       nombre: _nombreCtrl.text,
       descripcion: _descCtrl.text,
       colorTema: _colorSeleccionado,
-      tiendaHabilitada: _tiendaHabilitada,
+
       banner: _nuevoBanner,
       tags: _tagsSeleccionados,
     );
@@ -685,6 +700,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 }
 
+// Tarjeta reutilizable para mostrar un miembro o solicitud con avatar y acciones
 class _TarjetaGestion extends StatelessWidget {
   final String nombre;
   final String subtitulo;

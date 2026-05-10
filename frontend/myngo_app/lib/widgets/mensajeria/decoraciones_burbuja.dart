@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Widget que centraliza las decoraciones visuales (emojis, iconos) de las burbujas de chat
-/// según el estilo seleccionado.
+
 class DecoracionesBurbuja extends StatelessWidget {
-  final String estilo;
-  final bool esMio;
+  final String estilo; // El nombre del tema del chat
+  final bool esMio;    // Para saber en qué lado de la burbuja poner la decoración
 
   const DecoracionesBurbuja({
     super.key,

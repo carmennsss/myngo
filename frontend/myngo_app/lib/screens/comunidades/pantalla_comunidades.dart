@@ -11,6 +11,8 @@ import 'pantalla_detalle_comunidad.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Pantalla de listado de comunidades con buscador, filtros por tags y grid responsivo.
+// Permite crear nuevas comunidades desde el botón "+" del header.
 class PantallaComunidades extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onUsuarioSelected;
@@ -38,6 +40,7 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
     _cargarTags();
   }
 
+  // Carga los tags más populares para mostrarlos como filtros rápidos
   Future<void> _cargarTags() async {
     final respuesta = await _servicioComunidades.buscarTags(popular: true);
     if (respuesta.exito && mounted) {
@@ -45,6 +48,7 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
     }
   }
 
+  // Trae comunidades filtradas por texto y tags seleccionados
   Future<void> _cargarDatos({String? filtro}) async {
     setState(() => _estaCargando = true);
     
@@ -197,6 +201,8 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
   }
 
   Widget _buildSliverGridComunidades(String Function(String, [Map<String, dynamic>?]) tr) {
+  // Grid adaptativo de tarjetas de comunidad con estado vacío
+  Widget _buildSliverGridComunidades() {
     if (_comunidades.isEmpty) {
       return SliverFillRemaining(
         child: Center(
@@ -248,6 +254,7 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
     );
   }
 
+  // Bottom sheet del formulario de creación de comunidad
   void _mostrarModalCreacion(BuildContext context) {
     showModalBottomSheet(
       context: context,

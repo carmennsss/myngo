@@ -10,10 +10,8 @@ import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import '../utils/configuracion.dart';
 
-/// Servicio encargado de la gestión de usuarios, autenticación y sesiones.
-///
-/// Proporciona métodos para el inicio de sesión, registro, recuperación de
-/// credenciales y persistencia de la sesión en el dispositivo.
+// Se encarga de gestionar a los usuarios y sus sesiones.
+// Lo usamos para hacer login, registrar cuentas, y guardar el token para no pedir la contraseña todo el rato.
 class ServicioUsuarios {
   final http.Client? _httpClient;
   final dio.Dio? _dioClient;
@@ -26,9 +24,10 @@ class ServicioUsuarios {
   dio.Dio get dioClient => _dioClient ?? dio.Dio();
 
   /// URL base para los endpoints relacionados con la gestión de usuarios.
+  // URL donde el backend escucha las peticiones de usuarios
   static const String _urlUsuarios = '${Configuracion.baseUrl}/usuarios';
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  // Prepara la "llave" (token) para que el servidor nos deje pasar
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await obtenerToken();
     return {
@@ -37,10 +36,7 @@ class ServicioUsuarios {
     };
   }
 
-  /// Realiza la autenticación del usuario en la plataforma.
-  ///
-  /// Tras un inicio de sesión exitoso, persiste el token y los datos básicos
-  /// del usuario en las preferencias compartidas del dispositivo.
+  // Intenta hacer login con email y contraseña, y si va bien, guarda el token en el móvil
   Future<RespuestaApi<Usuario>> iniciarSesion(String correo, String contrasena) async {
     try {
       final respuesta = await client.post(
@@ -50,7 +46,7 @@ class ServicioUsuarios {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.body.contains('<!DOCTYPE') || respuesta.body.contains('<html')) {
-        debugPrint('[Auth] Error Crítico: El servidor devolvió HTML en lugar de JSON. Status: ${respuesta.statusCode}');
+
         return RespuestaApi(
           exito: false,
           mensaje: 'Error técnico en el servidor (${respuesta.statusCode}). Por favor, contacta con soporte.',
@@ -91,7 +87,7 @@ class ServicioUsuarios {
     }
   }
 
-  /// Registra una nueva cuenta de usuario en el sistema.
+  // Crea una cuenta nueva
   Future<RespuestaApi<Usuario>> registrarse(
       String nombreUsuario, String correo, String contrasena) async {
     try {
@@ -148,7 +144,7 @@ class ServicioUsuarios {
     }
   }
 
-  /// Recupera el token de sesión almacenado localmente.
+  // Lee el token guardado en el almacenamiento del móvil
   Future<String?> obtenerToken() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
@@ -178,7 +174,7 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene la información completa del usuario que ha iniciado sesión.
+  // Pide al servidor toda la info del usuario que tiene la sesión iniciada
   Future<RespuestaApi<Usuario>> obtenerDatosPropios() async {
     final id = await obtenerIdUsuario();
     if (id == null) return RespuestaApi(exito: false, mensaje: 'Sesión no activa');
@@ -264,19 +260,19 @@ class ServicioUsuarios {
     }
   }
 
-  /// Finaliza la sesión actual y limpia los datos locales de forma inmediata.
+  // Cierra la sesión y borra el token del móvil
   Future<void> cerrarSesion() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
-      // Borramos de forma agresiva todo rastro de la sesión
+
       await preferencias.remove('auth_token');
       await preferencias.remove('usuario_id');
       await preferencias.remove('nombre_usuario');
       await preferencias.remove('orden_comunidades_local');
       
-      debugPrint('[Auth] Sesión cerrada y SharedPreferences limpiadas.');
+
     } catch (e) {
-      debugPrint('Error al cerrar sesión: $e');
+
     }
   }
 
@@ -292,11 +288,12 @@ class ServicioUsuarios {
     String? biografia,
     List<int>? ordenComunidades,
     Map<String, dynamic>? estiloPost,
-    dynamic imagenAvatar, // Puede ser XFile o String (URL/Ruta)
+    dynamic imagenAvatar,
     dynamic imagenFondo,
     dynamic imagenFondoPerfil,
     String? colorTema,
     String? fuentePerfil,
+    bool? esPublico,
   }) async {
     try {
       final token = await obtenerToken();
@@ -322,6 +319,9 @@ class ServicioUsuarios {
       }
       if (fuentePerfil != null) {
         datosFormulario.fields.add(MapEntry('fuente_perfil', fuentePerfil));
+      }
+      if (esPublico != null) {
+        datosFormulario.fields.add(MapEntry('es_publico', esPublico.toString()));
       }
 
       final imagenes = {
@@ -376,5 +376,81 @@ class ServicioUsuarios {
   /// Guarda el orden personalizado de las comunidades del usuario.
   Future<RespuestaApi> actualizarOrdenComunidades(int perfilId, List<int> idsOrdenados) async {
     return actualizarPerfil(perfilId: perfilId, ordenComunidades: idsOrdenados);
+  }
+
+  /// Actualiza el nombre de usuario de la cuenta actual.
+  Future<RespuestaApi> actualizarNombreUsuario(int id, String nuevoNombre) async {
+    try {
+      final respuesta = await http.put(
+        Uri.parse('$_urlUsuarios/actualizar_usuario/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({
+          'id': id,
+          'nombre_usuario': nuevoNombre.trim(),
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode == 200) {
+        final preferencias = await SharedPreferences.getInstance();
+        await preferencias.setString('nombre_usuario', nuevoNombre.trim());
+        return RespuestaApi.fromJson(datosJson);
+      }
+      
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'El nombre de usuario ya está en uso o es inválido',
+        errores: datosJson['errores'],
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Cambia la contraseña del usuario actual.
+  Future<RespuestaApi> cambiarPassword(String nuevaPassword) async {
+    try {
+      final respuesta = await http.post(
+        Uri.parse('$_urlUsuarios/configuracion/cambiar-password/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'nueva_password': nuevaPassword.trim()}),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi.fromJson(datosJson);
+      }
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'Error al cambiar contraseña',
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Elimina la cuenta del usuario actual.
+  Future<RespuestaApi> eliminarCuenta() async {
+    try {
+      final respuesta = await http.delete(
+        Uri.parse('$_urlUsuarios/configuracion/eliminar-cuenta/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode == 200) {
+        await cerrarSesion();
+        return RespuestaApi.fromJson(datosJson);
+      }
+      return RespuestaApi(
+        exito: false,
+        mensaje: datosJson['mensaje'] ?? 'Error al eliminar cuenta',
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
   }
 }

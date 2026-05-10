@@ -8,6 +8,8 @@ import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
 
+// Listado de los artículos aprobados en la tienda de la comunidad.
+// Los administradores pueden activar/desactivar items y ajustar sus precios desde aquí.
 class PantallaGestionCatalogo extends StatefulWidget {
   final Comunidad comunidad;
 
@@ -28,6 +30,7 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
     _cargarCatalogo();
   }
 
+  // Descarga los artículos del catálogo de la comunidad
   Future<void> _cargarCatalogo() async {
     setState(() => _cargando = true);
     final res = await _servicio.obtenerCatalogoGestion(widget.comunidad.id);
@@ -41,6 +44,7 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
     }
   }
 
+  // Activa/desactiva un artículo o le cambia el precio
   Future<void> _actualizarItem(CatalogoMejoras item, {bool? estaActivo, int? precio}) async {
     final res = await _servicio.actualizarArticuloCatalogo(
       widget.comunidad.id, 
@@ -97,6 +101,7 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
     );
   }
 
+  // Diálogo sencillo para introducir un nuevo precio (mínimo 100 puntos)
   void _mostrarDialogoPrecio(BuildContext context, CatalogoMejoras item, String Function(String) tr) {
     final controller = TextEditingController(text: item.precioPuntos.toString());
     showDialog(
@@ -143,6 +148,7 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
   }
 }
 
+// Tarjeta de un artículo del catálogo con toggle de activación y botón de editar precio
 class _TarjetaGestionItem extends StatelessWidget {
   final CatalogoMejoras item;
   final Function(bool) onToggle;

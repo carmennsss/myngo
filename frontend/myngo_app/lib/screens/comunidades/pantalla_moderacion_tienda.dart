@@ -8,6 +8,8 @@ import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
 
+// Cola de propuestas de mejoras pendientes de revisión por el equipo admin.
+// Desde aquí se aprueba con precio o se rechaza cada propuesta enviada por miembros.
 class PantallaModeracionTienda extends StatefulWidget {
   final Comunidad comunidad;
 
@@ -28,6 +30,7 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
     _cargarPeticiones();
   }
 
+  // Descarga las propuestas pendientes de esta comunidad
   Future<void> _cargarPeticiones() async {
     setState(() => _cargando = true);
     final res = await _servicio.obtenerPropuestasPendientes(widget.comunidad.id);
@@ -41,6 +44,7 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
     }
   }
 
+  // Envía la decisión al servidor (APROBADO o RECHAZADO) y recarga el listado
   Future<void> _moderar(PeticionMejora peticion, String estado, int precio) async {
     final res = await _servicio.moderarPropuesta(peticion.id, estado, precio);
     if (mounted) {
@@ -90,6 +94,7 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
   }
 }
 
+// Tarjeta de una propuesta pendiente con previsualización de la imagen y botones de acción
 class _TarjetaModeracion extends StatelessWidget {
   final PeticionMejora peticion;
   final Function(int) onAprobar;
@@ -181,6 +186,7 @@ class _TarjetaModeracion extends StatelessWidget {
     );
   }
 
+  // Pide el precio final antes de aprobar la propuesta
   void _mostrarDialogoPrecio(BuildContext context) {
     final controller = TextEditingController(text: peticion.precioSugerido.toString());
     showDialog(

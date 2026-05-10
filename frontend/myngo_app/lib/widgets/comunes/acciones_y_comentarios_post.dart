@@ -13,12 +13,14 @@ class AccionesYComentariosPost extends StatefulWidget {
   final Publicacion post;
   final Color colorTexto;
   final bool esMiembro;
+  final String? fuente;
 
   const AccionesYComentariosPost({
     super.key,
     required this.post,
     this.colorTexto = Colors.white,
     this.esMiembro = true,
+    this.fuente,
   });
 
   @override
@@ -46,6 +48,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
   late int _likesCount;
   late int _comentariosCount;
   bool _estaGuardado = false;
+  int? _currentUserId;
 
   @override
   void initState() {
@@ -55,6 +58,14 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     _comentariosCount = widget.post.comentariosCount;
     _estaGuardado = widget.post.usuarioGuardoPost;
     _cargarComentarios(reiniciar: true);
+    _obtenerUsuario();
+  }
+
+  Future<void> _obtenerUsuario() async {
+    final id = await _servicioUsuarios.obtenerIdUsuario();
+    if (id != null && mounted) {
+      setState(() => _currentUserId = id);
+    }
   }
 
   @override
@@ -140,7 +151,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     if (respuesta.exito && respuesta.datos != null) {
       setState(() {
         if (_comentarioPadre != null) {
-          // Si es respuesta, recargamos para verla anidada o la insertamos localmente
+
           _cargarComentarios(reiniciar: true);
         } else {
           _comentarios.insert(0, respuesta.datos!);
@@ -173,6 +184,47 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     _comentarioFocus.requestFocus();
   }
 
+  Future<void> _eliminarComentario(Comentario comentario) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar comentario?'),
+        content: const Text('Esta acción no se puede deshacer y borrará todas sus respuestas.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      final res = await _servicioInteraccion.eliminarComentario(comentario.id);
+      if (res.exito && mounted) {
+        setState(() {
+          final comentarioABorrar = _comentarios.firstWhere((c) => c.id == comentario.id);
+
+          int totalBorrados = 1 + comentarioABorrar.respuestas.length;
+          
+          _comentarios.removeWhere((c) => c.id == comentario.id);
+
+          for (var p in _comentarios) {
+            final antes = p.respuestas.length;
+            p.respuestas.removeWhere((r) => r.id == comentario.id);
+            if (p.respuestas.length < antes) totalBorrados = 1; 
+          }
+          
+          _comentariosCount = (_comentariosCount - totalBorrados).clamp(0, 999999);
+          widget.post.comentariosCount = _comentariosCount;
+        });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Builder(
@@ -180,7 +232,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Botones de acción
+    
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -190,7 +242,8 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                     color: _dioLike ? Colors.red : widget.colorTexto.withOpacity(0.7),
                     label: _likesCount.toString(),
                     textColor: widget.colorTexto,
-                    onTap: () async {
+                    fuente: widget.fuente,
+                onTap: () async {
                       if (!widget.esMiembro) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -244,7 +297,8 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                     color: widget.colorTexto.withOpacity(0.7),
                     label: _comentariosCount.toString(),
                     textColor: widget.colorTexto,
-                    onTap: () {
+                    fuente: widget.fuente,
+                onTap: () {
                       setState(() {
                         _mostrandoInputComentario = !_mostrandoInputComentario;
                         if (!_mostrandoInputComentario) _comentarioPadre = null;
@@ -257,7 +311,8 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                     color: _estaGuardado ? const Color(0xFFF28B50) : widget.colorTexto.withOpacity(0.7),
                     label: '',
                     textColor: widget.colorTexto,
-                    onTap: () async {
+                    fuente: widget.fuente,
+                onTap: () async {
                       if (!widget.esMiembro) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -304,7 +359,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                           children: [
                             Text(
                               tr('commentRespondingTo', {'name': _comentarioPadre!.autorNombre}),
-                              style: GoogleFonts.inter(color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: const Color(0xFFF28B50), fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(width: 8),
                             InkWell(
@@ -320,19 +375,28 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
-                              color: widget.colorTexto.withOpacity(0.05),
+                              color: widget.colorTexto.computeLuminance() > 0.5 
+                              ? Colors.black.withOpacity(0.05) 
+                              : Colors.white.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: widget.colorTexto.withOpacity(0.2)),
                             ),
                             child: TextField(
                               controller: _comentarioController,
                               focusNode: _comentarioFocus,
-                              style: GoogleFonts.inter(color: widget.colorTexto, fontSize: 14),
+                              style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                            color: widget.colorTexto.computeLuminance() > 0.5 ? Colors.black87 : Colors.white, 
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                               decoration: InputDecoration(
                                 hintText: !widget.esMiembro 
                                     ? tr('commentJoinToComment')
                                     : (_comentarioPadre != null ? tr('commentWriteReply') : tr('commentAddComment')),
-                                hintStyle: GoogleFonts.inter(color: widget.colorTexto.withOpacity(0.5), fontSize: 14),
+                                hintStyle: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
+                              color: (widget.colorTexto.computeLuminance() > 0.5 ? Colors.black : Colors.white).withOpacity(0.5), 
+                              fontSize: 14
+                            ),
                                 border: InputBorder.none,
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -370,7 +434,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                 child: Center(
                   child: Text(
                     tr('commentNoComments'),
-                    style: GoogleFonts.inter(color: widget.colorTexto.withOpacity(0.5)),
+                    style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: widget.colorTexto.withOpacity(0.5)),
                   ),
                 ),
               )
@@ -389,7 +453,10 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                     textColor: widget.colorTexto,
                     subTextColor: subColor,
                     onReply: _prepararRespuesta,
-                  );
+                    onDelete: _eliminarComentario,
+                currentUserId: _currentUserId,
+                fuente: widget.fuente,
+              );
                 },
               ),
               if (_hayMasComentarios)
@@ -401,7 +468,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                       : TextButton(
                           onPressed: () => _cargarComentarios(),
                           child: Text(tr('commentLoadMore'), 
-                            style: GoogleFonts.outfit(color: widget.colorTexto.withOpacity(0.6), fontWeight: FontWeight.bold)
+                            style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', color: widget.colorTexto.withOpacity(0.6), fontWeight: FontWeight.bold)
                           ),
                         ),
                   ),
@@ -422,12 +489,15 @@ class _ActionIcon extends StatelessWidget {
   final Color textColor;
   final VoidCallback onTap;
 
+  final String? fuente;
+
   const _ActionIcon({
     required this.icon,
     required this.color,
     required this.label,
     required this.textColor,
     required this.onTap,
+    this.fuente,
   });
 
   @override
@@ -443,7 +513,7 @@ class _ActionIcon extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.inter(color: textColor, fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.getFont(fuente ?? 'Outfit', color: textColor, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ],
         ),

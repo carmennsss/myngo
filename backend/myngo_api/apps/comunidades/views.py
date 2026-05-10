@@ -20,7 +20,10 @@ import uuid
 
 
 class TagComunidadList(generics.ListAPIView):
-    """Lista o busca etiquetas de comunidades."""
+    """
+    Proporciona un listado de las etiquetas disponibles para categorizar comunidades.
+    Permite filtrar por nombre y ordenar por popularidad (uso en comunidades).
+    """
     queryset = TagComunidad.objects.all()
     serializer_class = TagComunidadSerializer
     filter_backends = [filters.SearchFilter]
@@ -78,9 +81,6 @@ class ComunidadListCreate(generics.ListCreateAPIView):
             except ValueError:
                 pass
 
-        queryset = queryset.annotate(
-            anotado_miembros_count=models.Count('miembros_comunidades', distinct=True)
-        )
         if usuario and usuario.is_authenticated:
             from django.db.models import Exists, OuterRef, Subquery
             queryset = queryset.annotate(
@@ -139,7 +139,6 @@ class MisComunidadesList(generics.ListAPIView):
             )
             .distinct()
             .annotate(
-                anotado_miembros_count=Count('miembros_comunidades', distinct=True),
                 anotado_es_miembro=Exists(
                     MiembrosComunidad.objects.filter(
                         usuario=usuario, comunidad=OuterRef('pk')
@@ -163,9 +162,9 @@ class MisComunidadesList(generics.ListAPIView):
 
 
 class UnirseComunidad(APIView):
-    """Permite a un usuario unirse a una comunidad pública o solicitar acceso a una privada.
-
-    Si la comunidad tiene un rating mínimo de acceso, se verifica antes de proceder.
+    """
+    Gestiona la entrada de usuarios a las comunidades. Controla las restricciones 
+    por reputación mínima y diferencia entre unión directa (pública) y solicitud (privada).
     """
 
     permission_classes = [IsAuthenticated]
@@ -337,7 +336,6 @@ class ListarMiembrosComunidad(generics.ListAPIView):
         
         miembros_data = []
         
-        # Si es la primera página, añadimos al creador manualmente
         page_num = request.query_params.get('page', '1')
         if page_num == '1' and comunidad.creador:
             from django.core.files.storage import default_storage
@@ -362,7 +360,6 @@ class ListarMiembrosComunidad(generics.ListAPIView):
                     continue
                 miembros_data.append(m)
             
-            # Devolvemos una respuesta compatible con lo que espera el frontend
             res = self.get_paginated_response(miembros_data)
             res.data['exito'] = True
             res.data['datos'] = res.data.pop('results')
@@ -375,73 +372,7 @@ class ListarMiembrosComunidad(generics.ListAPIView):
             miembros_data.append(m)
         return Response({'exito': True, 'datos': miembros_data})
 
-class ListarMiembrosComunidadOld(APIView):
-    """Retorna la lista de miembros de una comunidad, incluyendo al creador."""
 
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request, pk):
-        """Obtiene todos los miembros (creador + registrados) de la comunidad.
-
-        Args:
-            request: Petición GET.
-            pk (int): ID de la comunidad.
-
-        Returns:
-            Response: Lista de miembros con roles y datos básicos.
-        """
-        try:
-            comunidad = Comunidad.objects.get(pk=pk)
-        except Comunidad.DoesNotExist:
-            return Response({'error': 'Comunidad no encontrada'}, status=status.HTTP_404_NOT_FOUND)
-
-        from django.core.files.storage import default_storage
-
-        def construir_url_avatar(usuario):
-            if not usuario or not usuario.url_avatar:
-                return None
-            url = usuario.url_avatar
-            if url.startswith('http'):
-                return url
-            return default_storage.url(url.lstrip('/'))
-
-        miembros_data = []
-
-        # 1. Añadir al creador siempre al principio
-        if comunidad.creador:
-            miembros_data.append({
-                'id': -1, # ID ficticio para el creador
-                'usuario_id': comunidad.creador.id,
-                'perfil_id': getattr(comunidad.creador.perfil, 'id', 0) if hasattr(comunidad.creador, 'perfil') else 0,
-                'usuario_nombre': comunidad.creador.nombre_usuario,
-                'usuario_avatar': construir_url_avatar(comunidad.creador),
-                'rol': 'Creador',
-                'fecha_union': comunidad.fecha_creacion.isoformat() if comunidad.fecha_creacion else None,
-            })
-
-        # 2. Añadir al resto de miembros
-        miembros = (
-            MiembrosComunidad.objects.filter(comunidad=comunidad)
-            .select_related('usuario', 'usuario__perfil')
-            .order_by('rol', '-fecha_union')
-        )
-        
-        for m in miembros:
-            # Evitar duplicar al creador si por error está en la tabla de miembros
-            if comunidad.creador and m.usuario.id == comunidad.creador.id:
-                continue
-                
-            miembros_data.append({
-                'id': m.id,
-                'usuario_id': m.usuario.id,
-                'perfil_id': getattr(m.usuario.perfil, 'id', 0) if hasattr(m.usuario, 'perfil') else 0,
-                'usuario_nombre': m.usuario.nombre_usuario,
-                'usuario_avatar': construir_url_avatar(m.usuario),
-                'rol': m.rol,
-                'fecha_union': m.fecha_union.isoformat() if m.fecha_union else None,
-            })
-
-        return Response(miembros_data)
 
 
 class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -461,14 +392,12 @@ class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         val = self.kwargs[lookup_url_kwarg]
 
-        # Intentar por ID
         if str(val).isdigit():
             obj = queryset.filter(pk=val).first()
             if obj:
                 self.check_object_permissions(self.request, obj)
                 return obj
         
-        # Intentar por Nombre
         obj = queryset.filter(nombre=val).first()
         if obj:
             self.check_object_permissions(self.request, obj)
@@ -508,10 +437,9 @@ class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class AdminDashboardView(APIView):
-    """Dashboard centralizado para el administrador de la comunidad.
-
-    Retorna solicitudes de unión pendientes, reportes de contenido activos
-    y la lista de miembros con sus roles.
+    """
+    Punto de control para la gestión administrativa de la comunidad. Recopila solicitudes 
+    de acceso, reportes de moderación pendientes y el listado completo de miembros con sus roles.
     """
 
     permission_classes = [IsAuthenticated]
@@ -649,21 +577,16 @@ class ObtenerRolUsuarioEnComunidad(APIView):
             Response: Rol del usuario ('Administrador', 'Moderador', 'Miembro', 'Visitante').
         """
         usuario_id = request.query_params.get('usuario_id')
-        if not usuario_id:
-            # Si no se pasa usuario_id, usamos el del usuario autenticado
-            usuario_id = request.user.id
+        usuario_id = usuario_id or request.user.id
             
         try:
-            # 1. Verificar si es el creador (tiene prioridad sobre la tabla de miembros)
             comunidad = Comunidad.objects.filter(id=pk).first()
             if not comunidad:
-                # Intentar por nombre si pk es un string
                 comunidad = Comunidad.objects.filter(nombre=pk).first()
             
             if comunidad and str(comunidad.creador_id) == str(usuario_id):
                 return Response({'rol': 'Administrador'})
 
-            # 2. Buscar en la tabla de miembros
             miembro = MiembrosComunidad.objects.filter(
                 comunidad=comunidad, usuario_id=usuario_id
             ).first()
@@ -677,7 +600,10 @@ class ObtenerRolUsuarioEnComunidad(APIView):
 
 
 class SalirComunidad(APIView):
-    """Permite a un usuario dejar de ser miembro de una comunidad."""
+    """
+    Procesa la desvinculación de un usuario de una comunidad. Elimina sus registros 
+    de membresía, seguimiento y participación en las salas de chat asociadas.
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -706,7 +632,6 @@ class SalirComunidad(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 1. Eliminar de MiembrosComunidad
         miembro = MiembrosComunidad.objects.filter(usuario=usuario, comunidad=comunidad).first()
         if not miembro:
             return Response(
@@ -716,10 +641,8 @@ class SalirComunidad(APIView):
         
         miembro.delete()
 
-        # 2. Eliminar de Seguimiento (si existía la relación de seguimiento de comunidad)
         Seguimiento.objects.filter(seguidor=usuario, seguida_comunidad=comunidad).delete()
 
-        # 3. Notificar al creador
         Notificacion.objects.create(
             usuario=comunidad.creador,
             tipo='MIEMBRO_SALIO',
@@ -731,12 +654,9 @@ class SalirComunidad(APIView):
             referencia_comunidad=comunidad,
         )
 
-        # 4. Eliminar del chat de la comunidad
-        # Buscamos salas de chat vinculadas a esta comunidad
         from mensajeria.models import SalaChat
         salas = SalaChat.objects.filter(comunidad=comunidad)
         for sala in salas:
-            # Los participantes se gestionan a través de ParticipanteChat
             from mensajeria.models import ParticipanteChat
             ParticipanteChat.objects.filter(sala=sala, usuario=usuario).delete()
 

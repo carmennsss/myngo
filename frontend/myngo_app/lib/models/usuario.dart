@@ -111,9 +111,7 @@ class Usuario {
         colorTema: json['color_tema']?.toString() ?? '#C35E34',
         fuentePerfil: json['fuente_perfil']?.toString() ?? 'Outfit',
       );
-    } catch (e) {
-      // ignore: avoid_print
-      print('Error parsing Usuario: $e');
+    } catch (_) {
       return Usuario(
         id: 0,
         perfilId: 0,

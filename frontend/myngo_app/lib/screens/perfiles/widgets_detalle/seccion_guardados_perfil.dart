@@ -168,7 +168,7 @@ class _SeccionGuardadosPerfilState extends State<SeccionGuardadosPerfil> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Lógica de columnas consistente para evitar que los posts se vean "gigantes"
+        // Columnas adaptadas para visualización consistente
         int columnas = 2;
         if (constraints.maxWidth > 1200) {
           columnas = 4;

@@ -11,6 +11,8 @@ import '../../services/servicio_mejoras.dart';
 import '../../services/servicio_usuarios.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Formulario para que un miembro proponga (o el creador añada directamente)
+// una nueva mejora visual a la tienda de la comunidad.
 class PantallaEnviarPropuesta extends StatefulWidget {
   final Comunidad comunidad;
   final String? tipoInicial;
@@ -31,12 +33,12 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
   void initState() {
     super.initState();
     
-    // Validamos que el tipo inicial sea uno de los permitidos para comunidades
+
     final String initial = widget.tipoInicial ?? 'Avatar';
     if (_tipos.contains(initial)) {
       _tipoSeleccionado = initial;
     } else {
-      // Normalizar o fallback
+
       if (initial.toLowerCase() == 'avatar') _tipoSeleccionado = 'Avatar';
       else if (initial.toLowerCase() == 'marco') _tipoSeleccionado = 'Marco';
       else if (initial.toLowerCase() == 'fondo') _tipoSeleccionado = 'Fondo';
@@ -46,6 +48,7 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
 
   final List<String> _tipos = ['Avatar', 'Marco', 'Fondo'];
 
+  // Abre la galería del dispositivo y guarda el archivo seleccionado
   Future<void> _seleccionarImagen() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -62,6 +65,7 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
     }
   }
 
+  // Valida que haya imagen y envía la propuesta o la añade directamente si es el creador
   Future<void> _enviar() async {
     if (_imagenSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,8 +101,7 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
 
   @override
   Widget build(BuildContext context) {
-    // Determinamos si es el creador para cambiar los textos
-    // Nota: creadorId puede ser null si no se cargó bien, pero intentamos comparar
+
     return FutureBuilder<int?>(
       future: ServicioUsuarios().obtenerIdUsuario(),
       builder: (context, snapshot) {
@@ -192,6 +195,7 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
     );
   }
 
+  // Campo de texto genérico con estilo coherente al resto del formulario
   Widget _buildTextField(String label, TextEditingController controller, IconData icon, {bool isNumber = false}) {
     return TextField(
       controller: controller,
@@ -206,6 +210,7 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
     );
   }
 
+  // Selector de tipo de mejora (Avatar / Marco / Fondo)
   Widget _buildDropdown(String Function(String) tr) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

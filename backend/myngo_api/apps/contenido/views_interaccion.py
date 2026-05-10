@@ -14,6 +14,7 @@ from django.core.files.storage import default_storage
 from notificaciones.models import Notificacion
 from usuarios.models import Seguimiento
 
+from .ia_service import validar_contenido_toxico
 from .models import (
     Comentario, Coleccion, ImagenGaleria, MeGusta, PostGuardado,
     Publicacion, Reporte,
@@ -86,14 +87,14 @@ class InicioFeed(generics.ListAPIView):
         ).values('publicacion').annotate(cnt=Count('id')).values('cnt')
 
         if usuario:
-            # 1. Mis comunidades
+            # Comunidades a las que pertenece el usuario
             mis_comunidades_ids = list(
                 MiembrosComunidad.objects.filter(
                     usuario=usuario
                 ).values_list('comunidad_id', flat=True)
             )
 
-            # 2. Mis amigos (seguimiento aceptado)
+            # Usuarios seguidos con estado aceptado
             mis_amigos_ids = list(
                 Seguimiento.objects.filter(
                     seguidor=usuario,
@@ -102,7 +103,7 @@ class InicioFeed(generics.ListAPIView):
                 ).values_list('seguido_usuario_id', flat=True)
             )
 
-            # 3. Filtro social
+            # Filtros de privacidad y visibilidad
             qs = qs.filter(
                 Q(autor=usuario) |                          # Mis posts
                 Q(autor_id__in=mis_amigos_ids) |            # Posts de mis amigos
@@ -211,6 +212,11 @@ class ComentarioListCreate(generics.ListCreateAPIView):
             ).exists()
             if not es_miembro:
                 raise permissions.PermissionDenied('Debes ser miembro de la comunidad para comentar 🐾')
+
+        # Moderación IA para comentarios
+        texto = serializer.validated_data.get('contenido_texto', '')
+        if not validar_contenido_toxico(texto):
+            raise serializers.ValidationError({'error': 'Tu comentario infringe las normas de la comunidad.'})
 
         # Aseguramos que el padre se asigne correctamente si viene en los datos
         padre_id = self.request.data.get('padre')

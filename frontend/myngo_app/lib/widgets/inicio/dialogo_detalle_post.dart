@@ -21,6 +21,7 @@ class DialogoDetallePublicacion extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onProfileSelected;
   final bool esMiembro;
+  final String? contextoVisual;
   final String? fuente;
 
   const DialogoDetallePublicacion({
@@ -29,6 +30,7 @@ class DialogoDetallePublicacion extends StatefulWidget {
     this.onComunidadSelected,
     this.onProfileSelected,
     this.esMiembro = true,
+    this.contextoVisual,
     this.fuente,
   });
 
@@ -67,6 +69,9 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
         final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
         final colorTexto = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
         final colorSubtexto = esFondoClaro ? Colors.grey.shade600 : Colors.white70;
+    
+
+    final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
 
         return Dialog(
           backgroundColor: Colors.transparent,

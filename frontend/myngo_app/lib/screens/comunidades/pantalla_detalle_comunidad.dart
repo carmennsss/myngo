@@ -18,16 +18,13 @@ import '../../providers/post_provider.dart';
 
 import '../../widgets/dialogo_crear_post.dart';
 import '../perfiles/pantalla_perfiles.dart';
-import '../perfiles/pantalla_tienda_mejoras.dart';
-import '../inicio/pantalla_inicio.dart';
 import 'pantalla_admin_comunidad.dart';
-import 'pantalla_enviar_propuesta.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../widgets/mensajeria/dialogo_crear_sala.dart';
 import '../../models/usuario.dart';
 
 
-// Widgets extraídos
+
 import 'widgets_detalle/header_detalle_comunidad.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'widgets_detalle/seccion_galeria_comunidad.dart';
@@ -37,7 +34,8 @@ import 'widgets_detalle/preview_comunidad.dart';
 import 'widgets_detalle/dialogos_comunidad.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
-/// Pantalla principal de detalle de una comunidad.
+// Vista principal de una comunidad. Dependiendo de si el usuario es miembro,
+// muestra una preview pública o el shell completo con Posts, Galería, Chats y Miembros.
 class PantallaDetalleComunidad extends StatefulWidget {
   final dynamic idOrName;
   final Comunidad? comunidad;
@@ -71,14 +69,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   bool _estaCargandoDatos = false;
   bool _estaCargandoComunidad = false;
   
-  // Paginación
+
   int _paginaActual = 1;
   bool _hayMasPosts = true;
   bool _cargandoMasPosts = false;
   int? _miId;
   int _indiceSeccion = 0;
-  String _miRol = 'Visitor'; // Key for communityVisitor
-  String _tipoMejoraSeleccionado = 'Avatar'; // Key for commonAvatar
+  String _miRol = 'Visitor';
+  String _tipoMejoraSeleccionado = 'Avatar';
 
 
 
@@ -95,8 +93,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     _comunidad = widget.comunidad;
     _indiceSeccion = widget.initialIndex;
     
-    // Si no hay comunidad, o la que hay parece incompleta (viene de TarjetaPost
-    // con solo id y nombre), cargamos los datos completos desde la API
     final comunidadIncompleta = _comunidad != null && 
         (_comunidad!.urlPortada.isEmpty && _comunidad!.creadorNombre == 'Sistema');
     
@@ -109,6 +105,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Descarga los datos completos de la comunidad si se pasa solo el ID o nombre
   Future<void> _cargarComunidadInicial({dynamic idOverride}) async {
     if (!mounted) return;
     setState(() => _estaCargandoComunidad = true);
@@ -154,6 +151,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Orquesta la carga inicial: ID del usuario, datos de sección, colecciones y rol
   Future<void> _inicializarDatos() async {
     await _obtenerMiId();
     await _cargarDatosSeccion(_indiceSeccion);
@@ -168,7 +166,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         setState(() => _miRol = res.datos!);
       }
     } catch (e) {
-      debugPrint('[PantallaDetalleComunidad] Error obteniendo rol: $e');
+
     }
   }
 
@@ -177,6 +175,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (mounted) setState(() => _miId = id);
   }
 
+  // Carga la siguiente página de posts para el infinite scroll
   Future<void> _cargarMasPosts() async {
     if (_comunidad == null || _cargandoMasPosts || !_hayMasPosts) return;
     
@@ -199,6 +198,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Carga las colecciones de galería de la comunidad
   Future<void> _cargarColecciones() async {
     if (_comunidad == null) return;
     final res = await _servicioGaleria.obtenerColecciones(
@@ -206,6 +206,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (mounted) setState(() => _colecciones = res.datos ?? []);
   }
 
+  // Carga los datos concretos de la sección activa (posts, galería o chats)
   Future<void> _cargarDatosSeccion(int index) async {
     if (_comunidad == null) return;
     _paginaActual = 1;
@@ -221,14 +222,14 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           _estaCargandoDatos = false;
         });
       }
-    } else if (index == 2) {
+    } else if (index == 1) {
         setState(() {
           _estaCargandoDatos = true;
           _galeriaKey = UniqueKey();
         });
         await _cargarColecciones();
         if (mounted) setState(() => _estaCargandoDatos = false);
-    } else if (index == 3) {
+    } else if (index == 2) {
         setState(() => _estaCargandoDatos = true);
         final res = await _servicio.obtenerSalasChat(_comunidad!.id);
         if (mounted) {
@@ -240,6 +241,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Gestiona la unión/solicitud a la comunidad y actualiza el estado local
   Future<void> _gestionarMembresia() async {
     if (_comunidad == null) return;
     setState(() => _estaCargandoPeticion = true);
@@ -385,7 +387,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               },
               body: Stack(
                 children: [
-                  // El fondo solo se pinta en el área del body, nunca en la cabecera
+
                   Positioned.fill(child: _buildPersonalizedFeedBackground()),
                   CustomScrollView(
                     slivers: [
@@ -403,16 +405,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   /// Construye el fondo personalizado solo para la parte central del feed
+  // Fondo del feed personalizado solo para la sección de posts (centrado y con bordes redondeados)
   Widget _buildPersonalizedFeedBackground() {
-    // 1. El fondo global (imagen que cubre TODO el viewport)
     final globalBg = _buildGlobalBackground();
-    
-    // Si no estamos en la sección de posts, mostramos solo el fondo global
     if (_indiceSeccion != 0) return globalBg;
     
-    // 2. Para posts, el fondo global + el contenedor central con su propio diseño
     final config = _comunidad?.fondoPostsConfig;
-    // Si no hay configuración de fondo para posts, devolvemos el global
     if (config == null) return globalBg;
 
     return Stack(
@@ -461,8 +459,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           esMiembro: _comunidad!.esMiembro || (_miId != null && _miId == _comunidad!.creadorId),
         );
       case 1:
-        return SliverFillRemaining(hasScrollBody: true, child: _buildStore());
-      case 2:
         return SeccionGaleriaComunidad(
           comunidad: _comunidad!,
           colecciones: _colecciones,
@@ -472,19 +468,19 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           comoSliver: true,
           esMiembro: _comunidad!.esMiembro || (_miId != null && _miId == _comunidad!.creadorId),
         );
-      case 3:
+      case 2:
         return SeccionChatComunidad(
           comunidad: _comunidad!,
           salasChat: _salasChat,
           estaCargando: _estaCargandoDatos,
           onCrearSala: () => _mostrarDialogoCrearSalaComunidad(context),
-          onRefresh: () => _cargarDatosSeccion(3),
+          onRefresh: () => _cargarDatosSeccion(2),
           esAppClara: _esAppClara(context),
           colorTextoPrincipal: _colorTextoPrincipal(context),
           colorTextoSecundario: _colorTextoSecundario(context),
           comoSliver: true,
         );
-      case 4:
+      case 3:
         return ListaMiembrosComunidad(
           comunidad: _comunidad!,
           comoSliver: true,
@@ -505,7 +501,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
     return Row(
       children: [
-        // Tabs — scrollables a la izquierda
         Expanded(
           child: TranslationWidget(
             builder: (context, tr) => ListView(
@@ -513,15 +508,13 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               children: [
                 _buildNavItem(0, tr('communityTabPosts'), Icons.grid_view_rounded),
-                _buildNavItem(1, tr('communityTabStore'), Icons.shopping_bag_rounded),
-                _buildNavItem(2, tr('communityTabGallery'), Icons.photo_library_rounded),
-                _buildNavItem(3, tr('communityTabChats'), Icons.chat_bubble_rounded),
-                _buildNavItem(4, tr('communityTabMembers'), Icons.people_alt_rounded),
+                _buildNavItem(1, tr('communityTabGallery'), Icons.photo_library_rounded),
+                _buildNavItem(2, tr('communityTabChats'), Icons.chat_bubble_rounded),
+                _buildNavItem(3, tr('communityTabMembers'), Icons.people_alt_rounded),
               ],
             ),
           ),
         ),
-        // Identidad de la comunidad — fija a la derecha
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
@@ -622,6 +615,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
+  // FAB contextual: "Subir/Sugerir" en posts y "Nueva Sala" en chats
   Widget _buildFAB() {
     if (_indiceSeccion == 0) {
       final esCreador = _miId != null && _miId == _comunidad!.creadorId;
@@ -641,24 +635,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         ),
       );
     }
-    if (_indiceSeccion == 1) {
-      return Positioned(
-        bottom: 24,
-        right: 24,
-        child: TranslationWidget(
-          builder: (context, tr) => FloatingActionButton.extended(
-            onPressed: () => _irAEnviarPropuesta(),
-            label: Text(tr('communityFabSuggest', {'type': tr(_tipoMejoraSeleccionado == 'Avatar' ? 'commonAvatar' : (_tipoMejoraSeleccionado == 'Marco' ? 'commonFrame' : 'commonBackground'))}),
-                style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold, color: Colors.white)),
-
-            icon: const Icon(Icons.palette_rounded, color: Colors.white),
-            backgroundColor: _comunidad!.colorTema,
-          ),
-        ),
-      );
-    }
-    if (_indiceSeccion == 3) {
+    if (_indiceSeccion == 2) {
       return Positioned(
         bottom: 24,
         right: 24,
@@ -677,6 +654,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     return const SizedBox();
   }
 
+  // Bottom sheet para crear una sala de chat en el contexto de la comunidad
   void _mostrarDialogoCrearSalaComunidad(BuildContext context) async {
     final res = await _servicio.obtenerMiembrosComunidad(_comunidad!.id);
     if (!res.exito || !mounted) return;
@@ -733,6 +711,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           final provider = Provider.of<PostProvider>(context, listen: false);
           final exito = await provider.crearPost(
             comunidadId: _comunidad!.id,
+            titulo: title,
             texto: texto,
             imagenes: imagenes,
             etiquetas: etiquetas,
@@ -755,28 +734,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
-  Widget _buildStore() {
-    final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-    return PantallaTiendaMejoras(
-      esVistaIntegrada: true,
-      comunidad: _comunidad,
-      onCategoryChanged: (tipo) =>
-          setState(() => _tipoMejoraSeleccionado = tipo),
-      onPuntosActualizados: (p) => inicioState?.actualizarPuntos(p),
-    );
-  }
 
-  void _irAEnviarPropuesta() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PantallaEnviarPropuesta(
-          comunidad: _comunidad!,
-          tipoInicial: _tipoMejoraSeleccionado,
-        ),
-      ),
-    );
-  }
 
   Widget _buildGlobalBackground() {
     if (_comunidad == null) return Container();

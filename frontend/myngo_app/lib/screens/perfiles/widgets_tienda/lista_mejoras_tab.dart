@@ -10,9 +10,6 @@ import 'package:myngo_app/utils/tr_helper.dart';
 /// Widget que muestra una pestaña del catálogo de mejoras filtrada por tipo.
 class ListaMejorasTab extends StatefulWidget {
   final String tipo;
-  final int? comunidadId;
-  final bool esModerador;
-  final bool modoGestion;
   final Usuario? usuarioActual;
   final List<CatalogoMejoras> mejoras;
   final List<dynamic> misMejoras;
@@ -23,9 +20,6 @@ class ListaMejorasTab extends StatefulWidget {
   const ListaMejorasTab({
     super.key,
     required this.tipo,
-    this.comunidadId,
-    this.esModerador = false,
-    this.modoGestion = false,
     this.usuarioActual,
     required this.mejoras,
     required this.misMejoras,
@@ -45,9 +39,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
     var filtradas = widget.mejoras
         .where((m) => m.tipo.toLowerCase() == widget.tipo.toLowerCase())
         .toList();
-    if (!widget.modoGestion) {
-      filtradas = filtradas.where((m) => m.estaActivo).toList();
-    }
+    filtradas = filtradas.where((m) => m.estaActivo).toList();
     return filtradas;
   }
 
@@ -380,25 +372,19 @@ class _MejoraCard extends StatelessWidget {
   final CatalogoMejoras mejora;
   final bool laTiene;
   final bool estaEquipada;
-  final bool modoGestion;
   final Usuario? usuarioActual;
   final VoidCallback onPreview;
   final VoidCallback onEquipar;
   final VoidCallback onComprar;
-  final VoidCallback onToggleVisibilidad;
-  final Function(int) onEditPrice;
 
   const _MejoraCard({
     required this.mejora,
     required this.laTiene,
     required this.estaEquipada,
-    required this.modoGestion,
     this.usuarioActual,
     required this.onPreview,
     required this.onEquipar,
     required this.onComprar,
-    required this.onToggleVisibilidad,
-    required this.onEditPrice,
   });
 
   @override
@@ -430,7 +416,7 @@ class _MejoraCard extends StatelessWidget {
                   _buildImagePreview(estaActivo),
                   if (estaEquipada) _buildEquippedIndicator(),
                   if (!estaActivo) _buildHiddenIndicator(),
-                  if (modoGestion) _buildModeratorActions(),
+
                 ],
               ),
             ),
@@ -570,29 +556,7 @@ class _MejoraCard extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
 
-  const _ActionButton({required this.icon, required this.color, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.9),
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-        ),
-        child: Icon(icon, color: Colors.white, size: 14),
-      ),
-    );
-  }
-}
 
 class _FooterButton extends StatelessWidget {
   final String label;

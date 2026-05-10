@@ -58,24 +58,20 @@ class ComunidadSerializer(serializers.ModelSerializer):
         else:
             data = dict(data)
             
-        # 1. Parsear JSON de fondo si viene como string (común en multipart)
         if 'fondo_posts_config' in data:
             val = data.get('fondo_posts_config')
             
-            # Si es una lista (QueryDict), cogemos el primer elemento
             if isinstance(val, list) and len(val) > 0:
                 val = val[0]
                 
-            # Si es un string, lo parseamos a dict
             if isinstance(val, str):
                 val_stripped = val.strip()
                 if val_stripped and val_stripped not in ['null', 'undefined', '']:
                     try:
                         data['fondo_posts_config'] = json.loads(val_stripped)
                     except:
-                        pass # Si falla, DRF validará el string (y dará error 400)
+                        pass 
         
-        # 2. Manejo de booleanos en Multipart (vienen como strings "true"/"false")
         for bool_field in ['es_publica', 'es_verificada', 'tienda_habilitada']:
             if bool_field in data:
                 val = data.get(bool_field)
@@ -83,22 +79,15 @@ class ComunidadSerializer(serializers.ModelSerializer):
                     val_low = val.lower()
                     data[bool_field] = (val_low == 'true' or val_low == '1' or val_low == 'yes')
 
-        # 3. Los tags pueden venir como nombres de texto.
-        # Los eliminamos de la data de validación para procesarlos manualmente en create/update.
         if 'tags' in data:
             tags_val = data.get('tags')
-            # Si son strings o lista de strings, los quitamos para que DRF no falle
             if isinstance(tags_val, str) or (isinstance(tags_val, list) and len(tags_val) > 0 and isinstance(tags_val[0], str)):
-                # Usamos pop de forma segura si es mutable
                 if hasattr(data, 'pop'):
                     data.pop('tags')
                 else:
                     del data['tags']
 
-        # 4. Forzar que fondo_posts_config sea un objeto real si no se parseó bien
         if 'fondo_posts_config' in data and isinstance(data['fondo_posts_config'], str):
-             # Si después de todos los intentos sigue siendo string, lanzamos error específico de debug
-             # raise serializers.ValidationError({"error_debug_json": data['fondo_posts_config']})
              pass
 
         return super().to_internal_value(data)

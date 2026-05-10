@@ -7,28 +7,23 @@ import '../../models/comunidad.dart';
 import '../../models/catalogo_mejoras.dart';
 import '../../models/usuario.dart';
 import '../../services/servicio_mejoras.dart';
-import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_usuarios.dart';
-import '../comunidades/pantalla_enviar_propuesta.dart';
 
 // Widgets extraídos
 import 'widgets_tienda/tienda_preview_section.dart';
 import 'widgets_tienda/lista_mejoras_tab.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
-/// Pantalla de tienda de mejoras visuales (Avatares, Marcos, Fondos, Estilos).
-///
-/// Permite previsualizar y comprar mejoras tanto globales como exclusivas de comunidad.
+// Tienda de mejoras visuales: Avatares, Marcos, Fondos y Estilos de post.
+// Muestra una previsualización en vivo mientras el usuario navega por el catálogo.
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;
-  final Comunidad? comunidad;
   final Function(String)? onCategoryChanged;
   final Function(int)? onPuntosActualizados;
 
   const PantallaTiendaMejoras({
     super.key,
     this.esVistaIntegrada = false,
-    this.comunidad,
     this.onCategoryChanged,
     this.onPuntosActualizados,
   });
@@ -41,8 +36,6 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     with SingleTickerProviderStateMixin {
   late TabController _subTabController;
   int _tabIndex = 0; // 0: Global, 1: Comunidad
-  bool _esModerador = false;
-  bool _modoGestion = false;
 
   Usuario? _usuarioActual;
   String? _previewAvatar;
@@ -61,20 +54,13 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     super.initState();
     _inicializarTienda();
     _subTabController =
-        TabController(length: widget.comunidad != null ? 3 : 4, vsync: this);
+        TabController(length: 4, vsync: this);
     _subTabController.addListener(_handleTabChange);
   }
 
   @override
   void didUpdateWidget(PantallaTiendaMejoras oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.comunidad?.id != widget.comunidad?.id) {
-      _subTabController.removeListener(_handleTabChange);
-      _subTabController.dispose();
-      _subTabController = TabController(length: widget.comunidad != null ? 3 : 4, vsync: this);
-      _subTabController.addListener(_handleTabChange);
-      _inicializarTienda();
-    }
   }
 
   @override
@@ -84,6 +70,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     super.dispose();
   }
 
+  // Carga primero los datos del usuario y luego el catálogo de mejoras
   Future<void> _inicializarTienda() async {
     await _cargarDatosUsuario();
     if (widget.comunidad != null) {
@@ -92,30 +79,23 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     await _cargarDatosTienda();
   }
 
+  // Trae los datos del usuario logueado y pre-carga los valores de previsualización
   Future<void> _cargarDatosUsuario() async {
     final res = await ServicioUsuarios().obtenerDatosPropios();
     if (mounted && res.exito) {
       setState(() {
         _usuarioActual = res.datos;
-        
-        if (widget.comunidad != null) {
-          // Si es tienda de comunidad, previsualizamos la comunidad por defecto
-          _previewAvatar = widget.comunidad!.urlAvatar;
-          _previewFondo = widget.comunidad!.urlFondo ?? widget.comunidad!.urlPortada;
-          _previewMarco = null; // Las comunidades no suelen tener marco por defecto
-          _previewEstiloPost = widget.comunidad!.fondoPostsConfig;
-        } else {
-          // Si es tienda personal, previsualizamos nuestro perfil
-          _previewAvatar = _usuarioActual?.urlAvatar;
-          _previewMarco = _usuarioActual?.marco;
-          _previewFondo = _usuarioActual?.fondo;
-          _previewFondoFeed = _usuarioActual?.fondoPerfil;
-          _previewEstiloPost = _usuarioActual?.estiloPost;
-        }
+        // Previsualizamos nuestro perfil
+        _previewAvatar = _usuarioActual?.urlAvatar;
+        _previewMarco = _usuarioActual?.marco;
+        _previewFondo = _usuarioActual?.fondo;
+        _previewFondoFeed = _usuarioActual?.fondoPerfil;
+        _previewEstiloPost = _usuarioActual?.estiloPost;
       });
     }
   }
 
+  // Notifica a la pantalla padre la categoría activa cuando cambia la pestaña
   void _handleTabChange() {
     if (!_subTabController.indexIsChanging) {
       final tipos = [
@@ -130,17 +110,13 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
     }
   }
 
+  // Descarga el catálogo global y las mejoras ya compradas por el usuario
   Future<void> _cargarDatosTienda() async {
     if (!mounted) return;
     setState(() => _cargandoTienda = true);
 
     try {
-      final resCatalogo = widget.comunidad != null
-          ? (_esModerador 
-              ? await ServicioMejoras().obtenerCatalogoGestion(widget.comunidad!.id)
-              : await ServicioMejoras().obtenerMejorasComunidad(widget.comunidad!.id))
-          : await ServicioMejoras().obtenerMejorasGlobales();
-
+      final resCatalogo = await ServicioMejoras().obtenerMejorasGlobales();
       final resMisMejoras = await ServicioMejoras().obtenerMisMejoras();
 
       if (mounted) {
@@ -189,7 +165,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                             _buildTab(tr('storeTypeAvatar'), tr),
                             _buildTab(tr('storeTypeFrame'), tr),
                             _buildTab(tr('storeTypeBackground'), tr),
-                            if (widget.comunidad == null) _buildTab(tr('storeTypePostStyle'), tr),
+                            _buildTab(tr('storeTypePostStyle'), tr),
                           ],
                         ),
             ),
@@ -218,52 +194,71 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
               previewMarco: _previewMarco,
               previewFondo: _previewFondo,
               previewEstiloPost: _previewEstiloPost,
-              comunidad: widget.comunidad,
-            ),
+                ),
           ),
         );
 
-        final content = esAncho
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(flex: 3, child: shopSection),
-                  const VerticalDivider(width: 1, color: Color(0xFFE8D5C4)),
-                  Expanded(flex: 2, child: previewSection),
-                ],
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
-                          ? DecorationImage(
-                              image: NetworkImage(_previewFondoFeed!),
-                              fit: BoxFit.cover,
-                              colorFilter: ColorFilter.mode(
-                                Colors.white.withOpacity(0.6),
-                                BlendMode.lighten,
-                              ),
-                            )
-                          : null,
-                    ),
+    final content = esAncho
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 3, child: shopSection),
+              const VerticalDivider(width: 1, color: Color(0xFFE8D5C4)),
+              Expanded(flex: 2, child: previewSection),
+            ],
+          )
+        : Column(
+            children: [
+              // Preview del perfil — altura fija en móvil para no desbordar
+              SizedBox(
+                height: 260,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
+                        ? DecorationImage(
+                            image: NetworkImage(_previewFondoFeed!),
+                            fit: BoxFit.cover,
+                            colorFilter: ColorFilter.mode(
+                              Colors.white.withOpacity(0.6),
+                              BlendMode.lighten,
+                            ),
+                          )
+                        : null,
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: TiendaPreviewSection(
                       usuarioActual: _usuarioActual,
                       previewAvatar: _previewAvatar,
                       previewMarco: _previewMarco,
                       previewFondo: _previewFondo,
                       previewEstiloPost: _previewEstiloPost,
-                      comunidad: widget.comunidad,
                     ),
                   ),
-                  widget.esVistaIntegrada 
-                    ? SizedBox(height: 500, child: shopSection) 
-                    : Expanded(child: shopSection),
-                ],
-              );
+                ),
+              ),
+              // Sección de mejoras — siempre Expanded para llenar el resto de pantalla
+              Expanded(child: shopSection),
+            ],
+          );
 
+
+    return widget.esVistaIntegrada
+        ? Container(
+            constraints: BoxConstraints(
+              // Aseguramos que tenga una altura razonable si está en un CustomScrollView
+              minHeight: 400,
+              maxHeight: esAncho ? 800 : 1200, 
+            ),
+            color: const Color(0xFFFEF5F1), 
+            child: content
+          )
+        : Scaffold(
+            backgroundColor: const Color(0xFFFEF5F1),
+            appBar: _buildAppBar(),
+            body: content,
+          );
         return widget.esVistaIntegrada
             ? Container(
                 constraints: BoxConstraints(
@@ -284,6 +279,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   }
 
 
+  // Barra de pestañas (Avatares / Marcos / Fondos / Estilos Post)
   Widget _buildTabBar(String Function(String) tr) {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -311,12 +307,10 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   }
 
 
+  // Cada pestaña pasa el tipo de mejora al ListaMejorasTab y gestiona la previsualización
   Widget _buildTab(String tipo, String Function(String) tr) {
     return ListaMejorasTab(
       tipo: tipo,
-      comunidadId: widget.comunidad?.id,
-      esModerador: _esModerador,
-      modoGestion: _modoGestion,
       usuarioActual: _usuarioActual,
       mejoras: _mejorasCatalogo,
       misMejoras: _misMejoras,

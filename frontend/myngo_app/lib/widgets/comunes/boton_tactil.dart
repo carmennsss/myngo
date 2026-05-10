@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// Un wrapper que añade una animación de "presión física" (escala y desplazamiento).
+
+// Envuelve cualquier widget y le da efecto de "press" físico al tocarlo.
+// Se encoge ligeramente cuando se pulsa y vuelve a su tamaño al soltar.
 class BotonTactil extends StatefulWidget {
-  final Widget child;
-  final VoidCallback? onTap;
-  final double scale;
-  final double offset;
+  final Widget child;    // El widget que queremos que tenga el efecto
+  final VoidCallback? onTap; // Qué hacer al pulsar
+  final double scale;    // Escala al presionar (0.96 = se encoge un 4%)
+  final double offset;   // Desplazamiento vertical para simular que baja
 
   const BotonTactil({
     super.key,
@@ -43,10 +45,12 @@ class _BotonTactilState extends State<BotonTactil> with SingleTickerProviderStat
 
   void _onTapDown(TapDownDetails details) {
     if (widget.onTap != null) _controller.forward();
+
   }
 
   void _onTapUp(TapUpDetails details) {
     if (widget.onTap != null) {
+
       _controller.reverse();
       widget.onTap!();
     }
@@ -54,6 +58,7 @@ class _BotonTactilState extends State<BotonTactil> with SingleTickerProviderStat
 
   void _onTapCancel() {
     if (widget.onTap != null) _controller.reverse();
+
   }
 
   @override

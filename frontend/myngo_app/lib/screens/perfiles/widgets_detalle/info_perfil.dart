@@ -116,7 +116,7 @@ class InfoPerfil extends StatelessWidget {
       builder: (context, chatProv, _) {
         String displayEstado = chatProv.getEstadoUsuario(usuario.id);
         
-        // Prioridad: Si es mi propio perfil, usar el estado de PantallaInicio para cambios locales inmediatos
+
         try {
           final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
           if (inicioState != null && inicioState.miId == usuario.id) {
@@ -321,7 +321,7 @@ class InfoPerfil extends StatelessWidget {
 
     return Row(
       children: [
-        // Botón Seguir / Siguiendo / Pendiente
+
         TranslationWidget(
           builder: (context, tr) => _SmallButton(
             label: _getFollowText(tr),
@@ -341,10 +341,10 @@ class InfoPerfil extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        // Botón Chat
+
         _CircularAction(icon: Icons.chat_bubble_outline_rounded, onPressed: onChat),
         const SizedBox(width: 8),
-        // Botón Votar + Rating integrado
+
         GestureDetector(
           onTap: onMostrarVoto,
           child: Container(

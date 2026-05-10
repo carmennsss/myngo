@@ -450,7 +450,7 @@ class _PintorPeloErizado extends CustomPainter {
 
     Path path = Path();
     
-    // Lógica para gatos anchos (horizontal) como el cálico.
+    // Gatos anchos (horizontal) como el cálico.
     if (size.width > size.height) {
        double r = size.height;
        int pasos = 18;
@@ -472,7 +472,7 @@ class _PintorPeloErizado extends CustomPainter {
        return;
     }
 
-    // Lógica para gatos verticales estándar.
+    // Gatos verticales estándar.
     double r = size.width / 2;
     for (double y = size.height; y > r; y -= 15) {
       path.moveTo(0, y);

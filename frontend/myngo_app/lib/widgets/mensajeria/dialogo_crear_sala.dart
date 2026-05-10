@@ -5,11 +5,13 @@ import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
 
+// Bottom sheet para crear una sala de chat nueva.
+// Permite poner nombre, buscar y seleccionar participantes, y en comunidades elegir si el chat será público o privado.
 class DialogoCrearSala extends StatefulWidget {
-  final List<Usuario> potencialesParticipantes;
-  final Function(String nombre, bool esPublica, List<int> miembrosIds) alCrear;
-  final String titulo;
-  final bool esDeComunidad;
+  final List<Usuario> potencialesParticipantes; // Lista de usuarios que se pueden añadir
+  final Function(String nombre, bool esPublica, List<int> miembrosIds) alCrear; // Callback cuando se pulsa 'Crear'
+  final String titulo;        // El título del bottom sheet
+  final bool esDeComunidad;   // Si es true, muestra el interruptor público/privado
 
   const DialogoCrearSala({
     super.key,

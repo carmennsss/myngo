@@ -90,6 +90,15 @@ class DatosUsuarios(generics.ListAPIView):
         usuario_id = request.data.get('id')
         try:
             usuario = Usuario.objects.get(id=usuario_id)
+            
+            nuevo_nombre = request.data.get('nombre_usuario')
+            if nuevo_nombre:
+                if Usuario.objects.filter(nombre_usuario__iexact=nuevo_nombre).exclude(id=usuario.id).exists():
+                    return Response(
+                        {'exito': False, 'mensaje': 'Ese nombre de usuario ya está en uso por otra persona'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
             serializer = UsuarioSerializer(usuario, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -173,7 +182,7 @@ class EditarPerfil(APIView):
             imagen_nueva.save()
             perfil.avatar = imagen_nueva.url_s3.name
             
-            # Desequipar avatares del inventario
+            # Desactivamos avatares previos del inventario al subir uno nuevo
             from mejoras.models import MejoraUsuario
             MejoraUsuario.objects.filter(
                 usuario=request.user,
@@ -217,8 +226,7 @@ class EditarPerfil(APIView):
             imagen_nueva.save()
             perfil.fondo_perfil = imagen_nueva.url_s3.name
 
-            # Desequipar fondos (feed) del inventario
-            # Nota: El frontend suele usar fondo_perfil para el feed
+            # Sincronizamos el estado del inventario para fondos y feeds
             from mejoras.models import MejoraUsuario
             MejoraUsuario.objects.filter(
                 usuario=request.user,
@@ -277,3 +285,92 @@ class RankingUsuarios(APIView):
         usuarios = usuarios.order_by('-rating_actual')[:10]
         serializer = UsuarioSerializer(usuarios, many=True, context={'request': request})
         return Response({'exito': True, 'datos': serializer.data}, status=status.HTTP_200_OK)
+
+
+class CambiarPassword(APIView):
+    """
+    Permite a los usuarios actualizar su contraseña de acceso. Al completar el cambio,
+    se envía un correo electrónico de seguridad para notificar al usuario.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Procesa el cambio de contraseña y envía la notificación por email."""
+        usuario = request.user
+        nueva_password = request.data.get('nueva_password')
+
+        if not nueva_password:
+            return Response({'exito': False, 'mensaje': 'La nueva contraseña es obligatoria.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        usuario.set_password(nueva_password)
+        usuario.save()
+
+        # Enviar correo de notificación
+        from django.core.mail import send_mail
+        from django.conf import settings
+        from django.utils.html import strip_tags
+
+        sujeto = 'Aviso de seguridad - Myngo 🐾'
+        mensaje_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; padding: 20px;">
+            <h2 style="color: #6C63FF; text-align: center;">¡Hola, {usuario.nombre_usuario}!</h2>
+            <p style="font-size: 16px; color: #333;">
+                Te informamos de que la contraseña de tu cuenta de <strong>Myngo</strong> ha sido cambiada recientemente.
+            </p>
+            <p style="font-size: 14px; color: #555;">
+                Si has sido tú, puedes ignorar este correo. Si no has sido tú, responde a este correo inmediatamente para que podamos ayudarte a proteger tu cuenta.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <div style="text-align: center; margin-top: 20px;">
+                <span style="font-size: 18px;">🐾 Myngo Team</span>
+            </div>
+        </div>
+        """
+        try:
+            send_mail(
+                sujeto,
+                strip_tags(mensaje_html),
+                settings.EMAIL_HOST_USER,
+                [usuario.email],
+                html_message=mensaje_html,
+                fail_silently=True,
+            )
+        except Exception:
+            pass # No bloqueamos si falla el email
+
+        return Response({'exito': True, 'mensaje': 'Contraseña actualizada correctamente.'}, status=status.HTTP_200_OK)
+
+
+class EliminarCuenta(APIView):
+    """
+    Gestiona el borrado de cuentas de usuario. Para preservar la integridad de los datos,
+    las cuentas se desactivan y anonimizan en lugar de eliminarse físicamente de la base de datos.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        """Inactiva al usuario, ofusca sus datos personales y limpia su perfil público."""
+        usuario = request.user
+        
+        # Eliminar comunidades creadas por el usuario
+        from comunidades.models import Comunidad
+        Comunidad.objects.filter(creador=usuario).delete()
+
+        # Anonimización de datos para preservar la integridad de la base de datos
+        import uuid
+        identificador = str(uuid.uuid4())[:8]
+        usuario.is_active = False
+        usuario.email = f"eliminado_{identificador}@myngo.com"
+        usuario.nombre_usuario = f"UsuarioEliminado_{identificador}"
+        usuario.set_unusable_password()
+        usuario.save()
+
+        # Opcional: limpiar biografía o avatar si se quiere borrar todo rastro visual
+        if hasattr(usuario, 'perfil'):
+            usuario.perfil.biografia = ""
+            usuario.perfil.avatar = None
+            usuario.perfil.fondo = None
+            usuario.perfil.fondo_perfil = None
+            usuario.perfil.save()
+
+        return Response({'exito': True, 'mensaje': 'Cuenta eliminada correctamente.'}, status=status.HTTP_200_OK)

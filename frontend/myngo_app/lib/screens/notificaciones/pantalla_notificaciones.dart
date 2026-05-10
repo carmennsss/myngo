@@ -14,6 +14,8 @@ import '../../widgets/comunes/boton_tactil.dart';
 import 'package:intl/intl.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
+// Bandeja de notificaciones dividida en tres pestañas: Interacciones, Solicitudes y Alertas.
+// Al abrir la pantalla marca automáticamente como leídas las que no son solicitudes pendientes.
 class PantallaNotificaciones extends StatefulWidget {
   final VoidCallback? onNotificacionesLeidas;
   const PantallaNotificaciones({super.key, this.onNotificacionesLeidas});
@@ -36,9 +38,16 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     _cargarNotificaciones();
   }
 
-  // Tipos que requieren acción del usuario: no se marcan leídas automáticamente
-  static const _tiposPeticion = {'PETICION_CO_ADMIN', 'PETICION_UNION', 'PETICION_SEGUIMIENTO'};
+  // Tipos que requieren acción o atención especial: no se marcan leídas automáticamente
+  static const _tiposPeticion = {
+    'PETICION_CO_ADMIN', 
+    'PETICION_UNION', 
+    'PETICION_SEGUIMIENTO', 
+    'CONTENIDO_REPORTADO',
+    'NUEVO_REPORTE'
+  };
 
+  // Carga todas las notificaciones y marca las no-interactivas como leídas en segundo plano
   Future<void> _cargarNotificaciones() async {
     final respuesta = await _servicioNotificaciones.listarNotificaciones();
     if (mounted) {
@@ -47,7 +56,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         _estaCargando = false;
       });
 
-      // Solo marcamos como leídas las que NO son peticiones pendientes
+      // Solo marcamos como leídas las que NO son de atención especial
       final tieneNoLeidasNormales = _notificaciones.any(
         (n) => !n.leida && !_tiposPeticion.contains(n.tipo),
       );
@@ -57,18 +66,17 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         if (mounted) {
           setState(() {
             _notificaciones = _notificaciones.map((n) {
-              // Las peticiones pendientes conservan su estado leída=false
               if (_tiposPeticion.contains(n.tipo)) return n;
               return n.copyWith(leida: true);
             }).toList();
           });
-          // Notificar al padre para que refresque el badge
           widget.onNotificacionesLeidas?.call();
         }
       }
     }
   }
 
+  // Acepta o rechaza solicitudes de seguimiento o de unión a comunidades
   Future<void> _responder(Notificacion notif, bool aceptar) async {
     if (notif.referenciaId == null) return;
     
@@ -92,6 +100,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     }
   }
 
+  // Navega a la pantalla correspondiente según el tipo de notificación (post, perfil, comunidad...)
   void _navegarADetalle(Notificacion notif) async {
     // Marcar como leída localmente e informar al servidor
     if (!notif.leida) {
@@ -126,19 +135,19 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
           }
         }
       }
-    } else if (notif.tipo == 'NUEVO_REPORTE' || notif.tipo == 'NUEVA_PROPUESTA_TIENDA') {
+    } else if (notif.tipo == 'NUEVO_REPORTE') {
       if (notif.idComunidad != null) {
         final res = await _servicioComunidades.obtenerComunidad(notif.idComunidad!);
         if (mounted && res.exito && res.datos != null) {
-          int initialTab = notif.tipo == 'NUEVO_REPORTE' ? 2 : 3;
+          int initialTab = 2;
           Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaAdminComunidad(comunidad: res.datos!, initialTab: initialTab)));
         }
       }
-    } else if (['PROPUESTA_TIENDA_ACEPTADA', 'PROPUESTA_TIENDA_RECHAZADA', 'ROL_ACTUALIZADO', 'CONTENIDO_BORRADO'].contains(notif.tipo)) {
+    } else if (['ROL_ACTUALIZADO', 'CONTENIDO_BORRADO'].contains(notif.tipo)) {
       if (notif.idComunidad != null) {
         final res = await _servicioComunidades.obtenerComunidad(notif.idComunidad!);
         if (mounted && res.exito && res.datos != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleComunidad(comunidad: res.datos!, initialIndex: (notif.tipo.contains('TIENDA')) ? 1 : 0)));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => PantallaDetalleComunidad(comunidad: res.datos!, initialIndex: 0)));
         }
       }
     }
@@ -154,8 +163,8 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     }
 
     final interacciones = _notificaciones.where((n) => ['LIKE', 'COMENTARIO', 'VOTO'].contains(n.tipo)).toList();
-    final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE', 'NUEVA_PROPUESTA_TIENDA'].contains(n.tipo)).toList();
-    final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE', 'NUEVA_PROPUESTA_TIENDA'].contains(n.tipo)).toList();
+    final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE'].contains(n.tipo)).toList();
+    final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE'].contains(n.tipo)).toList();
 
     return DefaultTabController(
       length: 3,
@@ -206,6 +215,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     );
   }
 
+  // Renderiza la lista de notificaciones de cada pestaña
   Widget _buildListaTab(List<Notificacion> lista, String mensajeVacio, IconData iconoVacio, dynamic tr) {
     if (lista.isEmpty) return _buildVistaVaciaEspecial(mensajeVacio, iconoVacio, tr);
     return ListView.builder(
@@ -221,6 +231,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     );
   }
 
+  // Estado vacío bonito con icono central cuando la pestaña no tiene notificaciones
   Widget _buildVistaVaciaEspecial(String mensaje, IconData icono, dynamic tr) {
     return Center(
       child: Column(
@@ -255,6 +266,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
 
 }
 
+// Tarjeta individual de una notificación. Si tiene botones de aceptar/rechazar los muestra al final.
 class _TarjetaNotificacion extends StatelessWidget {
   final Notificacion notif;
   final bool isLast;
@@ -322,7 +334,7 @@ class _TarjetaNotificacion extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          DateFormat('dd MMM · HH:mm').format(notif.fechaNotificacion),
+                          DateFormat('dd MMM · HH:mm').format(notif.fechaNotificacion.toLocal()),
                           style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade500),
                         ),
                       ],
@@ -369,6 +381,7 @@ class _TarjetaNotificacion extends StatelessWidget {
     );
   }
 
+  // Devuelve el icono correcto para cada tipo de notificación
   IconData _getIconoTipo(String tipo) {
     switch (tipo) {
       case 'LIKE': return Icons.favorite_rounded;
@@ -380,15 +393,14 @@ class _TarjetaNotificacion extends StatelessWidget {
       case 'PETICION_ACEPTADA': return Icons.check_circle_rounded;
       case 'PETICION_RECHAZADA': return Icons.error_outline_rounded;
       case 'NUEVO_REPORTE': return Icons.report_problem_rounded;
-      case 'NUEVA_PROPUESTA_TIENDA': return Icons.storefront_rounded;
-      case 'PROPUESTA_TIENDA_ACEPTADA': return Icons.shopping_bag_rounded;
-      case 'PROPUESTA_TIENDA_RECHAZADA': return Icons.shopping_bag_outlined;
+
       case 'ROL_ACTUALIZADO': return Icons.verified_user_rounded;
       case 'CONTENIDO_BORRADO': return Icons.delete_sweep_rounded;
       default: return Icons.notifications_rounded;
     }
   }
 
+  // Devuelve el color temático para cada tipo de notificación
   Color _getColorTipo(String tipo) {
     switch (tipo) {
       case 'LIKE': return const Color(0xFFD95F43);
@@ -400,9 +412,7 @@ class _TarjetaNotificacion extends StatelessWidget {
       case 'PETICION_ACEPTADA': return const Color(0xFF248EA6);
       case 'PETICION_RECHAZADA': return const Color(0xFFD95F43);
       case 'NUEVO_REPORTE': return Colors.redAccent;
-      case 'NUEVA_PROPUESTA_TIENDA': return const Color(0xFFC35E34);
-      case 'PROPUESTA_TIENDA_ACEPTADA': return const Color(0xFF248EA6);
-      case 'PROPUESTA_TIENDA_RECHAZADA': return Colors.grey;
+
       case 'ROL_ACTUALIZADO': return Colors.blueAccent;
       case 'CONTENIDO_BORRADO': return const Color(0xFFD95F43);
       default: return const Color(0xFFF29C50);

@@ -12,17 +12,49 @@ from .serializers import ComentarioSerializer, ReporteSerializer
 
 
 class ReporteListCreate(generics.ListCreateAPIView):
-    """Lista todos los reportes o crea uno nuevo.
-
-    Al crear, notifica a los moderadores de la comunidad afectada.
-    """
+    """Permite ver todos los reportes existentes o crear uno nuevo si ves algo que incumple las normas."""
 
     queryset = Reporte.objects.all()
     serializer_class = ReporteSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        """Guarda el reporte y avisa automáticamente tanto al autor del contenido como a los moderadores."""
         reporte = serializer.save(informador=self.request.user)
+        
+        autor_reportado = None
+        try:
+            if reporte.tipo_objeto == 'POST':
+                from .models import Publicacion
+                obj = Publicacion.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.autor
+            elif reporte.tipo_objeto == 'COMENTARIO':
+                from .models import Comentario
+                obj = Comentario.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.autor
+            elif reporte.tipo_objeto == 'IMAGEN':
+                from .models import ImagenGaleria
+                obj = ImagenGaleria.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.propietario
+            elif reporte.tipo_objeto == 'COMUNIDAD':
+                from comunidades.models import Comunidad
+                obj = Comunidad.objects.get(id=reporte.objeto_id)
+                autor_reportado = obj.creador
+        except Exception:
+            pass
+
+        if autor_reportado:
+            try:
+                Notificacion.objects.create(
+                    usuario=autor_reportado,
+                    tipo='CONTENIDO_REPORTADO',
+                    mensaje=f"Tu contenido ({reporte.tipo_objeto.lower()}) ha sido reportado por un usuario y está siendo revisado por los administradores. Por favor, asegúrate de cumplir las normas.",
+                    referencia_comunidad=reporte.comunidad,
+                    referencia_id=reporte.objeto_id
+                )
+            except Exception:
+                pass
+
         if reporte.comunidad:
             mods = MiembrosComunidad.objects.filter(
                 comunidad=reporte.comunidad, rol__in=['Administrador', 'Moderador']
@@ -38,15 +70,15 @@ class ReporteListCreate(generics.ListCreateAPIView):
                     )
 
 
-class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
-    """Recupera, actualiza o elimina un comentario específico.
+from .permissions import IsAuthorOrAdmin
 
-    Al eliminar como administrador, notifica al autor del comentario.
-    """
+
+class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
+    """Maneja un comentario individual. Si un admin lo borra, el autor recibe un aviso con el motivo."""
 
     queryset = Comentario.objects.all()
     serializer_class = ComentarioSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrAdmin]
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -66,7 +98,7 @@ class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ResolverReporteView(APIView):
-    """Permite a moderadores o al creador de la comunidad resolver o desestimar un reporte."""
+    """Permite a los jefes de la comunidad (admins/mods) cerrar reportes como resueltos o falsas alarmas."""
 
     permission_classes = [permissions.IsAuthenticated]
 
