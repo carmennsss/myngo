@@ -58,8 +58,12 @@ void main() {
     test('responderSolicitudInteractiva envía POST y devuelve éxito', () async {
       SharedPreferences.setMockInitialValues({'auth_token': 'fake'});
 
-      when(() => mockClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body')))
-          .thenAnswer((_) async => http.Response('{"mensaje": "Operación realizada"}', 200));
+      when(() => mockClient.post(any(), headers: any(named: 'headers'), body: '{"accion":"ACEPTAR"}'))
+          .thenAnswer((_) async => http.Response(
+            jsonEncode({"mensaje": "Operación realizada"}), 
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'}
+          ));
 
       final resultado = await servicioNotificaciones.responderSolicitudInteractiva(1, 'ACEPTAR');
 
