@@ -24,6 +24,9 @@ import '../comunes/menu_opciones_contenido.dart';
 import '../comunes/estado_vacio_cargando.dart';
 
 
+// Grid de estilo masonry (columnas de altura variable) para la galería de fotos y vídeos.
+// Carga las imágenes con paginación (infinite scroll) y permite subir nuevo contenido.
+// Si el usuario no es miembro, las imágenes aparecen con blur y un candado.
 class MasonryGridGaleria extends StatefulWidget {
   final int? comunidadId;
   final int? usuarioId;
@@ -63,7 +66,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     super.dispose();
   }
 
-  Future<void> _cargarMas() async {
+  // Pide la siguiente tanda de imágenes al servidor y las añade al grid
     if (_cargando) return;
     if (!mounted) return;
     setState(() {
@@ -99,7 +102,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     setState(() => _cargando = false);
   }
 
-  Future<void> _seleccionarYSubir(bool esVideo) async {
+  // Abre el selector del dispositivo para elegir una foto/vídeo y subirlo a la galería
     final picker = ImagePicker();
     final pickedFile = esVideo 
         ? await picker.pickVideo(source: ImageSource.gallery)
@@ -227,7 +230,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     );
   }
 
-  void _mostrarMenuOpciones(BuildContext context) {
+  // Muestra el menú contextual (subir imagen, subir vídeo, crear colección)
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -308,7 +311,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     );
   }
 
-  Future<void> _abrirSelectorGaleriaMyngo(BuildContext context) async {
+  // Abre el selector interno de Myngo para reutilizar una foto ya subida y meterla en un álbum
     final ImagenGaleria? seleccionada = await showModalBottomSheet<ImagenGaleria>(
       context: context,
       isScrollControlled: true,
@@ -339,7 +342,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     }
   }
 
-  void _mostrarDialogoNuevaColeccion(BuildContext context) {
+  // Dialogo para que el usuario cree un nuevo álbum con nombre y privacidad
     final nombreCtrl = TextEditingController();
     bool esPrivada = false;
     showModalBottomSheet(
@@ -408,7 +411,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   );
 }
 
-  Widget _buildTile(ImagenGaleria item, double aspect) {
+  // Tarjeta individual de la galeria con la imagen y sus botones (descarga, opciones, blur si no miembro)
     return GestureDetector(
       onTap: !widget.esMiembro ? null : () {
         Navigator.push(context, MaterialPageRoute(
@@ -489,7 +492,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     );
   }
 
-  Widget _buildInnerTileContent(ImagenGaleria item, double aspect) {
+  // Renderiza el contenido de la tarjeta: imagen real o placeholder de vídeo
     if (item.tipoArchivo == 'V') {
       return AspectRatio(
         aspectRatio: aspect,

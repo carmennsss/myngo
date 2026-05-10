@@ -5,6 +5,8 @@ import '../../services/servicio_usuarios.dart';
 import '../../widgets/boton_carga.dart';
 import 'package:tolgee/tolgee.dart';
 
+// Pantalla de recuperación de contraseña (modo oscuro).
+// Pide el email del usuario y le manda un correo con el enlace de restablecimiento.
 class PantallaRecuperarContrasena extends StatefulWidget {
   const PantallaRecuperarContrasena({super.key});
 
@@ -219,6 +221,7 @@ class _PantallaRecuperarContrasenaState
     );
   }
 
+  // Valida el formulario, llama al servicio y muestra el resultado en un snackbar
   Future<void> _procesarRecuperacion() async {
     _nodoEnfoqueEmail.unfocus();
 

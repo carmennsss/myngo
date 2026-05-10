@@ -116,7 +116,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
   }
 
   Future<void> _equipar(CatalogoMejoras mejora) async {
-    // Lógica original para equipación personal
+    // Equipación personal
     String? destino;
     if (mejora.tipo.toLowerCase() == 'fondo') {
       destino = await showDialog<String>(

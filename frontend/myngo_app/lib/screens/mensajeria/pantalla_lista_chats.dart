@@ -13,6 +13,8 @@ import '../../providers/chat_provider.dart';
 import '../../utils/configuracion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+// Pantalla que lista todos los chats del usuario, tanto personales como de comunidad.
+// Escucha el ChatProvider para actualizarse cuando llegan nuevos mensajes.
 class PantallaListaChats extends StatefulWidget {
   const PantallaListaChats({super.key});
 
@@ -37,6 +39,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     });
   }
 
+  // Se activa cada vez que el ChatProvider notifica un cambio (nuevo mensaje, sala nueva)
   void _onChatProviderChanged() {
     if (!mounted || _cargando) return;
     _cargar();
@@ -52,6 +55,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     super.dispose();
   }
 
+  // Carga el ID del usuario logueado y delega la carga de salas al ChatProvider
   Future<void> _cargar() async {
     if (!mounted) return;
     
@@ -70,7 +74,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         });
       }
     } catch (e) {
-      debugPrint('Error cargando chats: $e');
+
     } finally {
       if (mounted) {
         setState(() => _cargando = false);
@@ -97,7 +101,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     final myId = context.read<ChatProvider>().userId;
     final miembros = (sala['miembros_detalle'] as List?) ?? [];
 
-    // Avatar y nombre personalizados de la sala (aplican tanto a grupos como a 1-a-1)
+
     final avatarPersonalizado = sala['avatar_s3'] as String?;
     final nombrePersonalizado = sala['nombre'] as String?;
 
@@ -120,7 +124,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       final interlocutor = otro!;
       sala['_otro_usuario_id'] = interlocutor['id'];
 
-      // Si la sala tiene nombre personalizado, lo usamos; si no, el del interlocutor
+
       String nombreFinal;
       if (nombrePersonalizado != null && nombrePersonalizado.isNotEmpty) {
         nombreFinal = nombrePersonalizado;
@@ -133,7 +137,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
 
       return {
         'nombre': nombreFinal,
-        // Si la sala tiene avatar personalizado, lo usamos; si no, el del interlocutor
+
         'avatar': (avatarPersonalizado != null && avatarPersonalizado.isNotEmpty)
             ? avatarPersonalizado
             : interlocutor['url_avatar'],
@@ -179,7 +183,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
               });
             }
           } else if (mounted) {
-            // Si falla, al menos quitamos el cargando del diálogo (esto lo hace el diálogo solo al terminar el await)
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('No se pudo crear el chat 🐾'))
             );
@@ -220,7 +224,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // Cabecera Premium
+
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
@@ -237,7 +241,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Barra de búsqueda
+
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -267,7 +271,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                 ),
               ),
 
-              // Lista de Chats
+
               if (_cargando && salas.isEmpty)
                 SliverFillRemaining(
                   child: _buildCargando(),
@@ -386,7 +390,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
             ),
             child: Row(
               children: [
-                // Avatar — widget aislado para que no parpadee con cada evento del provider
+
                 _AvatarSala(
                   avatarUrl: avatarUrl,
                   nombre: nombre,
@@ -394,7 +398,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                   heroTag: 'avatar_sala_${sala['id'] ?? index}',
                 ),
                 const SizedBox(width: 16),
-                // Texto
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,8 +479,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   }
 }
 
-/// Avatar de sala aislado para evitar parpadeos cuando el ChatProvider
-/// notifica cambios frecuentes (mensajes WS). Solo se reconstruye cuando
+
 /// cambia su propia URL.
 class _AvatarSala extends StatefulWidget {
   final String? avatarUrl;
@@ -499,7 +502,7 @@ class _AvatarSalaState extends State<_AvatarSala> {
   @override
   void didUpdateWidget(_AvatarSala oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si la URL cambia, borramos la caché de la URL anterior para forzar recarga
+
     if (oldWidget.avatarUrl != widget.avatarUrl && oldWidget.avatarUrl != null) {
       final oldResolved = oldWidget.avatarUrl!.startsWith('http')
           ? oldWidget.avatarUrl!

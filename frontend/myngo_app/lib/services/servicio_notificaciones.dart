@@ -5,17 +5,15 @@ import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio encargado de la gestión de notificaciones del usuario.
-///
-/// Provee métodos para listar avisos, marcarlos como leídos y procesar
-/// respuestas a solicitudes interactivas (seguimiento, uniones, etc.).
+// Gestiona la bandeja de entrada de notificaciones de la app.
+// Nos sirve para ver quién nos ha seguido, avisos de comunidades y marcar los avisos como leídos.
 class ServicioNotificaciones {
-  /// URL base para los endpoints de notificaciones.
+  // Ruta base del servidor para las notificaciones
   static const String _urlNotificaciones = '${Configuracion.baseUrl}/notificaciones/';
   
   final _servicioUsuarios = ServicioUsuarios();
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  // Adjunta el token de sesión a la petición
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -24,7 +22,7 @@ class ServicioNotificaciones {
     };
   }
 
-  /// Recupera la lista completa de notificaciones del usuario autenticado.
+  // Pide al servidor todas las notificaciones (leídas y no leídas) del usuario
   Future<RespuestaApi<List<Notificacion>>> listarNotificaciones() async {
     try {
       final respuesta = await http.get(
@@ -47,7 +45,7 @@ class ServicioNotificaciones {
     }
   }
 
-  /// Responde a una solicitud (aceptar/rechazar) vinculada a una notificación.
+  // Permite aceptar o rechazar solicitudes (ej. de seguimiento) directamente desde la campanita
   Future<RespuestaApi<void>> responderSolicitudInteractiva(int idNotificacion, String accion) async {
     try {
       final respuesta = await http.post(
@@ -66,7 +64,7 @@ class ServicioNotificaciones {
     }
   }
 
-  /// Marca todas las notificaciones pendientes como leídas.
+  // Limpia la bandeja marcando todo como leído de golpe
   Future<RespuestaApi<void>> marcarTodasComoLeidas() async {
     try {
       final respuesta = await http.post(
@@ -83,7 +81,7 @@ class ServicioNotificaciones {
     }
   }
 
-  /// Marca una notificación individual como leída.
+  // Marca una sola notificación como leída (cuando pinchas en ella)
   Future<RespuestaApi<void>> marcarComoLeida(int idNotificacion) async {
     try {
       final respuesta = await http.post(
@@ -100,7 +98,7 @@ class ServicioNotificaciones {
     }
   }
 
-  /// Obtiene el conteo numérico de notificaciones sin leer.
+  // Nos dice cuántas notificaciones nuevas hay para poner el globito rojo en la campana
   Future<int> obtenerConteoNoLeidas() async {
     try {
       final respuesta = await http.get(

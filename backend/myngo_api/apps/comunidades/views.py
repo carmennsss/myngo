@@ -372,70 +372,7 @@ class ListarMiembrosComunidad(generics.ListAPIView):
             miembros_data.append(m)
         return Response({'exito': True, 'datos': miembros_data})
 
-class ListarMiembrosComunidadOld(APIView):
-    """Retorna la lista de miembros de una comunidad, incluyendo al creador."""
 
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request, pk):
-        """Obtiene todos los miembros (creador + registrados) de la comunidad.
-
-        Args:
-            request: Petición GET.
-            pk (int): ID de la comunidad.
-
-        Returns:
-            Response: Lista de miembros con roles y datos básicos.
-        """
-        try:
-            comunidad = Comunidad.objects.get(pk=pk)
-        except Comunidad.DoesNotExist:
-            return Response({'error': 'Comunidad no encontrada'}, status=status.HTTP_404_NOT_FOUND)
-
-        from django.core.files.storage import default_storage
-
-        def construir_url_avatar(usuario):
-            if not usuario or not usuario.url_avatar:
-                return None
-            url = usuario.url_avatar
-            if url.startswith('http'):
-                return url
-            return default_storage.url(url.lstrip('/'))
-
-        miembros_data = []
-
-        if comunidad.creador:
-            miembros_data.append({
-                'id': -1, # ID ficticio para el creador
-                'usuario_id': comunidad.creador.id,
-                'perfil_id': getattr(comunidad.creador.perfil, 'id', 0) if hasattr(comunidad.creador, 'perfil') else 0,
-                'usuario_nombre': comunidad.creador.nombre_usuario,
-                'usuario_avatar': construir_url_avatar(comunidad.creador),
-                'rol': 'Creador',
-                'fecha_union': comunidad.fecha_creacion.isoformat() if comunidad.fecha_creacion else None,
-            })
-
-        miembros = (
-            MiembrosComunidad.objects.filter(comunidad=comunidad)
-            .select_related('usuario', 'usuario__perfil')
-            .order_by('rol', '-fecha_union')
-        )
-        
-        for m in miembros:
-            if comunidad.creador and m.usuario.id == comunidad.creador.id:
-                continue
-                
-            miembros_data.append({
-                'id': m.id,
-                'usuario_id': m.usuario.id,
-                'perfil_id': getattr(m.usuario.perfil, 'id', 0) if hasattr(m.usuario, 'perfil') else 0,
-                'usuario_nombre': m.usuario.nombre_usuario,
-                'usuario_avatar': construir_url_avatar(m.usuario),
-                'rol': m.rol,
-                'fecha_union': m.fecha_union.isoformat() if m.fecha_union else None,
-            })
-
-        return Response(miembros_data)
 
 
 class ComunidadDetail(generics.RetrieveUpdateDestroyAPIView):

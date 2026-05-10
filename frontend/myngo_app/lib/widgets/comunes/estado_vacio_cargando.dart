@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// Pantalla de espera inteligente: primero muestra un spinner durante un breve delay
+// y luego, si no hay datos, muestra el icono y mensaje de "lista vacía".
+// El delay evita que el estado vacío parpadee cuando los datos llegan rápido.
 class EstadoVacioCargando extends StatefulWidget {
-  final IconData icon;
-  final String message;
-  final Duration delay;
-  final Color baseColor;
-  final Color? textColor;
+  final IconData icon;     // El icono del estado vacío (ej. un gato durmiendo)
+  final String message;    // Mensaje explicativo para el usuario
+  final Duration delay;    // Cuánto tiempo mostramos el spinner antes de rendernos
+  final Color baseColor;   // Color del spinner y del icono
+  final Color? textColor;  // Color del texto del mensaje
 
   const EstadoVacioCargando({
     super.key,

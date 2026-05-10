@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'boton_tactil.dart';
 
+// Pantalla de bloqueo que aparece cuando un usuario no logueado intenta acceder a algo privado.
+// Muestra un mensaje amigable y botones para ir al login o al registro.
 class VistaRequerirLogin extends StatelessWidget {
   final String titulo;
   final String mensaje;

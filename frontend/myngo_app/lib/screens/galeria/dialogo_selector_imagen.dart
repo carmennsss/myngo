@@ -5,6 +5,8 @@ import '../../services/servicio_galeria.dart';
 import '../../services/servicio_usuarios.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+// Bottom sheet que muestra la galería del usuario para que pueda
+// seleccionar una imagen ya subida y meterla en una colección sin volver a subirla.
 class DialogoSelectorImagen extends StatefulWidget {
   const DialogoSelectorImagen({Key? key}) : super(key: key);
 
@@ -24,6 +26,7 @@ class _DialogoSelectorImagenState extends State<DialogoSelectorImagen> {
     _cargarGaleria();
   }
 
+  // Pide las imágenes del usuario al servidor para mostrarlas en el grid
   Future<void> _cargarGaleria() async {
     // Obtenemos la galería general (pública)
     final res = await _servicioGaleria.obtenerGaleria();

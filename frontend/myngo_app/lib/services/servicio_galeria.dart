@@ -9,17 +9,15 @@ import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio encargado de gestionar los recursos multimedia y las colecciones de imágenes.
-///
-/// Permite la subida de archivos a la galería (personal o comunitaria), la organización
-/// en colecciones temáticas y la gestión de permisos de visibilidad.
+// Gestiona todas las fotos subidas a la plataforma.
+// Lo usamos para ver la galería de imágenes, organizarlas en colecciones (álbumes) y subirlas.
 class ServicioGaleria {
-  /// URL base para los endpoints de contenido multimedia.
+  // URL base para el tema multimedia
   static const String _urlContenido = '${Configuracion.baseUrl}/contenido';
   
   final _servicioUsuarios = ServicioUsuarios();
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  // Adjunta la sesión para validar permisos
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -28,7 +26,7 @@ class ServicioGaleria {
     };
   }
 
-  /// Obtiene una lista paginada de imágenes filtradas por comunidad, usuario o colección.
+  // Trae una tanda de imágenes de la galería (con filtros por usuario, comunidad, etc.)
   Future<RespuestaApi<List<ImagenGaleria>>> obtenerGaleria({
     int? idComunidad,
     int? idUsuario,
@@ -66,7 +64,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Recupera las colecciones disponibles para un usuario o una comunidad.
+  // Pide al servidor las "carpetas" o álbumes de fotos que existen
   Future<RespuestaApi<List<Coleccion>>> obtenerColecciones({
     int? idComunidad,
     int? idUsuario,
@@ -103,7 +101,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Actualiza los metadatos de una colección (ej. cambiar privacidad o nombre).
+  // Cambia el nombre o la privacidad de un álbum existente
   Future<RespuestaApi<Coleccion>> editarColeccion(int idColeccion, Map<String, dynamic> datos) async {
     try {
       final respuesta = await http.patch(
@@ -125,7 +123,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Crea una nueva colección multimedia personalizada.
+  // Crea un álbum nuevo vacío
   Future<RespuestaApi<Coleccion>> crearColeccion({
     required String nombre,
     String? descripcion,
@@ -157,7 +155,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Vincula o desvincula una imagen de una colección específica.
+  // Mete o saca una foto concreta de un álbum
   Future<RespuestaApi<void>> gestionarImagenEnColeccion({
     required int idColeccion,
     required int idImagen,
@@ -182,7 +180,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Elimina una colección multimedia permanentemente.
+  // Borra un álbum entero para siempre
   Future<RespuestaApi<void>> eliminarColeccion({required int idColeccion}) async {
     try {
       final respuesta = await http.delete(
@@ -199,7 +197,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Sube un nuevo archivo de imagen a la galería global o comunitaria.
+  // Sube una nueva imagen desde tu móvil a la galería de la app
   Future<RespuestaApi<ImagenGaleria>> subirImagenGaleria(
     XFile imagenArchivo, {
     int? idComunidad,
@@ -241,7 +239,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Obtiene información extendida de una imagen, incluyendo posts donde aparece.
+  // Trae los detalles completos de una foto (como los posts donde se ha usado)
   Future<RespuestaApi<Map<String, dynamic>>> obtenerDetalleImagenExtendido(int idImagen) async {
     try {
       final respuesta = await http.get(
@@ -262,7 +260,7 @@ class ServicioGaleria {
     }
   }
 
-  /// Elimina una publicación específica.
+  // Borra una foto definitivamente
   Future<RespuestaApi> eliminarPublicacion(int idPublicacion, {String? razon}) async {
     try {
       final respuesta = await http.delete(

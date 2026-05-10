@@ -55,9 +55,7 @@ class Notificacion {
                 DateTime.now()
             : DateTime.now(),
       );
-    } catch (e) {
-      // ignore: avoid_print
-      print('Error parsing Notificacion: $e');
+    } catch (_) {
       return Notificacion(
         id: 0,
         tipo: 'error',

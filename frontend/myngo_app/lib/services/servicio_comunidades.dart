@@ -13,23 +13,21 @@ import '../models/sala_chat.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio encargado de gestionar el ciclo de vida de las comunidades y su contenido.
-///
-/// Provee funcionalidades para la administración de miembros, personalización estética,
-/// gestión de publicaciones, galerías multimedia y salas de chat grupales.
+// Es el servicio más grande: maneja todo lo que pasa dentro de las comunidades.
+// Traer listas de miembros, unirse, publicar posts, subir fotos de portada y salas de chat del grupo.
 class ServicioComunidades {
-  /// URL base para los endpoints de comunidades.
+  // Rutas base de la API
   static const String _urlComunidades = '${Configuracion.baseUrl}/comunidades/';
   
-  /// URL base para los endpoints de contenido multimedia y publicaciones.
+  // Rutas para los posts de la comunidad
   static const String _urlContenido = '${Configuracion.baseUrl}/contenido/';
   
-  /// URL base para los endpoints de mensajería grupal.
+  // Rutas para los chats de grupo
   static const String _urlMensajeria = '${Configuracion.baseUrl}/mensajeria/';
 
   final _servicioUsuarios = ServicioUsuarios();
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  // Adjunta la autorización
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -38,7 +36,7 @@ class ServicioComunidades {
     };
   }
 
-  /// Obtiene la lista de comunidades, permitiendo filtrar por término de búsqueda, tags y página.
+  // Pide al servidor todas las comunidades que existen (se usa en el buscador)
   Future<RespuestaApi<List<Comunidad>>> listarComunidades({
     String? busqueda, 
     List<String>? tags, 
@@ -85,12 +83,12 @@ class ServicioComunidades {
     }
   }
 
-  /// Sugiere comunidades populares basadas en su actividad.
+  // Devuelve las 3 o 4 comunidades más top para sugerirlas en el inicio
   Future<RespuestaApi<List<Comunidad>>> listarComunidadesPopulares() async {
     return listarComunidades();
   }
 
-  /// Obtiene las comunidades a las que pertenece el usuario autenticado.
+  // Trae la lista de los grupos en los que estás metido
   Future<RespuestaApi<List<Comunidad>>> listarComunidadesPropias() async {
     try {
       final respuesta = await http.get(
@@ -113,7 +111,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Recupera la información detallada de una comunidad por su ID o Nombre.
+  // Entra en el detalle de una comunidad para ver toda su información
   Future<RespuestaApi<Comunidad>> obtenerComunidad(dynamic identifier) async {
     try {
       final respuesta = await http.get(
@@ -135,7 +133,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Obtiene la lista de miembros de una comunidad con sus roles y paginación.
+  // Pide la lista de la gente que está dentro del grupo
   Future<RespuestaApi<List<Map<String, dynamic>>>> obtenerMiembrosComunidad(int idComunidad, {int? pagina}) async {
     try {
       final query = pagina != null ? '?page=$pagina' : '';
@@ -161,7 +159,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Solicita el acceso o se une directamente a una comunidad.
+  // Botón "Unirme". Entra directo si es pública o manda solicitud si es privada
   Future<RespuestaApi<Map<String, dynamic>>> unirseAComunidad(int idComunidad) async {
     try {
       final respuesta = await http.post(
@@ -182,31 +180,26 @@ class ServicioComunidades {
     }
   }
 
-  /// Permite al usuario abandonar una comunidad de la que es miembro.
+  // Botón "Salir de la comunidad"
   Future<RespuestaApi<void>> abandonarComunidad(int idComunidad) async {
     try {
-      print('DEBUG: Solicitando abandonar comunidad ID: $idComunidad');
       final respuesta = await http.post(
         Uri.parse('${_urlComunidades}$idComunidad/salir/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
 
-      print('DEBUG: Código de respuesta del servidor: ${respuesta.statusCode}');
       if (respuesta.statusCode == 200) {
-        print('DEBUG: Salida de comunidad exitosa');
         return RespuestaApi(exito: true, mensaje: 'Has abandonado la comunidad');
       }
       
       final error = jsonDecode(utf8.decode(respuesta.bodyBytes));
-      print('DEBUG: El servidor devolvió un error: ${error['error']}');
       return RespuestaApi(exito: false, mensaje: error['error'] ?? 'Error al abandonar comunidad');
     } catch (e) {
-      print('DEBUG: Error de conexión al intentar salir: $e');
       return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
     }
   }
 
-  /// Crea una nueva comunidad permitiendo la subida de una imagen de portada y etiquetas.
+  // Formulario de creación de una comunidad nueva (sube fotos y datos)
   Future<RespuestaApi<Comunidad>> crearComunidad(Comunidad comunidad, {XFile? imagenPortada, List<String>? tags}) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
@@ -263,7 +256,6 @@ class ServicioComunidades {
       String msg = 'Error de conexión: $e';
       if (e is dio.DioException) {
         if (e.response != null) {
-          print("DEBUG: Error del backend (Cuerpo): ${e.response?.data}");
           msg = e.response?.data?.toString() ?? e.message ?? msg;
         } else {
           msg = e.message ?? msg;
@@ -273,7 +265,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Moderación: Acepta o rechaza una solicitud de unión pendiente.
+  // Botón del admin para dejar entrar a alguien o rechazarlo
   Future<RespuestaApi<void>> responderPeticionAcceso(int idPeticion, bool aceptar) async {
     try {
       final respuesta = await http.post(
@@ -291,7 +283,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Recupera métricas y solicitudes para el panel de administración de la comunidad.
+  // Trae las estadísticas y denuncias pendientes para los admins del grupo
   Future<RespuestaApi<Map<String, dynamic>>> obtenerDashboardAdmin(int idComunidad) async {
     try {
       final respuesta = await http.get(
@@ -312,7 +304,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Actualiza los parámetros estéticos y funcionales de una comunidad.
+  // Guarda los cambios del panel de administración (colores, normas, fotos)
   Future<RespuestaApi<Comunidad>> actualizarComunidad(
     int idComunidad, {
     String? nombre,
@@ -335,7 +327,7 @@ class ServicioComunidades {
 
       Comunidad? comunidadActualizada;
 
-      // PASO 1: Si hay archivos, los enviamos primero vía Multipart
+
       if (banner != null || avatar != null || fondo != null) {
         final datosArchivos = dio.FormData();
         
@@ -377,7 +369,7 @@ class ServicioComunidades {
         }
       }
 
-      // PASO 2: Enviamos el resto de datos vía JSON puro (es mucho más estable)
+
       final Map<String, dynamic> body = {};
       if (nombre != null) body['nombre'] = nombre;
       if (descripcion != null) body['descripcion'] = descripcion;
@@ -429,7 +421,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Cambia el rango administrativo de un miembro en la comunidad.
+  // Permite ascender a alguien a moderador/creador o degradarlo
   Future<RespuestaApi<void>> gestionarRolMiembro(int idMiembro, String nuevoRol) async {
     try {
       final respuesta = await http.post(
@@ -447,7 +439,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Recupera el rango oficial de un usuario dentro de una comunidad.
+  // Comprueba si eres Admin o usuario normal dentro de un grupo
   Future<RespuestaApi<String>> obtenerRolUsuarioEnComunidad(int idComunidad, int idUsuario) async {
     try {
       final respuesta = await http.get(
@@ -465,7 +457,7 @@ class ServicioComunidades {
     }
   }
 
-  // --- CONTENIDO Y MENSAJERÍA ---
+
 
   /// Obtiene publicaciones de comunidades públicas para el feed global.
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGlobales({String orden = '-fecha_creacion'}) async {
@@ -490,7 +482,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Actualiza una publicación existente.
+  // Edita el texto de un post que ya habías publicado
   Future<RespuestaApi<Publicacion>> actualizarPublicacion({
     required int idPublicacion,
     String? titulo,
@@ -526,7 +518,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Recupera las publicaciones registradas en una comunidad específica.
+  // Carga los posts que ves dentro del muro de la comunidad
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesComunidad(int idComunidad, {String orden = '-fecha_creacion', int pagina = 1, int tamanoPagina = 20}) async {
     try {
       final offset = (pagina - 1) * tamanoPagina;
@@ -550,7 +542,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Recupera la galería de imágenes destacadas de la comunidad.
+  // Trae la galería de fotos conjunta del grupo
   Future<RespuestaApi<List<ImagenGaleria>>> obtenerGaleriaComunidad(int idComunidad) async {
     try {
       final respuesta = await http.get(
@@ -572,7 +564,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Obtiene las salas de chat activas vinculadas a la comunidad.
+  // Lista las salas de chat que tiene creadas el grupo
   Future<RespuestaApi<List<SalaChat>>> obtenerSalasChat(int idComunidad) async {
     try {
       final respuesta = await http.get(
@@ -598,8 +590,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Crea una nueva publicación permitiendo el envío de múltiples archivos multimedia.
-  /// Ahora soporta seguimiento de progreso de subida.
+  // Lanza un post nuevo al muro del grupo (con sus fotos o vídeos adjuntos)
   Future<RespuestaApi<Publicacion>> crearPublicacion({
     int? idComunidad,
     String? titulo,
@@ -638,7 +629,7 @@ class ServicioComunidades {
           final bytes = await img.readAsBytes();
           String mimeType = lookupMimeType(img.name, headerBytes: bytes) ?? 'application/octet-stream';
           
-          // Fallback para videos MP4 si el lookup falla (común en web)
+
           if (mimeType == 'application/octet-stream' && img.name.toLowerCase().endsWith('.mp4')) {
             mimeType = 'video/mp4';
           }
@@ -681,7 +672,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Elimina una comunidad y todo su contenido asociado permanentemente.
+  // El botón rojo de borrar el grupo entero
   Future<RespuestaApi> eliminarComunidad(int idComunidad) async {
     try {
       final respuesta = await http.delete(
@@ -698,7 +689,7 @@ class ServicioComunidades {
     }
   }
 
-  // --- MODERACIÓN DE CONTENIDO ---
+
 
   /// Recupera los detalles técnicos y de contenido de una publicación.
   Future<RespuestaApi<Publicacion>> obtenerDetallePublicacion(int idPublicacion) async {
@@ -721,7 +712,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Retira una publicación del sistema por motivos de moderación.
+  // Botón del admin para borrar el post de otra persona si incumple normas
   Future<RespuestaApi> eliminarPublicacionModeracion(int idPublicacion, {String? razon}) async {
     try {
       final respuesta = await http.delete(
@@ -739,7 +730,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Retira un comentario individual del sistema por motivos de moderación.
+  // Botón del admin para borrar un comentario tóxico
   Future<RespuestaApi> eliminarComentarioModeracion(int idComentario, {String? razon}) async {
     try {
       final respuesta = await http.delete(
@@ -757,7 +748,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Alterna el estado de guardado (bookmark) de una publicación en el perfil del usuario.
+  // Guardar post en favoritos
   Future<RespuestaApi> alternarGuardadoPost(int idPublicacion) async {
     try {
       final respuesta = await http.post(
@@ -779,7 +770,7 @@ class ServicioComunidades {
     }
   }
 
-  /// Busca o sugiere tags existentes para comunidades.
+  // Buscador de categorías al crear la comunidad
   Future<RespuestaApi<List<Map<String, dynamic>>>> buscarTags({String? query, bool popular = false}) async {
     try {
       String params = '';

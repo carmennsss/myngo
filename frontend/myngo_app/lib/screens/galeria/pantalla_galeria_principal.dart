@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 
+// Pantalla de galería con dos pestañas: todas las fotos/vídeos (masonry) y las colecciones (carpetas).
+// Sirve tanto para galería personal como para galería de comunidad.
 class PantallaGaleriaPrincipal extends StatefulWidget {
   final int? comunidadId;
   final int? usuarioId;
@@ -40,6 +42,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     _cargarMiId();
   }
 
+  // Averigua el ID del usuario logueado para saber si puede crear colecciones
   Future<void> _cargarMiId() async {
     final id = await ServicioUsuarios().obtenerIdUsuario();
     if (mounted) setState(() => _miId = id);
@@ -54,6 +57,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     return _miId != null && _miId == widget.usuarioId;
   }
 
+  // Carga las colecciones del usuario o la comunidad según los parámetros
   Future<void> _cargarColecciones() async {
     setState(() => _cargandoColecciones = true);
     final respuesta = await _servicioGaleria.obtenerColecciones(
@@ -131,6 +135,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     );
   }
 
+  // Renderiza el grid de colecciones de la segunda pestaña
   Widget _buildColeccionesTab() {
     if (_cargandoColecciones && _colecciones.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)));
@@ -161,6 +166,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     );
   }
 
+  // Tarjeta de carpeta con icono de candado si es privada
   Widget _buildCarpetaColeccion(Coleccion coleccion) {
     return InkWell(
       onTap: () {
@@ -211,6 +217,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     );
   }
 
+  // Diálogo para crear una nueva colección con nombre y opción de privacidad
   void _mostrarDialogoCrearColeccion() {
     final TextEditingController _nombreCtrl = TextEditingController();
     bool _privada = false;
@@ -277,6 +284,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
     );
   }
 
+  // Abre el selector del dispositivo para subir directamente a la galería
   Future<void> _seleccionarYSubir(bool esVideo) async {
     final picker = ImagePicker();
     final pickedFile = esVideo 

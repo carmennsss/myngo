@@ -7,7 +7,9 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../../models/mensaje_chat.dart';
 
-/// Widget para mostrar una cuadrícula de archivos seleccionados antes de enviar.
+
+// Grid de previews de los archivos adjuntos AÚN sin enviar.
+// Aparece encima del campo de texto cuando el usuario selecciona fotos antes de mandarlas.
 class MediaPreviewGrid extends StatelessWidget {
   final List<XFile> files;
   final Function(int) onRemove;
@@ -85,7 +87,9 @@ class MediaPreviewGrid extends StatelessWidget {
   }
 }
 
-/// Widget para mostrar la cuadrícula de medios dentro de una burbuja de chat.
+
+// Grid de los adjuntos que ya forman parte de un mensaje recibido o enviado.
+// Si hay más de una imagen, muestra un carrusel con paginación. Al pulsar abre el lightbox.
 class ChatMediaGrid extends StatelessWidget {
   final List<ChatAttachment> attachments;
   final bool esMio;
@@ -116,7 +120,7 @@ class ChatMediaGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildCarousel(BuildContext context) {
+  // Cuando hay más de un adjunto, los monta como un PageView deslizable con contador
     return SizedBox(
       height: 250,
       child: Stack(
@@ -155,7 +159,7 @@ class ChatMediaGrid extends StatelessWidget {
 
 
 
-  Widget _buildItem(BuildContext context, ChatAttachment att, {double? height}) {
+  // Muestra una sola imagen o el thumb del vídeo. Al tocarlo abre el lightbox a pantalla completa
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -197,7 +201,9 @@ class ChatMediaGrid extends StatelessWidget {
   }
 }
 
-/// Pantalla de visualización a pantalla completa (Lightbox).
+
+// Visor a pantalla completa de las imágenes y vídeos del chat.
+// Funciona como una galería: puedes deslizar entre adjuntos del mismo mensaje.
 class ChatMediaLightbox extends StatefulWidget {
   final List<ChatAttachment> attachments;
   final int initialIndex;
@@ -263,7 +269,8 @@ class _ChatMediaLightboxState extends State<ChatMediaLightbox> {
   }
 }
 
-/// Reproductor de vídeo para el chat.
+
+// Reproductor de vídeo completo (con controles) que se usa dentro del Lightbox.
 class ChatVideoPlayer extends StatefulWidget {
   final String url;
 
@@ -283,7 +290,7 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
     _initPlayer();
   }
 
-  Future<void> _initPlayer() async {
+  // Inicia el reproductor de vídeo y monta los controles de Chewie
     if (widget.url.isEmpty) return;
     _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
     await _videoPlayerController.initialize();

@@ -10,15 +10,13 @@ import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import '../utils/configuracion.dart';
 
-/// Servicio encargado de la gestión de usuarios, autenticación y sesiones.
-///
-/// Proporciona métodos para el inicio de sesión, registro, recuperación de
-/// credenciales y persistencia de la sesión en el dispositivo.
+// Se encarga de gestionar a los usuarios y sus sesiones.
+// Lo usamos para hacer login, registrar cuentas, y guardar el token para no pedir la contraseña todo el rato.
 class ServicioUsuarios {
-  /// URL base para los endpoints relacionados con la gestión de usuarios.
+  // URL donde el backend escucha las peticiones de usuarios
   static const String _urlUsuarios = '${Configuracion.baseUrl}/usuarios';
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones API.
+  // Prepara la "llave" (token) para que el servidor nos deje pasar
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await obtenerToken();
     return {
@@ -27,10 +25,7 @@ class ServicioUsuarios {
     };
   }
 
-  /// Realiza la autenticación del usuario en la plataforma.
-  ///
-  /// Tras un inicio de sesión exitoso, persiste el token y los datos básicos
-  /// del usuario en las preferencias compartidas del dispositivo.
+  // Intenta hacer login con email y contraseña, y si va bien, guarda el token en el móvil
   Future<RespuestaApi<Usuario>> iniciarSesion(String correo, String contrasena) async {
     try {
       final respuesta = await http.post(
@@ -40,7 +35,7 @@ class ServicioUsuarios {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.body.contains('<!DOCTYPE') || respuesta.body.contains('<html')) {
-        debugPrint('[Auth] Error Crítico: El servidor devolvió HTML en lugar de JSON. Status: ${respuesta.statusCode}');
+
         return RespuestaApi(
           exito: false,
           mensaje: 'Error técnico en el servidor (${respuesta.statusCode}). Por favor, contacta con soporte.',
@@ -81,7 +76,7 @@ class ServicioUsuarios {
     }
   }
 
-  /// Registra una nueva cuenta de usuario en el sistema.
+  // Crea una cuenta nueva
   Future<RespuestaApi<Usuario>> registrarse(
       String nombreUsuario, String correo, String contrasena) async {
     try {
@@ -138,7 +133,7 @@ class ServicioUsuarios {
     }
   }
 
-  /// Recupera el token de sesión almacenado localmente.
+  // Lee el token guardado en el almacenamiento del móvil
   Future<String?> obtenerToken() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
@@ -168,7 +163,7 @@ class ServicioUsuarios {
     }
   }
 
-  /// Obtiene la información completa del usuario que ha iniciado sesión.
+  // Pide al servidor toda la info del usuario que tiene la sesión iniciada
   Future<RespuestaApi<Usuario>> obtenerDatosPropios() async {
     final id = await obtenerIdUsuario();
     if (id == null) return RespuestaApi(exito: false, mensaje: 'Sesión no activa');
@@ -254,19 +249,19 @@ class ServicioUsuarios {
     }
   }
 
-  /// Finaliza la sesión actual y limpia los datos locales de forma inmediata.
+  // Cierra la sesión y borra el token del móvil
   Future<void> cerrarSesion() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
-      // Borramos de forma agresiva todo rastro de la sesión
+
       await preferencias.remove('auth_token');
       await preferencias.remove('usuario_id');
       await preferencias.remove('nombre_usuario');
       await preferencias.remove('orden_comunidades_local');
       
-      debugPrint('[Auth] Sesión cerrada y SharedPreferences limpiadas.');
+
     } catch (e) {
-      debugPrint('Error al cerrar sesión: $e');
+
     }
   }
 
@@ -282,7 +277,7 @@ class ServicioUsuarios {
     String? biografia,
     List<int>? ordenComunidades,
     Map<String, dynamic>? estiloPost,
-    dynamic imagenAvatar, // Puede ser XFile o String (URL/Ruta)
+    dynamic imagenAvatar,
     dynamic imagenFondo,
     dynamic imagenFondoPerfil,
     String? colorTema,

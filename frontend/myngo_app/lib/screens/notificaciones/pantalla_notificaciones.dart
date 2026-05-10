@@ -13,6 +13,8 @@ import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:intl/intl.dart';
 
+// Bandeja de notificaciones dividida en tres pestañas: Interacciones, Solicitudes y Alertas.
+// Al abrir la pantalla marca automáticamente como leídas las que no son solicitudes pendientes.
 class PantallaNotificaciones extends StatefulWidget {
   final VoidCallback? onNotificacionesLeidas;
   const PantallaNotificaciones({super.key, this.onNotificacionesLeidas});
@@ -44,6 +46,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     'NUEVO_REPORTE'
   };
 
+  // Carga todas las notificaciones y marca las no-interactivas como leídas en segundo plano
   Future<void> _cargarNotificaciones() async {
     final respuesta = await _servicioNotificaciones.listarNotificaciones();
     if (mounted) {
@@ -72,6 +75,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     }
   }
 
+  // Acepta o rechaza solicitudes de seguimiento o de unión a comunidades
   Future<void> _responder(Notificacion notif, bool aceptar) async {
     if (notif.referenciaId == null) return;
     
@@ -95,6 +99,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     }
   }
 
+  // Navega a la pantalla correspondiente según el tipo de notificación (post, perfil, comunidad...)
   void _navegarADetalle(Notificacion notif) async {
     // Marcar como leída localmente e informar al servidor
     if (!notif.leida) {
@@ -207,6 +212,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     );
   }
 
+  // Renderiza la lista de notificaciones de cada pestaña
   Widget _buildListaTab(List<Notificacion> lista, String mensajeVacio, IconData iconoVacio) {
     if (lista.isEmpty) return _buildVistaVaciaEspecial(mensajeVacio, iconoVacio);
     return ListView.builder(
@@ -221,6 +227,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     );
   }
 
+  // Estado vacío bonito con icono central cuando la pestaña no tiene notificaciones
   Widget _buildVistaVaciaEspecial(String mensaje, IconData icono) {
     return Center(
       child: Column(
@@ -255,6 +262,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
 
 }
 
+// Tarjeta individual de una notificación. Si tiene botones de aceptar/rechazar los muestra al final.
 class _TarjetaNotificacion extends StatelessWidget {
   final Notificacion notif;
   final bool isLast;
@@ -367,6 +375,7 @@ class _TarjetaNotificacion extends StatelessWidget {
     );
   }
 
+  // Devuelve el icono correcto para cada tipo de notificación
   IconData _getIconoTipo(String tipo) {
     switch (tipo) {
       case 'LIKE': return Icons.favorite_rounded;
@@ -385,6 +394,7 @@ class _TarjetaNotificacion extends StatelessWidget {
     }
   }
 
+  // Devuelve el color temático para cada tipo de notificación
   Color _getColorTipo(String tipo) {
     switch (tipo) {
       case 'LIKE': return const Color(0xFFD95F43);

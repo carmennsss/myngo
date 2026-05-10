@@ -4,17 +4,15 @@ import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio encargado de la gestión de reportes y la moderación de contenidos.
-///
-/// Permite a los usuarios denunciar conductas inapropiadas y a los
-/// administradores gestionar la resolución de conflictos y el estado de la comunidad.
+// Gestiona todo lo relacionado con denuncias y control de contenido.
+// Permite a los usuarios reportar cosas raras y a los admins revisar su comunidad.
 class ServicioModeracion {
-  /// URL base para las peticiones a la API.
+  // Ruta base del backend
   static const String _urlBase = Configuracion.baseUrl;
 
   final _servicioUsuarios = ServicioUsuarios();
 
-  /// Genera las cabeceras estándar (JSON + Token) para las peticiones.
+  // Adjunta el token del usuario para validar que está logueado
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
     return {
@@ -23,7 +21,7 @@ class ServicioModeracion {
     };
   }
 
-  /// Registra una denuncia sobre una publicación, comentario o imagen.
+  // Envía un reporte al backend cuando un usuario denuncia un post o perfil
   Future<RespuestaApi> reportarContenido({
     required String tipoObjeto,
     required int idObjeto,
@@ -55,7 +53,7 @@ class ServicioModeracion {
     }
   }
 
-  /// Recupera los datos métricos y de gestión para el panel de administración de una comunidad.
+  // Trae las estadísticas y reportes pendientes para que el admin pueda revisarlos
   Future<RespuestaApi<Map<String, dynamic>>> obtenerDashboardAdmin(int comunidadId) async {
     try {
       final respuesta = await http.get(
@@ -76,7 +74,7 @@ class ServicioModeracion {
     }
   }
 
-  /// Finaliza un reporte pendiente estableciendo una resolución oficial.
+  // Permite a un administrador marcar un reporte como resuelto o ignorado
   Future<RespuestaApi> resolverReporte(int idReporte, String nuevoEstado, {String? mensajeResolucion}) async {
     try {
       final respuesta = await http.post(

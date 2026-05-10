@@ -191,7 +191,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
     final textColor = esFondoClaro ? const Color(0xFF4A4440) : Colors.white;
     final subTextColor = esFondoClaro ? Colors.black54 : Colors.white70;
     
-    // Prioridad: 1. Fuente de contexto (perfil), 2. Fuente del estilo del post, 3. Outfit
+
     final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
 
     return Padding(
@@ -249,7 +249,6 @@ class _TarjetaPostState extends State<TarjetaPost> {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // 1. Avatar (Debajo)
                         Container(
                           width: 30,
                           height: 30,
@@ -274,7 +273,6 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                   ),
                                 ),
                         ),
-                        // 2. Marco (Encima)
                         if (widget.post.autorMarco != null && widget.post.autorMarco!.isNotEmpty)
                           Positioned.fill(
                             child: CachedNetworkImage(
@@ -396,7 +394,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                           child: GridImagenesPost(
                             media: widget.post.media,
                             onTap: () => _mostrarDetalles(context),
-                            mostrarDescarga: false, // User requested to remove it from general card
+                            mostrarDescarga: false,
                           ),
                         ),
                       const SizedBox(height: 12),

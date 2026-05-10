@@ -56,7 +56,7 @@ class ComentarioItem extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar con Hover Card
+
               HoverProfileCard(
                 nombre: comentario.autorNombre,
                 avatarUrl: comentario.autorFoto,
@@ -103,12 +103,12 @@ class ComentarioItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Contenido
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Cabecera: Nombre · Tiempo
+
                     Row(
                       children: [
                         Flexible(
@@ -145,7 +145,7 @@ class ComentarioItem extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // Texto
+
                     Text(
                       comentario.contenido,
                       style: GoogleFonts.getFont(fuente ?? 'Outfit',
@@ -175,7 +175,7 @@ class ComentarioItem extends StatelessWidget {
             ],
           ),
         ),
-        // Renderizar respuestas
+
         if (comentario.respuestas.isNotEmpty)
           ...comentario.respuestas.map((resp) => ComentarioItem(
             comentario: resp,

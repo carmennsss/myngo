@@ -12,7 +12,8 @@ import '../models/usuario.dart';
 import '../utils/configuracion.dart';
 import 'servicio_usuarios.dart';
 
-/// Servicio encargado de la gestión de perfiles de usuario y sus interacciones sociales.
+// Se encarga de todo lo que tenga que ver con perfiles sociales.
+// Ver el perfil de alguien, seguir/dejar de seguir y editar tu biografía/avatar.
 class ServicioPerfiles {
   static const String _urlUsuarios = '${Configuracion.baseUrl}/usuarios';
   final _servicioUsuarios = ServicioUsuarios();
@@ -25,7 +26,7 @@ class ServicioPerfiles {
     };
   }
 
-  /// Recupera la información detallada de un perfil de usuario por su ID.
+  // Pide al servidor toda la info del perfil (seguidores, post, bio) de un usuario
   Future<RespuestaApi<Perfil>> obtenerPerfil(int userId) async {
     try {
       final respuesta = await http.get(
@@ -46,7 +47,7 @@ class ServicioPerfiles {
     }
   }
 
-  /// Obtiene las publicaciones asociadas a un perfil específico con paginación.
+  // Trae los posts o la galería de fotos del perfil de alguien
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesPerfil(int perfilId, {int? pagina}) async {
     try {
       String query = 'perfil_id=$perfilId';
@@ -69,7 +70,7 @@ class ServicioPerfiles {
     }
   }
 
-  /// Alterna el estado de seguimiento entre el usuario actual y otro usuario.
+  // Botón mágico de Follow/Unfollow. Pide al servidor seguir o dejar de seguir a alguien
   Future<RespuestaApi<Map<String, dynamic>>> alternarSeguimiento(int userId) async {
     try {
       final respuesta = await http.post(
@@ -90,7 +91,7 @@ class ServicioPerfiles {
     }
   }
 
-  /// Método para enviar solicitud de seguimiento (usado en PantallaDetallePerfil).
+  // Manda una petición de amistad/seguimiento a un perfil privado
   Future<RespuestaApi<String>> enviarSolicitudSeguimiento(String nombreUsuario) async {
     try {
       final respuesta = await http.post(
@@ -112,7 +113,7 @@ class ServicioPerfiles {
     }
   }
 
-  /// Responde a una solicitud de seguimiento.
+  // Aceptar o rechazar una solicitud de seguimiento que te han mandado
   Future<RespuestaApi<Map<String, dynamic>>> responderSolicitudSeguimiento(int peticionId, bool aceptar) async {
     try {
       final respuesta = await http.post(
@@ -130,7 +131,7 @@ class ServicioPerfiles {
     }
   }
 
-  /// Actualiza los datos del perfil del usuario autenticado.
+  // Guarda los cambios en tu perfil (colores, banner, bio)
   Future<RespuestaApi<Perfil>> actualizarPerfil(Map<String, dynamic> datos) async {
     try {
       final idPerfil = await _servicioUsuarios.obtenerIdUsuario();
@@ -160,7 +161,7 @@ class ServicioPerfiles {
     return actualizarPerfil({'biografia': textoBiografia});
   }
 
-  /// Sube un nuevo avatar.
+  // Sube tu nueva foto de perfil al servidor
   Future<RespuestaApi<Perfil>> editarAvatarPerfil({required XFile imagen, required int perfilId}) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
@@ -190,7 +191,7 @@ class ServicioPerfiles {
     }
   }
 
-  /// Publica un nuevo post (con soporte mejorado para vídeos).
+  // Crea un nuevo post en tu muro (soporta fotos y vídeos)
   Future<RespuestaApi<Publicacion>> crearPublicacionPerfil({
     required String texto,
     List<XFile>? imagenes,
@@ -257,7 +258,7 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al publicar (${respuesta.statusCode})');
     } catch (e) {
-      debugPrint('Error en crearPublicacionPerfil: $e');
+
       String msg = 'Error de red: $e';
       if (e is http_dio.DioException) {
         msg = e.response?.data?['error']?.toString() ?? e.message ?? msg;

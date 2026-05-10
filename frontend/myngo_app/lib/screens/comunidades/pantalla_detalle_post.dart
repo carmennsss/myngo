@@ -11,6 +11,8 @@ import '../../widgets/comunes/acciones_y_comentarios_post.dart';
 import '../../utils/estilo_post_helper.dart';
 import '../../widgets/comunes/hover_profile_card.dart';
 
+// Vista de lectura de un post individual con todas las acciones (likes, comentarios).
+// Aplica el estilo visual del autor (fondo, fuente, gradiente) al fondo de la pantalla.
 class PantallaDetallePost extends StatefulWidget {
   final int? id;
   final Publicacion? post;
@@ -49,6 +51,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
     }
   }
 
+  // Descarga el post desde el servidor cuando solo se recibe el ID
   Future<void> _cargarPostInicial() async {
     if (!mounted) return;
     super.setState(() => _estaCargandoPost = true);
@@ -61,6 +64,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
     }
   }
 
+  // Formatea la fecha en estilo Twitter: "4:30 p.m. · 10 may. 2026"
   String _formatFecha(DateTime fecha) {
     return DateFormat('h:mm a · d MMM. yyyy', 'es_ES').format(fecha);
   }
@@ -274,6 +278,7 @@ class _PantallaDetallePostState extends State<PantallaDetallePost> {
   }
 }
 
+// Icono táctil con etiqueta opcional usado para acciones rápidas del post
 class _ActionIcon extends StatelessWidget {
   final IconData icon;
   final Color color;

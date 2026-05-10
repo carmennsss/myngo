@@ -149,7 +149,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     if (respuesta.exito && respuesta.datos != null) {
       setState(() {
         if (_comentarioPadre != null) {
-          // Si es respuesta, recargamos para verla anidada o la insertamos localmente
+
           _cargarComentarios(reiniciar: true);
         } else {
           _comentarios.insert(0, respuesta.datos!);
@@ -203,11 +203,11 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
       if (res.exito && mounted) {
         setState(() {
           final comentarioABorrar = _comentarios.firstWhere((c) => c.id == comentario.id);
-          // Restamos el comentario y todas sus respuestas anidadas del contador
+
           int totalBorrados = 1 + comentarioABorrar.respuestas.length;
           
           _comentarios.removeWhere((c) => c.id == comentario.id);
-          // Por si acaso era una respuesta de otro comentario
+
           for (var p in _comentarios) {
             final antes = p.respuestas.length;
             p.respuestas.removeWhere((r) => r.id == comentario.id);
@@ -228,7 +228,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Botones de acción
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(

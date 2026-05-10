@@ -86,10 +86,8 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
           _hayMasPosts = (res.datos?.length ?? 0) >= 20;
           
           if (_mode == FeedMode.gallery) {
-            // En galería solemos priorizar los que tienen más likes/comentarios
             _posts!.sort((a, b) => (b.likesCount + b.comentariosCount).compareTo(a.likesCount + a.comentariosCount));
           } else {
-            // En social el orden suele venir ya por fecha, pero por si acaso:
             _posts!.sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
           }
         } else {
@@ -182,7 +180,6 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
           setState(() {
             _mode = mode;
             _posts = null;
-            // Al volver a social (Para ti), limpiamos la búsqueda si existía
             if (mode == FeedMode.social) {
               _searchController.clear();
             }
@@ -424,7 +421,6 @@ class PatronFondo extends CustomPainter {
   }
 
   void _drawPaw(Canvas canvas, Offset center, Paint paint) {
-    // Almohadilla central
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(center: center, width: 20, height: 16),
@@ -432,7 +428,6 @@ class PatronFondo extends CustomPainter {
       ),
       paint,
     );
-    // Dedos
     canvas.drawCircle(center.translate(-12, -10), 5, paint);
     canvas.drawCircle(center.translate(-4, -15), 5, paint);
     canvas.drawCircle(center.translate(4, -15), 5, paint);

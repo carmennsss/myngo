@@ -38,9 +38,6 @@ class GestorDescargas {
         }
       }
     } catch (e) {
-      // Re-lanzamos para que la UI pueda mostrar un snackbar si lo desea,
-      // pero con un log para debug.
-      print('[GestorDescargas] Error en descarga: $e');
       rethrow;
     }
   }

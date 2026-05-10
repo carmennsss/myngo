@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/estilo_post_helper.dart';
 
+// Preview de un post con el estilo visual del usuario (fuente, colores, fondo).
+// Lo usamos en la pantalla de personalizar perfil para que el usuario vea cómo quedará su muro en tiempo real.
 class PostPreview extends StatelessWidget {
   final Map<String, dynamic>? estilo;
   final dynamic avatarUrl;
@@ -19,7 +21,7 @@ class PostPreview extends StatelessWidget {
     this.nombreUsuario = 'Usuario',
   });
 
-  Widget _buildImage(dynamic source, {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
+  // Carga una imagen desde URL de red, archivo local o bytes (compatible web y móvil)
     if (source == null) return errorWidget ?? const SizedBox.shrink();
     if (source is String && source.isNotEmpty) {
       if (source.startsWith('http')) {
@@ -76,7 +78,7 @@ class PostPreview extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // 1. Avatar (debajo)
+
                     Container(
                       width: 32,
                       height: 32,
@@ -88,7 +90,7 @@ class PostPreview extends StatelessWidget {
                         child: _buildImage(avatarUrl, errorWidget: Center(child: Text(nombreUsuario.isNotEmpty ? nombreUsuario[0].toUpperCase() : '?', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))),
                       ),
                     ),
-                    // 2. Marco (encima)
+                    // Marco
                     if (marcoUrl != null && marcoUrl!.isNotEmpty)
                       Positioned.fill(
                         child: Image.network(marcoUrl!, fit: BoxFit.contain),

@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/locale_notifier.dart';
 import 'package:tolgee/tolgee.dart';
 
+// Pastilla pequeña para cambiar el idioma entre ES e EN.
+// Al pulsarla cicla entre los locales disponibles. Con long-press activa el modo de traducción de Tolgee.
 class BotonIdioma extends StatelessWidget {
   final double iconSize;
   final EdgeInsets? margin;

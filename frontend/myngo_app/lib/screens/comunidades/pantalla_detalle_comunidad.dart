@@ -24,7 +24,7 @@ import '../../widgets/mensajeria/dialogo_crear_sala.dart';
 import '../../models/usuario.dart';
 
 
-// Widgets extraídos
+
 import 'widgets_detalle/header_detalle_comunidad.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'widgets_detalle/seccion_galeria_comunidad.dart';
@@ -33,7 +33,8 @@ import 'widgets_detalle/lista_miembros_comunidad.dart';
 import 'widgets_detalle/preview_comunidad.dart';
 import 'widgets_detalle/dialogos_comunidad.dart';
 
-/// Pantalla principal de detalle de una comunidad.
+// Vista principal de una comunidad. Dependiendo de si el usuario es miembro,
+// muestra una preview pública o el shell completo con Posts, Galería, Chats y Miembros.
 class PantallaDetalleComunidad extends StatefulWidget {
   final dynamic idOrName;
   final Comunidad? comunidad;
@@ -67,7 +68,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   bool _estaCargandoDatos = false;
   bool _estaCargandoComunidad = false;
   
-  // Paginación
+
   int _paginaActual = 1;
   bool _hayMasPosts = true;
   bool _cargandoMasPosts = false;
@@ -88,8 +89,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     _comunidad = widget.comunidad;
     _indiceSeccion = widget.initialIndex;
     
-    // Si no hay comunidad, o la que hay parece incompleta (viene de TarjetaPost
-    // con solo id y nombre), cargamos los datos completos desde la API
     final comunidadIncompleta = _comunidad != null && 
         (_comunidad!.urlPortada.isEmpty && _comunidad!.creadorNombre == 'Sistema');
     
@@ -102,6 +101,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Descarga los datos completos de la comunidad si se pasa solo el ID o nombre
   Future<void> _cargarComunidadInicial({dynamic idOverride}) async {
     if (!mounted) return;
     setState(() => _estaCargandoComunidad = true);
@@ -147,6 +147,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Orquesta la carga inicial: ID del usuario, datos de sección, colecciones y rol
   Future<void> _inicializarDatos() async {
     await _obtenerMiId();
     await _cargarDatosSeccion(_indiceSeccion);
@@ -161,7 +162,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
         setState(() => _miRol = res.datos!);
       }
     } catch (e) {
-      debugPrint('[PantallaDetalleComunidad] Error obteniendo rol: $e');
+
     }
   }
 
@@ -170,6 +171,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (mounted) setState(() => _miId = id);
   }
 
+  // Carga la siguiente página de posts para el infinite scroll
   Future<void> _cargarMasPosts() async {
     if (_comunidad == null || _cargandoMasPosts || !_hayMasPosts) return;
     
@@ -192,6 +194,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Carga las colecciones de galería de la comunidad
   Future<void> _cargarColecciones() async {
     if (_comunidad == null) return;
     final res = await _servicioGaleria.obtenerColecciones(
@@ -199,6 +202,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     if (mounted) setState(() => _colecciones = res.datos ?? []);
   }
 
+  // Carga los datos concretos de la sección activa (posts, galería o chats)
   Future<void> _cargarDatosSeccion(int index) async {
     if (_comunidad == null) return;
     _paginaActual = 1;
@@ -233,6 +237,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
+  // Gestiona la unión/solicitud a la comunidad y actualiza el estado local
   Future<void> _gestionarMembresia() async {
     if (_comunidad == null) return;
     setState(() => _estaCargandoPeticion = true);
@@ -378,7 +383,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
               },
               body: Stack(
                 children: [
-                  // El fondo solo se pinta en el área del body, nunca en la cabecera
+
                   Positioned.fill(child: _buildPersonalizedFeedBackground()),
                   CustomScrollView(
                     slivers: [
@@ -396,16 +401,12 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   /// Construye el fondo personalizado solo para la parte central del feed
+  // Fondo del feed personalizado solo para la sección de posts (centrado y con bordes redondeados)
   Widget _buildPersonalizedFeedBackground() {
-    // 1. El fondo global (imagen que cubre TODO el viewport)
     final globalBg = _buildGlobalBackground();
-    
-    // Si no estamos en la sección de posts, mostramos solo el fondo global
     if (_indiceSeccion != 0) return globalBg;
     
-    // 2. Para posts, el fondo global + el contenedor central con su propio diseño
     final config = _comunidad?.fondoPostsConfig;
-    // Si no hay configuración de fondo para posts, devolvemos el global
     if (config == null) return globalBg;
 
     return Stack(
@@ -496,7 +497,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
     return Row(
       children: [
-        // Tabs — scrollables a la izquierda
         Expanded(
           child: TranslationWidget(
             builder: (context, tr) => ListView(
@@ -511,7 +511,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             ),
           ),
         ),
-        // Identidad de la comunidad — fija a la derecha
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
@@ -612,6 +611,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     );
   }
 
+  // FAB contextual: "Subir/Sugerir" en posts y "Nueva Sala" en chats
   Widget _buildFAB() {
     if (_indiceSeccion == 0) {
       final esCreador = _miId != null && _miId == _comunidad!.creadorId;
@@ -650,6 +650,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     return const SizedBox();
   }
 
+  // Bottom sheet para crear una sala de chat en el contexto de la comunidad
   void _mostrarDialogoCrearSalaComunidad(BuildContext context) async {
     final res = await _servicio.obtenerMiembrosComunidad(_comunidad!.id);
     if (!res.exito || !mounted) return;
