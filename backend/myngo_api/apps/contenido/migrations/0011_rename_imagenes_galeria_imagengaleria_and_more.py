@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameModel(
-            old_name='Imagenes_galeria',
+            old_name='imagenes_galeria',
             new_name='ImagenGaleria',
         ),
         migrations.RenameModel(
