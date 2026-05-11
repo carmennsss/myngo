@@ -349,7 +349,7 @@ class ImagenGaleriaSerializer(serializers.ModelSerializer):
 
     url_archivo = serializers.SerializerMethodField()
     propietario_nombre = serializers.ReadOnlyField(source='propietario.nombre_usuario')
-    creador_comunidad_id = serializers.ReadOnlyField(source='comunidad.creador.id')
+    creador_comunidad_id = serializers.ReadOnlyField(source='comunidad.creador_id')
     comunidad_nombre = serializers.ReadOnlyField(source='comunidad.nombre')
     usuario_es_miembro = serializers.SerializerMethodField()
 

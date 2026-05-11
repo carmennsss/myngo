@@ -48,24 +48,26 @@ class _PantallaLoginState extends State<PantallaLogin> {
           },
           child: Scaffold(
             backgroundColor: const Color(0xFFFEF5F1),
-            body: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-              child: SizedBox.expand(
-                child: Container(
-                  color: const Color(0xFFFEF5F1),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Stack(
-                        children: [
-                          _buildContenido(context, constraints, tr),
-                          const Positioned(
-                            top: 20,
-                            right: 20,
-                            child: BotonIdioma(),
-                          ),
-                        ],
-                      );
-                    },
+            body: SafeArea(
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                child: SizedBox.expand(
+                  child: Container(
+                    color: const Color(0xFFFEF5F1),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Stack(
+                          children: [
+                            _buildContenido(context, constraints, tr),
+                            const Positioned(
+                              top: 20,
+                              right: 20,
+                              child: BotonIdioma(),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),

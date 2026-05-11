@@ -9,6 +9,7 @@ import '../../../models/usuario.dart';
 import '../../../providers/chat_provider.dart';
 import '../../inicio/pantalla_inicio.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'modal_lista_usuarios.dart';
 
 /// Widget que muestra la información textual y acciones de un perfil.
 class InfoPerfil extends StatelessWidget {
@@ -79,7 +80,7 @@ class InfoPerfil extends StatelessWidget {
           const SizedBox(height: 16),
           _buildBioSection(colorTextoP, colorTextoS),
           const SizedBox(height: 20),
-          _buildStatsRow(colorTextoS, fecha),
+          _buildStatsRow(context, colorTextoS, fecha, colorTextoP, !esOscuro),
           const SizedBox(height: 24),
           _buildActionButtons(context, themeColor),
         ],
@@ -297,20 +298,123 @@ class InfoPerfil extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(Color colorTextoS, String fecha) {
+  void _mostrarListaUsuarios(BuildContext context, bool esSeguidores, String titulo, bool esAppClara, Color colorP, Color colorS) {
+    // Reglas de privacidad:
+    // 1. Si es tu propio perfil, puedes verlo.
+    // 2. Si el perfil es público, cualquiera puede verlo.
+    // 3. Si el perfil es privado, solo seguidores aceptados pueden verlo.
+    final bool esPropio = currentUserId != null && currentUserId == usuario.id;
+    final bool esPublico = usuario.esPublico;
+    final bool esSeguidorAceptado = estadoSeguimiento == 'ACEPTADO';
+
+    if (!esPropio && !esPublico && !esSeguidorAceptado) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(TrHelper.tr(context, 'profilePrivateLists', defaultValue: 'Este perfil es privado. Sigue al usuario para ver sus listas.')),
+          backgroundColor: const Color(0xFFC35E34),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ModalListaUsuarios(
+        usuarioId: usuario.id,
+        titulo: titulo,
+        esSeguidores: esSeguidores,
+        esAppClara: esAppClara,
+        colorTextoPrincipal: colorP,
+        colorTextoSecundario: colorS,
+      ),
+    );
+  }
+
+  Widget _buildStatsRow(BuildContext context, Color colorTextoS, String fecha, Color colorTextoP, bool esAppClara) {
     return TranslationWidget(
-      builder: (context, tr) => Row(
+      builder: (context, tr) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.calendar_today_rounded, size: 14, color: colorTextoS),
-          const SizedBox(width: 6),
-          Text(
-            tr('profileJoined', {'date': fecha}),
-            style: GoogleFonts.getFont(usuario.fuentePerfil, fontSize: 13, color: colorTextoS),
+          Row(
+            children: [
+              _buildStatItem(
+                tr('profileFollowersCount'), 
+                usuario.numeroSeguidores.toString(), 
+                colorTextoS,
+                onTap: () => _mostrarListaUsuarios(
+                  context, 
+                  true, 
+                  tr('profileFollowersCount'), 
+                  esAppClara, 
+                  colorTextoP, 
+                  colorTextoS
+                ),
+              ),
+              const SizedBox(width: 24),
+              _buildStatItem(
+                tr('profileFollowingCount'), 
+                usuario.numeroSeguidos.toString(), 
+                colorTextoS,
+                onTap: () => _mostrarListaUsuarios(
+                  context, 
+                  false, 
+                  tr('profileFollowingCount'), 
+                  esAppClara, 
+                  colorTextoP, 
+                  colorTextoS
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.calendar_today_rounded, size: 14, color: colorTextoS),
+              const SizedBox(width: 6),
+              Text(
+                tr('profileJoined', {'date': fecha}),
+                style: GoogleFonts.getFont(usuario.fuentePerfil, fontSize: 13, color: colorTextoS),
+              ),
+            ],
           ),
         ],
       ),
     );
-  }  Widget _buildActionButtons(BuildContext context, Color themeColor) {
+  }
+
+  Widget _buildStatItem(String label, String value, Color colorTextoS, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.getFont(
+              usuario.fuentePerfil,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: colorTextoS.withOpacity(0.9),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.getFont(
+              usuario.fuentePerfil,
+              fontSize: 14,
+              color: colorTextoS,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, Color themeColor) {
     if (currentUserId == null) return const SizedBox.shrink();
     final bool esPropio = currentUserId == usuario.id;
     if (esPropio) return const SizedBox.shrink();

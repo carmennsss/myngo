@@ -44,7 +44,6 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
     _controladorTitulo = TextEditingController(text: widget.initialTitulo);
     _controladorTexto = TextEditingController(text: widget.initialTexto);
     _controladorEtiquetas = TextEditingController(text: widget.initialEtiquetas);
-    // Listener para actualizar el estado del botón en tiempo real al escribir
     _controladorTexto.addListener(() => setState(() {}));
   }
 
@@ -56,7 +55,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
     super.dispose();
   }
 
-  Future<void> _validarYAgregarArchivo(XFile archivo, dynamic tr) async {
+  Future<void> _validarYAgregarArchivo(XFile archivo) async {
     final bytes = await archivo.length();
     final mb = bytes / (1024 * 1024);
     
@@ -85,26 +84,6 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
         );
       }
     });
-
-    if (_archivosSeleccionados.contains(archivo)) {
-      // Validamos el tamaño en segundo plano
-      final bytes = await archivo.length();
-      final mb = bytes / (1024 * 1024);
-      
-      if (mb > 100) {
-        if (mounted) {
-          setState(() {
-            _archivosSeleccionados.remove(archivo);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('El archivo ${archivo.name} es demasiado grande (${mb.toStringAsFixed(1)} MB). El límite es 100 MB.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-      }
-    }
   }
 
   @override
@@ -125,96 +104,103 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
             children: [
               Text(widget.titulo, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 24),
-              TextField(
-                controller: _controladorTitulo,
-                style: GoogleFonts.inter(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: tr('postTitleHint'),
-                  hintStyle: GoogleFonts.inter(color: Colors.grey),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  filled: true,
-                  fillColor: const Color(0xFF121212),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _controladorTexto,
-                maxLines: 4,
-                style: GoogleFonts.inter(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: tr('postHint'),
-                  hintStyle: GoogleFonts.inter(color: Colors.grey),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  filled: true,
-                  fillColor: const Color(0xFF121212),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (_archivosSeleccionados.isNotEmpty)
-                Column(
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _archivosSeleccionados.map((file) {
-                        final mimeType = lookupMimeType(file.name) ?? (file.path.contains('video') ? 'video/mp4' : 'image/jpeg');
-                        final esVideo = mimeType.startsWith('video/');
-                        return Stack(
-                          children: [
-                            Container(
-                              height: 100,
-                              width: 100,
-                              decoration: BoxDecoration(
-                                color: Colors.black26,
-                                borderRadius: BorderRadius.circular(12),
-                                image: esVideo ? null : DecorationImage(
-                                  image: kIsWeb 
-                                      ? NetworkImage(file.path) as ImageProvider
-                                      : FileImage(File(file.path)),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              child: esVideo ? _VideoPreview(file: file) : null,
-                            ),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _archivosSeleccionados.remove(file);
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _controladorEtiquetas,
-                      style: GoogleFonts.inter(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: tr('tagsHint'),
-                        hintStyle: GoogleFonts.inter(color: Colors.grey),
-                        prefixIcon: const Icon(Icons.sell_outlined, color: Colors.grey),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E1E),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: _controladorTitulo,
+                        style: GoogleFonts.inter(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: tr('postTitleHint'),
+                          hintStyle: GoogleFonts.inter(color: Colors.grey),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          filled: true,
+                          fillColor: const Color(0xFF121212),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _controladorTexto,
+                        maxLines: 4,
+                        style: GoogleFonts.inter(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: tr('postHint'),
+                          hintStyle: GoogleFonts.inter(color: Colors.grey),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          filled: true,
+                          fillColor: const Color(0xFF121212),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_archivosSeleccionados.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _archivosSeleccionados.map((file) {
+                              final mimeType = lookupMimeType(file.name) ?? (file.path.contains('video') ? 'video/mp4' : 'image/jpeg');
+                              final esVideo = mimeType.startsWith('video/');
+                              return Stack(
+                                children: [
+                                  Container(
+                                    height: 100,
+                                    width: 100,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black26,
+                                      borderRadius: BorderRadius.circular(12),
+                                      image: esVideo ? null : DecorationImage(
+                                        image: kIsWeb 
+                                            ? NetworkImage(file.path) as ImageProvider
+                                            : FileImage(File(file.path)),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    child: esVideo ? _VideoPreview(file: file) : null,
+                                  ),
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _archivosSeleccionados.remove(file);
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      TextField(
+                        controller: _controladorEtiquetas,
+                        style: GoogleFonts.inter(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: tr('tagsHint'),
+                          hintStyle: GoogleFonts.inter(color: Colors.grey),
+                          prefixIcon: const Icon(Icons.sell_outlined, color: Colors.grey),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          filled: true,
+                          fillColor: const Color(0xFF1E1E1E),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
+              ),
               Row(
                 children: [
                   IconButton(
@@ -222,7 +208,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                       final imgs = await ImagePicker().pickMultiImage();
                       if (imgs.isNotEmpty) {
                         for (var img in imgs) {
-                          await _validarYAgregarArchivo(img, tr);
+                          await _validarYAgregarArchivo(img);
                         }
                       }
                     },
@@ -233,7 +219,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                     onPressed: () async {
                       final video = await ImagePicker().pickVideo(source: ImageSource.gallery);
                       if (video != null) {
-                        await _validarYAgregarArchivo(video, tr);
+                        await _validarYAgregarArchivo(video);
                       }
                     },
                     tooltip: tr('uploadVideoTooltip'),

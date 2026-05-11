@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../utils/configuracion.dart';
 import '../models/sala_chat.dart';
@@ -211,7 +212,13 @@ class ServicioMensajeria {
           contentType: MediaType('image', 'jpeg'),
         ));
       } else {
-        solicitud.files.add(await http.MultipartFile.fromPath('avatar', imagen.path));
+        final mimeType = lookupMimeType(imagen.path) ?? 'image/jpeg';
+        final typeParts = mimeType.split('/');
+        solicitud.files.add(await http.MultipartFile.fromPath(
+          'avatar', 
+          imagen.path,
+          contentType: MediaType(typeParts[0], typeParts[1]),
+        ));
       }
 
       final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 40));
@@ -249,7 +256,14 @@ class ServicioMensajeria {
           ),
         ));
       } else {
-        solicitud.files.add(await http.MultipartFile.fromPath('file', archivo.path));
+        final mimeType = lookupMimeType(archivo.path) ?? 
+                        (archivo.name.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'image/jpeg');
+        final typeParts = mimeType.split('/');
+        solicitud.files.add(await http.MultipartFile.fromPath(
+          'file', 
+          archivo.path,
+          contentType: MediaType(typeParts[0], typeParts[1]),
+        ));
       }
 
       final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 60));

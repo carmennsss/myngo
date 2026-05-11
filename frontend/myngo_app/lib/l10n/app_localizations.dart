@@ -332,6 +332,18 @@ abstract class AppLocalizations {
   /// **'Se unió en {date}'**
   String profileJoined(String date);
 
+  /// No description provided for @profileFollowersCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Seguidores'**
+  String get profileFollowersCount;
+
+  /// No description provided for @profileFollowingCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Seguidos'**
+  String get profileFollowingCount;
+
   /// No description provided for @chatPersonalization.
   ///
   /// In es, this message translates to:

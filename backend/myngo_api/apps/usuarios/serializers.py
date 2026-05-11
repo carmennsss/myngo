@@ -81,17 +81,17 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return obj.seguidores.filter(estado='ACEPTADO').count()
 
     def get_numero_seguidos(self, obj):
-        """Cuenta el número de perfiles seguidos aceptados.
-
+        """Cuenta el número de usuarios seguidos aceptados (excluye comunidades).
+        
         Args:
             obj: Instancia de Usuario.
-
+            
         Returns:
-            int: Cantidad de seguidos.
+            int: Cantidad de usuarios seguidos.
         """
         if hasattr(obj, 'anotado_seguidos'):
             return obj.anotado_seguidos
-        return obj.siguiendo.filter(estado='ACEPTADO').count()
+        return obj.siguiendo.filter(estado='ACEPTADO', seguido_usuario__isnull=False).count()
 
     def get_estado_seguimiento(self, obj):
         """Determina el estado de seguimiento entre el usuario autenticado y el objetivo.
@@ -296,15 +296,15 @@ class PerfilSerializer(serializers.ModelSerializer):
         return obj.usuario.seguidores.filter(estado='ACEPTADO').count()
 
     def get_numero_seguidos(self, obj):
-        """Cuenta seguidos aceptados.
-
+        """Cuenta usuarios seguidos aceptados (excluye comunidades).
+        
         Args:
             obj: Instancia de Perfil.
-
+            
         Returns:
-            int: Cantidad de seguidos.
+            int: Cantidad de usuarios seguidos.
         """
-        return obj.usuario.siguiendo.filter(estado='ACEPTADO').count()
+        return obj.usuario.siguiendo.filter(estado='ACEPTADO', seguido_usuario__isnull=False).count()
 
     def get_url_avatar(self, obj):
         """Retorna el avatar como cadena.

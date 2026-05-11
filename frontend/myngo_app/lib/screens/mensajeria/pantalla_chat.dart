@@ -477,7 +477,8 @@ class _PantallaChatState extends State<PantallaChat> {
     return Builder(
       builder: (context) {
         final esEdicion = _mensajeEdicion != null;
-        final msg = esEdicion ? _mensajeEdicion! : _mensajeRespuesta!;
+        final msg = esEdicion ? _mensajeEdicion : _mensajeRespuesta;
+        if (msg == null) return const SizedBox.shrink();
 
         String emisorNombre = 'Usuario';
         if (_sala != null) {
@@ -571,7 +572,6 @@ class _PantallaChatState extends State<PantallaChat> {
                         MaterialPageRoute(builder: (_) => PantallaPersonalizacionChat(sala: _sala!)),
                       );
                       if (actualizado == true) {
-  
                         _cargarDatos();
                       }
                     },
@@ -582,6 +582,7 @@ class _PantallaChatState extends State<PantallaChat> {
               ),
             ],
           ),
+          body: _buildBody(),
         );
       }),
     );
@@ -837,7 +838,15 @@ class _PantallaChatState extends State<PantallaChat> {
     String displayName = '';
     if (!esMio && _sala != null) {
       try {
-        final part = _sala!.participantes.firstWhere((p) => p.usuarioId == msg.emisorId);
+        final part = _sala!.participantes.firstWhere(
+          (p) => p.usuarioId == msg.emisorId,
+          orElse: () => ParticipanteChat(
+            id: 0, 
+            salaId: _sala?.id ?? 0, 
+            usuarioId: msg.emisorId, 
+            fechaUnion: DateTime.now()
+          ),
+        );
         displayName = part.nombreAMostrar;
       } catch (_) {}
     }
@@ -889,7 +898,18 @@ class _PantallaChatState extends State<PantallaChat> {
                           _buildCitaMensaje(msg.referenciaADetalle!, esMio),
                         
                         if (msg.attachments.isNotEmpty)
-                          ChatMediaGrid(attachments: msg.attachments, esMio: esMio),
+                          ChatMediaGrid(attachments: msg.attachments, esMio: esMio)
+                        else if (msg.urlArchivoS3 != null && msg.urlArchivoS3!.isNotEmpty)
+                          ChatMediaGrid(
+                            attachments: [
+                              ChatAttachment(
+                                id: msg.id, 
+                                url: msg.urlArchivoS3!, 
+                                type: msg.tipo == 'VIDEO' ? 'V' : 'I'
+                              )
+                            ], 
+                            esMio: esMio
+                          ),
                         
                         if (texto.isNotEmpty)
                           Text(
@@ -966,7 +986,15 @@ class _PantallaChatState extends State<PantallaChat> {
         children: lectoresIds.take(5).map((id) {
           String? avatarUrl;
           try {
-            final p = _sala!.participantes.firstWhere((p) => p.usuarioId == id);
+            final p = _sala!.participantes.firstWhere(
+              (p) => p.usuarioId == id,
+              orElse: () => ParticipanteChat(
+                id: 0, 
+                salaId: _sala?.id ?? 0, 
+                usuarioId: id, 
+                fechaUnion: DateTime.now()
+              ),
+            );
             avatarUrl = p.usuario?.urlAvatar;
           } catch (_) {}
           
@@ -1491,7 +1519,7 @@ class _PantallaChatState extends State<PantallaChat> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildBarraRespuesta(),
+        if (_mensajeRespuesta != null || _mensajeEdicion != null) _buildBarraRespuesta(),
         if (_archivosSeleccionados.isNotEmpty)
           MediaPreviewGrid(
             files: _archivosSeleccionados,
@@ -1758,12 +1786,14 @@ class _PantallaChatState extends State<PantallaChat> {
             ),
           ),
         // Contenido
-        Column(
-          children: [
-            Expanded(child: _buildListaMensajes(tr)),
-            _buildInputArea(tr),
-            if (_mostrarEmojiPicker) _buildEmojiPicker(),
-          ],
+        Positioned.fill(
+          child: Column(
+            children: [
+              Expanded(child: _buildListaMensajes(tr)),
+              _buildInputArea(tr),
+              if (_mostrarEmojiPicker) _buildEmojiPicker(),
+            ],
+          ),
         ),
       ],
     );

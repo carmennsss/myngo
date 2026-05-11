@@ -42,9 +42,11 @@ class SalaChatListCreate(generics.ListCreateAPIView):
         comunidad_id = self.request.query_params.get('comunidad_id')
         
         if comunidad_id:
-            # Si filtramos por comunidad, mostramos salas donde el usuario es miembro O son públicas
-            queryset = SalaChat.objects.filter(
-                Q(comunidad_id=comunidad_id) & (Q(miembros=self.request.user) | Q(es_publica=True))
+            # Si filtramos por comunidad: miembro O pública O creador de la comunidad
+            queryset = SalaChat.objects.filter(comunidad_id=comunidad_id).filter(
+                Q(miembros=self.request.user) | 
+                Q(es_publica=True) | 
+                Q(comunidad__creador=self.request.user)
             )
         else:
             # En la lista general (Mis Chats), solo mostramos donde el usuario es miembro
@@ -85,6 +87,17 @@ class SalaChatListCreate(generics.ListCreateAPIView):
                 pass
 
         if comunidad_id:
+            # Validar que el usuario sea miembro de la comunidad o el creador
+            from comunidades.models import MiembrosComunidad, Comunidad
+            es_miembro = MiembrosComunidad.objects.filter(comunidad_id=comunidad_id, usuario=request.user).exists()
+            es_creador_comu = Comunidad.objects.filter(id=comunidad_id, creador=request.user).exists()
+            
+            if not (es_miembro or es_creador_comu):
+                return Response(
+                    {'error': 'Debes ser miembro de la comunidad para crear salas.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
             # Validar que el nombre sea único en esta comunidad para evitar confusión
             existe_nombre = SalaChat.objects.filter(comunidad_id=comunidad_id, nombre=nombre).exists()
             if existe_nombre:
@@ -142,8 +155,12 @@ class SalaChatDetail(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Aseguramos que el usuario solo pueda ver salas de las que es miembro
-        return SalaChat.objects.filter(miembros=self.request.user)
+        # El usuario puede ver la sala si es miembro O es pública O es el creador de la comunidad
+        return SalaChat.objects.filter(
+            Q(miembros=self.request.user) | 
+            Q(es_publica=True) | 
+            Q(comunidad__creador=self.request.user)
+        ).distinct()
 
 
 class MensajesChatPagination(pagination.LimitOffsetPagination):
@@ -159,7 +176,14 @@ class MensajesChatList(generics.ListAPIView):
 
     def get_queryset(self):
         sala_id = self.kwargs['sala_id']
-        if not SalaChat.objects.filter(id=sala_id, miembros=self.request.user).exists():
+        # Validamos acceso: miembro O pública O creador de la comunidad
+        acceso = SalaChat.objects.filter(id=sala_id).filter(
+            Q(miembros=self.request.user) | 
+            Q(es_publica=True) | 
+            Q(comunidad__creador=self.request.user)
+        ).exists()
+        
+        if not acceso:
             return MensajeChat.objects.none()
         # Excluimos mensajes borrados localmente por el usuario
         return MensajeChat.objects.filter(sala_id=sala_id).exclude(borrado_para=self.request.user).order_by('-fecha_envio')

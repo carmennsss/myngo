@@ -1,3 +1,5 @@
+import '../utils/configuracion.dart';
+
 /// Modelo que representa un recurso multimedia (imagen o vídeo) en la galería.
 ///
 /// Contiene información del propietario, la comunidad de origen, metadatos
@@ -46,10 +48,16 @@ class ImagenGaleria {
       comunidadNombre: json['comunidad_nombre']?.toString(),
       creadorComunidadId: json['creador_comunidad_id'] as int?,
       usuarioEsMiembro: json['usuario_es_miembro'] ?? false,
-      urlArchivo: json['url_archivo']?.toString() ??
-          json['url_s3']?.toString() ??
-          json['url_imagen']?.toString() ??
-          '',
+      urlArchivo: () {
+        String url = json['url_archivo']?.toString() ??
+            json['url_s3']?.toString() ??
+            json['url_imagen']?.toString() ??
+            '';
+        if (url.startsWith('/')) {
+          return '${Configuracion.baseUrl}$url';
+        }
+        return url;
+      }(),
       tipoArchivo: json['tipo_archivo']?.toString() ?? 'I',
       relacionAspecto: (json['relacion_aspecto'] ?? 1.0).toDouble(),
       esPublica: json['es_publica'] ?? true,

@@ -235,6 +235,52 @@ class ServicioUsuarios {
     }
   }
 
+  /// Obtiene la lista de seguidores de un usuario.
+  Future<RespuestaApi<List<Usuario>>> obtenerSeguidores(int usuarioId) async {
+    try {
+      final respuesta = await client.get(
+        Uri.parse('$_urlUsuarios/seguidores/$usuarioId/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson['results'] ?? datosJson['datos'] ?? [];
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Seguidores recuperados',
+          datos: lista.map((j) => Usuario.fromJson(j)).toList(),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener seguidores');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Obtiene la lista de usuarios seguidos por un usuario.
+  Future<RespuestaApi<List<Usuario>>> obtenerSeguidos(int usuarioId) async {
+    try {
+      final respuesta = await client.get(
+        Uri.parse('$_urlUsuarios/seguidos/$usuarioId/'),
+        headers: await _obtenerCabeceras(),
+      ).timeout(const Duration(seconds: 20));
+
+      if (respuesta.statusCode == 200) {
+        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson['results'] ?? datosJson['datos'] ?? [];
+        return RespuestaApi(
+          exito: true,
+          mensaje: 'Seguidos recuperados',
+          datos: lista.map((j) => Usuario.fromJson(j)).toList(),
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: 'Error al obtener seguidos');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   /// Obtiene la información detallada de un usuario específico por su ID o Nombre de Usuario.
   Future<RespuestaApi<Usuario>> obtenerDatosUsuario(dynamic identifier) async {
     try {

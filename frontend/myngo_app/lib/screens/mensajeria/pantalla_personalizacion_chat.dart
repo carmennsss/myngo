@@ -9,6 +9,7 @@ import '../../widgets/comunes/boton_tactil.dart';
 import 'package:tolgee/tolgee.dart';
 import '../../utils/configuracion.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../models/participante_chat.dart';
 
 // Painter eficiente para preview de patrones
 class _PatternPreviewPainter extends CustomPainter {
@@ -688,7 +689,17 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
     if (!widget.sala.esGrupal) {
       final otroId = widget.sala.otroUsuarioId;
       try {
-        final otro = widget.sala.participantes.firstWhere((p) => p.usuarioId == otroId);
+        final otro = widget.sala.participantes.firstWhere(
+          (p) => p.usuarioId == otroId,
+          orElse: () => widget.sala.participantes.isNotEmpty 
+              ? widget.sala.participantes.first 
+              : ParticipanteChat(
+                  id: 0, 
+                  salaId: widget.sala.id, 
+                  usuarioId: 0, 
+                  fechaUnion: DateTime.now()
+                ),
+        );
         avatarOtro = otro.usuario?.urlAvatar;
       } catch (_) {}
     }

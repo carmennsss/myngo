@@ -385,21 +385,24 @@ class PantallaInicioState extends State<PantallaInicio> {
           drawer: isMobile && _estaLogueado ? _construirDrawerMobile(tr) : null,
           body: Column(
             children: [
-              CabeceraPro(
-                estaLogueado: _estaLogueado,
-                nombreUsuario: _miNombre,
-                avatarUrl: _miAvatar,
-                marcoUrl: _miMarco,
-                miId: _miId,
-                estado: _miEstado,
-                indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
-                puntos: _puntos,
-                notificacionesSinLeer: _notificacionesSinLeer,
-                mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
-                onNavSelected: _alPulsarNav,
-                onProfileSelected: _seleccionarUsuario,
-                onStatusChanged: cambiarEstado,
-                onRefreshProfile: _inicializarDatos,
+              SafeArea(
+                bottom: false,
+                child: CabeceraPro(
+                  estaLogueado: _estaLogueado,
+                  nombreUsuario: _miNombre,
+                  avatarUrl: _miAvatar,
+                  marcoUrl: _miMarco,
+                  miId: _miId,
+                  estado: _miEstado,
+                  indiceSeleccionado: widget.navigationShell?.currentIndex ?? _indiceSeleccionado,
+                  puntos: _puntos,
+                  notificacionesSinLeer: _notificacionesSinLeer,
+                  mensajesSinLeer: context.watch<ChatProvider>().totalNoLeidos,
+                  onNavSelected: _alPulsarNav,
+                  onProfileSelected: _seleccionarUsuario,
+                  onStatusChanged: cambiarEstado,
+                  onRefreshProfile: _inicializarDatos,
+                ),
               ),
               Expanded(
                 child: Stack(

@@ -45,6 +45,8 @@
   "profileVoteRemove": "Remove my vote",
   "profileJoined": "Joined in {date}",
   "@profileJoined": {"placeholders": {"date": {"type": "String"}}},
+  "profileFollowersCount": "Followers",
+  "profileFollowingCount": "Following",
   
   "chatPersonalization": "Customize Chat",
   "chatSaveSettings": "SAVE",

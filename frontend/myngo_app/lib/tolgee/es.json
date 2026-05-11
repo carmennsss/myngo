@@ -485,6 +485,8 @@
   "profileFollowPending": "Pendiente",
   "profileFollowRequest": "Solicitar seguir",
   "profileJoined": "Se unió el {date}",
+  "profileFollowersCount": "Seguidores",
+  "profileFollowingCount": "Seguidos",
   "profileLoadingSubtitle": "Buscando datos del perfil...",
   "profileNotFoundEmoji": "😿",
   "profileNotFoundTitle": "No hemos podido encontrar al usuario",

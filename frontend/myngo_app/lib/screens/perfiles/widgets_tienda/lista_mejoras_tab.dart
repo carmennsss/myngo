@@ -128,7 +128,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
           Icon(Icons.inventory_2_rounded, size: 56, color: Colors.grey.shade300),
           const SizedBox(height: 12),
           Text(
-            tr('storeEmptyState', params: {'tipo': tipoPlural}),
+            tr('storeEmptyState', {'tipo': tipoPlural}),
             style: GoogleFonts.outfit(color: Colors.grey.shade500, fontSize: 14),
           ),
         ],
@@ -296,7 +296,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
         title: Text(tr('storeInsufficientPoints'),
             style: GoogleFonts.outfit(
                 fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
-        content: Text(tr('storeInsufficientPointsDesc', params: {'precio': precio.toString(), 'actual': actual.toString()}),
+        content: Text(tr('storeInsufficientPointsDesc', {'precio': precio.toString(), 'actual': actual.toString()}),
             style: GoogleFonts.outfit(color: Colors.grey.shade600)),
         actions: [
           TextButton(
@@ -623,11 +623,11 @@ class _DialogoCompra extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(tr('storeCost', params: {'precio': mejora.precioPuntos.toString()}),
+          Text(tr('storeCost', {'precio': mejora.precioPuntos.toString()}),
               style: GoogleFonts.outfit(
                   color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(tr('storeYourPoints', params: {'actual': puntosActuales.toString(), 'restantes': puntosRestantes.toString()}),
+          Text(tr('storeYourPoints', {'actual': puntosActuales.toString(), 'restantes': puntosRestantes.toString()}),
               style: GoogleFonts.outfit(fontSize: 12)),
         ],
       ),

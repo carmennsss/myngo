@@ -117,8 +117,13 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       _colorPrimarioPosts = Colors.white;
     }
 
-    for (var tag in widget.comunidad.tags) {
-      _tagsSeleccionados.add(tag['nombre']);
+    // Cargar tags existentes
+    if (widget.comunidad.tags.isNotEmpty) {
+      for (var tag in widget.comunidad.tags) {
+        if (tag is Map && tag.containsKey('nombre') && tag['nombre'] != null) {
+          _tagsSeleccionados.add(tag['nombre'].toString());
+        }
+      }
     }
   }
 
@@ -515,7 +520,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               Text(tr('personalizeMainFont'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _fuentesDisponibles.contains(_fuenteSeleccionada) ? _fuenteSeleccionada : _fuentesDisponibles.first,
+                value: (_fuenteSeleccionada.isNotEmpty && _fuentesDisponibles.contains(_fuenteSeleccionada)) 
+                    ? _fuenteSeleccionada 
+                    : (_fuentesDisponibles.isNotEmpty ? _fuentesDisponibles.first : 'Inter'),
                 dropdownColor: esOscuro ? const Color(0xFF1A1A1A) : Colors.white,
                 items: _fuentesDisponibles.map((f) => DropdownMenuItem(
                   value: f,

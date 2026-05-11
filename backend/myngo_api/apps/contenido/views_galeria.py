@@ -34,52 +34,61 @@ class GaleriaList(generics.ListCreateAPIView):
 
     def get_queryset(self):
         """Filtra el conjunto de imágenes según el contexto (comunidad, usuario, colección).
-
-        Returns:
-            QuerySet: Imágenes filtradas según permisos y parámetros.
+        
+        Aplica validaciones de privacidad y manejo de errores para evitar 500.
         """
-        comunidad_id = self.request.query_params.get('comunidad_id')
-        propietario_id = self.request.query_params.get('usuario_id')
-        coleccion_id = self.request.query_params.get('coleccion_id')
-        qs = ImagenGaleria.objects.filter(es_publica=True)
-
-        # Solo mostrar imágenes vinculadas a publicaciones (posts)
-        # Esto excluye imágenes de chats, avatares, etc.
-        qs = qs.filter(
-            Q(publicacion__isnull=False) | Q(publicaciones_asociadas__isnull=False)
-        ).distinct()
-
-        if coleccion_id:
-            try:
-                coleccion = Coleccion.objects.get(id=coleccion_id)
-                # Verificar privacidad de la colección
-                if coleccion.es_privada and coleccion.usuario != self.request.user:
-                    return ImagenGaleria.objects.none()
-                
-                # Retornar TODAS las imágenes de la colección (tengan post o no)
-                return coleccion.imagenes.all().distinct().order_by('-fecha_subida')
-            except Coleccion.DoesNotExist:
-                return ImagenGaleria.objects.none()
-
-        if comunidad_id:
-            try:
-                comunidad = Comunidad.objects.get(id=comunidad_id)
-                if not comunidad.es_publica:
-                    es_miembro = MiembrosComunidad.objects.filter(
-                        comunidad=comunidad, usuario=self.request.user
-                    ).exists()
-                    if not es_miembro and comunidad.creador != self.request.user:
+        try:
+            comunidad_id = self.request.query_params.get('comunidad_id')
+            propietario_id = self.request.query_params.get('usuario_id')
+            coleccion_id = self.request.query_params.get('coleccion_id')
+            
+            # Caso Colección
+            if coleccion_id:
+                try:
+                    coleccion = Coleccion.objects.get(id=coleccion_id)
+                    if coleccion.es_privada and coleccion.usuario != self.request.user:
                         return ImagenGaleria.objects.none()
-                return qs.filter(comunidad_id=comunidad_id).order_by('-fecha_subida')
-            except Comunidad.DoesNotExist:
-                return ImagenGaleria.objects.none()
+                    return coleccion.imagenes.all().order_by('-fecha_subida', 'id').distinct()
+                except (Coleccion.DoesNotExist, ValueError, TypeError):
+                    return ImagenGaleria.objects.none()
 
-        if propietario_id:
-            if str(propietario_id) == str(self.request.user.id):
-                return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
-            return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
+            # Caso Comunidad
+            if comunidad_id:
+                try:
+                    comunidad = Comunidad.objects.get(id=comunidad_id)
+                    if not comunidad.es_publica:
+                        es_miembro = MiembrosComunidad.objects.filter(
+                            comunidad=comunidad, usuario=self.request.user
+                        ).exists()
+                        if not es_miembro and comunidad.creador != self.request.user:
+                            return ImagenGaleria.objects.none()
+                    
+                    return ImagenGaleria.objects.filter(comunidad=comunidad).order_by('-fecha_subida', 'id')
+                except (Comunidad.DoesNotExist, ValueError, TypeError):
+                    return ImagenGaleria.objects.none()
 
-        return qs.order_by('-fecha_subida')
+            # Caso Usuario o Galería Global
+            if propietario_id:
+                try:
+                    if str(propietario_id) == str(self.request.user.id):
+                        qs = ImagenGaleria.objects.filter(propietario_id=propietario_id)
+                    else:
+                        qs = ImagenGaleria.objects.filter(propietario_id=propietario_id, es_publica=True)
+                except (ValueError, TypeError):
+                    return ImagenGaleria.objects.none()
+            else:
+                qs = ImagenGaleria.objects.filter(es_publica=True)
+
+            # Filtro de Post (Solo para Explorar Global)
+            if not propietario_id:
+                qs = qs.filter(
+                    Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+                ).distinct()
+
+            return qs.order_by('-fecha_subida', 'id')
+        except Exception:
+            # Fallback de seguridad para evitar 500 en cualquier caso imprevisto
+            return ImagenGaleria.objects.none()
 
     def perform_create(self, serializer):
         """Asigna automáticamente el propietario a la nueva imagen.

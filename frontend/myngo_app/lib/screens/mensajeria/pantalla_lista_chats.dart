@@ -112,14 +112,16 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
       Map<String, dynamic>? otro;
       try {
         for (var m in miembros) {
-          if (m['id'] != myId) {
-            otro = m;
+          if (m != null && m is Map && m['id'] != myId) {
+            otro = m as Map<String, dynamic>;
             break;
           }
         }
-        otro ??= miembros.isNotEmpty ? miembros.first : null;
+        if (otro == null && miembros.isNotEmpty) {
+          otro = miembros.firstWhere((m) => m is Map, orElse: () => null);
+        }
       } catch (_) {
-        otro = miembros.isNotEmpty ? miembros.first : null;
+        otro = (miembros.isNotEmpty && miembros.first is Map) ? miembros.first : null;
       }
 
       if (otro == null) return {'nombre': 'Chat vacío', 'avatar': avatarPersonalizado};
