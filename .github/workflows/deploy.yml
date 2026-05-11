@@ -54,6 +54,9 @@ jobs:
   frontend-unit:
     name: Frontend Unit & Widget Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -79,7 +82,6 @@ jobs:
         with:
           lcov-file: ./frontend/myngo_app/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
   frontend-e2e:
     name: Frontend E2E Tests (Patrol)
     needs: frontend-unit
