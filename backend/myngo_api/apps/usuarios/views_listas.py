@@ -21,7 +21,9 @@ class ListaSeguidores(generics.ListAPIView):
         
         user_request = self.request.user
         es_propio = user_request.is_authenticated and user_request.id == target_user.id
-        es_publico = target_user.es_publico
+        # El campo es_publico está en el perfil, no en el usuario directo
+        perfil = getattr(target_user, 'perfil', None)
+        es_publico = perfil.es_publico if perfil else True
         es_seguidor = False
         
         if user_request.is_authenticated and not es_propio and not es_publico:
@@ -50,7 +52,8 @@ class ListaSeguidos(generics.ListAPIView):
         
         user_request = self.request.user
         es_propio = user_request.is_authenticated and user_request.id == target_user.id
-        es_publico = target_user.es_publico
+        perfil = getattr(target_user, 'perfil', None)
+        es_publico = perfil.es_publico if perfil else True
         es_seguidor = False
         
         if user_request.is_authenticated and not es_propio and not es_publico:
