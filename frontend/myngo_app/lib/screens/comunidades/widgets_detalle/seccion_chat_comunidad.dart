@@ -42,14 +42,19 @@ class SeccionChatComunidad extends StatelessWidget {
           return comoSliver ? SliverFillRemaining(child: loading) : loading;
         }
     
-        // Buscamos cuál es la sala general para no repetirla en la lista de abajo
         SalaChat? salaGeneral;
         try {
-          salaGeneral = (salasChat ?? []).firstWhere((s) => s.nombre.toLowerCase().contains('general'));
+          // Usamos == true para ser extremadamente seguros contra nulos accidentales
+          salaGeneral = (salasChat ?? []).firstWhere((s) => s.esGeneral == true);
         } catch (_) {
+          // Fallback solo si no hay ninguna marcada como general
           try {
-            salaGeneral = (salasChat ?? []).firstWhere((s) => s.esGrupal);
-          } catch (_) {}
+            salaGeneral = (salasChat ?? []).firstWhere((s) => s.nombre.toLowerCase().contains('general'));
+          } catch (_) {
+            try {
+              salaGeneral = (salasChat ?? []).firstWhere((s) => s.esGrupal);
+            } catch (_) {}
+          }
         }
     
         final salasFiltradas = (salasChat ?? []).where((s) => s.esGrupal && s.id != salaGeneral?.id).toList();
@@ -141,19 +146,21 @@ class SeccionChatComunidad extends StatelessWidget {
 
 
   Widget _buildGeneralChatTile(BuildContext context, String Function(String, [Map<String, dynamic>?]) tr) {
-    // Buscar la sala general real:
-    // Que contenga "general"
-    // O la primera sala grupal que encuentre
+    // Buscar la sala general real priorizando el flag esGeneral
     final SalaChat? salaGeneral = (salasChat ?? []).firstWhere(
-      (s) => s.nombre.toLowerCase().contains('general'),
+      (s) => s.esGeneral == true,
       orElse: () => (salasChat ?? []).firstWhere(
-        (s) => s.esGrupal,
-        orElse: () => SalaChat(
-          id: -1, 
-          nombre: tr('chatSearchingRooms'), 
-          comunidadId: comunidad.id, 
-          esGrupal: true, 
-          fechaCreacion: DateTime.now()
+        (s) => s.nombre.toLowerCase().contains('general'),
+        orElse: () => (salasChat ?? []).firstWhere(
+          (s) => s.esGrupal == true,
+          orElse: () => SalaChat(
+            id: -1, 
+            nombre: tr('chatSearchingRooms'), 
+            comunidadId: comunidad.id, 
+            esGrupal: true, 
+            fechaCreacion: DateTime.now(),
+            esGeneral: false,
+          ),
         ),
       ),
     );

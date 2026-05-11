@@ -171,7 +171,7 @@ class SalaChatSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalaChat
         fields = [
-            'id', 'nombre', 'comunidad', 'es_grupal', 'es_publica', 'invite_token',
+            'id', 'nombre', 'comunidad', 'es_grupal', 'es_publica', 'es_general', 'invite_token',
             'miembros', 'miembros_detalle', 'ultimo_mensaje',
             'mensajes_no_leidos', 'fecha_creacion', 'avatar_s3', 
             'configuracion', 'participantes_data', 'personalizacion',

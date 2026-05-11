@@ -16,6 +16,7 @@ from .views import (
     CambiarPassword,
     EliminarCuenta,
 )
+from .views_listas import ListaSeguidores, ListaSeguidos
 
 urlpatterns = [
     # Autenticación y Registro
@@ -40,4 +41,8 @@ urlpatterns = [
     path('actualizar_solicitud/', SeguimientoUsuarios.as_view(), name='actualizar_solicitud'),
     path('<str:nombre_usuario>/solicitud', SeguirPerfil.as_view(), name='seguir-perfil'),
     path('peticiones/<int:pk>/responder/', ResponderPeticionUnion.as_view(), name='responder-peticion'),
+
+    # Listas de Seguidores/Seguidos
+    path('seguidores/<int:usuario_id>/', ListaSeguidores.as_view(), name='lista_seguidores'),
+    path('seguidos/<int:usuario_id>/', ListaSeguidos.as_view(), name='lista_seguidos'),
 ]

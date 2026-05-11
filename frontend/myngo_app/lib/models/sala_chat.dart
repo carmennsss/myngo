@@ -77,6 +77,7 @@ class SalaChat {
   final String nombre;
   final int comunidadId;
   final bool esGrupal;
+  final bool esPublica;
   final DateTime fechaCreacion;
   final int? otroUsuarioId;
   final String? avatarS3;
@@ -85,6 +86,7 @@ class SalaChat {
   final PersonalizacionChat? personalizacion;
   final int numMiembros;
   final int? creador;
+  final bool esGeneral;
   final bool puedoEliminar;
 
   SalaChat({
@@ -92,6 +94,7 @@ class SalaChat {
     required this.nombre,
     required this.comunidadId,
     required this.esGrupal,
+    this.esPublica = false,
     required this.fechaCreacion,
     this.otroUsuarioId,
     this.avatarS3,
@@ -100,6 +103,7 @@ class SalaChat {
     this.personalizacion,
     this.numMiembros = 0,
     this.creador,
+    this.esGeneral = false,
     this.puedoEliminar = false,
   });
 
@@ -109,6 +113,7 @@ class SalaChat {
       nombre: json['nombre']?.toString() ?? 'General',
       comunidadId: json['comunidad'] ?? 0,
       esGrupal: json['es_grupal'] ?? false,
+      esPublica: json['es_publica'] ?? false,
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.parse(json['fecha_creacion'])
           : DateTime.now(),
@@ -123,7 +128,8 @@ class SalaChat {
           : null,
       numMiembros: json['num_miembros'] ?? 0,
       creador: json['creador'],
-      puedoEliminar: json['puedo_eliminar'] ?? false,
+      esGeneral: json['es_general'] == true,
+      puedoEliminar: json['puedo_eliminar'] == true,
     );
   }
 

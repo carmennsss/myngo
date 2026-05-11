@@ -103,10 +103,21 @@ class _DialogoDetallePublicacionState extends State<DialogoDetallePublicacion> {
                             TextButton.icon(
                               onPressed: () {
                                 Navigator.pop(context);
-                                context.go('/inicio/comunidades/${widget.post.comunidadId}');
+                                if (widget.post.comunidadId > 0) {
+                                  context.go('/inicio/comunidades/${widget.post.comunidadId}');
+                                } else {
+                                  context.go('/inicio/perfiles/${widget.post.autorNombre}');
+                                }
                               },
-                              label: Text(tr('communityView'), style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 12, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
-                              icon: const Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xFFC35E34)),
+                              label: Text(
+                                widget.post.comunidadId > 0 ? tr('communityViewCommunity') : tr('profileViewProfile'), 
+                                style: GoogleFonts.getFont(widget.fuente ?? 'Outfit', fontSize: 12, color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)
+                              ),
+                              icon: Icon(
+                                widget.post.comunidadId > 0 ? Icons.arrow_forward_ios : Icons.person_outline, 
+                                size: 12, 
+                                color: const Color(0xFFC35E34)
+                              ),
                               style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                             ),
                           ],

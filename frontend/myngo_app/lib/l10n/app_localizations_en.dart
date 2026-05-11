@@ -129,6 +129,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get profileFollowersCount => 'Followers';
+
+  @override
+  String get profileFollowingCount => 'Following';
+
+  @override
   String get chatPersonalization => 'Customize Chat';
 
   @override
