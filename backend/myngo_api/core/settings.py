@@ -141,6 +141,11 @@ DATABASES = {
     'default': {
         'ENGINE': env('DB_ENGINE', default='django.db.backends.mysql'),
         'NAME': env('DB_NAME'),
+    }
+}
+
+if env('DB_ENGINE', default='django.db.backends.mysql') != 'django.db.backends.sqlite3':
+    DATABASES['default'].update({
         'USER': env('DB_USER'),
         'PASSWORD': env('DB_PASSWORD'),
         'HOST': env('DB_HOST'),
@@ -149,8 +154,7 @@ DATABASES = {
             'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
-    }
-}
+    })
 
 import sys
 if 'pytest' in sys.modules:

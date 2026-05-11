@@ -13,20 +13,6 @@ jobs:
     name: Backend Tests
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_db
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -55,11 +41,11 @@ jobs:
           SECRET_KEY: 'dummy-secret-key-for-testing-only-not-real'
           DEBUG: 'True'
 
-          DB_ENGINE: 'django.db.backends.mysql'
-          DB_NAME: 'test_db'
-          DB_USER: 'root'
-          DB_PASSWORD: 'root'
-          DB_HOST: '127.0.0.1'
+          DB_ENGINE: 'django.db.backends.sqlite3'
+          DB_NAME: ':memory:'
+          DB_USER: 'dummy'
+          DB_PASSWORD: 'dummy'
+          DB_HOST: 'dummy'
           DB_PORT: '3306'
 
           AWS_ACCESS_KEY_ID: 'dummy'
@@ -74,9 +60,6 @@ jobs:
 
         run: |
           cd backend/myngo_api
-
-          python manage.py migrate
-
           pytest --cov=. --cov-report=xml
 
   frontend-unit:
@@ -118,20 +101,6 @@ jobs:
     needs: frontend-unit
     runs-on: macos-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_db
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -160,9 +129,7 @@ jobs:
       - name: Install Backend Dependencies
         run: |
           cd backend/myngo_api
-
           python -m pip install --upgrade pip
-
           pip install -r requirements.txt
 
       - name: Start Django Backend
@@ -170,11 +137,11 @@ jobs:
           SECRET_KEY: 'dummy-secret-key-for-testing-only-not-real'
           DEBUG: 'True'
 
-          DB_ENGINE: 'django.db.backends.mysql'
-          DB_NAME: 'test_db'
-          DB_USER: 'root'
-          DB_PASSWORD: 'root'
-          DB_HOST: '127.0.0.1'
+          DB_ENGINE: 'django.db.backends.sqlite3'
+          DB_NAME: ':memory:'
+          DB_USER: 'dummy'
+          DB_PASSWORD: 'dummy'
+          DB_HOST: 'dummy'
           DB_PORT: '3306'
 
           AWS_ACCESS_KEY_ID: 'dummy'
