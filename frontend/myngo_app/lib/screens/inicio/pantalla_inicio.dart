@@ -111,6 +111,7 @@ class PantallaInicioState extends State<PantallaInicio> {
           _miEstado = resDatos.datos!.estado ?? 'DESCONECTADO';
           
           context.read<ChatProvider>().setUserId(_miId);
+          context.read<ChatProvider>().actualizarEstadoUsuario(_miId!, _miEstado);
           
           if (resDatos.datos!.ordenComunidades.isNotEmpty) {
             _ordenGuardado = resDatos.datos!.ordenComunidades;

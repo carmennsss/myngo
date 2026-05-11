@@ -12,6 +12,7 @@ import '../../../services/servicio_comunidades.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../widgets/comunes/boton_tactil.dart';
 import '../../perfiles/pantalla_detalle_perfil.dart';
+import '../../inicio/pantalla_inicio.dart';
 import '../../../models/usuario.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
@@ -161,7 +162,27 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
     
     return Consumer<ChatProvider>(
       builder: (context, chatProv, _) {
-        final estaOnline = chatProv.isUsuarioOnline(userId);
+        String estado = chatProv.getEstadoUsuario(userId ?? 0);
+        
+        // Fallback especial para el usuario actual si el provider no está sincronizado
+        try {
+          final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
+          if (inicioState != null && inicioState.miId == userId) {
+            estado = inicioState.miEstado;
+          }
+        } catch (_) {}
+
+        Color colorEstado;
+        switch (estado) {
+          case 'ACTIVO':
+            colorEstado = Colors.green;
+            break;
+          case 'OCUPADO':
+            colorEstado = Colors.orange;
+            break;
+          default:
+            colorEstado = Colors.grey.shade400;
+        }
         
         return BotonTactil(
           onTap: () {
@@ -181,7 +202,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                     fechaRegistro: DateTime.now(),
                     esVerificado: false,
                     esPublico: true,
-                    estado: estaOnline ? 'ACTIVO' : 'DESCONECTADO',
+                    estado: estado,
                   )
                 )
               )
@@ -264,7 +285,7 @@ class _ListaMiembrosComunidadState extends State<ListaMiembrosComunidad> {
                         width: 14,
                         height: 14,
                         decoration: BoxDecoration(
-                          color: estaOnline ? Colors.green : Colors.grey.shade400,
+                          color: colorEstado,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),

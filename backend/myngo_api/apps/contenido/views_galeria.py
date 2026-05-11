@@ -35,25 +35,27 @@ class GaleriaList(generics.ListCreateAPIView):
     def get_queryset(self):
         """Filtra el conjunto de imágenes según el contexto (comunidad, usuario, colección).
         
-        Aplica validaciones de privacidad y manejo de errores para evitar 500.
+        Aplica validaciones de privacidad y asegura que en galerías públicas solo se
+        muestren imágenes asociadas a publicaciones (evitando fotos de chats).
         """
         try:
             comunidad_id = self.request.query_params.get('comunidad_id')
             propietario_id = self.request.query_params.get('usuario_id')
             coleccion_id = self.request.query_params.get('coleccion_id')
             
-            # Caso Colección
+            qs = ImagenGaleria.objects.all()
+
+            # 1. Determinamos el conjunto base (Filtro por origen)
             if coleccion_id:
                 try:
                     coleccion = Coleccion.objects.get(id=coleccion_id)
                     if coleccion.es_privada and coleccion.usuario != self.request.user:
                         return ImagenGaleria.objects.none()
-                    return coleccion.imagenes.all().order_by('-fecha_subida', 'id').distinct()
+                    qs = coleccion.imagenes.all()
                 except (Coleccion.DoesNotExist, ValueError, TypeError):
                     return ImagenGaleria.objects.none()
 
-            # Caso Comunidad
-            if comunidad_id:
+            elif comunidad_id:
                 try:
                     comunidad = Comunidad.objects.get(id=comunidad_id)
                     if not comunidad.es_publica:
@@ -62,32 +64,35 @@ class GaleriaList(generics.ListCreateAPIView):
                         ).exists()
                         if not es_miembro and comunidad.creador != self.request.user:
                             return ImagenGaleria.objects.none()
-                    
-                    return ImagenGaleria.objects.filter(comunidad=comunidad).order_by('-fecha_subida', 'id')
+                    qs = qs.filter(comunidad=comunidad)
                 except (Comunidad.DoesNotExist, ValueError, TypeError):
                     return ImagenGaleria.objects.none()
 
-            # Caso Usuario o Galería Global
-            if propietario_id:
+            elif propietario_id:
                 try:
                     if str(propietario_id) == str(self.request.user.id):
-                        qs = ImagenGaleria.objects.filter(propietario_id=propietario_id)
+                        qs = qs.filter(propietario_id=propietario_id)
                     else:
-                        qs = ImagenGaleria.objects.filter(propietario_id=propietario_id, es_publica=True)
+                        qs = qs.filter(propietario_id=propietario_id, es_publica=True)
                 except (ValueError, TypeError):
                     return ImagenGaleria.objects.none()
             else:
-                qs = ImagenGaleria.objects.filter(es_publica=True)
+                qs = qs.filter(es_publica=True)
 
-            # Filtro de Post (Solo para Explorar Global)
-            if not propietario_id:
+            # 2. Filtro de Post (Seguridad y Organización):
+            # En la galería de comunidad, en perfiles ajenos o en el Explorar Global,
+            # solo mostramos imágenes que pertenezcan a un post real.
+            # Excluimos este filtro para COLECCIONES (manales) y el PERFIL PROPIO.
+            
+            es_perfil_ajeno = propietario_id and str(propietario_id) != str(self.request.user.id)
+            
+            if not coleccion_id and (comunidad_id or not propietario_id or es_perfil_ajeno):
                 qs = qs.filter(
                     Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
                 ).distinct()
 
             return qs.order_by('-fecha_subida', 'id')
         except Exception:
-            # Fallback de seguridad para evitar 500 en cualquier caso imprevisto
             return ImagenGaleria.objects.none()
 
     def perform_create(self, serializer):
