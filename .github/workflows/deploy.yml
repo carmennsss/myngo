@@ -1,13 +1,18 @@
-name: Deploy to EC2
+name: Deploy to EC2 & CI Tests
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  test:
+  test-backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -15,7 +20,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
+
+      - name: Install MySQL dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            python3-dev \
+            default-libmysqlclient-dev
 
       - name: Install Dependencies
         run: |
@@ -25,51 +38,211 @@ jobs:
 
       - name: Run Backend Tests
         env:
-          SECRET_KEY: 'dummy-secret-key-for-testing'
+          SECRET_KEY: 'dummy-secret-key-for-testing-only-not-real'
+          DEBUG: 'True'
+
+          DB_ENGINE: 'django.db.backends.sqlite3'
+          DB_NAME: ':memory:'
+          DB_USER: 'dummy'
+          DB_PASSWORD: 'dummy'
+          DB_HOST: 'dummy'
+          DB_PORT: '3306'
+
+          AWS_ACCESS_KEY_ID: 'dummy'
+          AWS_SECRET_ACCESS_KEY: 'dummy'
+          AWS_STORAGE_BUCKET_NAME: 'dummy'
+          AWS_S3_REGION_NAME: 'us-east-1'
+
+          EMAIL_HOST_USER: 'dummy@gmail.com'
+          EMAIL_HOST_PASSWORD: 'dummy'
+
+          HUGGING_FACE_TOKEN: 'dummy'
+
         run: |
           cd backend/myngo_api
           pytest --cov=. --cov-report=xml
 
+  frontend-unit:
+    name: Frontend Unit & Widget Tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: |
+          cd frontend/myngo_app
+          flutter pub get
+
+      - name: Run Unit and Widget Tests with Coverage
+        run: |
+          cd frontend/myngo_app
+          flutter test --coverage
+
+      - name: Publish Coverage Report
+        if: github.event_name == 'pull_request'
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          lcov-file: ./frontend/myngo_app/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  frontend-e2e:
+    name: Frontend E2E Tests (Patrol)
+    needs: frontend-unit
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Patrol CLI
+        run: dart pub global activate patrol_cli
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install MySQL dependencies
+        run: |
+          brew install mysql-client pkg-config
+
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/mysql-client/lib/pkgconfig" >> $GITHUB_ENV
+          echo "MYSQLCLIENT_CFLAGS=-I/opt/homebrew/opt/mysql-client/include/mysql" >> $GITHUB_ENV
+          echo "MYSQLCLIENT_LDFLAGS=-L/opt/homebrew/opt/mysql-client/lib" >> $GITHUB_ENV
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend/myngo_api
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start Django Backend
+        env:
+          SECRET_KEY: 'dummy-secret-key-for-testing-only-not-real'
+          DEBUG: 'True'
+
+          DB_ENGINE: 'django.db.backends.sqlite3'
+          DB_NAME: ':memory:'
+          DB_USER: 'dummy'
+          DB_PASSWORD: 'dummy'
+          DB_HOST: 'dummy'
+          DB_PORT: '3306'
+
+          AWS_ACCESS_KEY_ID: 'dummy'
+          AWS_SECRET_ACCESS_KEY: 'dummy'
+          AWS_STORAGE_BUCKET_NAME: 'dummy'
+          AWS_S3_REGION_NAME: 'us-east-1'
+
+          EMAIL_HOST_USER: 'dummy@gmail.com'
+          EMAIL_HOST_PASSWORD: 'dummy'
+
+          HUGGING_FACE_TOKEN: 'dummy'
+
+        run: |
+          cd backend/myngo_api
+
+          python manage.py migrate
+
+          python manage.py runserver 0.0.0.0:8000 &
+
+          sleep 15
+
+      - name: Run Patrol E2E Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+
+          script: |
+            cd frontend/myngo_app
+
+            flutter pub get
+
+            patrol test --target integration_test/patrol/auth_flow_test.dart
+
+            patrol test --target integration_test/patrol/chat_flow_test.dart
+
+            patrol test --target integration_test/patrol/comunidad_flow_test.dart
+
+            patrol test --target integration_test/patrol/publicacion_flow_test.dart
+
+            patrol test --target integration_test/patrol/notificaciones_flow_test.dart
+
   deploy:
-    needs: test
+    name: Deploy to EC2
+
+    needs:
+      - test-backend
+      - frontend-unit
+      - frontend-e2e
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Desplegar en EC2
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
+
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
+
           script: |
-            # Instalar Node.js si no está presente (necesario para npx)
+
             if ! command -v node &> /dev/null; then
               curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
               sudo apt install -y nodejs
             fi
 
-            # Variables de entorno para Tolgee
             export TOLGEE_API_KEY="${{ secrets.TOLGEE_API_KEY }}"
             export TOLGEE_API_URL="http://127.0.0.1:8085"
-            # Si tu proyecto Tolgee necesita projectId (opcional si usas sólo push/pull)
             export TOLGEE_PROJECT_ID="${{ secrets.TOLGEE_PROJECT_ID }}"
 
-            # Actualizar código del backend (frontend no está aquí)
             cd /home/ubuntu/myngo
+
             git fetch origin
             git reset --hard origin/main
 
-            # Backend Django
             cd backend/myngo_api
+
+            sudo apt-get update
+
+            sudo apt-get install -y \
+              pkg-config \
+              python3-dev \
+              default-libmysqlclient-dev
+
             source venv/bin/activate
+
+            python -m pip install --upgrade pip
+
             pip install -r requirements.txt
+
             python manage.py migrate --noinput
+
             python manage.py collectstatic --noinput
+
             sudo systemctl restart daphne
 
-            # Sincronizar traducciones (solo backend)
             cd /home/ubuntu/myngo
+
             chmod +x ./sync_translations.sh
-            # Normalmente después del deploy quieres traer las últimas traducciones:
+
             ./sync_translations.sh pull
-            # Si en cambio subes cambios desde el backend (raro en CI), usar push

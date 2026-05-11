@@ -10,6 +10,7 @@ import 'package:tolgee/tolgee.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 class CabeceraPro extends StatelessWidget {
@@ -48,8 +49,8 @@ class CabeceraPro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
-      builder: (context, tr) {
+    return Builder(
+      builder: (context) {
         final screenWidth = MediaQuery.of(context).size.width;
         final isMobile = screenWidth < 800;
         final isSmallMobile = screenWidth < 500;
@@ -374,7 +375,7 @@ class _UserProfileHeader extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(name ?? 'Michi', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                      Text(name ?? tr('commonDefaultUsername'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
                       const SizedBox(width: 6),
                       MouseRegion(
                         cursor: SystemMouseCursors.click,

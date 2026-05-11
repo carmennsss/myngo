@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tolgee/tolgee.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/comunidad.dart';
@@ -10,17 +12,21 @@ import '../../services/servicio_usuarios.dart';
 // Widgets extraídos
 import 'widgets_tienda/tienda_preview_section.dart';
 import 'widgets_tienda/lista_mejoras_tab.dart';
+import '../comunidades/pantalla_enviar_propuesta.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Tienda de mejoras visuales: Avatares, Marcos, Fondos y Estilos de post.
 // Muestra una previsualización en vivo mientras el usuario navega por el catálogo.
 class PantallaTiendaMejoras extends StatefulWidget {
   final bool esVistaIntegrada;
+  final Comunidad? comunidad;
   final Function(String)? onCategoryChanged;
   final Function(int)? onPuntosActualizados;
 
   const PantallaTiendaMejoras({
     super.key,
     this.esVistaIntegrada = false,
+    this.comunidad,
     this.onCategoryChanged,
     this.onPuntosActualizados,
   });
@@ -70,6 +76,9 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   // Carga primero los datos del usuario y luego el catálogo de mejoras
   Future<void> _inicializarTienda() async {
     await _cargarDatosUsuario();
+    if (widget.comunidad != null) {
+      _tabIndex = 1;
+    }
     await _cargarDatosTienda();
   }
 
@@ -92,7 +101,12 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   // Notifica a la pantalla padre la categoría activa cuando cambia la pestaña
   void _handleTabChange() {
     if (!_subTabController.indexIsChanging) {
-      final tipos = ['Avatar', 'Marco', 'Fondo', 'Estilo Post'];
+      final tipos = [
+        tr('storeTypeAvatar'),
+        tr('storeTypeFrame'),
+        tr('storeTypeBackground'),
+        tr('storeTypePostStyle')
+      ];
       if (_subTabController.index < tipos.length) {
         widget.onCategoryChanged?.call(tipos[_subTabController.index]);
       }
@@ -120,65 +134,73 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
       if (mounted) {
         setState(() {
           _cargandoTienda = false;
-          _errorTienda = 'Error de conexión 😿';
+          _errorTienda = tr('storeErrorConnection');
         });
       }
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    final bool esAncho = MediaQuery.of(context).size.width > 1000;
+    return Builder(
+      builder: (context) {
+        // Actualizamos listeners si es necesario
+        _subTabController.removeListener(_handleTabChange);
+        _subTabController.addListener(_handleTabChange);
 
-    final shopSection = Column(
-      children: [
-        _buildTabBar(),
-        Expanded(
-          child: _cargandoTienda
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-              : _errorTienda != null
-                  ? Center(
-                      child: Text(_errorTienda!,
-                          style: GoogleFonts.outfit(color: Colors.grey)))
-                  : TabBarView(
-                      controller: _subTabController,
-                      children: [
-                        _buildTab('Avatar'),
-                        _buildTab('Marco'),
-                        _buildTab('Fondo'),
-                        _buildTab('Estilo Post'),
-                      ],
+        final bool esAncho = MediaQuery.of(context).size.width > 1000;
+
+        final shopSection = Column(
+          children: [
+            _buildTabBar(tr),
+            Expanded(
+              child: _cargandoTienda
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+                  : _errorTienda != null
+                      ? Center(
+                          child: Text(_errorTienda!,
+                              style: GoogleFonts.outfit(color: Colors.grey)))
+                      : TabBarView(
+                          controller: _subTabController,
+                          children: [
+                            _buildTab(tr('storeTypeAvatar'), tr),
+                            _buildTab(tr('storeTypeFrame'), tr),
+                            _buildTab(tr('storeTypeBackground'), tr),
+                            _buildTab(tr('storeTypePostStyle'), tr),
+                          ],
+                        ),
+            ),
+          ],
+        );
+
+        final previewSection = Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
+                ? DecorationImage(
+                    image: NetworkImage(_previewFondoFeed!),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Colors.white.withOpacity(0.6),
+                      BlendMode.lighten,
                     ),
-        ),
-      ],
-    );
-
-    final previewSection = Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        image: (_previewFondoFeed != null && _previewFondoFeed!.isNotEmpty)
-            ? DecorationImage(
-                image: NetworkImage(_previewFondoFeed!),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.white.withOpacity(0.6),
-                  BlendMode.lighten,
-                ),
-              )
-            : null,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: TiendaPreviewSection(
-          usuarioActual: _usuarioActual,
-          previewAvatar: _previewAvatar,
-          previewMarco: _previewMarco,
-          previewFondo: _previewFondo,
-          previewEstiloPost: _previewEstiloPost,
-        ),
-      ),
-    );
+                  )
+                : null,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: TiendaPreviewSection(
+              usuarioActual: _usuarioActual,
+              comunidad: widget.comunidad,
+              previewAvatar: _previewAvatar,
+              previewMarco: _previewMarco,
+              previewFondo: _previewFondo,
+              previewEstiloPost: _previewEstiloPost,
+            ),
+          ),
+        );
 
     final content = esAncho
         ? Row(
@@ -212,6 +234,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: TiendaPreviewSection(
                       usuarioActual: _usuarioActual,
+                      comunidad: widget.comunidad,
                       previewAvatar: _previewAvatar,
                       previewMarco: _previewMarco,
                       previewFondo: _previewFondo,
@@ -238,13 +261,17 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
           )
         : Scaffold(
             backgroundColor: const Color(0xFFFEF5F1),
-            appBar: _buildAppBar(),
+            appBar: _buildAppBar(tr),
             body: content,
+            floatingActionButton: _buildFAB(tr),
           );
+      }
+    );
   }
 
+
   // Barra de pestañas (Avatares / Marcos / Fondos / Estilos Post)
-  Widget _buildTabBar() {
+  Widget _buildTabBar(String Function(String) tr) {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.all(4),
@@ -261,50 +288,83 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
         controller: _subTabController,
         labelColor: const Color(0xFFC35E34),
         tabs: [
-          const Tab(text: 'Avatares'),
-          const Tab(text: 'Marcos'),
-          const Tab(text: 'Fondos'),
-          const Tab(text: 'Estilos Post'),
+          Tab(text: tr('storeTabAvatars')),
+          Tab(text: tr('storeTabFrames')),
+          Tab(text: tr('storeTabBackgrounds')),
+          if (widget.comunidad == null) Tab(text: tr('storeTabPostStyles')),
         ],
       ),
     );
   }
 
+
   // Cada pestaña pasa el tipo de mejora al ListaMejorasTab y gestiona la previsualización
-  Widget _buildTab(String tipo) {
+  Widget _buildTab(String tipo, String Function(String) tr) {
     return ListaMejorasTab(
       tipo: tipo,
       usuarioActual: _usuarioActual,
       mejoras: _mejorasCatalogo,
       misMejoras: _misMejoras,
-      onRefresh: _cargarDatosTienda,
+      onRefresh: () => _cargarDatosTienda(),
+      modoGestion: _esModerador,
+      comunidadId: widget.comunidad?.id,
+      esModerador: _esModerador,
       onPuntosActualizados: (p) {
         widget.onPuntosActualizados?.call(p);
         _cargarDatosUsuario();
       },
       onPreviewRequested: (item) {
         setState(() {
-          if (tipo == 'Avatar') _previewAvatar = item.urlRecurso;
-          if (tipo == 'Marco') _previewMarco = item.urlRecurso;
-          if (tipo == 'Fondo') {
+          if (tipo == tr('storeTypeAvatar')) _previewAvatar = item.urlRecurso;
+          if (tipo == tr('storeTypeFrame')) _previewMarco = item.urlRecurso;
+          if (tipo == tr('storeTypeBackground')) {
             _previewFondo = item.urlRecurso;
             _previewFondoFeed = item.urlRecurso;
           }
-          if (tipo == 'Estilo Post') _previewEstiloPost = item.datosExtra;
+          if (tipo == tr('storeTypePostStyle')) _previewEstiloPost = item.datosExtra;
         });
       },
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+
+  PreferredSizeWidget _buildAppBar(dynamic tr) {
     return AppBar(
       backgroundColor: const Color(0xFFFEF5F1),
       elevation: 0,
       title: Text(
-        'Tienda de Mejoras',
+        widget.comunidad != null
+            ? tr('storeCommunityTitle', {'name': widget.comunidad!.nombre})
+            : tr('storePersonalTitle'),
         style: GoogleFonts.outfit(fontWeight: FontWeight.w900),
       ),
       centerTitle: true,
     );
+  }
+
+
+  Widget? _buildFAB(String Function(String) tr) {
+    if (widget.comunidad == null) return null;
+    
+    // Si eres la creadora (por ID) o tienes rol de Administrador, tienes control total
+    final bool esCreador = (_usuarioActual != null && _usuarioActual!.id == widget.comunidad!.creadorId) ||
+                           widget.comunidad!.miRol == 'Administrador' ||
+                           _esModerador; 
+
+    return FloatingActionButton.extended(
+      onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (ctx) =>
+                  PantallaEnviarPropuesta(comunidad: widget.comunidad!))),
+      label: Text(esCreador ? tr('storeAddImprovedBtn') : tr('storeSuggestDesignBtn')),
+      icon: Icon(esCreador ? Icons.add_to_photos_rounded : Icons.add_photo_alternate_rounded),
+      backgroundColor: widget.comunidad!.colorTema,
+    );
+  }
+
+  bool get _esModerador {
+    if (widget.comunidad == null) return false;
+    return widget.comunidad!.miRol == 'Moderador' || widget.comunidad!.miRol == 'Administrador';
   }
 }

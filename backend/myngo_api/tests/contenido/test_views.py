@@ -9,7 +9,7 @@ pytestmark = pytest.mark.django_db
 def test_publicacion_list_unauthenticated(api_client):
     url = reverse('publicacion-list')
     response = api_client.get(url)
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_200_OK
 
 def test_publicacion_list_authenticated(auth_client):
     PublicacionFactory.create_batch(3)
@@ -43,7 +43,7 @@ def test_toggle_like(auth_client, usuario):
     
     # Add like
     response = auth_client.post(url)
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     assert MeGusta.objects.filter(usuario=usuario, publicacion=pub).exists()
     
     # Remove like

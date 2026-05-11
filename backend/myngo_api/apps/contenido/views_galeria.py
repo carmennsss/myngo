@@ -43,6 +43,12 @@ class GaleriaList(generics.ListCreateAPIView):
         coleccion_id = self.request.query_params.get('coleccion_id')
         qs = ImagenGaleria.objects.filter(es_publica=True)
 
+        # Solo mostrar imágenes vinculadas a publicaciones (posts)
+        # Esto excluye imágenes de chats, avatares, etc.
+        qs = qs.filter(
+            Q(publicacion__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+        ).distinct()
+
         if coleccion_id:
             try:
                 coleccion = Coleccion.objects.get(id=coleccion_id)

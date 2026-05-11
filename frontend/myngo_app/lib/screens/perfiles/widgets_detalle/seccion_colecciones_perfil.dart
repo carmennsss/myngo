@@ -10,6 +10,7 @@ import '../../../utils/configuracion.dart';
 import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
 import 'package:mime/mime.dart';
 import 'dart:math' as math;
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra las colecciones (carpetas) de un usuario en su perfil.
 class SeccionColeccionesPerfil extends StatelessWidget {
@@ -35,9 +36,13 @@ class SeccionColeccionesPerfil extends StatelessWidget {
     }
 
     if (colecciones!.isEmpty) {
-      return const EstadoVacioCargando(
-        icon: Icons.folder_open_rounded,
-        message: 'No hay carpetas o colecciones creadas aún.',
+      return Builder(
+        builder: (context) {
+          return EstadoVacioCargando(
+            icon: Icons.folder_open_rounded,
+            message: tr('profileEmptyFolders'),
+          );
+        }
       );
     }
 
@@ -192,59 +197,61 @@ class SeccionColeccionesPerfil extends StatelessWidget {
   void _confirmarCambioPrivacidad(BuildContext context, Coleccion coleccion) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(
-          children: [
-            Icon(
-              coleccion.esPrivada ? Icons.public_rounded : Icons.lock_rounded,
-              color: const Color(0xFFF28B50),
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Icon(
+                coleccion.esPrivada ? Icons.public_rounded : Icons.lock_rounded,
+                color: const Color(0xFFF28B50),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  coleccion.esPrivada ? tr('profileFolderMakePublicTitle') : tr('profileFolderMakePrivateTitle'),
+                  style: GoogleFonts.getFont(fuentePerfil ?? 'Outfit', color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            coleccion.esPrivada
+                ? tr('profileFolderMakePublicDesc')
+                : tr('profileFolderMakePrivateDesc'),
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(tr('profileFolderCancel'), style: GoogleFonts.inter(color: Colors.grey)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                coleccion.esPrivada ? '¿Hacer pública?' : '¿Hacer privada?',
-                style: GoogleFonts.getFont(fuentePerfil ?? 'Outfit', color: Colors.white, fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.only(right: 8, bottom: 8),
+              child: ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final res = await ServicioGaleria().editarColeccion(
+                    coleccion.id,
+                    {'es_privada': !coleccion.esPrivada},
+                  );
+                  if (res.exito) {
+                    onRefresh();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF28B50),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: Text(tr('profileFolderConfirm'), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
-        ),
-        content: Text(
-          coleccion.esPrivada
-              ? '¿Estás seguro? Al hacerla pública, cualquier miau-usuario podrá ver tus fotos de esta carpeta.'
-              : '¿Estás seguro? Solo tú podrás ver el contenido de esta carpeta a partir de ahora.',
-          style: GoogleFonts.inter(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Mejor no', style: GoogleFonts.inter(color: Colors.grey)),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8, bottom: 8),
-            child: ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final res = await ServicioGaleria().editarColeccion(
-                  coleccion.id,
-                  {'es_privada': !coleccion.esPrivada},
-                );
-                if (res.exito) {
-                  onRefresh();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF28B50),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: Text('Sí, confirmar 🐾', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

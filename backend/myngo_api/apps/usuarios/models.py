@@ -7,7 +7,7 @@ el modelo Perfil (datos extendidos 1:1) y el modelo Seguimiento
 """
 
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 
@@ -56,10 +56,11 @@ class UsuarioManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
-class Usuario(AbstractBaseUser):
-    """
-    Representa la cuenta principal de un usuario en Myngo. Almacena la información
-    crítica de acceso, el estado de verificación y la reputación acumulada.
+class Usuario(AbstractBaseUser, PermissionsMixin):
+    """Modelo principal de usuario de la plataforma Myngo.
+
+    Utiliza email como identificador único en lugar del nombre de usuario
+    estándar de Django. El rating se actualiza mediante el sistema de votos.
     """
 
     class Meta:

@@ -1,0 +1,812 @@
+00:00 +0: loading d:/TFG/myngo/frontend/myngo_app/test/integration/app_test.dart
+00:00 +0: d:/TFG/myngo/frontend/myngo_app/test/integration/app_test.dart: end-to-end test tap on login and verify navigation
+00:00 +1: d:/TFG/myngo/frontend/myngo_app/test/integration/app_test.dart: (tearDownAll)
+Warning: integration_test plugin was not detected.
+
+If you're running the tests with `flutter drive`, please make sure your tests
+are in the `integration_test/` directory of your package and use
+`flutter test $path_to_test` to run it instead.
+
+If you're running the tests with Android instrumentation or XCTest, this means
+that you are not capturing test results properly! See the following link for
+how to set up the integration_test plugin:
+
+https://docs.flutter.dev/testing/integration-tests
+
+00:00 +1: d:/TFG/myngo/frontend/myngo_app/test/unit/models/modelos_test.dart: Tests de Modelos (Parseo y Serialización) Usuario.fromJson parsea correctamente
+00:00 +2: d:/TFG/myngo/frontend/myngo_app/test/unit/models/modelos_test.dart: Tests de Modelos (Parseo y Serialización) Comunidad.fromJson y toJson funcionan correctamente
+00:00 +3: d:/TFG/myngo/frontend/myngo_app/test/unit/models/modelos_test.dart: Tests de Modelos (Parseo y Serialización) Publicacion.fromJson parsea correctamente
+00:00 +4: d:/TFG/myngo/frontend/myngo_app/test/unit/models/modelos_test.dart: Tests de Modelos (Parseo y Serialización) SalaChat.fromJson parsea correctamente
+00:00 +5: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_comunidades_test.dart: ServicioComunidades - REST API listarComunidades devuelve una lista de comunidades en caso de éxito
+00:00 +6: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_comunidades_test.dart: ServicioComunidades - REST API obtenerComunidad devuelve el detalle de una comunidad
+00:00 +7: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_comunidades_test.dart: ServicioComunidades - REST API unirseAComunidad realiza el post y devuelve éxito
+00:00 +8: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_comunidades_test.dart: ServicioComunidades - REST API abandonarComunidad devuelve éxito cuando el servidor responde 200
+00:00 +9: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_comunidades_test.dart: ServicioComunidades - REST API crearComunidad usa Dio para Multipart y devuelve Comunidad si éxito
+00:01 +10: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mejoras_test.dart: ServicioMejoras - REST API obtenerCatalogoGestion devuelve lista de mejoras
+00:01 +10 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mejoras_test.dart: ServicioMejoras - REST API obtenerCatalogoGestion devuelve lista de mejoras [E]
+  Expected: <true>
+    Actual: <false>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test\unit\services\servicio_mejoras_test.dart 45:7  main.<fn>.<fn>
+  
+00:01 +10 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mejoras_test.dart: ServicioMejoras - REST API votar devuelve éxito cuando se vota correctamente
+00:01 +11 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mejoras_test.dart: ServicioMejoras - REST API comprarMejora devuelve éxito
+00:01 +12 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mensajeria_test.dart: ServicioMensajeria - REST API obtenerSalasChat devuelve lista de salas
+00:01 +13 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mensajeria_test.dart: ServicioMensajeria - REST API crearSala crea una nueva sala correctamente
+00:01 +14 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mensajeria_test.dart: ServicioMensajeria - REST API obtenerMensajesSala devuelve lista de mensajes
+00:01 +15 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_mensajeria_test.dart: ServicioMensajeria - REST API enviarMensaje envía y retorna el mensaje creado
+00:01 +16 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_notificaciones_test.dart: ServicioNotificaciones - REST API obtenerNotificaciones devuelve una lista de notificaciones
+00:01 +17 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_notificaciones_test.dart: ServicioNotificaciones - REST API marcarLeida envía POST y devuelve éxito
+00:01 +18 -1: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_notificaciones_test.dart: ServicioNotificaciones - REST API responderSolicitudInteractiva envía POST y devuelve éxito
+00:01 +18 -2: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_notificaciones_test.dart: ServicioNotificaciones - REST API responderSolicitudInteractiva envía POST y devuelve éxito [E]
+  Expected: <true>
+    Actual: <false>
+  
+  package:matcher                                            expect
+  package:flutter_test/src/widget_tester.dart 473:18         expect
+  test\unit\services\servicio_notificaciones_test.dart 66:7  main.<fn>.<fn>
+  
+test/unit/servicio_usuario_test.dart:3:8: Error: Error when reading 'lib/services/servicio_usuario.dart': El sistema no puede encontrar el archivo especificado
+import 'package:myngo_app/services/servicio_usuario.dart';
+       ^
+test/unit/servicio_usuario_test.dart:4:8: Error: Error when reading 'lib/models/usuario_model.dart': El sistema no puede encontrar el archivo especificado
+import 'package:myngo_app/models/usuario_model.dart';
+       ^
+test/unit/servicio_usuario_test.dart:11:8: Error: 'ServicioUsuario' isn't a type.
+  late ServicioUsuario servicioUsuario;
+       ^^^^^^^^^^^^^^^
+test/unit/servicio_usuario_test.dart:19:23: Error: Method not found: 'ServicioUsuario'.
+    servicioUsuario = ServicioUsuario();
+                      ^^^^^^^^^^^^^^^
+00:01 +18 -3: loading d:/TFG/myngo/frontend/myngo_app/test/unit/servicio_usuario_test.dart [E]
+  Failed to load "d:/TFG/myngo/frontend/myngo_app/test/unit/servicio_usuario_test.dart":
+  Compilation failed for testPath=d:/TFG/myngo/frontend/myngo_app/test/unit/servicio_usuario_test.dart: test/unit/servicio_usuario_test.dart:3:8: Error: Error when reading 'lib/services/servicio_usuario.dart': El sistema no puede encontrar el archivo especificado
+  import 'package:myngo_app/services/servicio_usuario.dart';
+         ^
+  test/unit/servicio_usuario_test.dart:4:8: Error: Error when reading 'lib/models/usuario_model.dart': El sistema no puede encontrar el archivo especificado
+  import 'package:myngo_app/models/usuario_model.dart';
+         ^
+  test/unit/servicio_usuario_test.dart:11:8: Error: 'ServicioUsuario' isn't a type.
+    late ServicioUsuario servicioUsuario;
+         ^^^^^^^^^^^^^^^
+  test/unit/servicio_usuario_test.dart:19:23: Error: Method not found: 'ServicioUsuario'.
+      servicioUsuario = ServicioUsuario();
+                        ^^^^^^^^^^^^^^^
+  .
+00:01 +18 -3: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Autenticación iniciarSesion retorna éxito y guarda token si credenciales son correctas
+00:01 +18 -4: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Autenticación iniciarSesion retorna éxito y guarda token si credenciales son correctas [E]
+  Expected: <true>
+    Actual: <false>
+  
+  package:matcher                                      expect
+  package:flutter_test/src/widget_tester.dart 473:18   expect
+  test\unit\services\servicio_usuarios_test.dart 47:7  main.<fn>.<fn>
+  
+00:01 +18 -4: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Autenticación iniciarSesion retorna error si el servidor devuelve HTML (crashed)
+[Auth] Error Crítico: El servidor devolvió HTML en lugar de JSON. Status: 500
+00:02 +19 -4: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Autenticación registrarse devuelve Usuario en caso de éxito
+00:02 +19 -5: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Autenticación registrarse devuelve Usuario en caso de éxito [E]
+  Expected: <true>
+    Actual: <false>
+  
+  package:matcher                                      expect
+  package:flutter_test/src/widget_tester.dart 473:18   expect
+  test\unit\services\servicio_usuarios_test.dart 79:7  main.<fn>.<fn>
+  
+00:02 +19 -5: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Gestión de Sesión cerrarSesion elimina las claves de SharedPreferences
+[Auth] Sesión cerrada y SharedPreferences limpiadas.
+00:02 +20 -5: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Obtención de datos obtenerDatosUsuario devuelve usuario correctamente
+00:02 +20 -6: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Obtención de datos obtenerDatosUsuario devuelve usuario correctamente [E]
+  Expected: <true>
+    Actual: <false>
+  
+  package:matcher                                       expect
+  package:flutter_test/src/widget_tester.dart 473:18    expect
+  test\unit\services\servicio_usuarios_test.dart 115:7  main.<fn>.<fn>
+  
+00:02 +20 -6: d:/TFG/myngo/frontend/myngo_app/test/unit/services/servicio_usuarios_test.dart: ServicioUsuarios - Obtención de datos listarUsuarios devuelve lista paginada de usuarios
+test/widget/login_screen_test.dart:3:8: Error: Error when reading 'lib/screens/auth/login_screen.dart': El sistema no puede encontrar la ruta especificada
+import 'package:myngo_app/screens/auth/login_screen.dart';
+       ^
+test/widget/login_screen_test.dart:8:47: Error: Method not found: 'LoginScreen'.
+    await tester.pumpWidget(MaterialApp(home: LoginScreen()));
+                                              ^^^^^^^^^^^
+00:03 +21 -7: loading d:/TFG/myngo/frontend/myngo_app/test/widget/login_screen_test.dart [E]
+  Failed to load "d:/TFG/myngo/frontend/myngo_app/test/widget/login_screen_test.dart":
+  Compilation failed for testPath=d:/TFG/myngo/frontend/myngo_app/test/widget/login_screen_test.dart: test/widget/login_screen_test.dart:3:8: Error: Error when reading 'lib/screens/auth/login_screen.dart': El sistema no puede encontrar la ruta especificada
+  import 'package:myngo_app/screens/auth/login_screen.dart';
+         ^
+  test/widget/login_screen_test.dart:8:47: Error: Method not found: 'LoginScreen'.
+      await tester.pumpWidget(MaterialApp(home: LoginScreen()));
+                                                ^^^^^^^^^^^
+  .
+00:05 +21 -7: d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart: Auth Screens Widget Tests PantallaLogin renderiza correctamente y muestra campos de email y password
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following _Exception was thrown building ListenableBuilder(listenable: Instance of
+'TolgeeTranslationsStrategy', dirty, state: _AnimatedState#9c764):
+Exception: Tolgee integration is not initialized
+
+The relevant error-causing widget was:
+  ListenableBuilder
+  ListenableBuilder:file:///C:/Users/carme/AppData/Local/Pub/Cache/hosted/pub.dev/tolgee-1.2.0/lib/src/ui/translation_widget.dart:105:12
+
+When the exception was thrown, this was the stack:
+#0      TolgeeTranslationsStrategy._tolgeeTranslations (package:tolgee/src/translations/tolgee_translation_strategy.dart:44:7)
+#1      TolgeeTranslationsStrategy.isTranslationEnabled (package:tolgee/src/translations/tolgee_translation_strategy.dart:109:7)
+#2      _TranslationWidgetState.build.<anonymous closure> (package:tolgee/src/ui/translation_widget.dart:109:51)
+#3      ListenableBuilder.build (package:flutter/src/widgets/transitions.dart:1149:48)
+#4      _AnimatedState.build (package:flutter/src/widgets/transitions.dart:139:48)
+#5      StatefulElement.build (package:flutter/src/widgets/framework.dart:5931:27)
+#6      ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5817:15)
+#7      StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#8      Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#9      ComponentElement._firstBuild (package:flutter/src/widgets/framework.dart:5799:5)
+#10     StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5973:11)
+#11     ComponentElement.mount (package:flutter/src/widgets/framework.dart:5793:5)
+...     Normal element mounting (276 frames)
+#287    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#288    MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7264:36)
+#289    MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7279:32)
+...     Normal element mounting (467 frames)
+#756    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#757    Element.updateChild (package:flutter/src/widgets/framework.dart:4053:20)
+#758    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#759    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#760    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#761    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#762    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#763    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#764    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#765    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#766    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#767    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#768    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#769    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#770    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#771    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#772    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#773    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#774    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#775    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#776    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#777    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#778    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#779    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#780    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#781    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#782    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#783    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#784    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#785    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#786    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#787    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#788    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#789    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#790    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#791    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#792    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#793    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#794    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#795    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#796    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#797    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#798    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#799    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#800    _RawViewElement._updateChild (package:flutter/src/widgets/view.dart:481:16)
+#801    _RawViewElement.update (package:flutter/src/widgets/view.dart:568:5)
+#802    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#803    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#804    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#805    StatelessElement.update (package:flutter/src/widgets/framework.dart:5895:5)
+#806    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#807    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#808    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#809    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#810    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#811    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#812    RootElement._rebuild (package:flutter/src/widgets/binding.dart:1822:16)
+#813    RootElement.update (package:flutter/src/widgets/binding.dart:1800:5)
+#814    RootElement.performRebuild (package:flutter/src/widgets/binding.dart:1814:7)
+#815    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#816    BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2750:15)
+#817    BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2807:11)
+#818    BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3111:18)
+#819    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:2131:19)
+#820    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)
+#821    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1430:15)
+#822    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1345:9)
+#823    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:1960:9)
+#826    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#827    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:1949:27)
+#828    WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
+#831    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#832    WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
+#833    main.<anonymous closure>.<anonymous closure> (file:///d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart:27:20)
+#834    testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#835    TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 5 frames from dart:async and package:stack_trace)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly 2 matching candidates
+  Actual: _TypeWidgetFinder:<Found 0 widgets with type "TextFormField": []>
+   Which: means none were found but some were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart:30:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart line 30
+The test description was:
+  PantallaLogin renderiza correctamente y muestra campos de email y password
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following message was thrown:
+Multiple exceptions (2) were detected during the running of the current test, and at least one was
+unexpected.
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +21 -8: d:/TFG/myngo/frontend/myngo_app/test/widget_test.dart: App smoke test
+00:06 +21 -8: d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart: Auth Screens Widget Tests PantallaLogin renderiza correctamente y muestra campos de email y password [E]
+  Test failed. See exception logs above.
+  The test description was: PantallaLogin renderiza correctamente y muestra campos de email y password
+  
+00:06 +21 -8: d:/TFG/myngo/frontend/myngo_app/test/widget_test.dart: App smoke test
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following ProviderNotFoundException was thrown building Consumer<LocaleNotifier>(dirty):
+Error: Could not find the correct Provider<LocaleNotifier> above this Consumer<LocaleNotifier>
+Widget
+
+This happens because you used a `BuildContext` that does not include the provider
+of your choice. There are a few common scenarios:
+
+- You added a new provider in your `main.dart` and performed a hot-reload.
+  To fix, perform a hot-restart.
+
+- The provider you are trying to read is in a different route.
+
+  Providers are "scoped". So if you insert of provider inside a route, then
+  other routes will not be able to access that provider.
+
+- You used a `BuildContext` that is an ancestor of the provider you are trying to read.
+
+  Make sure that Consumer<LocaleNotifier> is under your MultiProvider/Provider<LocaleNotifier>.
+  This usually happens when you are creating a provider and trying to read it immediately.
+
+  For example, instead of:
+
+  ```
+  Widget build(BuildContext context) {
+    return Provider<Example>(
+      create: (_) => Example(),
+      // Will throw a ProviderNotFoundError, because `context` is associated
+      // to the widget that is the parent of `Provider<Example>`
+      child: Text(context.watch<Example>().toString()),
+    );
+  }
+  ```
+
+  consider using `builder` like so:
+
+  ```
+  Widget build(BuildContext context) {
+    return Provider<Example>(
+      create: (_) => Example(),
+      // we use `builder` to obtain a new `BuildContext` that has access to the provider
+      builder: (context, child) {
+        // No longer throws
+        return Text(context.watch<Example>().toString());
+      }
+    );
+  }
+  ```
+
+If none of these solutions work, consider asking for help on StackOverflow:
+https://stackoverflow.com/questions/tagged/flutter
+
+The relevant error-causing widget was:
+  Consumer<LocaleNotifier> Consumer:file:///d:/TFG/myngo/frontend/myngo_app/lib/main.dart:86:12
+
+When the exception was thrown, this was the stack:
+#0      Provider._inheritedElementOf (package:provider/src/provider.dart:377:7)
+#1      Provider.of (package:provider/src/provider.dart:327:30)
+#2      Consumer.buildWithChild (package:provider/src/consumer.dart:181:16)
+#3      SingleChildStatelessWidget.build (package:nested/nested.dart:259:41)
+#4      StatelessElement.build (package:flutter/src/widgets/framework.dart:5889:49)
+#5      SingleChildStatelessElement.build (package:nested/nested.dart:279:18)
+#6      ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5817:15)
+#7      Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#8      ComponentElement._firstBuild (package:flutter/src/widgets/framework.dart:5799:5)
+#9      ComponentElement.mount (package:flutter/src/widgets/framework.dart:5793:5)
+#10     SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
+...     Normal element mounting (13 frames)
+#23     _InheritedProviderScopeElement.mount (package:provider/src/inherited_provider.dart:424:11)
+...     Normal element mounting (7 frames)
+#30     SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
+...     Normal element mounting (7 frames)
+#37     _NestedHookElement.mount (package:nested/nested.dart:187:11)
+...     Normal element mounting (7 frames)
+#44     SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
+#45     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#46     Element.updateChild (package:flutter/src/widgets/framework.dart:4053:20)
+#47     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#48     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#49     ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#50     _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#51     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#52     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#53     StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#54     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#55     StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#56     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#57     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#58     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#59     ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#60     _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#61     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#62     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#63     StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#64     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#65     StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#66     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#67     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#68     StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#69     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#70     StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#71     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#72     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#73     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#74     ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#75     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#76     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#77     StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#78     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#79     StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#80     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#81     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#82     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#83     ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#84     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#85     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#86     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#87     ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#88     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#89     _RawViewElement._updateChild (package:flutter/src/widgets/view.dart:481:16)
+#90     _RawViewElement.update (package:flutter/src/widgets/view.dart:568:5)
+#91     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#92     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#93     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#94     StatelessElement.update (package:flutter/src/widgets/framework.dart:5895:5)
+#95     Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#96     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#97     StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#98     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#99     StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#100    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#101    RootElement._rebuild (package:flutter/src/widgets/binding.dart:1822:16)
+#102    RootElement.update (package:flutter/src/widgets/binding.dart:1800:5)
+#103    RootElement.performRebuild (package:flutter/src/widgets/binding.dart:1814:7)
+#104    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#105    BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2750:15)
+#106    BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2807:11)
+#107    BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3111:18)
+#108    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:2131:19)
+#109    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)
+#110    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1430:15)
+#111    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1345:9)
+#112    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:1960:9)
+#115    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#116    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:1949:27)
+#117    WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
+#120    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#121    WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
+#122    main.<anonymous closure> (file:///d:/TFG/myngo/frontend/myngo_app/test/widget_test.dart:16:18)
+#123    testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#124    TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 5 frames from dart:async and package:stack_trace)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TypeWidgetFinder:<Found 1 widget with type "MiAplicacion": [
+            MiAplicacion,
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///d:/TFG/myngo/frontend/myngo_app/test/widget_test.dart:24:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///d:/TFG/myngo/frontend/myngo_app/test/widget_test.dart line 24
+The test description was:
+  App smoke test
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following message was thrown:
+Multiple exceptions (2) were detected during the running of the current test, and at least one was
+unexpected.
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +21 -9: d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart: Auth Screens Widget Tests PantallaRegistro renderiza correctamente y muestra 4 campos
+00:06 +21 -9: d:/TFG/myngo/frontend/myngo_app/test/widget_test.dart: App smoke test [E]
+  Test failed. See exception logs above.
+  The test description was: App smoke test
+  
+00:06 +21 -9: d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart: Auth Screens Widget Tests PantallaRegistro renderiza correctamente y muestra 4 campos
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following _Exception was thrown building ListenableBuilder(listenable: Instance of
+'TolgeeTranslationsStrategy', dirty, state: _AnimatedState#f2f7a):
+Exception: Tolgee integration is not initialized
+
+The relevant error-causing widget was:
+  ListenableBuilder
+  ListenableBuilder:file:///C:/Users/carme/AppData/Local/Pub/Cache/hosted/pub.dev/tolgee-1.2.0/lib/src/ui/translation_widget.dart:105:12
+
+When the exception was thrown, this was the stack:
+#0      TolgeeTranslationsStrategy._tolgeeTranslations (package:tolgee/src/translations/tolgee_translation_strategy.dart:44:7)
+#1      TolgeeTranslationsStrategy.isTranslationEnabled (package:tolgee/src/translations/tolgee_translation_strategy.dart:109:7)
+#2      _TranslationWidgetState.build.<anonymous closure> (package:tolgee/src/ui/translation_widget.dart:109:51)
+#3      ListenableBuilder.build (package:flutter/src/widgets/transitions.dart:1149:48)
+#4      _AnimatedState.build (package:flutter/src/widgets/transitions.dart:139:48)
+#5      StatefulElement.build (package:flutter/src/widgets/framework.dart:5931:27)
+#6      ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5817:15)
+#7      StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#8      Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#9      ComponentElement._firstBuild (package:flutter/src/widgets/framework.dart:5799:5)
+#10     StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5973:11)
+#11     ComponentElement.mount (package:flutter/src/widgets/framework.dart:5793:5)
+...     Normal element mounting (9 frames)
+#20     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#21     MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7264:36)
+#22     MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7279:32)
+#23     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#24     Element.updateChild (package:flutter/src/widgets/framework.dart:4059:18)
+#25     _LayoutBuilderElement._rebuildWithConstraints.updateChildCallback (package:flutter/src/widgets/layout_builder.dart:247:18)
+#26     BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3101:19)
+#27     _LayoutBuilderElement._rebuildWithConstraints (package:flutter/src/widgets/layout_builder.dart:270:12)
+#28     RenderAbstractLayoutBuilderMixin.layoutCallback (package:flutter/src/widgets/layout_builder.dart:333:38)
+#29     RenderObjectWithLayoutCallbackMixin.runLayoutCallback.<anonymous closure> (package:flutter/src/rendering/object.dart:4162:33)
+#30     RenderObject.invokeLayoutCallback.<anonymous closure> (package:flutter/src/rendering/object.dart:2887:17)
+#31     PipelineOwner._enableMutationsToDirtySubtrees (package:flutter/src/rendering/object.dart:1223:15)
+#32     RenderObject.invokeLayoutCallback (package:flutter/src/rendering/object.dart:2886:14)
+#33     RenderObjectWithLayoutCallbackMixin.runLayoutCallback (package:flutter/src/rendering/object.dart:4162:5)
+#34     _RenderLayoutBuilder.performLayout (package:flutter/src/widgets/layout_builder.dart:447:5)
+#35     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#36     RenderPadding.performLayout (package:flutter/src/rendering/shifted_box.dart:262:12)
+#37     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#38     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#39     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#40     RenderConstrainedBox.performLayout (package:flutter/src/rendering/proxy_box.dart:296:14)
+#41     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#42     MultiChildLayoutDelegate.layoutChild (package:flutter/src/rendering/custom_layout.dart:180:12)
+#43     _ScaffoldLayout.performLayout (package:flutter/src/material/scaffold.dart:1113:7)
+#44     MultiChildLayoutDelegate._callPerformLayout (package:flutter/src/rendering/custom_layout.dart:246:7)
+#45     RenderCustomMultiChildLayoutBox.performLayout (package:flutter/src/rendering/custom_layout.dart:417:14)
+#46     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#47     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#48     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#49     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#50     _RenderCustomClip.performLayout (package:flutter/src/rendering/proxy_box.dart:1549:11)
+#51     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#52     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#53     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#54     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#55     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#56     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#57     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#58     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#59     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#60     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#61     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#62     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#63     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#64     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#65     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#66     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#67     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#68     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#69     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#70     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#71     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#72     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#73     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#74     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#75     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#76     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#77     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#78     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#79     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#80     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#81     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#82     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#83     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#84     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#85     RenderOffstage.performLayout (package:flutter/src/rendering/proxy_box.dart:3923:13)
+#86     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#87     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#88     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#89     _RenderTheaterMixin.layoutChild (package:flutter/src/widgets/overlay.dart:1084:13)
+#90     _RenderTheater.performLayout (package:flutter/src/widgets/overlay.dart:1429:9)
+#91     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#92     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#93     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#94     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#95     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#96     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#97     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#98     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#99     RenderCustomPaint.performLayout (package:flutter/src/rendering/custom_paint.dart:574:11)
+#100    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#101    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#102    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#103    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#104    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#105    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#106    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#107    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#108    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#109    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#110    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#111    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#112    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#113    RenderView.performLayout (package:flutter/src/rendering/view.dart:292:12)
+#114    RenderObject._layoutWithoutResize (package:flutter/src/rendering/object.dart:2616:7)
+#115    PipelineOwner.flushLayout (package:flutter/src/rendering/object.dart:1174:18)
+#116    PipelineOwner.flushLayout (package:flutter/src/rendering/object.dart:1187:15)
+#117    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:2133:27)
+#118    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)
+#119    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1430:15)
+#120    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1345:9)
+#121    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:1960:9)
+#124    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#125    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:1949:27)
+#126    WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
+#129    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#130    WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
+#131    main.<anonymous closure>.<anonymous closure> (file:///d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart:37:20)
+#132    testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#133    TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 5 frames from dart:async and package:stack_trace)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following ProviderNotFoundException was thrown building Consumer<LocaleNotifier>(dirty):
+Error: Could not find the correct Provider<LocaleNotifier> above this Consumer<LocaleNotifier>
+Widget
+
+This happens because you used a `BuildContext` that does not include the provider
+of your choice. There are a few common scenarios:
+
+- You added a new provider in your `main.dart` and performed a hot-reload.
+  To fix, perform a hot-restart.
+
+- The provider you are trying to read is in a different route.
+
+  Providers are "scoped". So if you insert of provider inside a route, then
+  other routes will not be able to access that provider.
+
+- You used a `BuildContext` that is an ancestor of the provider you are trying to read.
+
+  Make sure that Consumer<LocaleNotifier> is under your MultiProvider/Provider<LocaleNotifier>.
+  This usually happens when you are creating a provider and trying to read it immediately.
+
+  For example, instead of:
+
+  ```
+  Widget build(BuildContext context) {
+    return Provider<Example>(
+      create: (_) => Example(),
+      // Will throw a ProviderNotFoundError, because `context` is associated
+      // to the widget that is the parent of `Provider<Example>`
+      child: Text(context.watch<Example>().toString()),
+    );
+  }
+  ```
+
+  consider using `builder` like so:
+
+  ```
+  Widget build(BuildContext context) {
+    return Provider<Example>(
+      create: (_) => Example(),
+      // we use `builder` to obtain a new `BuildContext` that has access to the provider
+      builder: (context, child) {
+        // No longer throws
+        return Text(context.watch<Example>().toString());
+      }
+    );
+  }
+  ```
+
+If none of these solutions work, consider asking for help on StackOverflow:
+https://stackoverflow.com/questions/tagged/flutter
+
+The relevant error-causing widget was:
+  Consumer<LocaleNotifier>
+  Consumer:file:///d:/TFG/myngo/frontend/myngo_app/lib/widgets/boton_idioma.dart:21:12
+
+When the exception was thrown, this was the stack:
+#0      Provider._inheritedElementOf (package:provider/src/provider.dart:377:7)
+#1      Provider.of (package:provider/src/provider.dart:327:30)
+#2      Consumer.buildWithChild (package:provider/src/consumer.dart:181:16)
+#3      SingleChildStatelessWidget.build (package:nested/nested.dart:259:41)
+#4      StatelessElement.build (package:flutter/src/widgets/framework.dart:5889:49)
+#5      SingleChildStatelessElement.build (package:nested/nested.dart:279:18)
+#6      ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5817:15)
+#7      Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#8      ComponentElement._firstBuild (package:flutter/src/widgets/framework.dart:5799:5)
+#9      ComponentElement.mount (package:flutter/src/widgets/framework.dart:5793:5)
+#10     SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
+...     Normal element mounting (13 frames)
+#23     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#24     MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7264:36)
+#25     MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7279:32)
+#26     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#27     Element.updateChild (package:flutter/src/widgets/framework.dart:4059:18)
+#28     _LayoutBuilderElement._rebuildWithConstraints.updateChildCallback (package:flutter/src/widgets/layout_builder.dart:247:18)
+#29     BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3101:19)
+#30     _LayoutBuilderElement._rebuildWithConstraints (package:flutter/src/widgets/layout_builder.dart:270:12)
+#31     RenderAbstractLayoutBuilderMixin.layoutCallback (package:flutter/src/widgets/layout_builder.dart:333:38)
+#32     RenderObjectWithLayoutCallbackMixin.runLayoutCallback.<anonymous closure> (package:flutter/src/rendering/object.dart:4162:33)
+#33     RenderObject.invokeLayoutCallback.<anonymous closure> (package:flutter/src/rendering/object.dart:2887:17)
+#34     PipelineOwner._enableMutationsToDirtySubtrees (package:flutter/src/rendering/object.dart:1223:15)
+#35     RenderObject.invokeLayoutCallback (package:flutter/src/rendering/object.dart:2886:14)
+#36     RenderObjectWithLayoutCallbackMixin.runLayoutCallback (package:flutter/src/rendering/object.dart:4162:5)
+#37     _RenderLayoutBuilder.performLayout (package:flutter/src/widgets/layout_builder.dart:447:5)
+#38     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#39     RenderPadding.performLayout (package:flutter/src/rendering/shifted_box.dart:262:12)
+#40     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#41     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#42     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#43     RenderConstrainedBox.performLayout (package:flutter/src/rendering/proxy_box.dart:296:14)
+#44     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#45     MultiChildLayoutDelegate.layoutChild (package:flutter/src/rendering/custom_layout.dart:180:12)
+#46     _ScaffoldLayout.performLayout (package:flutter/src/material/scaffold.dart:1113:7)
+#47     MultiChildLayoutDelegate._callPerformLayout (package:flutter/src/rendering/custom_layout.dart:246:7)
+#48     RenderCustomMultiChildLayoutBox.performLayout (package:flutter/src/rendering/custom_layout.dart:417:14)
+#49     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#50     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#51     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#52     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#53     _RenderCustomClip.performLayout (package:flutter/src/rendering/proxy_box.dart:1549:11)
+#54     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#55     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#56     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#57     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#58     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#59     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#60     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#61     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#62     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#63     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#64     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#65     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#66     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#67     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#68     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#69     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#70     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#71     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#72     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#73     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#74     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#75     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#76     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#77     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#78     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#79     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#80     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#81     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#82     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#83     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#84     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#85     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#86     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#87     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#88     RenderOffstage.performLayout (package:flutter/src/rendering/proxy_box.dart:3923:13)
+#89     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#90     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#91     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#92     _RenderTheaterMixin.layoutChild (package:flutter/src/widgets/overlay.dart:1084:13)
+#93     _RenderTheater.performLayout (package:flutter/src/widgets/overlay.dart:1429:9)
+#94     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#95     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#96     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#97     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#98     RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#99     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#100    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#101    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#102    RenderCustomPaint.performLayout (package:flutter/src/rendering/custom_paint.dart:574:11)
+#103    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#104    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#105    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#106    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#107    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#108    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#109    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#110    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#111    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#112    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#113    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#114    RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:118:18)
+#115    RenderObject.layout (package:flutter/src/rendering/object.dart:2768:7)
+#116    RenderView.performLayout (package:flutter/src/rendering/view.dart:292:12)
+#117    RenderObject._layoutWithoutResize (package:flutter/src/rendering/object.dart:2616:7)
+#118    PipelineOwner.flushLayout (package:flutter/src/rendering/object.dart:1174:18)
+#119    PipelineOwner.flushLayout (package:flutter/src/rendering/object.dart:1187:15)
+#120    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:2133:27)
+#121    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)
+#122    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1430:15)
+#123    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1345:9)
+#124    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:1960:9)
+#127    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#128    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:1949:27)
+#129    WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
+#132    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#133    WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
+#134    main.<anonymous closure>.<anonymous closure> (file:///d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart:37:20)
+#135    testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#136    TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 5 frames from dart:async and package:stack_trace)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: at least one matching candidate
+  Actual: _TypeWidgetFinder:<Found 0 widgets with type "TextFormField": []>
+   Which: means none were found but some were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart:42:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart line 42
+The test description was:
+  PantallaRegistro renderiza correctamente y muestra 4 campos
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following message was thrown:
+Multiple exceptions (3) were detected during the running of the current test, and at least one was
+unexpected.
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +21 -10: d:/TFG/myngo/frontend/myngo_app/test/widget/screens/auth_screens_test.dart: Auth Screens Widget Tests PantallaRegistro renderiza correctamente y muestra 4 campos [E]
+  Test failed. See exception logs above.
+  The test description was: PantallaRegistro renderiza correctamente y muestra 4 campos
+  
+00:06 +21 -10: Some tests failed.

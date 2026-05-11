@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tolgee/tolgee.dart';
+
 import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/comunidad.dart';
@@ -7,6 +9,7 @@ import '../../../models/coleccion.dart';
 import '../../../widgets/galeria/masonry_grid_galeria.dart';
 import '../../../widgets/comunes/estado_vacio_cargando.dart';
 import '../../galeria/pantalla_detalle_coleccion.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que gestiona la vista de galería y colecciones de una comunidad.
 class SeccionGaleriaComunidad extends StatefulWidget {
@@ -44,25 +47,30 @@ class _SeccionGaleriaComunidadState extends State<SeccionGaleriaComunidad> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.comoSliver) {
-      return SliverFillRemaining(
-        child: _buildContenido(),
-      );
-    }
-    return _buildContenido();
+    return Builder(
+      builder: (context) {
+        if (widget.comoSliver) {
+          return SliverFillRemaining(
+            child: _buildContenido(tr),
+          );
+        }
+        return _buildContenido(tr);
+      }
+    );
   }
 
-  Widget _buildContenido() {
+
+  Widget _buildContenido(String Function(String, [Map<String, dynamic>?]) tr) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
           child: Row(
             children: [
-              _buildMiniChip('Miau Galería 🐾', _indiceGaleria == 0,
+              _buildMiniChip(tr('galleryMiau'), _indiceGaleria == 0,
                   () => setState(() => _indiceGaleria = 0)),
               const SizedBox(width: 12),
-              _buildMiniChip('Colecciones', _indiceGaleria == 1,
+              _buildMiniChip(tr('galleryCollections'), _indiceGaleria == 1,
                   () => setState(() => _indiceGaleria = 1)),
               const Spacer(),
               if (_indiceGaleria == 1)
@@ -81,23 +89,25 @@ class _SeccionGaleriaComunidadState extends State<SeccionGaleriaComunidad> {
                   comunidadId: widget.comunidad.id,
                   esMiembro: widget.esMiembro,
                 )
-              : _buildGalleryCollections(),
+              : _buildGalleryCollections(tr),
         ),
       ],
     );
   }
 
-  Widget _buildGalleryCollections() {
+
+  Widget _buildGalleryCollections(String Function(String, [Map<String, dynamic>?]) tr) {
     if (widget.estaCargando || widget.colecciones == null) {
       return const Center(
           child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     }
     if (widget.colecciones!.isEmpty) {
-      return const EstadoVacioCargando(
+      return EstadoVacioCargando(
         icon: Icons.folder_open_rounded,
-        message: 'No hay carpetas creadas',
+        message: tr('galleryNoCollections'),
       );
     }
+
 
     final random = math.Random(1337);
 

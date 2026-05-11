@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tolgee/tolgee.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,8 +15,10 @@ import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
 
 import 'pantalla_personalizacion_comunidad.dart';
+import 'pantalla_moderacion_tienda.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Dashboard de administración de una comunidad. Agrupa en pestañas las solicitudes
 // de acceso pendientes, la gestión de miembros, los reportes activos y los ajustes generales.
@@ -34,6 +38,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   TabController? _tabController;
   Map<String, dynamic>? _datos;
   bool _cargando = true;
+  bool _tiendaHabilitada = false;
 
 
   late TextEditingController _nombreCtrl;
@@ -53,6 +58,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     _nombreCtrl = TextEditingController(text: widget.comunidad.nombre);
     _descCtrl = TextEditingController(text: widget.comunidad.descripcion);
     _colorSeleccionado = widget.comunidad.colorTema.toHex();
+    _tiendaHabilitada = widget.comunidad.tiendaHabilitada;
 
     
 
@@ -90,55 +96,63 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text('Gestión: ${widget.comunidad.nombre}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF1E1E1E))),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E1E1E), size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          dividerColor: Colors.transparent,
-          isScrollable: true,
-          tabAlignment: TabAlignment.center,
-          labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
-          unselectedLabelColor: Colors.grey.shade400,
-          labelColor: const Color(0xFFC35E34),
-          indicatorColor: const Color(0xFFC35E34),
-          indicatorSize: TabBarIndicatorSize.label,
-          tabs: const [
-            Tab(text: 'Solicitudes', icon: Icon(Icons.person_add_rounded)),
-            Tab(text: 'Miembros', icon: Icon(Icons.people_rounded)),
-            Tab(text: 'Reportes', icon: Icon(Icons.gavel_rounded)),
-            Tab(text: 'Ajustes', icon: Icon(Icons.settings_rounded)),
-          ],
-        ),
-      ),
-      body: _cargando 
-        ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-        : TabBarView(
-            controller: _tabController,
-            children: [
-              _buildSolicitudesTab(),
-              _buildMiembrosTab(),
-              _buildReportesTab(),
-              _buildAjustesTab(),
-            ],
+    return Builder(
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: AppBar(
+            title: Text(tr('adminTitle', {'community': widget.comunidad.nombre}), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF1E1E1E))),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E1E1E), size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
+            bottom: TabBar(
+              controller: _tabController,
+              dividerColor: Colors.transparent,
+              isScrollable: true,
+              tabAlignment: TabAlignment.center,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+              unselectedLabelColor: Colors.grey.shade400,
+              labelColor: const Color(0xFFC35E34),
+              indicatorColor: const Color(0xFFC35E34),
+              indicatorSize: TabBarIndicatorSize.label,
+              tabs: [
+                Tab(text: tr('adminTabRequests'), icon: const Icon(Icons.person_add_rounded)),
+                Tab(text: tr('adminTabMembers'), icon: const Icon(Icons.people_rounded)),
+                Tab(text: tr('adminTabReports'), icon: const Icon(Icons.gavel_rounded)),
+                Tab(text: tr('adminTabStore'), icon: const Icon(Icons.shopping_bag_rounded)),
+                Tab(text: tr('adminTabSettings'), icon: const Icon(Icons.settings_rounded)),
+              ],
+            ),
           ),
+          body: _cargando 
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildSolicitudesTab(tr),
+                  _buildMiembrosTab(tr),
+                  _buildReportesTab(tr),
+                  PantallaModeracionTienda(comunidad: widget.comunidad),
+                  _buildAjustesTab(tr),
+                ],
+              ),
+        );
+      }
     );
   }
 
+
   // Pestaña de solicitudes de acceso pendientes con botones de aceptar/rechazar
-  Widget _buildSolicitudesTab() {
+  Widget _buildSolicitudesTab(String Function(String, [Map<String, dynamic>?]) tr) {
     final dynamic rawSolicitudes = _datos != null ? _datos!['solicitudes_pendientes'] : null;
     final List solicitudes = (rawSolicitudes is List) ? rawSolicitudes : [];
     
-    if (solicitudes.isEmpty) return _buildEmptyState(Icons.person_search_rounded, 'No hay michis esperando');
+    if (solicitudes.isEmpty) return _buildEmptyState(Icons.person_search_rounded, tr('adminNoPendingRequests'));
+
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -147,8 +161,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         final sol = solicitudes[index];
         return _TarjetaGestion(
           nombre: sol['usuario_nombre'],
-          subtitulo: 'Pidió unirse el ${sol['fecha'].toString().split('T')[0]}',
+          subtitulo: tr('adminRequestDate', {'date': sol['fecha'].toString().split('T')[0]}),
           avatarUrl: sol['usuario_avatar'],
+
           acciones: [
             IconButton(
               icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF248EA6), size: 28), 
@@ -165,11 +180,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
   // Pestaña de miembros con menú contextual para cambiar rol o expulsar
-  Widget _buildMiembrosTab() {
+  Widget _buildMiembrosTab(String Function(String, [Map<String, dynamic>?]) tr) {
     final dynamic rawMiembros = _datos != null ? _datos!['miembros'] : null;
     final List miembros = (rawMiembros is List) ? rawMiembros : [];
     
-    if (miembros.isEmpty) return _buildEmptyState(Icons.people_outline, 'No hay miembros? Qué raro');
+    if (miembros.isEmpty) return _buildEmptyState(Icons.people_outline, tr('adminNoMembersError'));
+
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -180,8 +196,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         
         return _TarjetaGestion(
           nombre: m['usuario_nombre'],
-          subtitulo: 'Rol: ${m['rol']}',
+          subtitulo: tr('adminMemberRol', {'rol': m['rol']}),
           avatarUrl: m['usuario_avatar'],
+
           acciones: esAdmin ? [
              const Icon(Icons.stars_rounded, color: Colors.amber, size: 24)
           ] : [
@@ -191,12 +208,13 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
               color: Colors.white,
               onSelected: (rol) => _cambiarRol(m['id'], rol),
               itemBuilder: (context) => [
-                const PopupMenuItem(value: 'Moderador', child: Text('🛡️ Hacer Moderador')),
-                const PopupMenuItem(value: 'Miembro', child: Text('🐾 Hacer Miembro')),
+                PopupMenuItem(value: 'Moderador', child: Text(tr('adminMakeModerator'))),
+                PopupMenuItem(value: 'Miembro', child: Text(tr('adminMakeMember'))),
                 const PopupMenuDivider(),
-                const PopupMenuItem(value: 'Expulsar', child: Text('🚫 Expulsar', style: TextStyle(color: Color(0xFFD95F43)))),
+                PopupMenuItem(value: 'Expulsar', child: Text(tr('adminExpel'), style: const TextStyle(color: Color(0xFFD95F43)))),
               ],
             ),
+
           ],
         );
       },
@@ -204,11 +222,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
   // Pestaña de reportes activos con opciones de ignorar o borrar el contenido
-  Widget _buildReportesTab() {
+  Widget _buildReportesTab(String Function(String, [Map<String, dynamic>?]) tr) {
     final dynamic rawReportes = _datos != null ? _datos!['reportes_activos'] : null;
     final List reportes = (rawReportes is List) ? rawReportes : [];
     
-    if (reportes.isEmpty) return _buildEmptyState(Icons.verified_user_rounded, 'Todo en orden por aquí ✨');
+    if (reportes.isEmpty) return _buildEmptyState(Icons.verified_user_rounded, tr('adminNoReports'));
+
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -231,14 +250,15 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: const Color(0xFFD95F43).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                      child: Text(rep['tipo_objeto'] ?? 'CONTENIDO', style: const TextStyle(color: Color(0xFFD95F43), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                      child: Text(rep['tipo_objeto'] ?? tr('commonContent'), style: const TextStyle(color: Color(0xFFD95F43), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                     ),
                     const Spacer(),
-                    Text('Por ${rep['informador_nombre']}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                    Text(tr('commonBy', {'informador_nombre': rep['informador_nombre']}), style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                   ],
                 ),
+
                 const SizedBox(height: 16),
-                Text(rep['motivo'] ?? 'Sin motivo', style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold, fontSize: 18)),
+                Text(rep['motivo'] ?? tr('commonNoReason'), style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold, fontSize: 18)),
                 if (rep['comentario'] != null) Padding(
                   padding: const EdgeInsets.only(top: 6.0),
                   child: Text(rep['comentario'], style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.4)),
@@ -250,9 +270,10 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                     TextButton(
                       onPressed: () => _resolverReporte(rep['id'], 'DESESTIMADO'), 
                       style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
-                      child: const Text('IGNORAR')
+                      child: Text(tr('adminIgnore'))
                     ),
                     const SizedBox(width: 12),
+
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD95F43),
@@ -260,11 +281,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                       ),
                       icon: const Icon(Icons.delete_sweep_rounded, size: 18),
-                      onPressed: () => _mostrarDialogoBorrado(rep['objeto_id'], rep['tipo_objeto'], rep['id']),
-                      label: const Text('BORRAR'),
+                      onPressed: () => _mostrarDialogoBorrado(rep['objeto_id'], rep['tipo_objeto'], rep['id'], tr),
+                      label: Text(tr('adminDelete')),
                     ),
                   ],
                 ),
+
               ],
             ),
           ),
@@ -295,12 +317,13 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     if (res.exito) {
       _cargarDatos(silencioso: true);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('¡Rol actualizado con éxito! 🐾', style: GoogleFonts.outfit()),
+        content: Text(tr('adminRoleUpdated'), style: GoogleFonts.outfit()),
         backgroundColor: const Color(0xFF248EA6),
         behavior: SnackBarBehavior.floating,
       ));
     }
   }
+
 
   // Diálogo de confirmación antes de borrar la comunidad de forma permanente
   void _confirmarEliminarComunidad() {
@@ -310,13 +333,14 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text('¿Borrar comunidad permanentemente?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFD95F43))),
-        content: Text('¡Cuidado michi! Esta acción no se puede deshacer. Se borrarán todos los posts, imágenes y salas de chat de "${widget.comunidad.nombre}".', style: GoogleFonts.outfit()),
+        title: Text(tr('adminDeleteCommunityTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFFD95F43))),
+        content: Text(tr('adminDeleteCommunityDesc', {'name': widget.comunidad.nombre}), style: GoogleFonts.outfit()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context), 
-            child: Text('CANCELAR', style: TextStyle(color: Colors.grey.shade600))
+            child: Text(tr('commonCancel'), style: TextStyle(color: Colors.grey.shade600))
           ),
+
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD95F43),
@@ -326,7 +350,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
               Navigator.pop(context);
               final res = await _servicioComunidades.eliminarComunidad(widget.comunidad.id);
               if (res.exito && mounted) {
-
+                // Notificar a la pantalla de inicio para refrescar el sidebar
                 context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
                 
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Comunidad eliminada con éxito! 🐾')));
@@ -342,13 +366,14 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     );
   }
 
+
   Future<void> _resolverReporte(int id, String estado) async {
     final res = await _servicioModeracion.resolverReporte(id, estado);
     if (res.exito) _cargarDatos(silencioso: true);
   }
 
   // Pide razón antes de borrar un contenido reportado (post, imagen o comentario)
-  void _mostrarDialogoBorrado(int id, String tipo, int reporteId) {
+  void _mostrarDialogoBorrado(int id, String tipo, int reporteId, String Function(String) tr) {
     final razonCtrl = TextEditingController();
     showDialog(
       context: context,
@@ -356,11 +381,11 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text('Moderar Contenido', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+        title: Text(tr('adminModerateContent'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
         content: TextField(
           controller: razonCtrl,
           decoration: InputDecoration(
-            hintText: 'Motivo del borrado...',
+            hintText: tr('adminDeleteReasonHint'),
             filled: true,
             fillColor: Colors.grey.shade100,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)
@@ -369,7 +394,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context), 
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade600))
+            child: Text(tr('commonCancel'), style: TextStyle(color: Colors.grey.shade600))
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -380,12 +405,13 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
               Navigator.pop(context);
               _moderarContenido(id, tipo, reporteId, razonCtrl.text);
             },
-            child: const Text('Borrar Contenido'),
+            child: Text(tr('adminDeleteContentBtn')),
           ),
         ],
       ),
     );
   }
+
 
   // Elimina el contenido del tipo indicado y recarga los reportes en silencio
   Future<void> _moderarContenido(int id, String tipo, int reporteId, String razon) async {
@@ -397,12 +423,13 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     if (resBorrado?.exito == true) {
        _cargarDatos(silencioso: true);
        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-         content: Text('Contenido eliminado con éxito', style: GoogleFonts.outfit()),
+         content: Text(tr('adminContentDeleted'), style: GoogleFonts.outfit()),
          backgroundColor: const Color(0xFF248EA6),
          behavior: SnackBarBehavior.floating,
        ));
     }
   }
+
 
   // Busca tags existentes mientras el admin escribe en el campo de etiquetas
   Future<void> _buscarSugerencias(String query) async {
@@ -435,16 +462,16 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   }
 
   // Pestaña de ajustes: nombre, descripción, banner, tags y zona de peligro
-  Widget _buildAjustesTab() {
+  Widget _buildAjustesTab(String Function(String) tr) {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        _buildSeccionHeader('Identidad Visual'),
+        _buildSeccionHeader(tr('adminSectionVisual')),
         const SizedBox(height: 16),
         _buildConfigItem(
           icon: Icons.image_rounded,
-          title: 'Imagen de Portada',
-          subtitle: _nuevoBanner != null ? '¡Imagen seleccionada! 🐾' : 'Cambia el banner que ven todos los michis',
+          title: tr('adminBannerTitle'),
+          subtitle: _nuevoBanner != null ? tr('adminChangesBanner') : tr('adminSelectingBanner'),
           onTap: () async {
             final picker = ImagePicker();
             final imagen = await picker.pickImage(source: ImageSource.gallery);
@@ -453,19 +480,33 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
             }
           },
         ),
-        const SizedBox(height: 32),
-        _buildSeccionHeader('Datos Generales'),
-        const SizedBox(height: 16),
-        _buildEditableField('Nombre de la Comunidad', _nombreCtrl, Icons.title_rounded),
-        const SizedBox(height: 16),
-        _buildEditableField('Descripción (Miau-Biografía)', _descCtrl, Icons.description_rounded, maxLines: 3),
-        const SizedBox(height: 32),
-        _buildSeccionHeader('Funcionalidades'),
-        const SizedBox(height: 16),
 
-        _buildSeccionHeader('Categorización'),
+        const SizedBox(height: 32),
+        _buildSeccionHeader(tr('adminSectionGeneral')),
+        const SizedBox(height: 16),
+        _buildEditableField(tr('adminFieldName'), _nombreCtrl, Icons.title_rounded),
+        const SizedBox(height: 16),
+        _buildEditableField(tr('adminFieldDesc'), _descCtrl, Icons.description_rounded, maxLines: 3),
+        const SizedBox(height: 32),
+        _buildSeccionHeader(tr('adminSectionFeatures')),
+        const SizedBox(height: 16),
+        _buildConfigItem(
+          icon: Icons.store_rounded,
+          title: tr('adminStoreTitle'),
+          subtitle: _tiendaHabilitada ? tr('adminStoreEnabled') : tr('adminStoreDisabled'),
+          trailing: Switch(
+
+            value: _tiendaHabilitada,
+            activeColor: const Color(0xFFC35E34),
+            onChanged: (val) => setState(() => _tiendaHabilitada = val),
+          ),
+          onTap: () => setState(() => _tiendaHabilitada = !_tiendaHabilitada),
+        ),
+        const SizedBox(height: 32),
+        _buildSeccionHeader(tr('adminSectionTags')),
         const SizedBox(height: 16),
         Container(
+
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -475,20 +516,21 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Etiquetas de la Comunidad (máx. 5)', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+              Text(tr('adminTagsLabel'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
               const SizedBox(height: 12),
               TextField(
                 controller: _controladorTag,
                 onChanged: _buscarSugerencias,
                 onSubmitted: _anadirTag,
                 decoration: InputDecoration(
-                  hintText: 'Añadir tag...',
+                  hintText: tr('adminAddTagHint'),
                   prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFC35E34)),
                   filled: true,
                   fillColor: Colors.grey.shade50,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
               ),
+
               if (_mostrandoSugerencias)
                 Container(
                   margin: const EdgeInsets.only(top: 4),
@@ -520,13 +562,14 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
           ),
         ),
         const SizedBox(height: 32),
-        _buildSeccionHeader('Personalización Visual'),
+        _buildSeccionHeader(tr('adminSectionAdvanced')),
         const SizedBox(height: 16),
         _buildConfigItem(
           icon: Icons.auto_awesome_rounded,
-          title: 'Personalización Avanzada',
-          subtitle: 'Fuentes, fondos de posts y más diseños',
+          title: tr('adminAdvancedTitle'),
+          subtitle: tr('adminAdvancedDesc'),
           onTap: () {
+
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -544,12 +587,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
           },
         ),
         const SizedBox(height: 32),
-        _buildSeccionHeader('Zona de Peligro'),
+        _buildSeccionHeader(tr('adminSectionDanger')),
         const SizedBox(height: 16),
         _buildConfigItem(
           icon: Icons.delete_forever_rounded,
-          title: 'Eliminar Comunidad',
-          subtitle: 'Esta acción borrará todo el contenido de forma permanente',
+          title: tr('adminDeleteCommunityAction'),
+          subtitle: tr('adminDeleteCommunityWarning'),
           onTap: _confirmarEliminarComunidad,
         ),
         const SizedBox(height: 40),
@@ -560,8 +603,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
           ),
           onPressed: _guardarAjustes,
-          child: Text('GUARDAR CAMBIOS', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+          child: Text(tr('adminSaveBtn'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
         ),
+
         const SizedBox(height: 100),
       ],
     );
@@ -571,7 +615,8 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   // Guarda nombre, descripción, color, banner y tags en el servidor
   Future<void> _guardarAjustes() async {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guardando cambios... 🐾')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('adminSaving'))));
+
     
     final res = await _servicioComunidades.actualizarComunidad(
       widget.comunidad.id,
@@ -585,14 +630,15 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
     if (mounted) {
       if (res.exito && res.datos != null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('¡Ajustes actualizados! ✨'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr('adminUpdatedSettings')),
           backgroundColor: Colors.green,
         ));
         Navigator.pop(context, res.datos); // Devuelve la comunidad actualizada
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error: ${res.mensaje}'),
+          content: Text('${tr('commonErrorPrefix')}${res.mensaje}'),
           backgroundColor: Colors.red,
         ));
       }

@@ -13,6 +13,17 @@ import '../utils/configuracion.dart';
 // Se encarga de gestionar a los usuarios y sus sesiones.
 // Lo usamos para hacer login, registrar cuentas, y guardar el token para no pedir la contraseña todo el rato.
 class ServicioUsuarios {
+  final http.Client? _httpClient;
+  final dio.Dio? _dioClient;
+
+  ServicioUsuarios({http.Client? httpClient, dio.Dio? dioClient})
+      : _httpClient = httpClient,
+        _dioClient = dioClient;
+
+  http.Client get client => _httpClient ?? http.Client();
+  dio.Dio get dioClient => _dioClient ?? dio.Dio();
+
+  /// URL base para los endpoints relacionados con la gestión de usuarios.
   // URL donde el backend escucha las peticiones de usuarios
   static const String _urlUsuarios = '${Configuracion.baseUrl}/usuarios';
 
@@ -28,7 +39,7 @@ class ServicioUsuarios {
   // Intenta hacer login con email y contraseña, y si va bien, guarda el token en el móvil
   Future<RespuestaApi<Usuario>> iniciarSesion(String correo, String contrasena) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlUsuarios/login/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': correo.trim(), 'password': contrasena.trim()}),
@@ -80,7 +91,7 @@ class ServicioUsuarios {
   Future<RespuestaApi<Usuario>> registrarse(
       String nombreUsuario, String correo, String contrasena) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlUsuarios/registrar/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -112,7 +123,7 @@ class ServicioUsuarios {
   /// Solicita el restablecimiento de contraseña para el correo proporcionado.
   Future<RespuestaApi> recuperarContrasena(String correo) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlUsuarios/recuperar-password/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': correo}),
@@ -181,7 +192,7 @@ class ServicioUsuarios {
       
       final url = query.isEmpty ? '$_urlUsuarios/datos/' : '$_urlUsuarios/datos/?$query';
       
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse(url),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -204,7 +215,7 @@ class ServicioUsuarios {
   /// Obtiene el ranking global de usuarios basado en su reputación.
   Future<RespuestaApi<List<Usuario>>> obtenerRanking() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlUsuarios/ranking/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -227,7 +238,7 @@ class ServicioUsuarios {
   /// Obtiene la información detallada de un usuario específico por su ID o Nombre de Usuario.
   Future<RespuestaApi<Usuario>> obtenerDatosUsuario(dynamic identifier) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlUsuarios/datos/$identifier/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -292,7 +303,7 @@ class ServicioUsuarios {
         if (token != null) 'Authorization': 'Token $token',
       };
 
-      final dio_client = dio.Dio();
+      final dio_client = dioClient;
       final datosFormulario = dio.FormData();
 
       datosFormulario.fields.add(MapEntry('perfil_id', perfilId.toString()));

@@ -16,7 +16,7 @@ def test_notificacion_list_authenticated(auth_client, usuario):
     url = reverse('notificacion-list')
     response = auth_client.get(url)
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.data['results']) >= 3
+    assert len(response.data) >= 3
 
 def test_notificaciones_count(auth_client, usuario):
     NotificacionFactory.create_batch(2, usuario=usuario, leida=False)

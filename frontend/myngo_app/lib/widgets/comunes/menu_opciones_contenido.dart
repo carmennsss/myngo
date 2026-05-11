@@ -5,6 +5,8 @@ import 'package:myngo_app/services/servicio_usuarios.dart';
 import 'package:myngo_app/services/servicio_galeria.dart';
 import 'package:myngo_app/services/servicio_comunidades.dart';
 import 'package:myngo_app/models/respuesta_api.dart';
+import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class MenuOpcionesContenido extends StatelessWidget {
   final String tipoObjeto; // 'POST', 'IMAGEN', 'COMUNIDAD', 'COMENTARIO'
@@ -34,31 +36,35 @@ class MenuOpcionesContenido extends StatelessWidget {
   Widget build(BuildContext context) {
     final servicioUsuarios = ServicioUsuarios();
     
-    return FutureBuilder<int?>(
-      future: servicioUsuarios.obtenerIdUsuario(),
-      builder: (context, snapshot) {
-        final userId = snapshot.data;
-        if (userId == null) return const SizedBox.shrink();
+    return Builder(
+      builder: (context) {
+        return FutureBuilder<int?>(
+          future: servicioUsuarios.obtenerIdUsuario(),
+          builder: (context, snapshot) {
+            final userId = snapshot.data;
+            if (userId == null) return const SizedBox.shrink();
 
-        final esDuenio = userId == autorId;
-        final esAdminComunidad = userId == creadorComunidadId;
+            final esDuenio = userId == autorId;
+            final esAdminComunidad = userId == creadorComunidadId;
 
-        return PopupMenuButton<String>(
-          key: ValueKey('menu_${tipoObjeto}_$objetoId'),
-          icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFB0B0B0)),
-          color: const Color(0xFF2A2A2A),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          onSelected: (val) => _manejarOpcion(context, val, userId),
-          itemBuilder: (context) => [
-            if (esDuenio) ...[
-              _buildItem('editar', Icons.edit_outlined, 'Editar'),
-              _buildItem('eliminar', Icons.delete_outline_rounded, 'Eliminar', color: Colors.redAccent),
-            ] else if (esAdminComunidad) ...[
-              _buildItem('eliminar_admin', Icons.gavel_rounded, 'Moderar (Borrar)', color: Colors.orangeAccent),
-            ] else ...[
-              _buildItem('reportar', Icons.report_problem_outlined, 'Reportar', color: Colors.yellowAccent),
-            ],
-          ],
+            return PopupMenuButton<String>(
+              key: ValueKey('menu_${tipoObjeto}_$objetoId'),
+              icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFB0B0B0)),
+              color: const Color(0xFF2A2A2A),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onSelected: (val) => _manejarOpcion(context, val, userId, tr),
+              itemBuilder: (context) => [
+                if (esDuenio) ...[
+                  _buildItem('editar', Icons.edit_outlined, tr('commonEdit')),
+                  _buildItem('eliminar', Icons.delete_outline_rounded, tr('commonDelete'), color: Colors.redAccent),
+                ] else if (esAdminComunidad) ...[
+                  _buildItem('eliminar_admin', Icons.gavel_rounded, tr('menuModerate'), color: Colors.orangeAccent),
+                ] else ...[
+                  _buildItem('reportar', Icons.report_problem_outlined, tr('menuReport'), color: Colors.yellowAccent),
+                ],
+              ],
+            );
+          },
         );
       },
     );
@@ -77,17 +83,17 @@ class MenuOpcionesContenido extends StatelessWidget {
     );
   }
 
-  void _manejarOpcion(BuildContext context, String opcion, int userId) {
+  void _manejarOpcion(BuildContext context, String opcion, int userId, String Function(String, [Map<String, Object>?]) tr) {
     if (opcion == 'eliminar' || opcion == 'eliminar_admin') {
-      _confirmarEliminacion(context, opcion == 'eliminar_admin');
+      _confirmarEliminacion(context, opcion == 'eliminar_admin', tr);
     } else if (opcion == 'reportar') {
-      _mostrarDialogoReporte(context);
+      _mostrarDialogoReporte(context, tr);
     } else if (opcion == 'editar') {
       if (onEditado != null) onEditado!();
     }
   }
 
-  void _confirmarEliminacion(BuildContext context, bool esModeracion) {
+  void _confirmarEliminacion(BuildContext context, bool esModeracion, String Function(String, [Map<String, Object>?]) tr) {
     final TextEditingController razonController = TextEditingController();
 
     showDialog(
@@ -95,14 +101,14 @@ class MenuOpcionesContenido extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
-          title: Text(esModeracion ? 'Moderar Contenido' : '¿Eliminar Contenido?', style: GoogleFonts.outfit(color: Colors.white)),
+          title: Text(esModeracion ? tr('menuModerateTitle') : tr('menuDeleteTitle'), style: GoogleFonts.outfit(color: Colors.white)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 esModeracion 
-                  ? 'Indica el motivo del borrado. El autor recibirá una notificación.' 
-                  : 'Esta acción no se puede deshacer.',
+                  ? tr('menuModerateReasonHint')
+                  : tr('menuDeleteWarning'),
                 style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
               ),
               if (esModeracion) ...[
@@ -113,7 +119,7 @@ class MenuOpcionesContenido extends StatelessWidget {
                   onChanged: (v) => setState(() {}),
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Ej: Spam, lenguaje ofensivo...',
+                    hintText: tr('menuModerateSpamHint'),
                     hintStyle: const TextStyle(color: Colors.white38),
                     filled: true,
                     fillColor: Colors.white10,
@@ -124,7 +130,7 @@ class MenuOpcionesContenido extends StatelessWidget {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('commonCancel'))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: esModeracion ? Colors.orange : Colors.red),
               onPressed: (esModeracion && razonController.text.trim().isEmpty) ? null : () async {
@@ -159,7 +165,7 @@ class MenuOpcionesContenido extends StatelessWidget {
                   }
                 }
               },
-              child: const Text('Confirmar'),
+              child: Text(tr('commonConfirm')),
             ),
           ],
         ),
@@ -167,10 +173,10 @@ class MenuOpcionesContenido extends StatelessWidget {
     );
   }
 
-  void _mostrarDialogoReporte(BuildContext context) {
+  void _mostrarDialogoReporte(BuildContext context, String Function(String, [Map<String, Object>?]) tr) {
     final servicioModeracion = ServicioModeracion();
     String? motivoSeleccionado;
-    final motivos = ['Spam', 'Acoso', 'Contenido Inadecuado', 'Odio/Discriminación', 'Otros'];
+    final motivos = [tr('reportSpam'), tr('reportHarassment'), tr('reportInappropriate'), tr('reportHate'), tr('reportOthers')];
     final TextEditingController comentarioController = TextEditingController();
 
     showDialog(
@@ -178,7 +184,7 @@ class MenuOpcionesContenido extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
-          title: Text('Reportar Contenido', style: GoogleFonts.outfit(color: Colors.white)),
+          title: Text(tr('reportTitle'), style: GoogleFonts.outfit(color: Colors.white)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -197,7 +203,7 @@ class MenuOpcionesContenido extends StatelessWidget {
                   maxLines: 2,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'Comentario opcional (miau...)',
+                    hintText: tr('reportOptionalComment'),
                     hintStyle: const TextStyle(color: Colors.white38),
                     filled: true,
                     fillColor: Colors.white10,
@@ -208,7 +214,7 @@ class MenuOpcionesContenido extends StatelessWidget {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('commonCancel'))),
             ElevatedButton(
               onPressed: motivoSeleccionado == null ? null : () async {
                 final res = await servicioModeracion.reportarContenido(
@@ -225,7 +231,7 @@ class MenuOpcionesContenido extends StatelessWidget {
                   );
                 }
               },
-              child: const Text('Enviar Reporte'),
+              child: Text(tr('reportSend')),
             ),
           ],
         ),

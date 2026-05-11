@@ -28,10 +28,12 @@ import '../../models/usuario.dart';
 import 'widgets_detalle/header_detalle_comunidad.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'widgets_detalle/seccion_galeria_comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 import 'widgets_detalle/seccion_chat_comunidad.dart';
 import 'widgets_detalle/lista_miembros_comunidad.dart';
 import 'widgets_detalle/preview_comunidad.dart';
 import 'widgets_detalle/dialogos_comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Vista principal de una comunidad. Dependiendo de si el usuario es miembro,
 // muestra una preview pública o el shell completo con Posts, Galería, Chats y Miembros.
@@ -74,7 +76,10 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   bool _cargandoMasPosts = false;
   int? _miId;
   int _indiceSeccion = 0;
-  String _miRol = 'Visitante';
+  String _miRol = 'Visitor';
+  String _tipoMejoraSeleccionado = 'Avatar';
+
+
 
   List<Publicacion>? _publicaciones;
   List<SalaChat>? _salasChat;
@@ -669,7 +674,8 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearSala(
-        titulo: 'Nueva Sala en ${_comunidad!.nombre} 🐾',
+        titulo: tr('newRoomIn', {'community': _comunidad!.nombre}),
+
         potencialesParticipantes: potenciales,
         esDeComunidad: true,
         alCrear: (nombre, esPublica, miembrosIds) async {
@@ -700,12 +706,13 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DialogoCrearPost(
-        titulo: 'Nueva Publicación 🐾',
-        onPublicar: (title, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
+        titulo: tr('postNewPublicationTitle'),
+
+        onPublicar: (titulo, texto, imagenes, etiquetas, {void Function(int, int)? alProgresar}) async {
           final provider = Provider.of<PostProvider>(context, listen: false);
           final exito = await provider.crearPost(
             comunidadId: _comunidad!.id,
-            titulo: title,
+            titulo: titulo,
             texto: texto,
             imagenes: imagenes,
             etiquetas: etiquetas,

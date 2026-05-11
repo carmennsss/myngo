@@ -16,6 +16,16 @@ import 'servicio_usuarios.dart';
 // Es el servicio más grande: maneja todo lo que pasa dentro de las comunidades.
 // Traer listas de miembros, unirse, publicar posts, subir fotos de portada y salas de chat del grupo.
 class ServicioComunidades {
+  final http.Client? _httpClient;
+  final dio.Dio? _dioClient;
+
+  ServicioComunidades({http.Client? httpClient, dio.Dio? dioClient})
+      : _httpClient = httpClient,
+        _dioClient = dioClient;
+
+  http.Client get client => _httpClient ?? http.Client();
+  dio.Dio get dioClient => _dioClient ?? dio.Dio();
+
   // Rutas base de la API
   static const String _urlComunidades = '${Configuracion.baseUrl}/comunidades/';
   
@@ -63,7 +73,7 @@ class ServicioComunidades {
       }
       
       final fullQuery = queryParts.isNotEmpty ? '?${queryParts.join('&')}' : '';
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlComunidades$fullQuery'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -91,7 +101,7 @@ class ServicioComunidades {
   // Trae la lista de los grupos en los que estás metido
   Future<RespuestaApi<List<Comunidad>>> listarComunidadesPropias() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlComunidades}propias/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -114,7 +124,7 @@ class ServicioComunidades {
   // Entra en el detalle de una comunidad para ver toda su información
   Future<RespuestaApi<Comunidad>> obtenerComunidad(dynamic identifier) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlComunidades$identifier/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -137,7 +147,7 @@ class ServicioComunidades {
   Future<RespuestaApi<List<Map<String, dynamic>>>> obtenerMiembrosComunidad(int idComunidad, {int? pagina}) async {
     try {
       final query = pagina != null ? '?page=$pagina' : '';
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlComunidades$idComunidad/miembros/$query'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -162,7 +172,7 @@ class ServicioComunidades {
   // Botón "Unirme". Entra directo si es pública o manda solicitud si es privada
   Future<RespuestaApi<Map<String, dynamic>>> unirseAComunidad(int idComunidad) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('${_urlComunidades}$idComunidad/unirse/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -183,7 +193,7 @@ class ServicioComunidades {
   // Botón "Salir de la comunidad"
   Future<RespuestaApi<void>> abandonarComunidad(int idComunidad) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('${_urlComunidades}$idComunidad/salir/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -205,7 +215,7 @@ class ServicioComunidades {
       final token = await _servicioUsuarios.obtenerToken();
       final url = _urlComunidades;
       
-      final clienteDio = dio.Dio();
+      final clienteDio = dioClient ?? dio.Dio();
       final cabeceras = {
         if (token != null) 'Authorization': 'Token $token',
       };
@@ -268,7 +278,7 @@ class ServicioComunidades {
   // Botón del admin para dejar entrar a alguien o rechazarlo
   Future<RespuestaApi<void>> responderPeticionAcceso(int idPeticion, bool aceptar) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('${_urlComunidades}responder-peticion/$idPeticion/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({'aceptar': aceptar}),
@@ -286,7 +296,7 @@ class ServicioComunidades {
   // Trae las estadísticas y denuncias pendientes para los admins del grupo
   Future<RespuestaApi<Map<String, dynamic>>> obtenerDashboardAdmin(int idComunidad) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlComunidades}$idComunidad/admin-dashboard/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 25));
@@ -355,7 +365,7 @@ class ServicioComunidades {
           }
         }
 
-        final resArchivos = await dio.Dio().patch(
+        final resArchivos = await dioClient.patch(
           url,
           data: datosArchivos,
           options: dio.Options(headers: cabeceras),
@@ -380,7 +390,7 @@ class ServicioComunidades {
       if (tags != null) body['tags'] = tags;
 
       if (body.isNotEmpty) {
-        final resDatos = await dio.Dio().patch(
+        final resDatos = await dioClient.patch(
           url,
           data: body,
           options: dio.Options(headers: cabeceras),
@@ -424,7 +434,7 @@ class ServicioComunidades {
   // Permite ascender a alguien a moderador/creador o degradarlo
   Future<RespuestaApi<void>> gestionarRolMiembro(int idMiembro, String nuevoRol) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('${_urlComunidades}$idMiembro/gestionar-rol-miembro/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({'rol': nuevoRol}),
@@ -442,7 +452,7 @@ class ServicioComunidades {
   // Comprueba si eres Admin o usuario normal dentro de un grupo
   Future<RespuestaApi<String>> obtenerRolUsuarioEnComunidad(int idComunidad, int idUsuario) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlComunidades}$idComunidad/obtener-rol-usuario/?usuario_id=$idUsuario'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -462,7 +472,7 @@ class ServicioComunidades {
   /// Obtiene publicaciones de comunidades públicas para el feed global.
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesGlobales({String orden = '-fecha_creacion'}) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlContenido}publicaciones/global/?ordering=$orden'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -491,7 +501,7 @@ class ServicioComunidades {
   }) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      final clienteDio = dio.Dio();
+      final clienteDio = dioClient ?? dio.Dio();
       
       final respuesta = await clienteDio.patch(
         '${_urlContenido}publicaciones/$idPublicacion/',
@@ -522,7 +532,7 @@ class ServicioComunidades {
   Future<RespuestaApi<List<Publicacion>>> obtenerPublicacionesComunidad(int idComunidad, {String orden = '-fecha_creacion', int pagina = 1, int tamanoPagina = 20}) async {
     try {
       final offset = (pagina - 1) * tamanoPagina;
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlContenido}publicaciones/?comunidad_id=$idComunidad&ordering=$orden&limit=$tamanoPagina&offset=$offset'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -545,7 +555,7 @@ class ServicioComunidades {
   // Trae la galería de fotos conjunta del grupo
   Future<RespuestaApi<List<ImagenGaleria>>> obtenerGaleriaComunidad(int idComunidad) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlContenido}galeria/?comunidad_id=$idComunidad'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -567,7 +577,7 @@ class ServicioComunidades {
   // Lista las salas de chat que tiene creadas el grupo
   Future<RespuestaApi<List<SalaChat>>> obtenerSalasChat(int idComunidad) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlMensajeria}salas/?comunidad_id=$idComunidad'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -603,7 +613,7 @@ class ServicioComunidades {
       final token = await _servicioUsuarios.obtenerToken();
       final url = '${_urlContenido}publicaciones/crear/';
       
-      final clienteDio = dio.Dio(dio.BaseOptions(
+      final clienteDio = dioClient ?? dio.Dio(dio.BaseOptions(
         connectTimeout: const Duration(minutes: 2),
         receiveTimeout: const Duration(minutes: 2),
       ));
@@ -675,7 +685,7 @@ class ServicioComunidades {
   // El botón rojo de borrar el grupo entero
   Future<RespuestaApi> eliminarComunidad(int idComunidad) async {
     try {
-      final respuesta = await http.delete(
+      final respuesta = await client.delete(
         Uri.parse('$_urlComunidades$idComunidad/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -694,7 +704,7 @@ class ServicioComunidades {
   /// Recupera los detalles técnicos y de contenido de una publicación.
   Future<RespuestaApi<Publicacion>> obtenerDetallePublicacion(int idPublicacion) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('${_urlContenido}publicaciones/$idPublicacion/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -715,7 +725,7 @@ class ServicioComunidades {
   // Botón del admin para borrar el post de otra persona si incumple normas
   Future<RespuestaApi> eliminarPublicacionModeracion(int idPublicacion, {String? razon}) async {
     try {
-      final respuesta = await http.delete(
+      final respuesta = await client.delete(
         Uri.parse('${_urlContenido}publicaciones/$idPublicacion/'),
         headers: await _obtenerCabeceras(),
         body: razon != null ? jsonEncode({'razon': razon}) : null,
@@ -733,7 +743,7 @@ class ServicioComunidades {
   // Botón del admin para borrar un comentario tóxico
   Future<RespuestaApi> eliminarComentarioModeracion(int idComentario, {String? razon}) async {
     try {
-      final respuesta = await http.delete(
+      final respuesta = await client.delete(
         Uri.parse('${_urlContenido}comentarios/$idComentario/'),
         headers: await _obtenerCabeceras(),
         body: razon != null ? jsonEncode({'razon': razon}) : null,
@@ -751,7 +761,7 @@ class ServicioComunidades {
   // Guardar post en favoritos
   Future<RespuestaApi> alternarGuardadoPost(int idPublicacion) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('${_urlContenido}publicaciones/$idPublicacion/guardar/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 20));
@@ -778,7 +788,7 @@ class ServicioComunidades {
       if (popular) params += (params.isEmpty ? '' : '&') + 'popular=true';
       
       final url = '${_urlComunidades}tags/${params.isNotEmpty ? '?$params' : ''}';
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse(url),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));

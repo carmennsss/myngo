@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 
@@ -53,6 +54,8 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
   late AnimationController _controladorVibracion;
   /// Controlador para el parpadeo aleatorio de los ojos.
   late AnimationController _controladorParpadeo;
+  /// Temporizador para el siguiente parpadeo.
+  Timer? _timerParpadeo;
 
   @override
   void initState() {
@@ -81,11 +84,14 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
 
   /// Gestiona el parpadeo de los ojos de forma asíncrona y con intervalos aleatorios.
   void _programarParpadeo() {
+    _timerParpadeo?.cancel();
     if (!mounted) return;
-    Future.delayed(Duration(milliseconds: 2000 + Random().nextInt(4000)), () {
+    _timerParpadeo = Timer(Duration(milliseconds: 2000 + Random().nextInt(4000)), () {
       if (!mounted) return;
       if (widget.estado != EstadoMonstruo.escondido && widget.estado != EstadoMonstruo.triste) {
-         _controladorParpadeo.forward().then((_) => _controladorParpadeo.reverse());
+         _controladorParpadeo.forward().then((_) {
+           if (mounted) _controladorParpadeo.reverse();
+         });
       }
       _programarParpadeo();
     });
@@ -113,6 +119,7 @@ class _GatosAnimadosState extends State<GatosAnimados> with TickerProviderStateM
 
   @override
   void dispose() {
+    _timerParpadeo?.cancel();
     _controladorIdle.dispose();
     _controladorSalto.dispose();
     _controladorVibracion.dispose();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 
@@ -29,6 +30,7 @@ class _GatosRegistroAnimadosState extends State<GatosRegistroAnimados>
   late AnimationController _controladorSalto;
   late AnimationController _controladorVibracion;
   late AnimationController _controladorParpadeo;
+  Timer? _timerParpadeo;
 
   @override
   void initState() {
@@ -56,14 +58,17 @@ class _GatosRegistroAnimadosState extends State<GatosRegistroAnimados>
   }
 
   void _programarParpadeo() {
+    _timerParpadeo?.cancel();
     if (!mounted) return;
-    Future.delayed(Duration(milliseconds: 2000 + Random().nextInt(4000)), () {
+    _timerParpadeo = Timer(Duration(milliseconds: 2000 + Random().nextInt(4000)), () {
       if (!mounted) return;
       if (widget.estado != EstadoMonstruo.escondido &&
           widget.estado != EstadoMonstruo.triste) {
         _controladorParpadeo
             .forward()
-            .then((_) => _controladorParpadeo.reverse());
+            .then((_) {
+              if (mounted) _controladorParpadeo.reverse();
+            });
       }
       _programarParpadeo();
     });
@@ -96,6 +101,7 @@ class _GatosRegistroAnimadosState extends State<GatosRegistroAnimados>
 
   @override
   void dispose() {
+    _timerParpadeo?.cancel();
     _controladorIdle.dispose();
     _controladorSalto.dispose();
     _controladorVibracion.dispose();

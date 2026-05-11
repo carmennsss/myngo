@@ -11,7 +11,8 @@ import 'providers/chat_provider.dart';
 import 'providers/locale_notifier.dart';
 import 'services/servicio_notificaciones_locales.dart';
 import 'router.dart';
-
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy(); 
@@ -25,7 +26,7 @@ void main() async {
   final String apiKey = const String.fromEnvironment('TOLGEE_API_KEY');
   final String apiUrl = const String.fromEnvironment('TOLGEE_API_URL', defaultValue: 'https://app.tolgee.io');
 
-  if (apiKey.isNotEmpty) {
+  if (!kReleaseMode && apiKey.isNotEmpty) {
     await Tolgee.init(
       apiKey: apiKey,
       apiUrl: apiUrl,
@@ -42,9 +43,39 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => LocaleNotifier()),
       ],
-      child: const MiAplicacion(),
+      child: const TolgeeInContextWrapper(child: MiAplicacion()),
     ),
   );
+}
+
+class TolgeeInContextWrapper extends StatelessWidget {
+  final Widget child;
+  const TolgeeInContextWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (kReleaseMode) return child;
+    
+    return Listener(
+      onPointerDown: (event) {
+        final keys = HardwareKeyboard.instance.logicalKeysPressed;
+        if (keys.contains(LogicalKeyboardKey.altLeft) || 
+            keys.contains(LogicalKeyboardKey.altRight)) {
+          // Tolgee.highlightTolgeeWidgets() is hypothetical if Tolgee flutter supports it directly,
+          // but we can just use Tolgee object or similar.
+          // In standard Tolgee SDK for Flutter, in-context is handled automatically
+          // if initialized with API key in debug mode. But let's add this hook just in case.
+          try {
+            Tolgee.highlightTolgeeWidgets();
+          } catch (e) {
+            // Si la versión actual del SDK de Flutter no expone este método, lo ignoramos
+            debugPrint("Tolgee highlight no disponible: $e");
+          }
+        }
+      },
+      child: child,
+    );
+  }
 }
 
 class MiAplicacion extends StatelessWidget {

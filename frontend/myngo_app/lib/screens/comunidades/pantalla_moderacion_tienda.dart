@@ -4,6 +4,9 @@ import '../../models/comunidad.dart';
 import '../../models/peticion_mejora.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
+import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
+
 
 // Cola de propuestas de mejoras pendientes de revisión por el equipo admin.
 // Desde aquí se aprueba con precio o se rechaza cada propuesta enviada por miembros.
@@ -54,34 +57,39 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF5F1),
-      appBar: AppBar(
-        title: Text('Moderación de Tienda', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
-      ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-          : _peticiones.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _peticiones.length,
-                  itemBuilder: (context, index) => _TarjetaModeracion(
-                    peticion: _peticiones[index],
-                    onAprobar: (precio) => _moderar(_peticiones[index], 'APROBADO', precio),
-                    onRechazar: () => _moderar(_peticiones[index], 'RECHAZADO', 0),
-                  ),
-                ),
+    return Builder(
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFFEF5F1),
+          appBar: AppBar(
+            title: Text(tr('storeModerationTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Color(0xFF4A4440)),
+          ),
+          body: _cargando
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+              : _peticiones.isEmpty
+                  ? _buildEmptyState(tr)
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _peticiones.length,
+                      itemBuilder: (context, index) => _TarjetaModeracion(
+                        peticion: _peticiones[index],
+                        onAprobar: (precio) => _moderar(_peticiones[index], 'APROBADO', precio),
+                        onRechazar: () => _moderar(_peticiones[index], 'RECHAZADO', 0),
+                        tr: tr,
+                      ),
+                    ),
+        );
+      }
     );
   }
 
-  Widget _buildEmptyState() {
-    return const EstadoVacioCargando(
+  Widget _buildEmptyState(String Function(String) tr) {
+    return EstadoVacioCargando(
       icon: Icons.check_circle_outline_rounded,
-      message: '¡Todo al día! No hay peticiones pendientes 🐾',
+      message: tr('storeModerationEmpty'),
     );
   }
 }
@@ -91,12 +99,15 @@ class _TarjetaModeracion extends StatelessWidget {
   final PeticionMejora peticion;
   final Function(int) onAprobar;
   final VoidCallback onRechazar;
+  final String Function(String, [Map<String, String>?]) tr;
 
   const _TarjetaModeracion({
     required this.peticion,
     required this.onAprobar,
     required this.onRechazar,
+    required this.tr,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -127,11 +138,12 @@ class _TarjetaModeracion extends StatelessWidget {
                         style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16, color: const Color(0xFF4A4440)),
                       ),
                       const SizedBox(height: 8),
-                      Text('Enviado por: ${peticion.nombreUsuario}', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(tr('storeModerationSentBy', {'user': peticion.nombreUsuario}), style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
                       if (peticion.precioSugerido > 0)
-                        Text('Precio sugerido: ${peticion.precioSugerido} pts', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey)),
+                        Text(tr('storeModerationSuggestedPrice', {'price': peticion.precioSugerido.toString()}), style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey)),
                     ],
                   ),
+
                 ),
               ),
               Expanded(
@@ -154,7 +166,7 @@ class _TarjetaModeracion extends StatelessWidget {
                 TextButton(
                   onPressed: onRechazar,
                   style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: Text('RECHAZAR', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  child: Text(tr('storeModerationReject'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -163,10 +175,11 @@ class _TarjetaModeracion extends StatelessWidget {
                     backgroundColor: Colors.green,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text('APROBAR Y PONER PRECIO', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+                  child: Text(tr('storeModerationApproveBtn'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
                 ),
               ],
             ),
+
           ),
         ],
       ),
@@ -179,17 +192,17 @@ class _TarjetaModeracion extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Asignar Precio', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(tr('storeModerationSetPriceTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Indica el precio en puntos para este item:', style: GoogleFonts.outfit(fontSize: 14)),
+            Text(tr('storeModerationSetPriceDesc'), style: GoogleFonts.outfit(fontSize: 14)),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                suffixText: 'puntos',
+                suffixText: tr('storeModerationPointsSuffix'),
                 filled: true,
                 fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -198,17 +211,18 @@ class _TarjetaModeracion extends StatelessWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('commonCancel'))),
           ElevatedButton(
             onPressed: () {
               final precio = int.tryParse(controller.text) ?? 100;
               Navigator.pop(context);
               onAprobar(precio);
             },
-            child: const Text('CONFIRMAR'),
+            child: Text(tr('storeModerationConfirm')),
           ),
         ],
       ),
+
     );
   }
 }

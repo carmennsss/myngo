@@ -5,6 +5,7 @@ import '../../../models/usuario.dart';
 import '../../../services/servicio_mejoras.dart';
 import '../../../utils/mejoras_notifier.dart';
 import '../../../utils/estilo_post_helper.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 /// Widget que muestra una pestaña del catálogo de mejoras filtrada por tipo.
 class ListaMejorasTab extends StatefulWidget {
@@ -12,6 +13,9 @@ class ListaMejorasTab extends StatefulWidget {
   final Usuario? usuarioActual;
   final List<CatalogoMejoras> mejoras;
   final List<dynamic> misMejoras;
+  final bool modoGestion;
+  final int? comunidadId;
+  final bool esModerador;
   final VoidCallback onRefresh;
   final Function(int)? onPuntosActualizados;
   final Function(CatalogoMejoras) onPreviewRequested;
@@ -22,6 +26,9 @@ class ListaMejorasTab extends StatefulWidget {
     this.usuarioActual,
     required this.mejoras,
     required this.misMejoras,
+    this.modoGestion = false,
+    this.comunidadId,
+    this.esModerador = false,
     required this.onRefresh,
     this.onPuntosActualizados,
     required this.onPreviewRequested,
@@ -66,40 +73,54 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
   @override
   Widget build(BuildContext context) {
     final filtradas = _mejorasFiltradas;
-    if (filtradas.isEmpty) {
-      return _buildEmptyState();
-    }
+    return Builder(
+      builder: (context) {
+        if (filtradas.isEmpty) {
+          return _buildEmptyState(tr);
+        }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(20),
-      primary: false,
-      shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 160,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.62,
-      ),
-      itemCount: filtradas.length,
-      itemBuilder: (context, index) {
-        final mejora = filtradas[index];
-        return _MejoraCard(
-          mejora: mejora,
-          laTiene: _tieneMejora(mejora.id),
-          estaEquipada: _tieneEquipada(mejora.id),
-          usuarioActual: widget.usuarioActual,
-          onPreview: () => widget.onPreviewRequested(mejora),
-          onEquipar: () => _equipar(mejora),
-          onComprar: () => _confirmarCompra(mejora),
+        return GridView.builder(
+          padding: const EdgeInsets.all(20),
+          primary: false,
+          shrinkWrap: true,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 160,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.62,
+          ),
+          itemCount: filtradas.length,
+          itemBuilder: (context, index) {
+            final mejora = filtradas[index];
+            return _MejoraCard(
+              mejora: mejora,
+              laTiene: _tieneMejora(mejora.id),
+              estaEquipada: _tieneEquipada(mejora.id),
+              modoGestion: widget.modoGestion,
+              usuarioActual: widget.usuarioActual,
+              onPreview: () => widget.onPreviewRequested(mejora),
+              onEquipar: () => _equipar(mejora, tr),
+              onComprar: () => _confirmarCompra(mejora, tr),
+              onToggleVisibilidad: () => _toggleVisibilidad(mejora),
+              onEditPrice: (p) => _editarPrecio(mejora, p),
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildEmptyState() {
-    final String tipoPlural = widget.tipo.toLowerCase() == 'avatar'
-        ? 'avatares'
-        : '${widget.tipo.toLowerCase()}s';
+  String _getTipoPluralTraducido(Function tr) {
+    final t = widget.tipo.toLowerCase();
+    if (t == 'avatar') return tr('storeAvatars');
+    if (t == 'marco') return tr('storeFrames');
+    if (t == 'fondo') return tr('storeBackgrounds');
+    if (t.contains('estilo')) return tr('storePostStyles');
+    return t;
+  }
+
+  Widget _buildEmptyState(Function tr) {
+    final String tipoPlural = _getTipoPluralTraducido(tr);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -107,7 +128,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
           Icon(Icons.inventory_2_rounded, size: 56, color: Colors.grey.shade300),
           const SizedBox(height: 12),
           Text(
-            'No hay $tipoPlural disponibles aún 🐾',
+            tr('storeEmptyState', params: {'tipo': tipoPlural}),
             style: GoogleFonts.outfit(color: Colors.grey.shade500, fontSize: 14),
           ),
         ],
@@ -115,29 +136,85 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
     );
   }
 
-  Future<void> _equipar(CatalogoMejoras mejora) async {
-    // Equipación personal
+  Future<void> _equipar(CatalogoMejoras mejora, Function tr) async {
+    String? modoEquipacion = 'personal';
+
+    // Si es una tienda de comunidad y el usuario es moderador/admin, preguntamos destino
+    if (widget.comunidadId != null && widget.esModerador) {
+      modoEquipacion = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(tr('storeEquipWhere'),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _OpcionDestino(
+                titulo: tr('storeInProfile'),
+                descripcion: tr('storeInProfileDesc'),
+                icono: Icons.person_rounded,
+                onTap: () => Navigator.pop(ctx, 'personal'),
+              ),
+              const SizedBox(height: 12),
+              _OpcionDestino(
+                titulo: tr('storeInCommunity'),
+                descripcion: tr('storeInCommunityDesc'),
+                icono: Icons.groups_rounded,
+                onTap: () => Navigator.pop(ctx, 'comunidad'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(tr('cancel'), style: GoogleFonts.outfit(color: Colors.grey)),
+            ),
+          ],
+        ),
+      );
+      if (modoEquipacion == null) return;
+    }
+
+    if (modoEquipacion == 'comunidad') {
+      final res = await _servicioMejoras.equiparMejoraComunidad(mejora.id, widget.comunidadId!);
+      if (mounted) {
+        if (res.exito) {
+          widget.onRefresh();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(res.mensaje), backgroundColor: const Color(0xFF248EA6)),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
+          );
+        }
+      }
+      return;
+    }
+
+    // Lógica original para equipación personal
     String? destino;
     if (mejora.tipo.toLowerCase() == 'fondo') {
       destino = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Text('¿Dónde quieres equipar este fondo? 🐾',
+          title: Text(tr('storeEquipBgWhere'),
               style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _OpcionDestino(
-                titulo: 'Banner del Perfil',
-                descripcion: 'Se verá en la parte superior de tus posts y perfil.',
+                titulo: tr('storeBanner'),
+                descripcion: tr('storeBannerDesc'),
                 icono: Icons.view_headline_rounded,
                 onTap: () => Navigator.pop(ctx, 'banner'),
               ),
               const SizedBox(height: 12),
               _OpcionDestino(
-                titulo: 'Fondo de Pantalla',
-                descripcion: 'Cambia el fondo completo de tu feed personal.',
+                titulo: tr('storeWallpaper'),
+                descripcion: tr('storeWallpaperDesc'),
                 icono: Icons.fullscreen_rounded,
                 onTap: () => Navigator.pop(ctx, 'fondo_feed'),
               ),
@@ -146,7 +223,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey)),
+              child: Text(tr('cancel'), style: GoogleFonts.outfit(color: Colors.grey)),
             ),
           ],
         ),
@@ -175,12 +252,12 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
     }
   }
 
-  Future<void> _confirmarCompra(CatalogoMejoras mejora) async {
+  Future<void> _confirmarCompra(CatalogoMejoras mejora, Function tr) async {
     final int puntosActuales = widget.usuarioActual?.puntos ?? 0;
     final int puntosRestantes = puntosActuales - mejora.precioPuntos;
 
     if (puntosRestantes < 0) {
-      _mostrarPuntosInsuficientes(mejora.precioPuntos, puntosActuales);
+      _mostrarPuntosInsuficientes(mejora.precioPuntos, puntosActuales, tr);
       return;
     }
 
@@ -190,6 +267,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
         mejora: mejora,
         puntosActuales: puntosActuales,
         puntosRestantes: puntosRestantes,
+        tr: tr,
       ),
     );
 
@@ -199,9 +277,9 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
         if (res.exito) {
           widget.onRefresh();
           if (res.datos is int) widget.onPuntosActualizados?.call(res.datos);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('¡Compra realizada! 🐾'),
-              backgroundColor: Color(0xFF248EA6)));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(tr('storePurchaseSuccess')),
+              backgroundColor: const Color(0xFF248EA6)));
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text(res.mensaje),
@@ -211,19 +289,19 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
     }
   }
 
-  void _mostrarPuntosInsuficientes(int precio, int actual) {
+  void _mostrarPuntosInsuficientes(int precio, int actual, Function tr) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Puntos insuficientes 🐾',
+        title: Text(tr('storeInsufficientPoints'),
             style: GoogleFonts.outfit(
                 fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
-        content: Text('Necesitas $precio puntos, pero solo tienes $actual.',
+        content: Text(tr('storeInsufficientPointsDesc', params: {'precio': precio.toString(), 'actual': actual.toString()}),
             style: GoogleFonts.outfit(color: Colors.grey.shade600)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('ENTENDIDO',
+            child: Text(tr('understand'),
                 style: GoogleFonts.outfit(
                     color: const Color(0xFFC35E34),
                     fontWeight: FontWeight.bold)),
@@ -233,26 +311,92 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
     );
   }
 
+  Future<void> _toggleVisibilidad(CatalogoMejoras mejora) async {
+    if (widget.comunidadId == null) return;
+    
+    final res = await _servicioMejoras.actualizarArticuloCatalogo(
+      widget.comunidadId!, 
+      mejora.id,
+      estaActivo: !mejora.estaActivo,
+    );
+    
+    if (mounted) {
+      if (res.exito) {
+        widget.onRefresh();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+      }
+    }
+  }
 
+  Future<void> _editarPrecio(CatalogoMejoras mejora, int precioActual) async {
+    if (widget.comunidadId == null) return;
+
+    final controller = TextEditingController(text: precioActual.toString());
+    
+    final nuevoPrecioStr = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('storeEditPrice'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(labelText: tr('storePriceLabel')),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('cancel'))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: Text(tr('save')),
+          ),
+        ],
+      ),
+    );
+
+    if (nuevoPrecioStr != null && nuevoPrecioStr.isNotEmpty) {
+      final nuevoPrecio = int.tryParse(nuevoPrecioStr);
+      if (nuevoPrecio != null) {
+        final res = await _servicioMejoras.actualizarArticuloCatalogo(
+          widget.comunidadId!, 
+          mejora.id,
+          precioFinal: nuevoPrecio,
+        );
+        if (mounted) {
+          if (res.exito) {
+            widget.onRefresh();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+          }
+        }
+      }
+    }
+  }
 }
 
 class _MejoraCard extends StatelessWidget {
   final CatalogoMejoras mejora;
   final bool laTiene;
   final bool estaEquipada;
+  final bool modoGestion;
   final Usuario? usuarioActual;
   final VoidCallback onPreview;
   final VoidCallback onEquipar;
   final VoidCallback onComprar;
+  final VoidCallback onToggleVisibilidad;
+  final Function(int) onEditPrice;
 
   const _MejoraCard({
     required this.mejora,
     required this.laTiene,
     required this.estaEquipada,
+    this.modoGestion = false,
     this.usuarioActual,
     required this.onPreview,
     required this.onEquipar,
     required this.onComprar,
+    required this.onToggleVisibilidad,
+    required this.onEditPrice,
   });
 
   @override
@@ -284,11 +428,11 @@ class _MejoraCard extends StatelessWidget {
                   _buildImagePreview(estaActivo),
                   if (estaEquipada) _buildEquippedIndicator(),
                   if (!estaActivo) _buildHiddenIndicator(),
-
+                  if (modoGestion) _buildModeratorActions(),
                 ],
               ),
             ),
-            _buildFooter(),
+            _buildFooter(context),
           ],
         ),
       ),
@@ -377,21 +521,44 @@ class _MejoraCard extends StatelessWidget {
     );
   }
 
-
-  Widget _buildFooter() {
+  Widget _buildModeratorActions() {
+    return Positioned(
+      top: 4,
+      left: 4,
+      child: Row(
+        children: [
+          _ActionButton(
+            icon: mejora.estaActivo ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+            color: mejora.estaActivo ? Colors.green : Colors.red,
+            onTap: onToggleVisibilidad,
+          ),
+          const SizedBox(width: 4),
+          _ActionButton(
+            icon: Icons.edit_rounded,
+            color: Colors.blue,
+            onTap: () async {
+              // Dialogo rápido para editar precio
+              onEditPrice(mejora.precioPuntos);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildFooter(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
           if (laTiene)
             _FooterButton(
-              label: estaEquipada ? 'EQUIPADO' : 'EQUIPAR',
+              label: estaEquipada ? tr('storeEquipped') : tr('profileEquip'),
               color: estaEquipada ? Colors.grey : const Color(0xFF248EA6),
               onPressed: estaEquipada ? () {} : onEquipar,
             )
           else
             _FooterButton(
-              label: '${mejora.precioPuntos} Pts',
+              label: '${mejora.precioPuntos} ${tr('points')}',
               color: const Color(0xFFC35E34),
               onPressed: onComprar,
             ),
@@ -438,37 +605,39 @@ class _DialogoCompra extends StatelessWidget {
   final CatalogoMejoras mejora;
   final int puntosActuales;
   final int puntosRestantes;
+  final Function tr;
 
   const _DialogoCompra({
     required this.mejora,
     required this.puntosActuales,
     required this.puntosRestantes,
+    required this.tr,
   });
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text('¿Confirmar compra?',
+      title: Text(tr('storeConfirmPurchase'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Coste: ${mejora.precioPuntos} puntos',
+          Text(tr('storeCost', params: {'precio': mejora.precioPuntos.toString()}),
               style: GoogleFonts.outfit(
                   color: const Color(0xFFC35E34), fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Tus puntos: $puntosActuales → $puntosRestantes',
+          Text(tr('storeYourPoints', params: {'actual': puntosActuales.toString(), 'restantes': puntosRestantes.toString()}),
               style: GoogleFonts.outfit(fontSize: 12)),
         ],
       ),
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCELAR')),
+            child: Text(tr('cancel'))),
         ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('COMPRAR')),
+            child: Text(tr('storeBuy'))),
       ],
     );
   }
@@ -529,6 +698,26 @@ class _OpcionDestino extends StatelessWidget {
             const Icon(Icons.chevron_right_rounded, color: Colors.grey),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({required this.icon, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(color: color.withOpacity(0.9), shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white, size: 14),
       ),
     );
   }

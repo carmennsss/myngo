@@ -12,6 +12,10 @@ import 'servicio_usuarios.dart';
 
 /// Servicio encargado de la gestión de mensajería instantánea y presencia en tiempo real.
 class ServicioMensajeria {
+  final http.Client? _httpClient;
+  ServicioMensajeria({http.Client? httpClient}) : _httpClient = httpClient;
+  http.Client get client => _httpClient ?? http.Client();
+
   WebSocketChannel? _canalChat;
   WebSocketChannel? _canalPresencia;
   WebSocketChannel? _canalNotificaciones;
@@ -46,7 +50,7 @@ class ServicioMensajeria {
     int? comunidadId,
   }) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlApi/mensajeria/salas/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({
@@ -68,7 +72,7 @@ class ServicioMensajeria {
 
   Future<List<Map<String, dynamic>>> obtenerSalasChat() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlApi/mensajeria/salas/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -91,7 +95,7 @@ class ServicioMensajeria {
 
   Future<Map<String, dynamic>> obtenerConteoMensajesNoLeidos() async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlApi/mensajeria/no-leidos/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
@@ -105,7 +109,7 @@ class ServicioMensajeria {
 
   Future<void> marcarMensajesComoLeidos(int idSala) async {
     try {
-      await http.post(
+      await client.post(
         Uri.parse('$_urlApi/mensajeria/salas/$idSala/marcar-leidos/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 10));
@@ -114,7 +118,7 @@ class ServicioMensajeria {
 
   Future<List<Map<String, dynamic>>> obtenerMensajesSala(int idSala, {int limit = 30, int offset = 0}) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlApi/mensajeria/salas/$idSala/mensajes/?limit=$limit&offset=$offset'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -129,7 +133,7 @@ class ServicioMensajeria {
 
   Future<SalaChat?> obtenerDetalleSala(int idSala) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlApi/mensajeria/salas/$idSala/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -144,7 +148,7 @@ class ServicioMensajeria {
 
   Future<SalaChat?> obtenerSalaGeneralComunidad(int idComunidad) async {
     try {
-      final respuesta = await http.get(
+      final respuesta = await client.get(
         Uri.parse('$_urlApi/mensajeria/salas/comunidad/$idComunidad/general/'),
         headers: await _obtenerCabeceras(),
       ).timeout(const Duration(seconds: 15));
@@ -159,7 +163,7 @@ class ServicioMensajeria {
 
   Future<Map<String, dynamic>?> enviarMensaje(int idSala, String texto) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlApi/mensajeria/salas/$idSala/enviar/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({'texto': texto}),
@@ -175,7 +179,7 @@ class ServicioMensajeria {
   /// Actualiza la configuración y metadatos de una sala.
   Future<bool> actualizarSala(int idSala, {String? nombre, PersonalizacionChat? personalizacion, String? avatarS3}) async {
     try {
-      final respuesta = await http.patch(
+      final respuesta = await client.patch(
         Uri.parse('$_urlApi/mensajeria/salas/$idSala/actualizar/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({
@@ -277,7 +281,7 @@ class ServicioMensajeria {
   /// Establece un apodo personalizado (privado) para otro usuario en un chat.
   Future<bool> actualizarApodoPersonalizado(int idSala, int usuarioId, String? apodo) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlApi/mensajeria/salas/$idSala/apodo-personalizado/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({
@@ -293,7 +297,7 @@ class ServicioMensajeria {
 
   Future<bool> borrarMensaje(int mensajeId, {bool paraTodos = false}) async {
     try {
-      final respuesta = await http.post(
+      final respuesta = await client.post(
         Uri.parse('$_urlApi/mensajeria/mensajes/$mensajeId/borrar/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({'para_todos': paraTodos}),
@@ -306,7 +310,7 @@ class ServicioMensajeria {
 
   Future<bool> editarMensaje(int mensajeId, String nuevoContenido) async {
     try {
-      final respuesta = await http.patch(
+      final respuesta = await client.patch(
         Uri.parse('$_urlApi/mensajeria/mensajes/$mensajeId/editar/'),
         headers: await _obtenerCabeceras(),
         body: jsonEncode({'contenido': nuevoContenido}),
