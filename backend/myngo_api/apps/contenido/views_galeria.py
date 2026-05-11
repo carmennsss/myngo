@@ -43,12 +43,6 @@ class GaleriaList(generics.ListCreateAPIView):
         coleccion_id = self.request.query_params.get('coleccion_id')
         qs = ImagenGaleria.objects.filter(es_publica=True)
 
-        # Solo mostrar imágenes vinculadas a publicaciones (posts)
-        # Esto excluye imágenes de chats, avatares, etc.
-        qs = qs.filter(
-            Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
-        ).distinct()
-
         if coleccion_id:
             try:
                 coleccion = Coleccion.objects.get(id=coleccion_id)
@@ -75,11 +69,13 @@ class GaleriaList(generics.ListCreateAPIView):
                 return ImagenGaleria.objects.none()
 
         if propietario_id:
-            if str(propietario_id) == str(self.request.user.id):
-                return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
             return qs.filter(propietario_id=propietario_id).order_by('-fecha_subida')
 
-        return qs.order_by('-fecha_subida')
+        # Solo mostrar imágenes vinculadas a publicaciones (posts) en la galería GLOBAL
+        # Esto excluye imágenes de chats, avatares, etc. que no son públicas.
+        return qs.filter(
+            Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+        ).distinct().order_by('-fecha_subida')
 
     def perform_create(self, serializer):
         """Asigna automáticamente el propietario a la nueva imagen.

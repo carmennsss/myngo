@@ -132,15 +132,18 @@ class ServicioPerfiles {
   }
 
   // Guarda los cambios en tu perfil (colores, banner, bio)
-  Future<RespuestaApi<Perfil>> actualizarPerfil(Map<String, dynamic> datos) async {
+  Future<RespuestaApi<Perfil>> actualizarPerfil(Map<String, dynamic> datos, {int? perfilId}) async {
     try {
-      final idPerfil = await _servicioUsuarios.obtenerIdUsuario();
+      final idPerfil = perfilId ?? await _servicioUsuarios.obtenerIdUsuario();
       if (idPerfil == null) return RespuestaApi(exito: false, mensaje: 'Sesión no válida');
 
+      final body = Map<String, dynamic>.from(datos);
+      body['perfil_id'] = idPerfil;
+
       final respuesta = await http.patch(
-        Uri.parse('$_urlUsuarios/perfiles/$idPerfil/'),
+        Uri.parse('$_urlUsuarios/perfil/editar/'),
         headers: await _obtenerCabeceras(),
-        body: jsonEncode(datos),
+        body: jsonEncode(body),
       ).timeout(const Duration(seconds: 15));
 
       if (respuesta.statusCode == 200) {
@@ -158,14 +161,16 @@ class ServicioPerfiles {
 
   /// Edita la biografía (compatibilidad).
   Future<RespuestaApi<Perfil>> editarBiografia({required String textoBiografia, required int perfilId}) async {
-    return actualizarPerfil({'biografia': textoBiografia});
+    return actualizarPerfil({'biografia': textoBiografia}, perfilId: perfilId);
   }
 
   // Sube tu nueva foto de perfil al servidor
   Future<RespuestaApi<Perfil>> editarAvatarPerfil({required XFile imagen, required int perfilId}) async {
     try {
       final token = await _servicioUsuarios.obtenerToken();
-      final solicitud = http.MultipartRequest('PATCH', Uri.parse('$_urlUsuarios/perfiles/$perfilId/'));
+      final solicitud = http.MultipartRequest('PATCH', Uri.parse('$_urlUsuarios/perfil/editar/'));
+      
+      solicitud.fields['perfil_id'] = perfilId.toString();
       
       if (token != null) solicitud.headers['Authorization'] = 'Token $token';
 

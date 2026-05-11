@@ -873,7 +873,18 @@ class _PantallaChatState extends State<PantallaChat> {
                           _buildCitaMensaje(msg.referenciaADetalle!, esMio),
                         
                         if (msg.attachments.isNotEmpty)
-                          ChatMediaGrid(attachments: msg.attachments, esMio: esMio),
+                          ChatMediaGrid(attachments: msg.attachments, esMio: esMio)
+                        else if (msg.urlArchivoS3 != null && msg.urlArchivoS3!.isNotEmpty)
+                          ChatMediaGrid(
+                            attachments: [
+                              ChatAttachment(
+                                id: msg.id, 
+                                url: msg.urlArchivoS3!, 
+                                type: msg.tipo == 'VIDEO' ? 'V' : 'I'
+                              )
+                            ], 
+                            esMio: esMio
+                          ),
                         
                         if (texto.isNotEmpty)
                           Text(

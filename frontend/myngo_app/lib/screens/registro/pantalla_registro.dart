@@ -47,25 +47,27 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFFEF5F1),
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFEF5F1),
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Stack(
-                children: [
-                  _buildContenido(context, constraints),
-                  const Positioned(
-                    top: 20,
-                    right: 20,
-                    child: BotonIdioma(),
-                  ),
-                ],
-              );
-            },
+        body: SafeArea(
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFEF5F1),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Stack(
+                  children: [
+                    _buildContenido(context, constraints),
+                    const Positioned(
+                      top: 20,
+                      right: 20,
+                      child: BotonIdioma(),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

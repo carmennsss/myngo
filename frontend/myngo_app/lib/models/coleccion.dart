@@ -1,3 +1,5 @@
+import '../utils/configuracion.dart';
+
 /// Modelo que representa una colección de imágenes del usuario.
 ///
 /// Las colecciones pueden ser personales o estar vinculadas a una comunidad,
@@ -49,7 +51,12 @@ class Coleccion {
           json['imagenes'] != null ? List<int>.from(json['imagenes']) : [],
       numeroImagenes: json['numero_imagenes'] ?? 0,
       previsualizaciones: json['previsualizaciones'] != null
-          ? List<String>.from(json['previsualizaciones'])
+          ? List<String>.from(json['previsualizaciones']).map((url) {
+              if (url.startsWith('/')) {
+                return '${Configuracion.baseUrl}$url';
+              }
+              return url;
+            }).toList()
           : [],
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.parse(json['fecha_creacion'])

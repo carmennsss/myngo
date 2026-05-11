@@ -151,4 +151,4 @@ class MensajeChat {
       infoLectura: infoLectura ?? this.infoLectura,
     );
   }
-}
+}
