@@ -15,16 +15,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='perfil',
             name='fondo',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='fondo', to='contenido.imagengaleria'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='fondo', to='contenido.ImagenGaleria'),
         ),
         migrations.AddField(
             model_name='perfil',
             name='marco',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marco', to='contenido.imagengaleria'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='marco', to='contenido.ImagenGaleria'),
         ),
         migrations.AlterField(
             model_name='perfil',
             name='imagen',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='avatar', to='contenido.imagengaleria'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='avatar', to='contenido.ImagenGaleria'),
         ),
     ]

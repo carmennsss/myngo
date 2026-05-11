@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('coleccion', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenido.coleccion')),
-                ('imagen', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='imagengaleria')),
+                ('imagen', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='Imagenes_galeria')),
             ],
             options={
                 'db_table': 'imagenes_en_colecciones',
@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='coleccion',
             name='imagenes',
-            field=models.ManyToManyField(related_name='en_colecciones', to='imagengaleria'),
+            field=models.ManyToManyField(related_name='en_colecciones', to='Imagenes_galeria'),
         ),
         migrations.CreateModel(
             name='Publicacion',
