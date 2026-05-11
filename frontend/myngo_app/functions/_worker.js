@@ -1,92 +1,140 @@
 /**
- * Cloudflare Pages: Advanced Mode Worker
- * Maneja Proxy HTTP (/api) y Proxy WebSocket (/ws)
+ * Cloudflare Pages: Advanced Mode Worker (Versión Final Blindada)
  * 
- * Este archivo unifica la lógica de proxy para evitar errores de Mixed Content
- * y permitir conexiones WebSocket seguras (wss) hacia un backend inseguro (ws).
+ * Cambios realizados:
+ * 1. Uso de env.BACKEND_IP para flexibilidad.
+ * 2. Inclusión de X-CSRFToken y cabeceras de origen en la lista blanca.
+ * 3. Filtrado estricto en WebSockets para evitar rechazos del servidor.
+ * 4. Forzado de cabecera 'Host' a la IP del backend.
  */
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const BACKEND_IP = "107.20.99.104";
+    // Priorizamos la variable de entorno configurada en el panel de Cloudflare Pages
+    const BACKEND_IP = env.BACKEND_IP || "107.20.99.104";
 
-    // --- 1. MANEJO DE WEBSOCKETS (/ws) ---
-    // Detectamos si la ruta es /ws y si el cliente quiere mejorar la conexión
+    // --- 1. MANEJO DE CORS PREFLIGHT (OPTIONS) ---
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": url.origin,
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-CSRFToken, X-Requested-With, Accept, Origin, Referer",
+          "Access-Control-Allow-Credentials": "true",
+          "Max-Age": "86400",
+        },
+      });
+    }
+
+    // --- 2. MANEJO DE WEBSOCKETS (/ws) ---
     if (url.pathname.startsWith("/ws")) {
       const upgradeHeader = request.headers.get("Upgrade");
       if (!upgradeHeader || upgradeHeader.toLowerCase() !== "websocket") {
         return new Response("Expected Upgrade: websocket", { status: 426 });
       }
 
-      // Definimos la URL del backend real (EC2)
-      // Nota: Usamos ws:// porque el backend no tiene SSL
       const targetWsUrl = `ws://${BACKEND_IP}${url.pathname}${url.search}`;
       
       try {
-        // Realizamos el fetch al backend solicitando el upgrade
+        const [clientSide, workerSide] = new WebSocketPair();
+
+        // Creamos cabeceras limpias para el WebSocket
+        const wsHeaders = new Headers();
+        wsHeaders.set("Upgrade", "websocket");
+        wsHeaders.set("Connection", "Upgrade");
+        wsHeaders.set("Host", BACKEND_IP); // Evita 403 en servidores con virtual hosts
+        
+        const auth = request.headers.get("Authorization");
+        if (auth) wsHeaders.set("Authorization", auth);
+
         const backendRes = await fetch(targetWsUrl, {
-          headers: request.headers,
+          headers: wsHeaders,
           method: "GET",
         });
 
-        // El backend debe responder con 101 Switching Protocols
         if (backendRes.status !== 101) {
-          const errorText = await backendRes.text();
-          return new Response("Backend failed to upgrade: " + errorText, { status: 502 });
+          return new Response("Backend WebSocket failed: " + backendRes.status, { status: 502 });
         }
 
-        // Obtenemos el socket del lado del backend
         const serverSocket = backendRes.webSocket;
-        if (!serverSocket) {
-          return new Response("No server socket found", { status: 502 });
-        }
+        if (!serverSocket) return new Response("No socket found", { status: 502 });
 
-        // Creamos un par de sockets para el lado del cliente (Navegador <-> Worker)
-        const [clientSide, workerSide] = new WebSocketPair();
-
-        // Conectamos el Worker con el Backend de forma bidireccional
         handleSession(workerSide, serverSocket);
 
-        // Devolvemos el socket del lado del cliente al navegador
         return new Response(null, {
           status: 101,
           webSocket: clientSide,
         });
       } catch (err) {
-        return new Response("WebSocket Proxy Error: " + err.message, { status: 500 });
+        return new Response(JSON.stringify({ error: "WS Proxy Error", details: err.message }), { 
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
       }
     }
 
-    // --- 2. MANEJO DE API HTTP (/api/*) ---
-    // Mantenemos la funcionalidad de proxy para peticiones REST normales
+    // --- 3. MANEJO DE API HTTP (/api/*) ---
     if (url.pathname.startsWith("/api/")) {
-      // Extraemos la ruta después de /api/ (ej: /api/usuarios/login -> usuarios/login)
       const apiPath = url.pathname.replace("/api/", "");
       const backendUrl = `http://${BACKEND_IP}/${apiPath}${url.search}`;
+
+      // Lista blanca de cabeceras permitidas (incluyendo seguridad de Django/Laravel)
+      const cleanHeaders = new Headers();
+      const allowedHeaders = [
+        "content-type", 
+        "authorization", 
+        "accept", 
+        "user-agent", 
+        "cookie", 
+        "x-csrftoken", 
+        "x-requested-with", 
+        "referer", 
+        "origin"
+      ];
       
-      // Clonamos la petición original pero dirigida al backend
-      const newRequest = new Request(backendUrl, {
-        method: request.method,
-        headers: request.headers,
-        body: request.method !== 'GET' && request.method !== 'HEAD' ? await request.blob() : null,
-        redirect: "manual",
-      });
+      for (let [key, value] of request.headers.entries()) {
+        if (allowedHeaders.includes(key.toLowerCase())) {
+          cleanHeaders.set(key, value);
+        }
+      }
+
+      // Forzamos el Host a la IP para que el backend reconozca la petición
+      cleanHeaders.set("Host", BACKEND_IP);
 
       try {
-        const response = await fetch(newRequest);
+        const proxyRequest = new Request(backendUrl, {
+          method: request.method,
+          headers: cleanHeaders,
+          body: request.method !== "GET" && request.method !== "HEAD" ? request.body : null,
+          redirect: "manual",
+        });
+
+        const response = await fetch(proxyRequest);
+        
+        // Clonamos la respuesta para inyectar cabeceras CORS
         const newResponse = new Response(response.body, response);
-        // Aseguramos CORS para evitar problemas de origen
-        newResponse.headers.set("Access-Control-Allow-Origin", "*");
-        newResponse.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        newResponse.headers.set("Access-Control-Allow-Origin", url.origin);
+        newResponse.headers.set("Access-Control-Allow-Credentials", "true");
+        
         return newResponse;
       } catch (e) {
-        return new Response("API Proxy Error: " + e.message, { status: 502 });
+        return new Response(
+          JSON.stringify({ 
+            error: true, 
+            message: "Proxy Connection Error", 
+            details: e.message 
+          }), 
+          { 
+            status: 502, 
+            headers: { "Content-Type": "application/json" } 
+          }
+        );
       }
     }
 
-    // --- 3. SERVIR FRONTEND (Fallback) ---
-    // Si la ruta no es /api ni /ws, servimos los archivos estáticos del proyecto de Pages
+    // --- 4. SERVIR FRONTEND (Fallback) ---
     return env.ASSETS.fetch(request);
   },
 };
@@ -95,37 +143,20 @@ export default {
  * Gestiona el reenvío de mensajes y eventos entre el cliente y el backend.
  */
 function handleSession(workerSocket, serverSocket) {
-  // Activamos ambos sockets
   workerSocket.accept();
   serverSocket.accept();
 
-  // Cliente (Browser) -> Backend (EC2)
-  workerSocket.addEventListener("message", (event) => {
-    try {
-      serverSocket.send(event.data);
-    } catch (e) {
-      console.error("Error sending to server:", e);
-    }
-  });
+  workerSocket.addEventListener("message", (ev) => serverSocket.send(ev.data));
+  serverSocket.addEventListener("message", (ev) => workerSocket.send(ev.data));
 
-  // Backend (EC2) -> Cliente (Browser)
-  serverSocket.addEventListener("message", (event) => {
-    try {
-      workerSocket.send(event.data);
-    } catch (e) {
-      console.error("Error sending to client:", e);
-    }
-  });
+  const closePair = (evt) => {
+    workerSocket.close(evt.code || 1000, evt.reason || "");
+    serverSocket.close(evt.code || 1000, evt.reason || "");
+  };
 
-  // Manejo de cierres sincronizados
-  workerSocket.addEventListener("close", (event) => {
-    serverSocket.close(event.code, event.reason);
-  });
-  serverSocket.addEventListener("close", (event) => {
-    workerSocket.close(event.code, event.reason);
-  });
-
-  // Manejo de errores
+  workerSocket.addEventListener("close", closePair);
+  serverSocket.addEventListener("close", closePair);
+  
   const errorHandler = (msg) => {
     console.error(msg);
     workerSocket.close(1011, "Proxy Error");
