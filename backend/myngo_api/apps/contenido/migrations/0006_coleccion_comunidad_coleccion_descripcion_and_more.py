@@ -23,12 +23,12 @@ class Migration(migrations.Migration):
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='imagenes_galeria',
+            model_name='Imagenes_galeria',
             name='es_publica',
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='imagenes_galeria',
+            model_name='Imagenes_galeria',
             name='tipo_archivo',
             field=models.CharField(choices=[('I', 'Imagen'), ('V', 'Video')], default='I', max_length=1),
         ),

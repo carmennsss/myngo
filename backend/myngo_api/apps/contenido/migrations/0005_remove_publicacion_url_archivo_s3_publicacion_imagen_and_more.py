@@ -18,10 +18,10 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='publicacion',
             name='imagen',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='imagengaleria'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='Imagenes_galeria'),
         ),
         migrations.AlterField(
-            model_name='imagenes_galeria',
+            model_name='Imagenes_galeria',
             name='url_s3',
             field=models.ImageField(blank=True, max_length=500, null=True, upload_to='publicaciones/archivos'),
         ),
