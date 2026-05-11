@@ -46,7 +46,7 @@ class GaleriaList(generics.ListCreateAPIView):
         # Solo mostrar imágenes vinculadas a publicaciones (posts)
         # Esto excluye imágenes de chats, avatares, etc.
         qs = qs.filter(
-            Q(publicacion__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+            Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
         ).distinct()
 
         if coleccion_id:
