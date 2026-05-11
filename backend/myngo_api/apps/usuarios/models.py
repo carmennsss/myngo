@@ -120,6 +120,16 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         media = votos.aggregate(models.Avg('estrellas'))['estrellas__avg']
         return round(float(media), 2)
 
+    @property
+    def es_publico(self):
+        """Indica si el perfil del usuario es público.
+        
+        Returns:
+            bool: True si es público o no tiene perfil asociado.
+        """
+        perfil = getattr(self, 'perfil', None)
+        return perfil.es_publico if perfil else True
+
 
 class Perfil(models.Model):
     """
