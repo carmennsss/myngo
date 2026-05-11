@@ -198,7 +198,7 @@ class ServicioUsuarios {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+        final dynamic datosJson = jsonDecode(respuesta.body);
         final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? datosJson['datos'] ?? []);
         return RespuestaApi(
           exito: true,
@@ -221,8 +221,8 @@ class ServicioUsuarios {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        final List<dynamic> lista = datosJson['datos'] ?? [];
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['datos'] ?? datosJson['results'] ?? []);
         return RespuestaApi(
           exito: true,
           mensaje: 'Ranking recuperado',
@@ -244,8 +244,8 @@ class ServicioUsuarios {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        final List<dynamic> lista = datosJson['results'] ?? datosJson['datos'] ?? [];
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? datosJson['datos'] ?? []);
         return RespuestaApi(
           exito: true,
           mensaje: 'Seguidores recuperados',
@@ -267,8 +267,8 @@ class ServicioUsuarios {
       ).timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode == 200) {
-        final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
-        final List<dynamic> lista = datosJson['results'] ?? datosJson['datos'] ?? [];
+        final dynamic datosJson = jsonDecode(respuesta.body);
+        final List<dynamic> lista = datosJson is List ? datosJson : (datosJson['results'] ?? datosJson['datos'] ?? []);
         return RespuestaApi(
           exito: true,
           mensaje: 'Seguidos recuperados',
