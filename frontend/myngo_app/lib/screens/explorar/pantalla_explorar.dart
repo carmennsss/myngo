@@ -14,6 +14,8 @@ import '../perfiles/pantalla_detalle_perfil.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Pantalla de descubrimiento de la app. Tiene dos pestañas: Comunidades y Perfiles.
 // Incluye búsqueda con debounce, filtros por tags y estrellas, e infinite scroll.
@@ -214,6 +216,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) {
+        context.watch<LocaleNotifier>();
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           body: RefreshIndicator(

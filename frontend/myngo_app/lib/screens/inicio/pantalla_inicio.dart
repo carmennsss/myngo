@@ -10,9 +10,11 @@ import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_mensajeria.dart';
+import '../../services/servicio_notificaciones_locales.dart';
 import '../../providers/chat_provider.dart';
 import '../../utils/mejoras_notifier.dart';
 import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 import 'package:tolgee/tolgee.dart';
 import '../comunidades/pantalla_comunidades.dart';
 import '../comunidades/pantalla_detalle_comunidad.dart';
@@ -37,6 +39,7 @@ export '../../widgets/inicio/lateral_derecho.dart';
 // y la barra de contexto de comunidad. También mantiene el estado de sesión,
 // notificaciones y mensajes sin leer en tiempo real.
 class PantallaInicio extends StatefulWidget {
+  static final GlobalKey<PantallaInicioState> pantallaInicioKey = GlobalKey<PantallaInicioState>();
   final StatefulNavigationShell? navigationShell;
   const PantallaInicio({super.key, this.navigationShell});
 
@@ -111,6 +114,7 @@ class PantallaInicioState extends State<PantallaInicio> {
           _miEstado = resDatos.datos!.estado ?? 'DESCONECTADO';
           
           context.read<ChatProvider>().setUserId(_miId);
+          context.read<ChatProvider>().actualizarEstadoUsuario(_miId!, _miEstado);
           
           if (resDatos.datos!.ordenComunidades.isNotEmpty) {
             _ordenGuardado = resDatos.datos!.ordenComunidades;
@@ -159,7 +163,7 @@ class PantallaInicioState extends State<PantallaInicio> {
         });
 
         _cargarComunidades();
-        _cargarNotificacionesSinLeer();
+        cargarNotificacionesSinLeer();
         
         final chatProvider = context.read<ChatProvider>();
         chatProvider.cargarConteosIniciales();
@@ -193,7 +197,7 @@ class PantallaInicioState extends State<PantallaInicio> {
     }
   }
 
-  Future<void> _cargarNotificacionesSinLeer() async {
+  Future<void> cargarNotificacionesSinLeer() async {
     if (!_estaLogueado) return;
     final conteo = await ServicioNotificaciones().obtenerConteoNoLeidas();
     if (mounted) setState(() => _notificacionesSinLeer = conteo);
@@ -207,12 +211,20 @@ class PantallaInicioState extends State<PantallaInicio> {
       if (type == 'new_message_notification') {
         chatProvider.procesarNuevaNotificacion(data);
         if (chatProvider.salaActivaId != (data['sala_id'] as num).toInt()) {
-          _mostrarToastMensaje(data);
+          _cargarChatsRecientes();
         }
       } else if (type == 'new_chat_notification') {
+        chatProvider.cargarSalas();
         chatProvider.notificarNuevaSala();
+        
+        ServicioNotificacionesLocales.mostrarNotificacionMensaje(
+          id: (data['sala_id'] as num).toInt(),
+          titulo: 'Nuevo chat grupal',
+          cuerpo: 'Has sido añadido a "${data['nombre']}"',
+          payload: data['sala_id'].toString(),
+        );
       } else if (type == 'generic_notification') {
-        _cargarNotificacionesSinLeer();
+        cargarNotificacionesSinLeer();
         _mostrarToastNotificacion(data);
       }
     });
@@ -342,7 +354,6 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   void seleccionarUsuario(Usuario usuario) => _seleccionarUsuario(usuario);
   void cargarComunidades() => _cargarComunidades();
-  void cargarNotificacionesSinLeer() => _cargarNotificacionesSinLeer();
 
   void actualizarPuntos(int nuevosPuntos) {
     if (mounted) setState(() => _puntos = nuevosPuntos);
@@ -376,6 +387,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) {
+        context.watch<LocaleNotifier>();
         final screenWidth = MediaQuery.of(context).size.width;
         final isMobile = screenWidth < 800;
 

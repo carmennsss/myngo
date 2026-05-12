@@ -12,9 +12,11 @@ import 'servicio_usuarios.dart';
 
 /// Servicio encargado de la gestión de mensajería instantánea y presencia en tiempo real.
 class ServicioMensajeria {
-  final http.Client? _httpClient;
-  ServicioMensajeria({http.Client? httpClient}) : _httpClient = httpClient;
-  http.Client get client => _httpClient ?? http.Client();
+  late final http.Client _client;
+  ServicioMensajeria({http.Client? httpClient}) {
+    _client = httpClient ?? http.Client();
+  }
+  http.Client get client => _client;
 
   WebSocketChannel? _canalChat;
   WebSocketChannel? _canalPresencia;
@@ -38,8 +40,6 @@ class ServicioMensajeria {
       if (token != null) 'Authorization': 'Token $token',
     };
   }
-
-  // --- MÉTODOS REST ---
 
   Future<Map<String, dynamic>?> crearSala({
     String? nombre,
@@ -273,9 +273,21 @@ class ServicioMensajeria {
         return jsonDecode(utf8.decode(respuesta.bodyBytes));
       }
     } catch (e) {
-      // Error silencioso en producción o logueado a Sentry
     }
     return null;
+  }
+
+  Future<bool> agregarMiembro(int idSala, int usuarioId) async {
+    try {
+      final respuesta = await client.post(
+        Uri.parse('$_urlApi/mensajeria/salas/$idSala/agregar_miembro/'),
+        headers: await _obtenerCabeceras(),
+        body: jsonEncode({'usuario_id': usuarioId}),
+      ).timeout(const Duration(seconds: 10));
+      return respuesta.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Establece un apodo personalizado (privado) para otro usuario en un chat.
@@ -358,8 +370,6 @@ class ServicioMensajeria {
     }
   }
 
-  // --- WEBSOCKETS ---
-
   void conectarASala(int idSala, Function(Map<String, dynamic>) alRecibirMensaje, {VoidCallback? alConectar}) {
     _iniciarConexionChat(idSala, alRecibirMensaje, alConectar: alConectar);
   }
@@ -371,8 +381,13 @@ class ServicioMensajeria {
 
       final url = Uri.parse("$_urlWs/chat/$idSala/?token=$token");
       _canalChat = WebSocketChannel.connect(url);
-      _estaConectadoChat = true;
-      if (alConectar != null) alConectar();
+      
+      _canalChat!.ready.then((_) {
+        _estaConectadoChat = true;
+        if (alConectar != null) alConectar();
+      }).catchError((e) {
+        _estaConectadoChat = false;
+      });
 
       _canalChat!.stream.listen(
         (datos) => alRecibirMensaje(jsonDecode(datos)),
@@ -467,23 +482,37 @@ class ServicioMensajeria {
     });
   }
 
-  void enviarMensajeChat(String contenido, {
+  Future<bool> enviarMensajeChat(String contenido, {
     String? clientId, 
     int? referenciaA, 
     String? tipo, 
     String? urlArchivoS3,
     List<Map<String, dynamic>>? attachments,
-  }) {
+  }) async {
+    // Intentar por WebSocket si está disponible
     if (_estaConectadoChat && _canalChat != null) {
-      _canalChat!.sink.add(jsonEncode({
-        'type': 'message',
-        'content': contenido,
-        'client_id': clientId,
-        'tipo': tipo ?? 'TEXTO',
-        'url_archivo_s3': urlArchivoS3,
-        if (attachments != null) 'attachments': attachments,
-        if (referenciaA != null) 'referencia_a': referenciaA,
-      }));
+      try {
+        _canalChat!.sink.add(jsonEncode({
+          'type': 'message',
+          'content': contenido,
+          'client_id': clientId,
+          'tipo': tipo ?? 'TEXTO',
+          'url_archivo_s3': urlArchivoS3,
+          if (attachments != null) 'attachments': attachments,
+          if (referenciaA != null) 'referencia_a': referenciaA,
+        }));
+        return true;
+      } catch (e) {
+        debugPrint('Error enviando mensaje por WS: $e');
+        _estaConectadoChat = false;
+      }
+    }
+
+    // Fallback a API REST si el WebSocket falla o no está conectado
+    try {
+      return false; 
+    } catch (_) {
+      return false;
     }
   }
 
@@ -511,6 +540,16 @@ class ServicioMensajeria {
   void dispose() {
     _temporizadorReconexion?.cancel();
     _temporizadorLatido?.cancel();
+    
+    if (_estaConectadoPresencia && _canalPresencia != null) {
+      try {
+        _canalPresencia!.sink.add(jsonEncode({
+          'type': 'change_status',
+          'status': 'DESCONECTADO',
+        }));
+      } catch (_) {}
+    }
+    
     _canalChat?.sink.close();
     _canalPresencia?.sink.close();
     _canalNotificaciones?.sink.close();

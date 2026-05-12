@@ -19,6 +19,8 @@ import 'pantalla_moderacion_tienda.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Dashboard de administración de una comunidad. Agrupa en pestañas las solicitudes
 // de acceso pendientes, la gestión de miembros, los reportes activos y los ajustes generales.
@@ -96,8 +98,9 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
+    context.watch<LocaleNotifier>();
+    return TranslationWidget(
+      builder: (context, String Function(String, [Map<String, dynamic>?]) tr) {
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
@@ -141,7 +144,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                 ],
               ),
         );
-      }
+      },
     );
   }
 
@@ -353,13 +356,13 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                 // Notificar a la pantalla de inicio para refrescar el sidebar
                 context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
                 
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Comunidad eliminada con éxito! 🐾')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('communitySuccessDeleted'))));
                 Navigator.of(context).popUntil((route) => route.isFirst);
               } else if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${res.mensaje}'), backgroundColor: Colors.red));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', {'error': res.mensaje})), backgroundColor: Colors.red));
               }
             },
-            child: const Text('BORRAR PERMANENTEMENTE'),
+            child: Text(tr('adminDeleteCommunityConfirm')),
           ),
         ],
       ),

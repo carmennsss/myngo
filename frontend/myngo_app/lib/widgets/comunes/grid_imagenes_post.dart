@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'reproductor_video_post.dart';
 import '../../utils/gestor_descargas.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 class GridImagenesPost extends StatefulWidget {
@@ -210,7 +211,7 @@ class _GridMediaItemState extends State<_GridMediaItem> {
                     const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 32),
                     const SizedBox(height: 8),
                     Text(
-                      'Error al cargar imagen',
+                      tr('errorImageLoad'),
                       style: GoogleFonts.inter(color: Colors.grey, fontSize: 11),
                     ),
                   ],
@@ -232,7 +233,7 @@ class _GridMediaItemState extends State<_GridMediaItem> {
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('No se pudo descargar el archivo 🐾')),
+                        SnackBar(content: Text(tr('errorDownloadFile'))),
                       );
                     }
                   }

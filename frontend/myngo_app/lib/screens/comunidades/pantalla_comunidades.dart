@@ -10,6 +10,8 @@ import 'widgets/formulario_creacion_comunidad.dart';
 import 'pantalla_detalle_comunidad.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Pantalla de listado de comunidades con buscador, filtros por tags y grid responsivo.
 // Permite crear nuevas comunidades desde el botón "+" del header.
@@ -75,6 +77,7 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) {
+        context.watch<LocaleNotifier>();
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           body: RefreshIndicator(

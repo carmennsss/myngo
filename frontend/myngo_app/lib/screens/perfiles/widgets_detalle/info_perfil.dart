@@ -343,6 +343,7 @@ class InfoPerfil extends StatelessWidget {
                 tr('profileFollowersCount'), 
                 usuario.numeroSeguidores.toString(), 
                 colorTextoS,
+                colorTextoP,
                 onTap: () => _mostrarListaUsuarios(
                   context, 
                   true, 
@@ -357,6 +358,7 @@ class InfoPerfil extends StatelessWidget {
                 tr('profileFollowingCount'), 
                 usuario.numeroSeguidos.toString(), 
                 colorTextoS,
+                colorTextoP,
                 onTap: () => _mostrarListaUsuarios(
                   context, 
                   false, 
@@ -384,20 +386,22 @@ class InfoPerfil extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color colorTextoS, {VoidCallback? onTap}) {
+  Widget _buildStatItem(String label, String value, Color colorTextoS, Color valueColor, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
           Text(
             value,
             style: GoogleFonts.getFont(
               usuario.fuentePerfil,
-              fontSize: 15,
+              fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: colorTextoS.withOpacity(0.9),
+              color: valueColor,
             ),
           ),
           const SizedBox(width: 4),

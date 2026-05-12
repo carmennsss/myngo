@@ -10,6 +10,7 @@ import '../../widgets/mensajeria/dialogo_crear_sala.dart';
 import '../inicio/pantalla_inicio.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/locale_notifier.dart';
 import '../../utils/configuracion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tolgee/tolgee.dart';
@@ -36,39 +37,23 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   void initState() {
     super.initState();
     _cargar();
-    // Escuchar cambios en el provider para refrescar si llegan nuevos mensajes o salas
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().addListener(_onChatProviderChanged);
-    });
-  }
-
-  // Se activa cada vez que el ChatProvider notifica un cambio (nuevo mensaje, sala nueva)
-  void _onChatProviderChanged() {
-    if (!mounted || _cargando) return;
-    _cargar();
   }
 
   @override
   void dispose() {
-    // Es importante remover el listener para evitar fugas de memoria
-    if (mounted) {
-       context.read<ChatProvider>().removeListener(_onChatProviderChanged);
-    }
     _searchController.dispose();
     super.dispose();
   }
 
-  // Carga el ID del usuario logueado y delega la carga de salas al ChatProvider
-  Future<void> _cargar() async {
+  Future<void> _cargar({bool mostrarCargando = true}) async {
     if (!mounted) return;
     
-    setState(() => _cargando = true);
+    if (mostrarCargando) setState(() => _cargando = true);
     
     try {
       final prefs = await SharedPreferences.getInstance();
       final id = prefs.getInt('usuario_id');
       
-      // Delegamos la carga al provider
       await context.read<ChatProvider>().cargarSalas();
       
       if (mounted) {
@@ -77,9 +62,9 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         });
       }
     } catch (e) {
-
+      debugPrint('Error cargando lista de chats: $e');
     } finally {
-      if (mounted) {
+      if (mounted && mostrarCargando) {
         setState(() => _cargando = false);
       }
     }
@@ -191,7 +176,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           } else if (mounted) {
 
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No se pudo crear el chat 🐾'))
+              SnackBar(content: Text(tr('chatErrorCreate')))
             );
           }
         },
@@ -201,6 +186,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     final chatProvider = context.watch<ChatProvider>();
     final salas = chatProvider.salas;
     

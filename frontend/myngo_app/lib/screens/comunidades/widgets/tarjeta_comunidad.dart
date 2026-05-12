@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../models/comunidad.dart';
 import '../../../widgets/comunes/boton_tactil.dart';
 import '../../../utils/configuracion.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/locale_notifier.dart';
 
 class TarjetaComunidad extends StatelessWidget {
   final Comunidad comunidad;
@@ -23,6 +26,7 @@ class TarjetaComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     final paleta = _paletas[comunidad.id % _paletas.length];
     final tieneImagen = comunidad.urlPortada?.isNotEmpty ?? false;
 
@@ -146,7 +150,7 @@ class TarjetaComunidad extends StatelessWidget {
                             border: comunidad.esMiembro ? Border.all(color: const Color(0xFF248EA6).withOpacity(0.2)) : null,
                           ),
                           child: Text(
-                            comunidad.esMiembro ? 'ENTRAR 🐾' : 'UNIRSE ✨',
+                            comunidad.esMiembro ? '${tr('communityView').toUpperCase()} 🐾' : '${tr('communityJoin').toUpperCase()} ✨',
                             style: GoogleFonts.outfit(
                               color: comunidad.esMiembro ? const Color(0xFF248EA6) : Colors.white,
                               fontSize: 10,

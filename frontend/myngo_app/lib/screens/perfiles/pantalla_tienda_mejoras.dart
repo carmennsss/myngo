@@ -14,6 +14,8 @@ import 'widgets_tienda/tienda_preview_section.dart';
 import 'widgets_tienda/lista_mejoras_tab.dart';
 import '../comunidades/pantalla_enviar_propuesta.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../providers/locale_notifier.dart';
+import 'package:provider/provider.dart';
 
 // Tienda de mejoras visuales: Avatares, Marcos, Fondos y Estilos de post.
 // Muestra una previsualización en vivo mientras el usuario navega por el catálogo.
@@ -101,12 +103,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   // Notifica a la pantalla padre la categoría activa cuando cambia la pestaña
   void _handleTabChange() {
     if (!_subTabController.indexIsChanging) {
-      final tipos = [
-        tr('storeTypeAvatar'),
-        tr('storeTypeFrame'),
-        tr('storeTypeBackground'),
-        tr('storeTypePostStyle')
-      ];
+      final tipos = ['AVATAR', 'MARCO', 'FONDO', 'ESTILO_POST'];
       if (_subTabController.index < tipos.length) {
         widget.onCategoryChanged?.call(tipos[_subTabController.index]);
       }
@@ -143,8 +140,9 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
+    context.watch<LocaleNotifier>();
+    return TranslationWidget(
+      builder: (context, tr) {
         // Actualizamos listeners si es necesario
         _subTabController.removeListener(_handleTabChange);
         _subTabController.addListener(_handleTabChange);
@@ -162,14 +160,18 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
                       ? Center(
                           child: Text(_errorTienda!,
                               style: GoogleFonts.outfit(color: Colors.grey)))
-                      : TabBarView(
-                          controller: _subTabController,
-                          children: [
-                            _buildTab(tr('storeTypeAvatar'), tr),
-                            _buildTab(tr('storeTypeFrame'), tr),
-                            _buildTab(tr('storeTypeBackground'), tr),
-                            _buildTab(tr('storeTypePostStyle'), tr),
-                          ],
+                      : Consumer<LocaleNotifier>(
+                          builder: (context, locale, _) {
+                            return TabBarView(
+                              controller: _subTabController,
+                              children: [
+                                _buildTab('AVATAR', tr),
+                                _buildTab('MARCO', tr),
+                                _buildTab('FONDO', tr),
+                                _buildTab('ESTILO_POST', tr),
+                              ],
+                            );
+                          }
                         ),
             ),
           ],
@@ -265,7 +267,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
             body: content,
             floatingActionButton: _buildFAB(tr),
           );
-      }
+      },
     );
   }
 
@@ -315,13 +317,13 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
       },
       onPreviewRequested: (item) {
         setState(() {
-          if (tipo == tr('storeTypeAvatar')) _previewAvatar = item.urlRecurso;
-          if (tipo == tr('storeTypeFrame')) _previewMarco = item.urlRecurso;
-          if (tipo == tr('storeTypeBackground')) {
+          if (tipo == 'AVATAR') _previewAvatar = item.urlRecurso;
+          if (tipo == 'MARCO') _previewMarco = item.urlRecurso;
+          if (tipo == 'FONDO') {
             _previewFondo = item.urlRecurso;
             _previewFondoFeed = item.urlRecurso;
           }
-          if (tipo == tr('storeTypePostStyle')) _previewEstiloPost = item.datosExtra;
+          if (tipo == 'ESTILO_POST') _previewEstiloPost = item.datosExtra;
         });
       },
     );

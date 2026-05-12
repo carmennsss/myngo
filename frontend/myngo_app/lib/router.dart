@@ -88,7 +88,7 @@ final GoRouter appRouter = GoRouter(
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
-        return PantallaInicio(navigationShell: navigationShell);
+        return PantallaInicio(key: PantallaInicio.pantallaInicioKey, navigationShell: navigationShell);
       },
       branches: [
         StatefulShellBranch(
@@ -226,8 +226,7 @@ final GoRouter appRouter = GoRouter(
                   title: 'Tus Notificaciones',
                   child: PantallaNotificaciones(
                     onNotificacionesLeidas: () {
-                      final inicioState = context.findAncestorStateOfType<PantallaInicioState>();
-                      inicioState?.cargarNotificacionesSinLeer();
+                      PantallaInicio.pantallaInicioKey.currentState?.cargarNotificacionesSinLeer();
                     },
                   ),
                 );

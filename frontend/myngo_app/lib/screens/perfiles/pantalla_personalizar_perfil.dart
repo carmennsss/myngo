@@ -11,6 +11,8 @@ import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_perfiles.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -157,6 +159,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
 
     return Builder(
       builder: (context) {
+        context.watch<LocaleNotifier>();
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
         body: Stack(
@@ -892,56 +895,57 @@ class _InventoryItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     final String? url = detalles['url_recurso'];
     final bool esEstilo = detalles['tipo'].toString().toLowerCase().contains('estilo');
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: estaEquipada ? const Color(0xFF248EA6) : Colors.grey.shade200, width: estaEquipada ? 2 : 1),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                child: Container(
-                  color: const Color(0xFFFBE9E0),
-                  child: esEstilo 
-                    ? _buildMiniEstilo(detalles['datos_extra'])
-                    : (url != null && url.isNotEmpty ? Image.network(url, fit: BoxFit.cover) : const Icon(Icons.image_not_supported_rounded, color: Colors.grey)),
-                ),
-              ),
+    return TranslationWidget(
+      builder: (context, tr) {
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: estaEquipada ? const Color(0xFF248EA6) : Colors.grey.shade200, width: estaEquipada ? 2 : 1),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
             ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: ElevatedButton(
-                onPressed: estaEquipada ? onDesequipar : onEquipar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: estaEquipada ? Colors.grey.shade200 : const Color(0xFFC35E34),
-                  foregroundColor: estaEquipada ? const Color(0xFF4A4440) : Colors.white,
-                  elevation: estaEquipada ? 0 : 2,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    child: Container(
+                      color: const Color(0xFFFBE9E0),
+                      child: esEstilo 
+                        ? _buildMiniEstilo(detalles['datos_extra'])
+                        : (url != null && url.isNotEmpty ? Image.network(url, fit: BoxFit.cover) : const Icon(Icons.image_not_supported_rounded, color: Colors.grey)),
+                    ),
+                  ),
                 ),
-                child: Builder(
-                  builder: (context) {
-                    return Text(
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: ElevatedButton(
+                    onPressed: estaEquipada ? onDesequipar : onEquipar,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: estaEquipada ? Colors.grey.shade200 : const Color(0xFFC35E34),
+                      foregroundColor: estaEquipada ? const Color(0xFF4A4440) : Colors.white,
+                      elevation: estaEquipada ? 0 : 2,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(
                       estaEquipada ? tr('profileUnequip') : tr('profileEquip'),
                       style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900),
-                    );
-                  }
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
