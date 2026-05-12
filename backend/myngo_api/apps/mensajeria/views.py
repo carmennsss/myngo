@@ -249,17 +249,38 @@ def agregar_miembro(request, pk):
             
         usuario_id = request.data.get('usuario_id')
         usuario = Usuario.objects.get(pk=usuario_id)
-        sala.miembros.add(usuario)
         
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'chat_{pk}',
-            {
-                'type': 'user_joined',
-                'user_id': usuario.id,
-                'username': usuario.nombre_usuario
-            }
-        )
+        if not sala.miembros.filter(id=usuario.id).exists():
+            sala.miembros.add(usuario)
+            
+            MensajeChat.objects.create(
+                sala=sala,
+                emisor=request.user,
+                contenido=f"👤 {request.user.nombre_usuario} ha añadido a {usuario.nombre_usuario} al chat.",
+                tipo='SISTEMA'
+            )
+            
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{pk}',
+                {
+                    'type': 'user_joined',
+                    'user_id': usuario.id,
+                    'username': usuario.nombre_usuario,
+                    'system_message': f"👤 {request.user.nombre_usuario} ha añadido a {usuario.nombre_usuario} al chat."
+                }
+            )
+            
+            async_to_sync(channel_layer.group_send)(
+                f'user_{usuario.id}_notif',
+                {
+                    'type': 'new_chat_notification',
+                    'sala_id': sala.id,
+                    'nombre': sala.nombre,
+                    'es_grupal': sala.es_grupal,
+                }
+            )
+            
         return Response({'status': 'ok'})
     except (SalaChat.DoesNotExist, Usuario.DoesNotExist):
         return Response({'error': 'No encontrado'}, status=404)

@@ -182,6 +182,15 @@ class _PantallaChatState extends State<PantallaChat> {
       }
     });
     _scrollController.addListener(_onScroll);
+    
+    if (widget.salaId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<ChatProvider>().setSalaActiva(widget.salaId);
+        }
+      });
+    }
+    
     _inicializar();
   }
 
@@ -287,16 +296,15 @@ class _PantallaChatState extends State<PantallaChat> {
       }
 
       if (_sala != null) {
+        if (mounted) {
+          context.read<ChatProvider>().setSalaActiva(_sala!.id);
+        }
+        
         final msgsData = await _servicio.obtenerMensajesSala(_sala!.id);
         _mensajes = msgsData.map((m) => MensajeChat.fromJson(m)).toList();
         
         if (msgsData.length < 30) {
           _puedeCargarMas = false;
-        }
-
-
-        if (mounted) {
-          Provider.of<ChatProvider>(context, listen: false).setSalaActiva(_sala!.id);
         }
       }
     } catch (e) {
@@ -456,12 +464,17 @@ class _PantallaChatState extends State<PantallaChat> {
           }
         }
 
-        _servicio.enviarMensajeChat(
+        final enviado = await _servicio.enviarMensajeChat(
           texto, 
           referenciaA: respuestaId,
           tipo: tipoFinal,
           attachments: attachments.isNotEmpty ? attachments : null,
         );
+
+        if (!enviado) {
+          // Fallback a REST si el WebSocket falló
+          await _servicio.enviarMensaje(_sala!.id, texto);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -512,7 +525,7 @@ class _PantallaChatState extends State<PantallaChat> {
                       ),
                     ),
                     Text(
-                      msg.contenido ?? tr('commonNo'), // Fallback "No" -> "Archivo/Nada"
+                      msg.contenido ?? tr('commonNo'),
 
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -603,7 +616,12 @@ class _PantallaChatState extends State<PantallaChat> {
               chatProvider.isUsuarioOnline(p.usuarioId)
             ).length;
             final mCount = _sala!.numMiembros > 0 ? _sala!.numMiembros : _sala!.participantes.length;
-            subtitulo = tr('communityMembers', {'count': mCount.toString()}) + ' • ' + (onlineCount > 0 ? tr('statusOnline') : tr('statusOffline'));
+            
+            String statusText = onlineCount > 0 
+              ? '$onlineCount ${tr('statusOnline').toLowerCase()}' 
+              : tr('statusOffline');
+              
+            subtitulo = tr('communityMembers', {'count': mCount.toString()}) + ' • ' + statusText;
             avatarUrl = _sala!.avatarS3;
           } else {
             final otroId = _sala!.otroUsuarioId;
@@ -635,41 +653,51 @@ class _PantallaChatState extends State<PantallaChat> {
 
         return Row(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundImage: (avatarUrl != null)
-                    ? CachedNetworkImageProvider(avatarUrl)
-                    : null,
-                  backgroundColor: const Color(0xFFF28B50).withOpacity(0.2),
-                  child: (avatarUrl == null) 
-                    ? Icon(esDM ? Icons.person_outline : Icons.chat_bubble_outline, 
-                        size: 20, color: const Color(0xFFF28B50)) 
-                    : null,
-                ),
-                if (esDM && _sala != null)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: _getColorEstado(chatProvider.getEstadoUsuario(_sala!.otroUsuarioId ?? 0)),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+            Hero(
+              tag: 'avatar_sala_${_sala?.id ?? widget.salaId ?? 0}',
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                      ? CachedNetworkImageProvider(
+                          avatarUrl.startsWith('http') 
+                            ? avatarUrl 
+                            : '${Configuracion.baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}$avatarUrl'
+                        )
+                      : null,
+                    backgroundColor: const Color(0xFFF28B50).withOpacity(0.2),
+                    child: (avatarUrl == null || avatarUrl.isEmpty) 
+                      ? Icon(esDM ? Icons.person_outline : Icons.chat_bubble_outline, 
+                          size: 20, color: const Color(0xFFF28B50)) 
+                      : null,
+                  ),
+                  if (esDM && _sala != null)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: _getColorEstado(chatProvider.getEstadoUsuario(_sala!.otroUsuarioId ?? 0)),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(nombre, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(nombre, 
+                    style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   Text(subtitulo, style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey)),
                 ],
               ),
@@ -1126,12 +1154,23 @@ class _PantallaChatState extends State<PantallaChat> {
             const SizedBox(height: 12),
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
-            Text(
-              tr('chatParticipants'),
-
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  tr('chatParticipants'),
+                  style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)),
+                ),
+                if (_sala!.esGrupal) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFFC35E34)),
+                    onPressed: () => _mostrarDialogoAgregarMiembro(context),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -1187,7 +1226,7 @@ class _PantallaChatState extends State<PantallaChat> {
               ),
             ],
             if (_sala != null && _sala!.puedoEliminar) ...[
-              if (!_sala!.esGrupal) const Divider(), // Separador si no lo puso el bloque anterior
+              if (!_sala!.esGrupal) const Divider(),
               ListTile(
                 leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
                 title: Text(tr('chatDeleteRoomAction'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -1225,11 +1264,9 @@ class _PantallaChatState extends State<PantallaChat> {
                 context.go('/mensajes');
               }
               
-              // Ejecutar borrado en segundo plano
               if (salaId != null) {
                 _servicio.eliminarSala(salaId).then((exito) {
                   if (exito) {
-                    // ELIMINACIÓN DEFINITIVA DE LA LISTA GLOBAL
                     if (context.mounted) {
                       Provider.of<ChatProvider>(context, listen: false).eliminarSalaDeLista(salaId);
                     }
@@ -1313,13 +1350,78 @@ class _PantallaChatState extends State<PantallaChat> {
               final exito = await _servicio.expulsarMiembro(_sala!.id, p.usuarioId!);
               if (exito && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('chatExpelledSuccess', {'name': p.nombreAMostrar}))));
-                _cargarDatos(); // Recargar para ver la lista actualizada
+                _cargarDatos();
               }
             },
             child: Text(tr('chatExpelAction'), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
 
+      ),
+    );
+  }
+
+  void _mostrarDialogoAgregarMiembro(BuildContext context) async {
+    final res = await ServicioUsuarios().listarUsuarios();
+    if (!res.exito || !mounted) return;
+
+    final participantesIds = _sala!.participantes.map((p) => p.usuarioId).toSet();
+    final candidatos = (res.datos ?? []).where((u) => !participantesIds.contains(u.id)).toList();
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(tr('chatNew').split(' ')[0] + ' ' + tr('commonMember'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: candidatos.isEmpty 
+            ? Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(tr('chatNoSearchResults'), textAlign: TextAlign.center),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: candidatos.length,
+                itemBuilder: (ctx, index) {
+                  final u = candidatos[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: (u.urlAvatar != null && u.urlAvatar!.isNotEmpty)
+                        ? CachedNetworkImageProvider(u.urlAvatar!.startsWith('http') 
+                            ? u.urlAvatar! 
+                            : '${Configuracion.baseUrl}${u.urlAvatar!.startsWith('/') ? '' : '/'}${u.urlAvatar}')
+                        : null,
+                      child: (u.urlAvatar == null || u.urlAvatar!.isEmpty) ? const Icon(Icons.person) : null,
+                    ),
+                    title: Text(u.nombreUsuario),
+                    onTap: () async {
+                      Navigator.pop(dialogContext);
+                      final exito = await _servicio.agregarMiembro(_sala!.id, u.id);
+                      if (exito) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(tr('commonSuccess')))
+                          );
+                          _cargarDatos();
+                        }
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(tr('chatDeleteError')))
+                          );
+                        }
+                      }
+                    },
+                  );
+                },
+              ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('commonCancel'))),
+        ],
       ),
     );
   }

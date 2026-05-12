@@ -36,39 +36,23 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
   void initState() {
     super.initState();
     _cargar();
-    // Escuchar cambios en el provider para refrescar si llegan nuevos mensajes o salas
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().addListener(_onChatProviderChanged);
-    });
-  }
-
-  // Se activa cada vez que el ChatProvider notifica un cambio (nuevo mensaje, sala nueva)
-  void _onChatProviderChanged() {
-    if (!mounted || _cargando) return;
-    _cargar();
   }
 
   @override
   void dispose() {
-    // Es importante remover el listener para evitar fugas de memoria
-    if (mounted) {
-       context.read<ChatProvider>().removeListener(_onChatProviderChanged);
-    }
     _searchController.dispose();
     super.dispose();
   }
 
-  // Carga el ID del usuario logueado y delega la carga de salas al ChatProvider
-  Future<void> _cargar() async {
+  Future<void> _cargar({bool mostrarCargando = true}) async {
     if (!mounted) return;
     
-    setState(() => _cargando = true);
+    if (mostrarCargando) setState(() => _cargando = true);
     
     try {
       final prefs = await SharedPreferences.getInstance();
       final id = prefs.getInt('usuario_id');
       
-      // Delegamos la carga al provider
       await context.read<ChatProvider>().cargarSalas();
       
       if (mounted) {
@@ -77,9 +61,9 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
         });
       }
     } catch (e) {
-
+      debugPrint('Error cargando lista de chats: $e');
     } finally {
-      if (mounted) {
+      if (mounted && mostrarCargando) {
         setState(() => _cargando = false);
       }
     }

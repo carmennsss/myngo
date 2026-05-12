@@ -42,9 +42,11 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
   final _servicioMejoras = ServicioMejoras();
 
   List<CatalogoMejoras> get _mejorasFiltradas {
-    var filtradas = widget.mejoras
-        .where((m) => m.tipo.toLowerCase() == widget.tipo.toLowerCase())
-        .toList();
+    var filtradas = widget.mejoras.where((m) {
+      final t1 = m.tipo.toLowerCase().replaceAll('_', ' ');
+      final t2 = widget.tipo.toLowerCase().replaceAll('_', ' ');
+      return t1 == t2;
+    }).toList();
     filtradas = filtradas.where((m) => m.estaActivo).toList();
     return filtradas;
   }

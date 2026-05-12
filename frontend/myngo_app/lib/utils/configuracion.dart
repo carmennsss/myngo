@@ -4,7 +4,7 @@ class Configuracion {
 
 
   /// La dirección base para las conexiones de WebSockets.
-  static const String wsUrl = 'wss://107.20.99.104/ws'; 
+  static const String wsUrl = 'ws://107.20.99.104/ws'; 
   //static const String wsUrl = 'ws://localhost:8000/ws';
 
 }

@@ -10,6 +10,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_mensajeria.dart';
+import '../../services/servicio_notificaciones_locales.dart';
 import '../../providers/chat_provider.dart';
 import '../../utils/mejoras_notifier.dart';
 import 'package:provider/provider.dart';
@@ -208,10 +209,18 @@ class PantallaInicioState extends State<PantallaInicio> {
       if (type == 'new_message_notification') {
         chatProvider.procesarNuevaNotificacion(data);
         if (chatProvider.salaActivaId != (data['sala_id'] as num).toInt()) {
-          _mostrarToastMensaje(data);
+          _cargarChatsRecientes();
         }
       } else if (type == 'new_chat_notification') {
+        chatProvider.cargarSalas();
         chatProvider.notificarNuevaSala();
+        
+        ServicioNotificacionesLocales.mostrarNotificacionMensaje(
+          id: (data['sala_id'] as num).toInt(),
+          titulo: 'Nuevo chat grupal',
+          cuerpo: 'Has sido añadido a "${data['nombre']}"',
+          payload: data['sala_id'].toString(),
+        );
       } else if (type == 'generic_notification') {
         _cargarNotificacionesSinLeer();
         _mostrarToastNotificacion(data);

@@ -2,7 +2,7 @@
     <application
         android:label="Myngo"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/myngo_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -43,9 +43,8 @@ class GaleriaList(generics.ListCreateAPIView):
             propietario_id = self.request.query_params.get('usuario_id')
             coleccion_id = self.request.query_params.get('coleccion_id')
             
-            qs = ImagenGaleria.objects.all()
+            qs = ImagenGaleria.objects.exclude(url_s3__icontains='chat/contenido')
 
-            # 1. Determinamos el conjunto base (Filtro por origen)
             if coleccion_id:
                 try:
                     coleccion = Coleccion.objects.get(id=coleccion_id)
@@ -64,7 +63,12 @@ class GaleriaList(generics.ListCreateAPIView):
                         ).exists()
                         if not es_miembro and comunidad.creador != self.request.user:
                             return ImagenGaleria.objects.none()
-                    qs = qs.filter(comunidad=comunidad)
+                    
+                    # Mostramos imágenes que pertenecen a posts de esta comunidad
+                    qs = qs.filter(
+                        Q(publicacion__comunidad=comunidad) | 
+                        Q(publicaciones_asociadas__comunidad=comunidad)
+                    ).distinct()
                 except (Comunidad.DoesNotExist, ValueError, TypeError):
                     return ImagenGaleria.objects.none()
 
@@ -74,21 +78,17 @@ class GaleriaList(generics.ListCreateAPIView):
                         qs = qs.filter(propietario_id=propietario_id)
                     else:
                         qs = qs.filter(propietario_id=propietario_id, es_publica=True)
+                        # Si es perfil ajeno, solo mostramos lo que esté en posts
+                        qs = qs.filter(
+                            Q(publicacion__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+                        ).distinct()
                 except (ValueError, TypeError):
                     return ImagenGaleria.objects.none()
             else:
-                qs = qs.filter(es_publica=True)
-
-            # 2. Filtro de Post (Seguridad y Organización):
-            # En la galería de comunidad, en perfiles ajenos o en el Explorar Global,
-            # solo mostramos imágenes que pertenezcan a un post real.
-            # Excluimos este filtro para COLECCIONES (manales) y el PERFIL PROPIO.
-            
-            es_perfil_ajeno = propietario_id and str(propietario_id) != str(self.request.user.id)
-            
-            if not coleccion_id and (comunidad_id or not propietario_id or es_perfil_ajeno):
+                # Explorar global: solo posts públicos
                 qs = qs.filter(
-                    Q(publicacion_set__isnull=False) | Q(publicaciones_asociadas__isnull=False)
+                    Q(publicacion__isnull=False) | Q(publicaciones_asociadas__isnull=False),
+                    es_publica=True
                 ).distinct()
 
             return qs.order_by('-fecha_subida', 'id')
