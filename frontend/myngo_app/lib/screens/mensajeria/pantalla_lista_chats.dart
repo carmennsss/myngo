@@ -10,6 +10,7 @@ import '../../widgets/mensajeria/dialogo_crear_sala.dart';
 import '../inicio/pantalla_inicio.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/locale_notifier.dart';
 import '../../utils/configuracion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tolgee/tolgee.dart';
@@ -175,7 +176,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
           } else if (mounted) {
 
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No se pudo crear el chat 🐾'))
+              SnackBar(content: Text(tr('chatErrorCreate')))
             );
           }
         },
@@ -185,6 +186,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     final chatProvider = context.watch<ChatProvider>();
     final salas = chatProvider.salas;
     

@@ -12,6 +12,8 @@ import 'dart:math' as math;
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Vista de los recursos propios del usuario: sus imágenes y sus colecciones.
 // Se incrusta dentro del perfil como una pestaña lateral.
@@ -66,6 +68,7 @@ class _PantallaMisCosasState extends State<PantallaMisCosas> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     if (_cargando) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     }

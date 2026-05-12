@@ -5,6 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tolgee/tolgee.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
+import '../../providers/locale_notifier.dart';
 
 import '../../utils/configuracion.dart';
 import '../../services/servicio_comunidades.dart';
@@ -33,7 +35,6 @@ import 'widgets_detalle/seccion_chat_comunidad.dart';
 import 'widgets_detalle/lista_miembros_comunidad.dart';
 import 'widgets_detalle/preview_comunidad.dart';
 import 'widgets_detalle/dialogos_comunidad.dart';
-import 'package:myngo_app/utils/tr_helper.dart';
 
 // Vista principal de una comunidad. Dependiendo de si el usuario es miembro,
 // muestra una preview pública o el shell completo con Posts, Galería, Chats y Miembros.
@@ -282,6 +283,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     if (_estaCargandoComunidad || _comunidad == null) {
       return TranslationWidget(
       builder: (context, tr) => Scaffold(
@@ -627,7 +629,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
           builder: (context, tr) => FloatingActionButton.extended(
             onPressed: () => _mostrarDialogoNuevoPost(context),
             label: Text(
-              esCreador ? 'Subir' : 'Sugerir',
+              esCreador ? tr('commonPublish') : tr('communityFabSuggest', {'type': ''}).trim(),
               style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
             ),
             icon: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
@@ -692,7 +694,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             Navigator.pop(context); // Cierre seguro tras éxito
           } else if (mounted) {
              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No se pudo crear la sala 🐾'))
+              SnackBar(content: Text(tr('chatErrorCreate')))
             );
           }
         },

@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/estilo_post_helper.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Preview de un post con el estilo visual del usuario (fuente, colores, fondo).
 // Lo usamos en la pantalla de personalizar perfil para que el usuario vea cómo quedará su muro en tiempo real.
@@ -50,6 +53,7 @@ class PostPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     final esFondoClaro = EstiloPostHelper.esFondoClaro(estilo);
     final colorTexto = esFondoClaro ? const Color(0xFF2E2A27) : Colors.white;
     final colorSubtexto = esFondoClaro ? Colors.grey.shade600 : Colors.white70;
@@ -104,7 +108,7 @@ class PostPreview extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mi nuevo estilo ✨',
+                    tr('postPreviewTitle'),
                     style: GoogleFonts.getFont(
                       EstiloPostHelper.getFontFamily(estilo),
                       fontWeight: FontWeight.bold, 
@@ -126,7 +130,7 @@ class PostPreview extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '¡Mira cómo queda mi perfil con estas mejoras! ¿Te gusta el nuevo diseño? 🐾',
+            tr('postPreviewContent'),
             style: GoogleFonts.getFont(
               EstiloPostHelper.getFontFamily(estilo),
               color: colorTexto, 

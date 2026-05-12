@@ -26,6 +26,7 @@ import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../providers/locale_notifier.dart';
 
 // Painter eficiente para patrones de fondo
 class PatternPainter extends CustomPainter {
@@ -479,7 +480,7 @@ class _PantallaChatState extends State<PantallaChat> {
     } catch (e) {
       if (mounted) {
          // Tratar de obtener tr si es posible o usar mensaje genérico
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', params: {'error': e.toString()}))));
       }
       setState(() => _estaSubiendoMedia = false);
     }
@@ -551,6 +552,8 @@ class _PantallaChatState extends State<PantallaChat> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
+    if (_sala == null) return const SizedBox.shrink();
     final perso = _sala?.personalizacion;
     final colorFondo = _colorFromHex(perso?.colorFondo);
 

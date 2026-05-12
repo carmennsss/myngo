@@ -10,6 +10,7 @@ import 'package:tolgee/tolgee.dart';
 import '../../screens/perfiles/pantalla_detalle_perfil.dart' hide Scaffold;
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/post_provider.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
 
@@ -301,6 +302,7 @@ class _UserProfileHeader extends StatelessWidget {
           await ServicioUsuarios().cerrarSesion();
           if (context.mounted) {
             context.read<ChatProvider>().limpiar();
+            context.read<PostProvider>().limpiar();
             context.go('/login');
           }
         }

@@ -107,7 +107,7 @@ class PreviewComunidad extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Esta comunidad es privada',
+                        tr('profilePrivateTitle'),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -117,7 +117,7 @@ class PreviewComunidad extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Solo los miembros aprobados pueden ver el contenido y participar en esta comunidad.',
+                        tr('profilePrivateSubtitle'),
                         style: TextStyle(
                           fontSize: 16,
                           color: colorTextoSecundario.withOpacity(0.7),
@@ -181,7 +181,7 @@ class PreviewComunidad extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '¿Te gusta lo que ves?',
+                    tr('communityHaveAPet'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -233,8 +233,8 @@ class PreviewComunidad extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _buildTabItem(0, 'POSTS', Icons.grid_view_rounded),
-          _buildTabItem(2, 'GALERÍA', Icons.photo_library_rounded),
+          _buildTabItem(0, tr('communityTabPosts'), Icons.grid_view_rounded),
+          _buildTabItem(2, tr('communityTabGallery'), Icons.photo_library_rounded),
         ],
       ),
     );

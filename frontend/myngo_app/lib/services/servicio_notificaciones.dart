@@ -8,11 +8,11 @@ import 'servicio_usuarios.dart';
 // Gestiona la bandeja de entrada de notificaciones de la app.
 // Nos sirve para ver quién nos ha seguido, avisos de comunidades y marcar los avisos como leídos.
 class ServicioNotificaciones {
-  final http.Client? _httpClient;
-
-  ServicioNotificaciones({http.Client? httpClient}) : _httpClient = httpClient;
-
-  http.Client get client => _httpClient ?? http.Client();
+  late final http.Client _client;
+  ServicioNotificaciones({http.Client? httpClient}) {
+    _client = httpClient ?? http.Client();
+  }
+  http.Client get client => _client;
 
   // Ruta base del servidor para las notificaciones
   static const String _urlNotificaciones = '${Configuracion.baseUrl}/notificaciones/';
