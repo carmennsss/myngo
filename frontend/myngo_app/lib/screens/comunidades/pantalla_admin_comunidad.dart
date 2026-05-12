@@ -100,7 +100,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   Widget build(BuildContext context) {
     context.watch<LocaleNotifier>();
     return TranslationWidget(
-      builder: (context, tr) {
+      builder: (context, String Function(String, [Map<String, dynamic>?]) tr) {
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
@@ -359,7 +359,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('communitySuccessDeleted'))));
                 Navigator.of(context).popUntil((route) => route.isFirst);
               } else if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', params: {'error': res.mensaje})), backgroundColor: Colors.red));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', {'error': res.mensaje})), backgroundColor: Colors.red));
               }
             },
             child: Text(tr('adminDeleteCommunityConfirm')),
