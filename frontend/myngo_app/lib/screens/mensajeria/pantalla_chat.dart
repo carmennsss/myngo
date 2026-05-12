@@ -480,7 +480,7 @@ class _PantallaChatState extends State<PantallaChat> {
     } catch (e) {
       if (mounted) {
          // Tratar de obtener tr si es posible o usar mensaje genérico
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', params: {'error': e.toString()}))));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', {'error': e.toString()}))));
       }
       setState(() => _estaSubiendoMedia = false);
     }
