@@ -24,7 +24,7 @@ class ChatProvider extends ChangeNotifier {
 
   /// Limpia todo el estado del provider (usado al cerrar sesión).
   void limpiar() {
-    _servicioChat.dispose(); // Cierra WebSockets de chat, presencia y notificaciones
+    _servicioChat.dispose();
     _userId = null;
     _totalNoLeidos = 0;
     _noLeidosPorSala = {};
@@ -38,6 +38,7 @@ class ChatProvider extends ChangeNotifier {
   bool isUsuarioOnline(int userId) => getEstadoUsuario(userId) != 'DESCONECTADO';
 
   void setUsuariosOnline(List<int> ids) {
+    _estadosUsuarios.removeWhere((id, status) => status == 'ACTIVO');
     for (final id in ids) {
       _estadosUsuarios[id] = 'ACTIVO';
     }
@@ -62,7 +63,6 @@ class ChatProvider extends ChangeNotifier {
     _salaActivaId = salaId;
     if (salaId != null) {
       _limpiarNoLeidosSala(salaId);
-      // Notificamos al servidor que hemos leído los mensajes
       _servicioChat.marcarMensajesComoLeidos(salaId);
     }
     notifyListeners();
@@ -97,15 +97,13 @@ class ChatProvider extends ChangeNotifier {
   void procesarNuevaNotificacion(Map<String, dynamic> data) {
     final salaId = (data['sala_id'] as num).toInt();
     
-    // Si el usuario está en la sala, no incrementamos el contador ni mostramos push
     if (_salaActivaId == salaId) return;
 
     _noLeidosPorSala[salaId] = (_noLeidosPorSala[salaId] ?? 0) + 1;
     _totalNoLeidos++;
     
-    // Mostrar notificación local
     ServicioNotificacionesLocales.mostrarNotificacionMensaje(
-      id: salaId, // Usamos el salaId como ID de notificación para agrupar/actualizar
+      id: salaId,
       titulo: data['sender_username'] ?? 'Nuevo mensaje',
       cuerpo: data['preview'] ?? '',
       payload: salaId.toString(),
@@ -141,7 +139,6 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Incrementa el total (usado si llega una notificación genérica).
   void incrementarTotal() {
     _totalNoLeidos++;
     notifyListeners();
