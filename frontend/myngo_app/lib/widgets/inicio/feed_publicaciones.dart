@@ -222,7 +222,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleNotifier>();
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) {
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),

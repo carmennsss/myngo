@@ -99,7 +99,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleNotifier>();
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, String Function(String, [Map<String, dynamic>?]) tr) {
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,

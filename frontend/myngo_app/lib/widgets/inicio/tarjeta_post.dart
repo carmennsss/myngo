@@ -313,7 +313,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
                                         ratingMedio: 0.0,
                                         creadorId: widget.post.creadorComunidadId ?? 0)) : null,
                                       child: Text(
-                                    widget.post.comunidadId > 0 ? widget.post.comunidadNombre : 'Post personal 🐾', 
+                                    widget.post.comunidadId > 0 ? widget.post.comunidadNombre : tr('postPreviewTitle'), 
                                     style: GoogleFonts.getFont(fuenteEfectiva, color: textColor, fontWeight: FontWeight.w900, fontSize: 15)
                                   ),
                                     ),

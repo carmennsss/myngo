@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/comunidad.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 class PreviewHeader extends StatelessWidget {
   final Comunidad comunidad;
@@ -71,7 +72,7 @@ class PreviewHeader extends StatelessWidget {
                   Icon(Icons.person_rounded, size: 14, color: comunidad.colorTema),
                   const SizedBox(width: 6),
                   Text(
-                    'Por ${comunidad.creadorNombre}',
+                    '${tr('commonBy')} ${comunidad.creadorNombre}',
                     style: _getSafeFont(
                       comunidad.fuenteComunidad,
                       color: colorTextoPrincipal,
@@ -97,7 +98,7 @@ class PreviewHeader extends StatelessWidget {
                       color: colorTextoSecundario, size: 14),
                   const SizedBox(width: 6),
                   Text(
-                    '${comunidad.miembrosCount} Miembros',
+                    '${comunidad.miembrosCount} ${tr('sidebarMembers')}',
                     style: _getSafeFont(
                       comunidad.fuenteComunidad,
                       fontWeight: FontWeight.bold,
@@ -172,7 +173,7 @@ class _ChipPrivacidad extends StatelessWidget {
           ),
           const SizedBox(width: 6),
             Text(
-              esPublica ? 'Pública' : 'Privada',
+              esPublica ? tr('communityPublic') : tr('communityPrivate'),
               style: _getSafeFont(
                 fuente,
                 fontSize: 12,

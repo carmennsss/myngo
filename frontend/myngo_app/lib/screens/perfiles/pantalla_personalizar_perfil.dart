@@ -899,7 +899,7 @@ class _InventoryItemCard extends StatelessWidget {
     final String? url = detalles['url_recurso'];
     final bool esEstilo = detalles['tipo'].toString().toLowerCase().contains('estilo');
 
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) {
         return GestureDetector(
           onTap: onTap,

@@ -251,7 +251,7 @@ class _UserProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) => _buildContent(context, tr),
     );
   }

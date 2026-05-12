@@ -141,7 +141,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleNotifier>();
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) {
         // Actualizamos listeners si es necesario
         _subTabController.removeListener(_handleTabChange);
