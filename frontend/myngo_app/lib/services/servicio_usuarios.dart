@@ -13,15 +13,14 @@ import '../utils/configuracion.dart';
 // Se encarga de gestionar a los usuarios y sus sesiones.
 // Lo usamos para hacer login, registrar cuentas, y guardar el token para no pedir la contraseña todo el rato.
 class ServicioUsuarios {
-  final http.Client? _httpClient;
-  final dio.Dio? _dioClient;
-
-  ServicioUsuarios({http.Client? httpClient, dio.Dio? dioClient})
-      : _httpClient = httpClient,
-        _dioClient = dioClient;
-
-  http.Client get client => _httpClient ?? http.Client();
-  dio.Dio get dioClient => _dioClient ?? dio.Dio();
+  late final http.Client _client;
+  late final dio.Dio _dio;
+  ServicioUsuarios({http.Client? httpClient, dio.Dio? dioClient}) {
+    _client = httpClient ?? http.Client();
+    _dio = dioClient ?? dio.Dio();
+  }
+  http.Client get client => _client;
+  dio.Dio get dioClient => _dio;
 
   /// URL base para los endpoints relacionados con la gestión de usuarios.
   // URL donde el backend escucha las peticiones de usuarios
@@ -315,6 +314,9 @@ class ServicioUsuarios {
       await preferencias.remove('usuario_id');
       await preferencias.remove('nombre_usuario');
       await preferencias.remove('orden_comunidades_local');
+      
+      // Limpiar cookies si estamos en web (opcional pero recomendado si el backend las usa)
+      // En Flutter nativo no es necesario, pero en web el http.Client puede tener estado
       
 
     } catch (e) {

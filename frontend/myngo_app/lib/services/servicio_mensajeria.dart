@@ -12,9 +12,11 @@ import 'servicio_usuarios.dart';
 
 /// Servicio encargado de la gestión de mensajería instantánea y presencia en tiempo real.
 class ServicioMensajeria {
-  final http.Client? _httpClient;
-  ServicioMensajeria({http.Client? httpClient}) : _httpClient = httpClient;
-  http.Client get client => _httpClient ?? http.Client();
+  late final http.Client _client;
+  ServicioMensajeria({http.Client? httpClient}) {
+    _client = httpClient ?? http.Client();
+  }
+  http.Client get client => _client;
 
   WebSocketChannel? _canalChat;
   WebSocketChannel? _canalPresencia;
@@ -538,6 +540,16 @@ class ServicioMensajeria {
   void dispose() {
     _temporizadorReconexion?.cancel();
     _temporizadorLatido?.cancel();
+    
+    if (_estaConectadoPresencia && _canalPresencia != null) {
+      try {
+        _canalPresencia!.sink.add(jsonEncode({
+          'type': 'change_status',
+          'status': 'DESCONECTADO',
+        }));
+      } catch (_) {}
+    }
+    
     _canalChat?.sink.close();
     _canalPresencia?.sink.close();
     _canalNotificaciones?.sink.close();

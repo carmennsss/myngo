@@ -88,4 +88,11 @@ class PostProvider with ChangeNotifier {
       return false;
     }
   }
+
+  void limpiar() {
+    _posts = [];
+    _state = PostState.initial;
+    _errorMessage = '';
+    notifyListeners();
+  }
 }

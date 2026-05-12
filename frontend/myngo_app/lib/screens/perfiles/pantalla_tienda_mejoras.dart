@@ -140,8 +140,9 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
+    context.watch<LocaleNotifier>();
+    return TranslationWidget(
+      builder: (context, tr) {
         // Actualizamos listeners si es necesario
         _subTabController.removeListener(_handleTabChange);
         _subTabController.addListener(_handleTabChange);
@@ -266,7 +267,7 @@ class _PantallaTiendaMejorasState extends State<PantallaTiendaMejoras>
             body: content,
             floatingActionButton: _buildFAB(tr),
           );
-      }
+      },
     );
   }
 

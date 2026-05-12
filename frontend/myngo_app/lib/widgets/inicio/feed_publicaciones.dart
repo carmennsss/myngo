@@ -10,6 +10,8 @@ import '../../models/usuario.dart';
 import 'tarjeta_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 enum FeedMode { social, gallery }
 
@@ -219,8 +221,9 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
+    context.watch<LocaleNotifier>();
+    return TranslationWidget(
+      builder: (context, tr) {
         return Scaffold(
           backgroundColor: const Color(0xFFFEF5F1),
           body: Stack(

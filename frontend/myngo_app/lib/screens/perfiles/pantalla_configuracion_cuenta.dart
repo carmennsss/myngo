@@ -4,6 +4,9 @@ import '../../services/servicio_usuarios.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/usuario.dart';
 import 'package:flutter/services.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Pantalla de ajustes de cuenta: nombre de usuario, privacidad, contraseña y zona de peligro.
 // Cada sección tiene su propia validación antes de llamar al servicio.
@@ -61,7 +64,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
 
     if (nuevoNombre.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El nombre debe tener al menos 3 caracteres'), backgroundColor: Colors.red),
+        SnackBar(content: Text(tr('configErrorNameShort')), backgroundColor: Colors.red),
       );
       return;
     }
@@ -74,7 +77,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
           await _cargarDatos();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Nombre de usuario actualizado ✨'), backgroundColor: Color(0xFF248EA6)),
+              SnackBar(content: Text(tr('configSuccessNameUpdated')), backgroundColor: const Color(0xFF248EA6)),
             );
           }
         } else {
@@ -93,28 +96,28 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
 
     if (pass.isEmpty || passConfirm.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rellena ambas contraseñas'), backgroundColor: Colors.red),
+        SnackBar(content: Text(tr('configErrorFillPasswords')), backgroundColor: Colors.red),
       );
       return;
     }
     
     if (pass.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La contraseña debe tener al menos 8 caracteres'), backgroundColor: Colors.red),
+        SnackBar(content: Text(tr('configErrorPasswordShort')), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$').hasMatch(pass)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Usa mayúsculas, minúsculas, números y símbolos especiales'), backgroundColor: Colors.red),
+        SnackBar(content: Text(tr('configErrorPasswordComplex')), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (pass != passConfirm) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Las contraseñas no coinciden'), backgroundColor: Colors.red),
+        SnackBar(content: Text(tr('configErrorPasswordsNotMatch')), backgroundColor: Colors.red),
       );
       return;
     }
@@ -128,7 +131,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
         _passController.clear();
         _passConfirmController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Contraseña cambiada. Te hemos enviado un correo de aviso 🐾'), backgroundColor: Color(0xFF248EA6)),
+          SnackBar(content: Text(tr('configSuccessPasswordChanged')), backgroundColor: const Color(0xFF248EA6)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -144,17 +147,17 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(hacerPublico ? 'Hacer cuenta Pública 🌍' : 'Hacer cuenta Privada 🔒', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(hacerPublico ? tr('dialogPrivacyPublicTitle') : tr('dialogPrivacyPrivateTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: Text(
           hacerPublico 
-              ? '¿Estás seguro de que deseas hacer tu cuenta pública? Cualquiera podrá ver tus publicaciones y seguirte sin necesidad de aprobación.'
-              : '¿Estás seguro de que deseas hacer tu cuenta privada? Las personas tendrán que enviarte una solicitud para poder seguirte y ver tus publicaciones completas.',
+              ? tr('dialogPrivacyPublicDesc')
+              : tr('dialogPrivacyPrivateDesc'),
           style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child: Text(tr('cancel'), style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -162,7 +165,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('CONFIRMAR', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(tr('commonConfirm'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -180,7 +183,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
           await _cargarDatos();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Privacidad actualizada correctamente ✨'), backgroundColor: Color(0xFF248EA6)),
+              SnackBar(content: Text(tr('configSuccessPrivacyUpdated')), backgroundColor: const Color(0xFF248EA6)),
             );
           }
         } else {
@@ -199,10 +202,9 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Eliminar Cuenta 🛑', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
+        title: Text(tr('dialogDeleteAccountTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.red)),
         content: Text(
-          '¿Estás completamente seguro de que quieres eliminar tu cuenta?\n\n'
-          'Esta acción no se puede deshacer. Tus comunidades creadas serán eliminadas, pero tus salas de chat seguirán activas para el resto de miembros.',
+          tr('dialogDeleteAccountDesc'),
           style: GoogleFonts.outfit(color: const Color(0xFF4A4440)),
         ),
         actions: [
@@ -216,7 +218,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('SÍ, ELIMINAR', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(tr('commonConfirm'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -241,6 +243,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     return Scaffold(
       backgroundColor: const Color(0xFFFEF5F1),
       appBar: AppBar(
@@ -252,7 +255,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
           onPressed: () => Navigator.maybePop(context),
         ),
         title: Text(
-          'Configuración',
+          tr('configTitle'),
           style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF4A4440)),
         ),
       ),
@@ -264,12 +267,12 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildSectionTitle('Perfil Público'),
+                  _buildSectionTitle(tr('configSectionPublicProfile')),
                   _buildCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Nombre de Usuario', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                        Text(tr('configLabelUsername'), style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _usernameController,
@@ -277,7 +280,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.grey.shade50,
-                            hintText: 'Tu nombre único',
+                            hintText: tr('configHintUsername'),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
@@ -290,14 +293,14 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: Text('Actualizar Nombre', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                          child: Text(tr('configButtonUpdateName'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  _buildSectionTitle('Privacidad'),
+                  _buildSectionTitle(tr('configSectionPrivacy')),
                   _buildCard(
                     child: Row(
                       children: [
@@ -318,14 +321,14 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _usuarioActual!.esPublico ? 'Cuenta Pública' : 'Cuenta Privada',
+                                _usuarioActual!.esPublico ? tr('configLabelPublicAccount') : tr('configLabelPrivateAccount'),
                                 style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 _usuarioActual!.esPublico
-                                    ? 'Cualquiera puede ver tu perfil y seguirte instantáneamente.'
-                                    : 'Solo tus seguidores aprobados podrán ver tu perfil completo.',
+                                    ? tr('configDescPublicAccount')
+                                    : tr('configDescPrivateAccount'),
                                 style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600),
                               ),
                             ],
@@ -341,12 +344,12 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                   ),
                   const SizedBox(height: 24),
 
-                  _buildSectionTitle('Seguridad'),
+                  _buildSectionTitle(tr('configSectionSecurity')),
                   _buildCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Nueva Contraseña', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                        Text(tr('configLabelNewPassword'), style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _passController,
@@ -361,7 +364,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text('Confirmar Contraseña', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
+                        Text(tr('configLabelConfirmPassword'), style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _passConfirmController,
@@ -383,21 +386,21 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: Text('Cambiar Contraseña', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                          child: Text(tr('configButtonChangePassword'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 40),
 
-                  _buildSectionTitle('Zona de Peligro', color: Colors.red),
+                  _buildSectionTitle(tr('configSectionDangerZone'), color: Colors.red),
                   _buildCard(
                     borderColor: Colors.red.shade200,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Si eliminas tu cuenta, perderás el acceso permanentemente y todas tus comunidades serán borradas. Esta acción no se puede deshacer.',
+                          tr('configDangerWarning'),
                           style: GoogleFonts.outfit(color: Colors.red.shade700, fontSize: 13),
                         ),
                         const SizedBox(height: 16),
@@ -409,7 +412,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: Text('Eliminar Cuenta Definitivamente', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                          child: Text(tr('configButtonDeleteAccount'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),

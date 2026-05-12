@@ -13,6 +13,8 @@ import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
 import 'package:intl/intl.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Bandeja de notificaciones dividida en tres pestañas: Interacciones, Solicitudes y Alertas.
 // Al abrir la pantalla marca automáticamente como leídas las que no son solicitudes pendientes.
@@ -155,6 +157,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<LocaleNotifier>();
     if (_estaCargando) {
       return const Scaffold(
         backgroundColor: Color(0xFFFEF5F1),

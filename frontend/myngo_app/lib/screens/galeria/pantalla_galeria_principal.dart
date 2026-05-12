@@ -108,8 +108,8 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
                 icon: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFFC35E34)),
                 onSelected: (value) => _seleccionarYSubir(value == 'video', tr),
                 itemBuilder: (context) => [
-                  PopupMenuItem(value: 'image', child: Row(children: [const Icon(Icons.image_outlined, size: 20), const SizedBox(width: 8), Text(tr('chatGalleryTitle').split(' ')[0] + ' ' + tr('communityListJoin').split(' ')[1])])), // Hack for "Subir Imagen"
-                  PopupMenuItem(value: 'video', child: Row(children: [const Icon(Icons.videocam_outlined, size: 20), const SizedBox(width: 8), Text(tr('chatVideoTitle').split(' ')[0] + ' ' + tr('chatVideoTitle').split(' ')[1])])), // Hack for "Subir Vídeo"
+                  PopupMenuItem(value: 'image', child: Row(children: [const Icon(Icons.image_outlined, size: 20), const SizedBox(width: 8), Text(tr('galleryUploadImage'))])),
+                  PopupMenuItem(value: 'video', child: Row(children: [const Icon(Icons.videocam_outlined, size: 20), const SizedBox(width: 8), Text(tr('galleryUploadVideo'))])),
                 ],
               ),
           ],
@@ -280,7 +280,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
                   }
                 }
               },
-              child: Text(tr('communityFormSubmit')), // Hack for "Crear"
+              child: Text(tr('commonCreate')),
             ),
           ],
         ),
