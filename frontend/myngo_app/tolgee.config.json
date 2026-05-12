@@ -4,7 +4,7 @@
   "push": {
     "files": [
       {
-        "path": "lib/tolgee/es.json",
+        "path": "lib/tolgee/es-ES.json",
         "language": "es-ES",
         "format": "JSON_TOLGEE"
       },

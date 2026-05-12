@@ -262,7 +262,7 @@ class InfoPerfil extends StatelessWidget {
   Widget _buildBioSection(Color colorTextoP, Color colorTextoS) {
     final bool esPropio = currentUserId != null && currentUserId == usuario.id;
     
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) => GestureDetector(
         onTap: esPropio ? onEditarBio : null,
         behavior: HitTestBehavior.opaque,
@@ -333,7 +333,7 @@ class InfoPerfil extends StatelessWidget {
   }
 
   Widget _buildStatsRow(BuildContext context, Color colorTextoS, String fecha, Color colorTextoP, bool esAppClara) {
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -430,7 +430,7 @@ class InfoPerfil extends StatelessWidget {
     return Row(
       children: [
 
-        TranslationWidget(
+        TrWidget(
           builder: (context, tr) => _SmallButton(
             label: _getFollowText(tr),
             icon: estadoSeguimiento == 'ACEPTADO'
@@ -503,7 +503,7 @@ class InfoPerfil extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: 6),
-                TranslationWidget(
+                TrWidget(
                   builder: (context, tr) => Text(
                     haVotadoHoy ? tr('profileVoteEdit') : tr('profileVoteNew'),
                     style: GoogleFonts.getFont(

@@ -43,7 +43,7 @@ class RegistroUsuarios(APIView):
         if serializer.is_valid():
             datos_usuario = request.data
             token = _firmador.sign_object(datos_usuario)
-            url_activacion = f"http://localhost:8000/usuarios/confirmar/{token}/"
+            url_activacion = f"{settings.API_URL}/usuarios/confirmar/{token}/"
             sujeto = 'Bienvenido a Myngo 🐾 - Activa tu cuenta'
             mensaje_html = f"""
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 15px; padding: 25px; text-align: center; background-color: #ffffff;">

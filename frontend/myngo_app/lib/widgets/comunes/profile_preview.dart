@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../utils/estilo_post_helper.dart';
+import '../../utils/tr_helper.dart';
 
 // Preview del perfil completo con avatar, marco, banner y nombre.
 // Se usa en la pantalla de personalizar perfil para ver cómo quedará todo antes de guardar.
@@ -121,7 +122,7 @@ class ProfilePreview extends StatelessWidget {
                 Icon(Icons.pets_rounded, size: 12, color: themeColor.withOpacity(0.7)),
                 const SizedBox(width: 4),
                 Text(
-                  '$puntos puntos',
+                  '$puntos ${tr('points')}',
                   style: GoogleFonts.getFont(
                     fontFamily,
                     fontSize: 11,

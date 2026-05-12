@@ -407,7 +407,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
 
   @override
   Widget build(BuildContext context) {
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) => Scaffold(
         backgroundColor: const Color(0xFFFEF5F1),
         floatingActionButton: _puedeEditar ? FloatingActionButton(

@@ -153,7 +153,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     }
   }
 
-  // Orquesta la carga inicial: ID del usuario, datos de sección, colecciones y rol
+  // ID del usuario, datos de sección, colecciones y rol
   Future<void> _inicializarDatos() async {
     await _obtenerMiId();
     await _cargarDatosSeccion(_indiceSeccion);
@@ -285,7 +285,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   Widget build(BuildContext context) {
     context.watch<LocaleNotifier>();
     if (_estaCargandoComunidad || _comunidad == null) {
-      return TranslationWidget(
+      return TrWidget(
       builder: (context, tr) => Scaffold(
         backgroundColor: _colorPagina(context),
         body: Center(
@@ -314,7 +314,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     _cachedBackground ??= _buildGlobalBackground();
 
     if (!esMiembro) {
-      return TranslationWidget(
+      return TrWidget(
         builder: (context, tr) => PreviewComunidad(
           comunidad: _comunidad!,
           miId: _miId,
@@ -338,7 +338,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       );
     }
 
-    return TranslationWidget(
+    return TrWidget(
       builder: (context, tr) => Scaffold(
         backgroundColor: _colorPagina(context),
         body: Stack(
@@ -408,7 +408,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   }
 
   /// Construye el fondo personalizado solo para la parte central del feed
-  // Fondo del feed personalizado solo para la sección de posts (centrado y con bordes redondeados)
+  // Fondo del feed personalizado solo para la sección de posts
   Widget _buildPersonalizedFeedBackground() {
     final globalBg = _buildGlobalBackground();
     if (_indiceSeccion != 0) return globalBg;
@@ -505,7 +505,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     return Row(
       children: [
         Expanded(
-          child: TranslationWidget(
+          child: TrWidget(
             builder: (context, tr) => ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -625,7 +625,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       return Positioned(
         bottom: 24,
         right: 24,
-        child: TranslationWidget(
+        child: TrWidget(
           builder: (context, tr) => FloatingActionButton.extended(
             onPressed: () => _mostrarDialogoNuevoPost(context),
             label: Text(
@@ -642,7 +642,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       return Positioned(
         bottom: 24,
         right: 24,
-        child: TranslationWidget(
+        child: TrWidget(
           builder: (context, tr) => FloatingActionButton.extended(
             onPressed: () => _mostrarDialogoCrearSalaComunidad(context),
             label: Text(tr('communityFabNewRoom'),
