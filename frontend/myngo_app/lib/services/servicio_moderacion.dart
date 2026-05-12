@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
+import 'api_base.dart';
 import 'servicio_usuarios.dart';
 
 // Gestiona todo lo relacionado con denuncias y control de contenido.
@@ -9,16 +10,13 @@ import 'servicio_usuarios.dart';
 class ServicioModeracion {
   // Ruta base del backend
   static const String _urlBase = Configuracion.baseUrl;
-
+  
   final _servicioUsuarios = ServicioUsuarios();
 
   // Adjunta el token del usuario para validar que está logueado
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   // Envía un reporte al backend cuando un usuario denuncia un post o perfil

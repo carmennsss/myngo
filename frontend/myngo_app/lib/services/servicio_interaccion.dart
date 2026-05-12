@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/comentario.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
+import 'api_base.dart';
 import 'servicio_usuarios.dart';
 
 // Maneja las interacciones sociales con los posts.
@@ -16,10 +17,7 @@ class ServicioInteraccion {
   // Adjunta el token a la petición
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   // Da o quita el like a un post (hace de interruptor)

@@ -9,6 +9,7 @@ import 'package:mime/mime.dart';
 import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import '../utils/configuracion.dart';
+import 'api_base.dart';
 
 // Se encarga de gestionar a los usuarios y sus sesiones.
 // Lo usamos para hacer login, registrar cuentas, y guardar el token para no pedir la contraseña todo el rato.
@@ -18,6 +19,7 @@ class ServicioUsuarios {
   ServicioUsuarios({http.Client? httpClient, dio.Dio? dioClient}) {
     _client = httpClient ?? http.Client();
     _dio = dioClient ?? dio.Dio();
+    ApiBase.configurarDio(_dio);
   }
   http.Client get client => _client;
   dio.Dio get dioClient => _dio;
@@ -29,10 +31,7 @@ class ServicioUsuarios {
   // Prepara la "llave" (token) para que el servidor nos deje pasar
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   // Intenta hacer login con email y contraseña, y si va bien, guarda el token en el móvil
@@ -40,7 +39,7 @@ class ServicioUsuarios {
     try {
       final respuesta = await client.post(
         Uri.parse('$_urlUsuarios/login/'),
-        headers: {'Content-Type': 'application/json'},
+        headers: ApiBase.obtenerHeaders(),
         body: jsonEncode({'email': correo.trim(), 'password': contrasena.trim()}),
       ).timeout(const Duration(seconds: 20));
 
@@ -92,7 +91,7 @@ class ServicioUsuarios {
     try {
       final respuesta = await client.post(
         Uri.parse('$_urlUsuarios/registrar/'),
-        headers: {'Content-Type': 'application/json'},
+        headers: ApiBase.obtenerHeaders(),
         body: jsonEncode({
           'nombre_usuario': nombreUsuario.trim(),
           'email': correo.trim(),
@@ -124,7 +123,7 @@ class ServicioUsuarios {
     try {
       final respuesta = await client.post(
         Uri.parse('$_urlUsuarios/recuperar-password/'),
-        headers: {'Content-Type': 'application/json'},
+        headers: ApiBase.obtenerHeaders(),
         body: jsonEncode({'email': correo}),
       ).timeout(const Duration(seconds: 20));
 

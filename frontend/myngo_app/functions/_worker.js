@@ -1,129 +1,13 @@
+/**
+ * Cloudflare Pages: _worker.js
+ * 
+ * Se ha simplificado para actuar únicamente como servidor de archivos estáticos,
+ * ya que el frontend ahora se comunica directamente con el túnel de Cloudflare.
+ */
+
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-    const BACKEND_HOST = env.BACKEND_HOST || "forget-resulting-slides-momentum.trycloudflare.com";
-
-    // --- 1. CORS Preflight ---
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": url.origin,
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-CSRFToken, X-Requested-With, Accept, Origin, Referer, Cookie",
-          "Access-Control-Allow-Credentials": "true",
-          "Access-Control-Max-Age": "86400",
-        },
-      });
-    }
-
-    // --- 2. WebSocket proxy ---
-    if (url.pathname.startsWith("/ws")) {
-      const upgradeHeader = request.headers.get("Upgrade");
-      if (!upgradeHeader || upgradeHeader.toLowerCase() !== "websocket") {
-        return new Response("Expected Upgrade: websocket", { status: 426 });
-      }
-
-      const targetWsUrl = `wss://${BACKEND_HOST}${url.pathname}${url.search}`;
-      try {
-        const [clientSide, workerSide] = new WebSocketPair();
-        const wsHeaders = new Headers();
-        wsHeaders.set("Upgrade", "websocket");
-        wsHeaders.set("Connection", "Upgrade");
-        wsHeaders.set("Host", BACKEND_HOST);
-        const auth = request.headers.get("Authorization");
-        if (auth) wsHeaders.set("Authorization", auth);
-
-        const backendRes = await fetch(targetWsUrl, { headers: wsHeaders });
-        if (backendRes.status !== 101) {
-          return new Response("Backend WS upgrade failed", { status: 502 });
-        }
-        const serverSocket = backendRes.webSocket;
-        if (!serverSocket) return new Response("No socket", { status: 502 });
-
-        handleSession(workerSide, serverSocket);
-        return new Response(null, { status: 101, webSocket: clientSide });
-      } catch (err) {
-        return new Response(JSON.stringify({ error: "WS proxy error", details: err.message }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // --- 3. API HTTP proxy (/api/*) ---
-    if (url.pathname.startsWith("/api/")) {
-      const apiPath = url.pathname.replace("/api/", "");
-      const backendUrl = `https://${BACKEND_HOST}/${apiPath}${url.search}`;
-
-      const cleanHeaders = new Headers();
-      const allowedHeaders = [
-        "content-type", "authorization", "accept", "user-agent",
-        "cookie", "x-csrftoken", "x-requested-with", "referer", "origin"
-      ];
-      for (let [key, value] of request.headers.entries()) {
-        if (allowedHeaders.includes(key.toLowerCase())) {
-          cleanHeaders.set(key, value);
-        }
-      }
-      cleanHeaders.set("Host", BACKEND_HOST);
-
-      try {
-        const proxyRequest = new Request(backendUrl, {
-          method: request.method,
-          headers: cleanHeaders,
-          body: request.method !== "GET" && request.method !== "HEAD" ? request.body : null,
-          redirect: "manual",
-        });
-
-        const response = await fetch(proxyRequest);
-
-        if (response.status >= 400) {
-          const errorText = await response.text();
-          console.error("Backend error:", errorText);
-          return new Response(JSON.stringify({
-            error: true,
-            status: response.status,
-            message: errorText.substring(0, 200)
-          }), {
-            status: response.status,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        const newResponse = new Response(response.body, response);
-        newResponse.headers.set("Access-Control-Allow-Origin", url.origin);
-        newResponse.headers.set("Access-Control-Allow-Credentials", "true");
-        return newResponse;
-      } catch (e) {
-        return new Response(JSON.stringify({ error: true, message: "Proxy Connection Error", details: e.message }), {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // --- 4. Servir el frontend estático ---
+    // Servir los archivos estáticos de la App (Assets)
     return env.ASSETS.fetch(request);
   },
 };
-
-function handleSession(workerSocket, serverSocket) {
-  workerSocket.accept();
-  serverSocket.accept();
-  workerSocket.addEventListener("message", (ev) => serverSocket.send(ev.data));
-  serverSocket.addEventListener("message", (ev) => workerSocket.send(ev.data));
-  const closePair = (evt) => {
-    workerSocket.close(evt.code || 1000, evt.reason || "");
-    serverSocket.close(evt.code || 1000, evt.reason || "");
-  };
-  workerSocket.addEventListener("close", closePair);
-  serverSocket.addEventListener("close", closePair);
-  const errorHandler = (msg) => {
-    console.error(msg);
-    workerSocket.close(1011, "Proxy Error");
-    serverSocket.close(1011, "Proxy Error");
-  };
-  workerSocket.addEventListener("error", () => errorHandler("Worker Socket Error"));
-  serverSocket.addEventListener("error", () => errorHandler("Server Socket Error"));
-}
