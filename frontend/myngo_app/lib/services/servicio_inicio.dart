@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/publicacion.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
+import 'api_base.dart';
 import 'servicio_usuarios.dart';
 
 // Nos trae el contenido para llenar la pantalla principal.
@@ -16,10 +17,7 @@ class ServicioInicio {
   // Prepara el token de sesión para que el servidor sepa quién está haciendo la petición
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   // Pide las imágenes más destacadas o recientes para la galería inicial

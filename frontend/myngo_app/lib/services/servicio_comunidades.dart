@@ -11,6 +11,7 @@ import '../models/publicacion.dart';
 import '../models/respuesta_api.dart';
 import '../models/sala_chat.dart';
 import '../utils/configuracion.dart';
+import 'api_base.dart';
 import 'servicio_usuarios.dart';
 
 // Es el servicio más grande: maneja todo lo que pasa dentro de las comunidades.
@@ -40,10 +41,7 @@ class ServicioComunidades {
   // Adjunta la autorización
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   // Pide al servidor todas las comunidades que existen (se usa en el buscador)
@@ -216,9 +214,7 @@ class ServicioComunidades {
       final url = _urlComunidades;
       
       final clienteDio = dioClient ?? dio.Dio();
-      final cabeceras = {
-        if (token != null) 'Authorization': 'Token $token',
-      };
+      final cabeceras = ApiBase.obtenerHeaders(token: token);
  
       final datosFormulario = dio.FormData();
       datosFormulario.fields.add(MapEntry('nombre', comunidad.nombre));
@@ -505,9 +501,7 @@ class ServicioComunidades {
       
       final respuesta = await clienteDio.patch(
         '${_urlContenido}publicaciones/$idPublicacion/',
-        options: dio.Options(headers: {
-          if (token != null) 'Authorization': 'Token $token',
-        }),
+        options: dio.Options(headers: ApiBase.obtenerHeaders(token: token)),
         data: {
           if (titulo != null) 'titulo': titulo,
           if (texto != null) 'contenido_texto': texto,

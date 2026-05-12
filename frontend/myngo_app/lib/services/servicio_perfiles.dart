@@ -10,6 +10,7 @@ import '../models/publicacion.dart';
 import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import '../utils/configuracion.dart';
+import 'api_base.dart';
 import 'servicio_usuarios.dart';
 
 // Se encarga de todo lo que tenga que ver con perfiles sociales.
@@ -20,10 +21,7 @@ class ServicioPerfiles {
 
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   // Pide al servidor toda la info del perfil (seguidores, post, bio) de un usuario

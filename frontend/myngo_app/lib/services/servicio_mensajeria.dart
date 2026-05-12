@@ -8,6 +8,7 @@ import 'package:mime/mime.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../utils/configuracion.dart';
 import '../models/sala_chat.dart';
+import 'api_base.dart';
 import 'servicio_usuarios.dart';
 
 /// Servicio encargado de la gestión de mensajería instantánea y presencia en tiempo real.
@@ -35,10 +36,7 @@ class ServicioMensajeria {
 
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   Future<Map<String, dynamic>?> crearSala({

@@ -7,6 +7,7 @@ import '../models/coleccion.dart';
 import '../models/imagen_galeria.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
+import 'api_base.dart';
 import 'servicio_usuarios.dart';
 
 // Gestiona todas las fotos subidas a la plataforma.
@@ -20,10 +21,7 @@ class ServicioGaleria {
   // Adjunta la sesión para validar permisos
   Future<Map<String, String>> _obtenerCabeceras() async {
     final token = await _servicioUsuarios.obtenerToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
+    return ApiBase.obtenerHeaders(token: token);
   }
 
   // Trae una tanda de imágenes de la galería (con filtros por usuario, comunidad, etc.)
@@ -206,8 +204,7 @@ class ServicioGaleria {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       final solicitud = http.MultipartRequest('POST', Uri.parse('$_urlContenido/galeria/'));
-      
-      if (token != null) solicitud.headers['Authorization'] = 'Token $token';
+      solicitud.headers.addAll(ApiBase.obtenerHeaders(token: token));
       if (idComunidad != null) solicitud.fields['comunidad'] = idComunidad.toString();
       solicitud.fields['es_publica'] = esPublica ? 'true' : 'false';
 
