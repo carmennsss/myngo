@@ -1,9 +1,7 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    // --- Configuración: usa el dominio nip.io (o tu dominio propio) ---
-    const BACKEND_HOST = env.BACKEND_HOST || "api.107-20-99-104.nip.io";
-    const BACKEND_IP_FALLBACK = env.BACKEND_IP || "107.20.99.104"; // solo para Host header si necesitas
+    const BACKEND_HOST = env.BACKEND_HOST || "forget-resulting-slides-momentum.trycloudflare.com";
 
     // --- 1. CORS Preflight ---
     if (request.method === "OPTIONS") {
@@ -26,8 +24,7 @@ export default {
         return new Response("Expected Upgrade: websocket", { status: 426 });
       }
 
-      // Usar dominio, no IP
-      const targetWsUrl = `ws://${BACKEND_HOST}${url.pathname}${url.search}`;
+      const targetWsUrl = `wss://${BACKEND_HOST}${url.pathname}${url.search}`;
       try {
         const [clientSide, workerSide] = new WebSocketPair();
         const wsHeaders = new Headers();
@@ -57,9 +54,8 @@ export default {
     // --- 3. API HTTP proxy (/api/*) ---
     if (url.pathname.startsWith("/api/")) {
       const apiPath = url.pathname.replace("/api/", "");
-      const backendUrl = `http://${BACKEND_HOST}/${apiPath}${url.search}`;
+      const backendUrl = `https://${BACKEND_HOST}/${apiPath}${url.search}`;
 
-      // Filtro de cabeceras (igual que antes)
       const cleanHeaders = new Headers();
       const allowedHeaders = [
         "content-type", "authorization", "accept", "user-agent",
@@ -70,7 +66,6 @@ export default {
           cleanHeaders.set(key, value);
         }
       }
-      // Host: usar BACKEND_HOST (dominio) – así el backend puede usar virtual hosts si quiere
       cleanHeaders.set("Host", BACKEND_HOST);
 
       try {
@@ -83,21 +78,19 @@ export default {
 
         const response = await fetch(proxyRequest);
 
-        // Si la respuesta del backend es un error (>=400), devolvemos JSON para no romper Flutter
         if (response.status >= 400) {
           const errorText = await response.text();
           console.error("Backend error:", errorText);
           return new Response(JSON.stringify({
             error: true,
             status: response.status,
-            message: errorText.substring(0, 200) // limitamos longitud
+            message: errorText.substring(0, 200)
           }), {
             status: response.status,
             headers: { "Content-Type": "application/json" },
           });
         }
 
-        // Respuesta OK → clonar y añadir CORS
         const newResponse = new Response(response.body, response);
         newResponse.headers.set("Access-Control-Allow-Origin", url.origin);
         newResponse.headers.set("Access-Control-Allow-Credentials", "true");

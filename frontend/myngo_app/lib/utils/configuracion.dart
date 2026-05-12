@@ -4,7 +4,8 @@ class Configuracion {
 
 
   /// La dirección base para las conexiones de WebSockets.
-  static const String wsUrl = 'ws://107.20.99.104/ws'; 
+  /// Si usas 'runserver' o 'daphne' en el EC2, el puerto suele ser el 8000.
+  static const String wsUrl = 'wss://forget-resulting-slides-momentum.trycloudflare.com/ws'; // Se recomienda WSS para evitar bloqueos
   //static const String wsUrl = 'ws://localhost:8000/ws';
 
 }
