@@ -114,8 +114,8 @@ final GoRouter appRouter = GoRouter(
               path: '/inicio',
               builder: (context, state) {
                 return FeedPublicaciones(
-                  onComunidadSelected: (c) => context.go('/inicio/comunidades/${c.nombre}', extra: c),
-                  onProfileSelected: (u) => context.go('/inicio/perfiles/${u.nombreUsuario}', extra: u),
+                  onComunidadSelected: (c) => context.go('/inicio/comunidades/${c.nombre}', extra: c.id > 0 ? c : null),
+                  onProfileSelected: (u) => context.go('/inicio/perfiles/${u.nombreUsuario}', extra: u.perfilId > 0 ? u : null),
                 );
               },
               routes: [

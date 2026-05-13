@@ -29,7 +29,7 @@ class NotificacionSerializer(serializers.ModelSerializer):
 
     def get_estado_peticion(self, obj):
         """Consulta el estado actual de la petición vinculada a la notificación."""
-        if obj.tipo in ['PETICION_UNION', 'PETICION_SEGUIMIENTO']:
+        if obj.tipo in ['PETICION_UNION', 'PETICION_SEGUIMIENTO', 'PETICION_CO_ADMIN']:
             try:
                 return Seguimiento.objects.get(pk=obj.referencia_id).estado
             except Exception:

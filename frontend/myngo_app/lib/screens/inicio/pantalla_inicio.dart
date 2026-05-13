@@ -345,10 +345,11 @@ class PantallaInicioState extends State<PantallaInicio> {
   void seleccionarComunidad(Comunidad comunidad) => _seleccionarComunidad(comunidad);
 
   void _seleccionarUsuario(Usuario usuario) {
+    final extra = usuario.perfilId > 0 ? usuario : null;
     if ((widget.navigationShell?.currentIndex ?? _indiceSeleccionado) == 1) {
-      context.go('/explorar/perfiles/${usuario.nombreUsuario}', extra: usuario);
+      context.go('/explorar/perfiles/${usuario.nombreUsuario}', extra: extra);
     } else {
-      context.go('/inicio/perfiles/${usuario.nombreUsuario}', extra: usuario);
+      context.go('/inicio/perfiles/${usuario.nombreUsuario}', extra: extra);
     }
   }
 

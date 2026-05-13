@@ -653,6 +653,8 @@
   "profileNotFoundTitle": "No hemos podido encontrar al usuario",
   "profilePrivateSubtitle": "Sigue a este usuario para ver sus fotos y publicaciones",
   "profilePrivateTitle": "Esta cuenta es privada",
+  "profilePrivateActionWarning": "Este perfil es privado. Sigue al usuario para interactuar.",
+  "profilePrivateLists": "Este perfil es privado. Sigue al usuario para ver sus listas.",
   "profileSaveBio": "Guardar",
   "profileTabFolders": "Carpetas",
   "profileTabPosts": "Publicaciones",

@@ -49,7 +49,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     'NUEVO_REPORTE'
   };
 
-  // Carga todas las notificaciones y marca las no-interactivas como leídas en segundo plano
+  // Carga todas las notificaciones sin marcarlas como leídas automáticamente
   Future<void> _cargarNotificaciones() async {
     final respuesta = await _servicioNotificaciones.listarNotificaciones();
     if (mounted) {
@@ -57,24 +57,6 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         _notificaciones = respuesta.datos ?? [];
         _estaCargando = false;
       });
-
-      // Solo marcamos como leídas las que NO son de atención especial
-      final tieneNoLeidasNormales = _notificaciones.any(
-        (n) => !n.leida && !_tiposPeticion.contains(n.tipo),
-      );
-
-      if (tieneNoLeidasNormales) {
-        await _servicioNotificaciones.marcarTodasComoLeidas();
-        if (mounted) {
-          setState(() {
-            _notificaciones = _notificaciones.map((n) {
-              if (_tiposPeticion.contains(n.tipo)) return n;
-              return n.copyWith(leida: true);
-            }).toList();
-          });
-          widget.onNotificacionesLeidas?.call();
-        }
-      }
     }
   }
 
@@ -98,7 +80,10 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
-      if (respuesta.exito) _cargarNotificaciones();
+      if (respuesta.exito) {
+        await _cargarNotificaciones();
+        widget.onNotificacionesLeidas?.call();
+      }
     }
   }
 
@@ -106,7 +91,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
   void _navegarADetalle(Notificacion notif) async {
     // Marcar como leída localmente e informar al servidor
     if (!notif.leida) {
-      _servicioNotificaciones.marcarComoLeida(notif.id);
+      await _servicioNotificaciones.marcarComoLeida(notif.id);
       setState(() {
         final index = _notificaciones.indexWhere((n) => n.id == notif.id);
         if (index != -1) {
@@ -200,9 +185,33 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
               indicatorColor: const Color(0xFFC35E34),
               indicatorSize: TabBarIndicatorSize.label,
               tabs: [
-                Tab(text: tr('notificationTabInteractions'), icon: const Icon(Icons.favorite_rounded)),
-                Tab(text: tr('notificationTabRequests'), icon: const Icon(Icons.group_add_rounded)),
-                Tab(text: tr('notificationTabAlerts'), icon: const Icon(Icons.notifications_rounded)),
+                Tab(
+                  text: tr('notificationTabInteractions'), 
+                  icon: Badge(
+                    label: Text(interacciones.where((n) => !n.leida).length.toString()),
+                    isLabelVisible: interacciones.any((n) => !n.leida),
+                    backgroundColor: const Color(0xFFC35E34),
+                    child: const Icon(Icons.favorite_rounded),
+                  ),
+                ),
+                Tab(
+                  text: tr('notificationTabRequests'), 
+                  icon: Badge(
+                    label: Text(solicitudes.where((n) => !n.leida).length.toString()),
+                    isLabelVisible: solicitudes.any((n) => !n.leida),
+                    backgroundColor: const Color(0xFFC35E34),
+                    child: const Icon(Icons.group_add_rounded),
+                  ),
+                ),
+                Tab(
+                  text: tr('notificationTabAlerts'), 
+                  icon: Badge(
+                    label: Text(sistema.where((n) => !n.leida).length.toString()),
+                    isLabelVisible: sistema.any((n) => !n.leida),
+                    backgroundColor: const Color(0xFFC35E34),
+                    child: const Icon(Icons.notifications_rounded),
+                  ),
+                ),
               ],
             ),
           ),
@@ -288,7 +297,7 @@ class _TarjetaNotificacion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool esPeticionPendiente = (notif.tipo == 'PETICION_CO_ADMIN' || notif.tipo == 'PETICION_SEGUIMIENTO' || notif.tipo == 'PETICION_UNION') && 
-                                (notif.estadoPeticion == null || notif.estadoPeticion!.isEmpty);
+                                (notif.estadoPeticion == null || notif.estadoPeticion!.isEmpty || notif.estadoPeticion == 'SOLICITUD' || notif.estadoPeticion == 'PENDIENTE');
     final color = _getColorTipo(notif.tipo);
     final icon = _getIconoTipo(notif.tipo);
 

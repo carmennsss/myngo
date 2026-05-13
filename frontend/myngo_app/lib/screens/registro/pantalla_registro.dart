@@ -12,6 +12,8 @@ import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../services/api_base.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_notifier.dart';
 
 // Pantalla de creación de cuenta. Similar al login en estructura, pero con el formulario
 // de registro y el paso extra del diálogo de aceptación de normas de la comunidad.
@@ -361,8 +363,10 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     bool acepto = false;
     bool declino = false;
 
+    final langCode = Provider.of<LocaleNotifier>(context, listen: false).locale.languageCode;
+
     final futureDescargaPdf = http.get(
-      Uri.parse('${Configuracion.baseUrl}/documentos/reglas_comunidad/'),
+      Uri.parse('${Configuracion.baseUrl}/documentos/reglas_comunidad/?lang=$langCode'),
       headers: ApiBase.obtenerHeaders(),
     ).then((res) async {
       if (res.statusCode != 200) throw Exception('Error API');
@@ -385,7 +389,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                     borderRadius: BorderRadius.circular(32),
                     side: BorderSide(color: Colors.white.withOpacity(0.05)),
                   ),
-                  title: Text(tr('registrationRulesTitle'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                  title: Text(tr('registrationRulesTitle'), style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold)),
                   content: SizedBox(
                     width: double.maxFinite,
                     height: 500,
@@ -428,7 +432,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                                       onChanged: (_) => setDialogState(() { acepto = true; declino = false; }),
                                       activeColor: const Color(0xFFF28B50),
                                     ),
-                                    Text(tr('registrationRulesAccept'), style: GoogleFonts.outfit(color: Colors.white, fontSize: 14)),
+                                    Text(tr('registrationRulesAccept'), style: GoogleFonts.outfit(color: Colors.black, fontSize: 14)),
                                   ],
                                 ),
                               ),
@@ -442,7 +446,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                                       onChanged: (_) => setDialogState(() { declino = true; acepto = false; }),
                                       activeColor: const Color(0xFFD95F43),
                                     ),
-                                    Text(tr('registrationRulesDecline'), style: GoogleFonts.outfit(color: Colors.white, fontSize: 14)),
+                                    Text(tr('registrationRulesDecline'), style: GoogleFonts.outfit(color: Colors.black, fontSize: 14)),
                                   ],
                                 ),
                               ),
