@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/publicacion.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 import 'servicio_usuarios.dart';
 
 // Nos trae el contenido para llenar la pantalla principal.
@@ -52,7 +54,8 @@ class ServicioInicio {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar la galería (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioInicio] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -88,7 +91,8 @@ class ServicioInicio {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar feed social (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioInicio] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }

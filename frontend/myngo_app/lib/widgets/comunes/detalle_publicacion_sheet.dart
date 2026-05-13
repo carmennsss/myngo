@@ -134,7 +134,7 @@ class _DetallePublicacionSheetState extends State<DetallePublicacionSheet> {
     final fuenteEfectiva = widget.fuente ?? EstiloPostHelper.getFontFamily(estilo);
 
 
-    final bgColor = estilo != null ? EstiloPostHelper.effectiveBgColor(estilo) : const Color(0xFF121212);
+    final bgColor = estilo != null ? EstiloPostHelper.effectiveBgColor(estilo) : Theme.of(context).colorScheme.surface;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,

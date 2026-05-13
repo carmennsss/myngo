@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,7 @@ import '../models/imagen_galeria.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 import 'servicio_usuarios.dart';
 
 // Gestiona todas las fotos subidas a la plataforma.
@@ -58,7 +60,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar galería (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -95,7 +98,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar colecciones');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -117,7 +121,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar colección');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -149,7 +154,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudo crear la colección');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -174,7 +180,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al gestionar la imagen en la colección');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -191,7 +198,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la colección');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -232,7 +240,8 @@ class ServicioGaleria {
       final datosError = jsonDecode(respuesta.body);
       return RespuestaApi(exito: false, mensaje: datosError['mensaje'] ?? 'Error al subir la imagen');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -253,7 +262,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener detalles de la imagen');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -271,7 +281,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la publicación');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -289,7 +300,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al editar la publicación');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -307,7 +319,8 @@ class ServicioGaleria {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar la imagen');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioGaleria] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }

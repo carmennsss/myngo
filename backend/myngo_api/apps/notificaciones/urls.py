@@ -5,6 +5,7 @@ from django.urls import path
 from .views import (
     MarcarNotificacionLeida,
     MarcarTodasLeidas,
+    MarcarLeidasPorTipo,
     NotificacionList,
     NotificacionesNoLeidasCount,
     ResponderSolicitudUnion,
@@ -18,5 +19,6 @@ urlpatterns = [
     # Estado de Lectura
     path('no-leidas/count/', NotificacionesNoLeidasCount.as_view(), name='notificaciones-count'),
     path('marcar-leidas/', MarcarTodasLeidas.as_view(), name='marcar-leidas'),
+    path('marcar-leidas-por-tipo/', MarcarLeidasPorTipo.as_view(), name='marcar-leidas-por-tipo'),
     path('<int:pk>/marcar-leida/', MarcarNotificacionLeida.as_view(), name='marcar-una-leida'),
 ]

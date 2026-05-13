@@ -12,6 +12,7 @@ import '../../services/servicio_notificaciones.dart';
 import '../../services/servicio_mensajeria.dart';
 import '../../services/servicio_notificaciones_locales.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/notificacion_provider.dart';
 import '../../utils/mejoras_notifier.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
@@ -63,7 +64,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   int? _miPerfilId;
   int? _puntos;
   List<int> _ordenGuardado = [];
-  int _notificacionesSinLeer = 0;
+  int _notificacionesSinLeer = 0; // mantenido para compatibilidad con el drawer legacy
   final ServicioMensajeria _servicioNotifChat = ServicioMensajeria();
   List<Comunidad>? _misComunidades;
   bool _cargandoComunidades = false;
@@ -200,7 +201,12 @@ class PantallaInicioState extends State<PantallaInicio> {
   Future<void> cargarNotificacionesSinLeer() async {
     if (!_estaLogueado) return;
     final conteo = await ServicioNotificaciones().obtenerConteoNoLeidas();
-    if (mounted) setState(() => _notificacionesSinLeer = conteo);
+    if (mounted) {
+      // Actualizar el provider global con el total obtenido del backend
+      context.read<NotificacionProvider>().inicializarDesdeConteo(conteo);
+      // También guardar localmente para el drawer
+      setState(() => _notificacionesSinLeer = conteo);
+    }
   }
 
   void _conectarNotificacionesChat(ChatProvider chatProvider) {
@@ -224,7 +230,10 @@ class PantallaInicioState extends State<PantallaInicio> {
           payload: data['sala_id'].toString(),
         );
       } else if (type == 'generic_notification') {
-        cargarNotificacionesSinLeer();
+        // Incrementar badge inmediatamente vía provider — sin HTTP poll
+        final tipo = data['tipo'] as String? ?? '';
+        context.read<NotificacionProvider>().alRecibirNotificacion(tipo);
+        setState(() => _notificacionesSinLeer++);
         _mostrarToastNotificacion(data);
       }
     });

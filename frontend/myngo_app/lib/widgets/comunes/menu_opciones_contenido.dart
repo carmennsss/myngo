@@ -49,18 +49,18 @@ class MenuOpcionesContenido extends StatelessWidget {
 
             return PopupMenuButton<String>(
               key: ValueKey('menu_${tipoObjeto}_$objetoId'),
-              icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFB0B0B0)),
-              color: const Color(0xFF2A2A2A),
+              icon: Icon(Icons.more_vert_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+              color: Theme.of(context).colorScheme.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onSelected: (val) => _manejarOpcion(context, val, userId, tr),
-              itemBuilder: (context) => [
+              itemBuilder: (itemContext) => [
                 if (esDuenio) ...[
-                  _buildItem('editar', Icons.edit_outlined, tr('commonEdit')),
-                  _buildItem('eliminar', Icons.delete_outline_rounded, tr('commonDelete'), color: Colors.redAccent),
+                  _buildItem(itemContext, 'editar', Icons.edit_outlined, tr('commonEdit')),
+                  _buildItem(itemContext, 'eliminar', Icons.delete_outline_rounded, tr('commonDelete'), color: Colors.redAccent),
                 ] else if (esAdminComunidad) ...[
-                  _buildItem('eliminar_admin', Icons.gavel_rounded, tr('menuModerate'), color: Colors.orangeAccent),
+                  _buildItem(itemContext, 'eliminar_admin', Icons.gavel_rounded, tr('menuModerate'), color: Colors.orangeAccent),
                 ] else ...[
-                  _buildItem('reportar', Icons.report_problem_outlined, tr('menuReport'), color: Colors.yellowAccent),
+                  _buildItem(itemContext, 'reportar', Icons.report_problem_outlined, tr('menuReport'), color: Colors.yellowAccent),
                 ],
               ],
             );
@@ -70,14 +70,15 @@ class MenuOpcionesContenido extends StatelessWidget {
     );
   }
 
-  PopupMenuItem<String> _buildItem(String val, IconData icon, String text, {Color? color}) {
+  PopupMenuItem<String> _buildItem(BuildContext itemContext, String val, IconData icon, String text, {Color? color}) {
+    final defaultColor = Theme.of(itemContext).colorScheme.onSurface;
     return PopupMenuItem(
       value: val,
       child: Row(
         children: [
-          Icon(icon, color: color ?? Colors.white, size: 20),
+          Icon(icon, color: color ?? defaultColor, size: 20),
           const SizedBox(width: 12),
-          Text(text, style: GoogleFonts.outfit(color: color ?? Colors.white, fontSize: 14)),
+          Text(text, style: GoogleFonts.outfit(color: color ?? defaultColor, fontSize: 14)),
         ],
       ),
     );
@@ -101,7 +102,7 @@ class MenuOpcionesContenido extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           backgroundColor: Theme.of(context).dialogBackgroundColor,
-          title: Text(esModeracion ? tr('menuModerateTitle') : tr('menuDeleteTitle'), style: GoogleFonts.outfit(color: Colors.white)),
+          title: Text(esModeracion ? tr('menuModerateTitle') : tr('menuDeleteTitle'), style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -109,7 +110,7 @@ class MenuOpcionesContenido extends StatelessWidget {
                 esModeracion 
                   ? tr('menuModerateReasonHint')
                   : tr('menuDeleteWarning'),
-                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
+                style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 14),
               ),
               if (esModeracion) ...[
                 const SizedBox(height: 16),
@@ -117,12 +118,12 @@ class MenuOpcionesContenido extends StatelessWidget {
                   controller: razonController,
                   maxLines: 2,
                   onChanged: (v) => setState(() {}),
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     hintText: tr('menuModerateSpamHint'),
-                    hintStyle: const TextStyle(color: Colors.white38),
+                    hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
                     filled: true,
-                    fillColor: Colors.white10,
+                    fillColor: Theme.of(context).colorScheme.surfaceVariant,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
@@ -183,14 +184,14 @@ class MenuOpcionesContenido extends StatelessWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          title: Text(tr('reportTitle'), style: GoogleFonts.outfit(color: Colors.white)),
+          backgroundColor: Theme.of(context).dialogBackgroundColor,
+          title: Text(tr('reportTitle'), style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ...motivos.map((m) => RadioListTile<String>(
-                  title: Text(m, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                  title: Text(m, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 14)),
                   value: m,
                   groupValue: motivoSeleccionado,
                   onChanged: (v) => setState(() => motivoSeleccionado = v),
@@ -201,12 +202,12 @@ class MenuOpcionesContenido extends StatelessWidget {
                 TextField(
                   controller: comentarioController,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: tr('reportOptionalComment'),
-                    hintStyle: const TextStyle(color: Colors.white38),
+                    hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
                     filled: true,
-                    fillColor: Colors.white10,
+                    fillColor: Theme.of(context).colorScheme.surfaceVariant,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                   ),
                 ),

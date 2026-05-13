@@ -11,6 +11,7 @@ import '../../utils/configuracion.dart';
 import '../../utils/extensiones_color.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../utils/manejo_errores.dart';
 
 // Editor visual avanzado de la identidad de una comunidad: avatar, portada, fondo global,
 // colores del feed, patrones, fuente y etiquetas, con previsualización en tiempo real.
@@ -170,10 +171,11 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     setState(() => _estaGuardando = false);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(res.mensaje),
-        backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-      ));
+      if (res.exito) {
+        mostrarAviso(context, res.mensaje, esExito: true);
+      } else {
+        mostrarError(context, res.mensaje, mensajePersonalizado: res.mensaje);
+      }
 
       if (res.exito && res.datos is Comunidad) {
         widget.onComunidadActualizada(res.datos as Comunidad);
@@ -266,8 +268,6 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
   @override
   Widget build(BuildContext context) {
-    final esOscuro = Theme.of(context).brightness == Brightness.dark;
-    
     return Builder(
       builder: (context) {
         return Scaffold(
@@ -310,7 +310,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                       flex: 3,
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.all(32),
-                        child: _buildPanelOpciones(esOscuro, tr),
+                        child: _buildPanelOpciones(tr),
                       ),
                     ),
     
@@ -319,7 +319,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border(left: BorderSide(color: Colors.white.withOpacity(0.05))),
-                          color: esOscuro ? Colors.black26 : Colors.grey.shade100,
+                          color: Colors.grey.shade100,
                         ),
                         child: Column(
                           children: [
@@ -330,7 +330,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                                child: _buildLivePreviewLarge(esOscuro, tr),
+                                child: _buildLivePreviewLarge(tr),
                               ),
                             ),
                             Padding(
@@ -361,9 +361,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   children: [
                     _buildSectionTitle(tr('personalizePreview')),
                     const SizedBox(height: 12),
-                    _buildLivePreview(esOscuro),
+                    _buildLivePreview(),
                     const SizedBox(height: 24),
-                    _buildPanelOpciones(esOscuro, tr),
+                    _buildPanelOpciones(tr),
                     const SizedBox(height: 40),
                     SizedBox(
                       width: double.infinity,
@@ -392,7 +392,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
 
   // Panel de opciones agrupadas: identidad visual, diseño del feed y detalles extras
-  Widget _buildPanelOpciones(bool esOscuro, String Function(String) tr) {
+  Widget _buildPanelOpciones(String Function(String) tr) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -435,7 +435,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(tr('personalizeBackgroundType'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+              Text(tr('personalizeBackgroundType'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.black87)),
               const SizedBox(height: 12),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -470,7 +470,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               
               if (_tipoFondoPosts == 'patron') ...[
                 const SizedBox(height: 24),
-                Text(tr('personalizeChoosePattern'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+                Text(tr('personalizeChoosePattern'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.black87)),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -498,10 +498,10 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
                       selectedColor: const Color(0xFFF28B50),
                       labelStyle: GoogleFonts.outfit(
-                        color: seleccionada ? Colors.white : (esOscuro ? Colors.white70 : Colors.black87),
+                        color: seleccionada ? Colors.white : Colors.black87,
                         fontWeight: seleccionada ? FontWeight.bold : FontWeight.normal,
                       ),
-                      backgroundColor: esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                      backgroundColor: Colors.black.withOpacity(0.05),
                     );
                   }).toList(),
                 ),
@@ -517,28 +517,28 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(tr('personalizeMainFont'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+              Text(tr('personalizeMainFont'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.black87)),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: (_fuenteSeleccionada.isNotEmpty && _fuentesDisponibles.contains(_fuenteSeleccionada)) 
                     ? _fuenteSeleccionada 
                     : (_fuentesDisponibles.isNotEmpty ? _fuentesDisponibles.first : 'Inter'),
-                dropdownColor: esOscuro ? const Color(0xFF1A1A1A) : Colors.white,
+                dropdownColor: Colors.white,
                 items: _fuentesDisponibles.map((f) => DropdownMenuItem(
                   value: f,
-                  child: Text(f, style: GoogleFonts.getFont(f, color: esOscuro ? Colors.white : Colors.black87)),
+                  child: Text(f, style: GoogleFonts.getFont(f, color: Colors.black87)),
                 )).toList(),
                 onChanged: (val) => setState(() => _fuenteSeleccionada = val!),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                  fillColor: Colors.black.withOpacity(0.05),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
               ),
               const SizedBox(height: 24),
-              Text(tr('personalizeTagsLabel'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: esOscuro ? Colors.white70 : Colors.black87)),
+              Text(tr('personalizeTagsLabel'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.black87)),
               const SizedBox(height: 12),
-              _buildTagInput(esOscuro),
+              _buildTagInput(),
             ],
           ),
         ),
@@ -549,14 +549,13 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
   Widget _buildTipoBoton(String label, String value, IconData icon) {
     final seleccionado = _tipoFondoPosts == value;
-    final esOscuro = Theme.of(context).brightness == Brightness.dark;
     
     return GestureDetector(
       onTap: () => setState(() => _tipoFondoPosts = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: seleccionado ? const Color(0xFFF28B50) : (esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+          color: seleccionado ? const Color(0xFFF28B50) : Colors.black.withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: seleccionado ? Colors.white24 : Colors.transparent),
         ),
@@ -567,7 +566,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
             Text(
               label,
               style: GoogleFonts.outfit(
-                color: seleccionado ? Colors.white : (esOscuro ? Colors.white70 : Colors.black87),
+                color: seleccionado ? Colors.white : Colors.black87,
                 fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -590,29 +589,27 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   }
 
   Widget _buildGlassCard({required Widget child}) {
-    final esOscuro = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: esOscuro ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.02),
+        color: Colors.black.withOpacity(0.02),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
       ),
       child: child,
     );
   }
 
   Widget _buildConfigItem({required IconData icon, required String title, required String subtitle, Widget? trailing, VoidCallback? onTap}) {
-    final esOscuro = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: esOscuro ? Colors.white.withOpacity(0.05) : Colors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05))
+          border: Border.all(color: Colors.black.withOpacity(0.05))
         ),
         child: Row(
           children: [
@@ -629,7 +626,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.getFont(_fuenteSeleccionada, fontWeight: FontWeight.bold, color: esOscuro ? Colors.white : const Color(0xFF4A4440))),
+                  Text(title, style: GoogleFonts.getFont(_fuenteSeleccionada, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440))),
                   Text(subtitle, style: GoogleFonts.getFont(_fuenteSeleccionada, color: Colors.grey.shade500, fontSize: 12)),
                 ],
               ),
@@ -642,7 +639,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   }
 
   // Previsualización completa estilo miniatura de la comunidad para pantallas anchas
-  Widget _buildLivePreviewLarge(bool esOscuro, String Function(String) tr) {
+  Widget _buildLivePreviewLarge(String Function(String) tr) {
 
     final String fullAvatarUrl = widget.comunidad.urlAvatar != null && widget.comunidad.urlAvatar!.isNotEmpty
         ? (widget.comunidad.urlAvatar!.startsWith('http') ? widget.comunidad.urlAvatar! : '${Configuracion.baseUrl}${widget.comunidad.urlAvatar!.startsWith('/') ? '' : '/'}${widget.comunidad.urlAvatar!}')
@@ -653,7 +650,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
     return Container(
       decoration: BoxDecoration(
-        color: esOscuro ? const Color(0xFF121212) : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 40, spreadRadius: -10)
@@ -707,7 +704,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                           height: 70,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: esOscuro ? const Color(0xFF121212) : Colors.white, width: 4),
+                            border: Border.all(color: Colors.white, width: 4),
                             image: _avatarSeleccionado != null
                                 ? (kIsWeb 
                                     ? DecorationImage(image: NetworkImage(_avatarSeleccionado!.path), fit: BoxFit.cover)
@@ -732,7 +729,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                                 style: GoogleFonts.getFont(_fuenteSeleccionada, 
                                   fontSize: 18, 
                                   fontWeight: FontWeight.bold,
-                                  color: esOscuro ? Colors.white : Colors.black,
+                                  color: Colors.black,
                                 ),
                               ),
                               Text(
@@ -756,8 +753,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      _buildMockTab(tr('postsTab'), true, esOscuro),
-                      _buildMockTab(tr('chatTab'), false, esOscuro),
+                      _buildMockTab(tr('postsTab'), true),
+                      _buildMockTab(tr('storeTab'), false),
+                      _buildMockTab(tr('chatTab'), false),
                     ],
                   ),
                 ),
@@ -769,7 +767,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     padding: const EdgeInsets.all(20),
                     itemCount: 3,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) => _buildMockPost(esOscuro),
+                    itemBuilder: (context, index) => _buildMockPost(),
                   ),
                 ),
               ],
@@ -803,7 +801,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
   }
 
   // Pestaña de navegación simulada en la previsualización
-  Widget _buildMockTab(String text, bool active, bool esOscuro) {
+  Widget _buildMockTab(String text, bool active) {
     return Container(
       margin: const EdgeInsets.only(right: 20),
       padding: const EdgeInsets.only(bottom: 8),
@@ -815,21 +813,21 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
         style: GoogleFonts.getFont(_fuenteSeleccionada, 
           fontSize: 13, 
           fontWeight: active ? FontWeight.bold : FontWeight.normal,
-          color: active ? _colorTema : (esOscuro ? Colors.white38 : Colors.black38),
+          color: active ? _colorTema : Colors.black38,
         ),
       ),
     );
   }
 
   // Post ficticio para rellenar la previsualización del feed
-  Widget _buildMockPost(bool esOscuro) {
+  Widget _buildMockPost() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: esOscuro ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.8),
+        color: Colors.white.withOpacity(0.8),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -838,13 +836,13 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
             children: [
               CircleAvatar(radius: 14, backgroundColor: _colorTema.withOpacity(0.2), child: Icon(Icons.person, size: 16, color: _colorTema)),
               const SizedBox(width: 10),
-              Container(height: 10, width: 80, decoration: BoxDecoration(color: esOscuro ? Colors.white12 : Colors.black12, borderRadius: BorderRadius.circular(5))),
+              Container(height: 10, width: 80, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(5))),
             ],
           ),
           const SizedBox(height: 12),
-          Container(height: 8, width: double.infinity, decoration: BoxDecoration(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(4))),
+          Container(height: 8, width: double.infinity, decoration: BoxDecoration(color: Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(4))),
           const SizedBox(height: 8),
-          Container(height: 8, width: 150, decoration: BoxDecoration(color: esOscuro ? Colors.white10 : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(4))),
+          Container(height: 8, width: 150, decoration: BoxDecoration(color: Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(4))),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -858,7 +856,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     );
   }
 
-  Widget _buildLivePreview(bool esOscuro) {
+  Widget _buildLivePreview() {
     return Container(
       height: 220,
       width: double.infinity,
@@ -878,9 +876,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   padding: const EdgeInsets.all(16),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _buildMockPost(esOscuro),
+                    _buildMockPost(),
                     const SizedBox(height: 12),
-                    _buildMockPost(esOscuro),
+                    _buildMockPost(),
                   ],
                 ),
               ),
@@ -901,7 +899,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     return SeccionPostsComunidad.buildPostsBackgroundFromConfig(config, context);
   }
 
-  Widget _buildTagInput(bool esOscuro) {
+  Widget _buildTagInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -909,12 +907,12 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           controller: _controladorTag,
           onChanged: _buscarSugerencias,
           onSubmitted: _anadirTag,
-          style: GoogleFonts.outfit(color: esOscuro ? Colors.white : Colors.black87, fontSize: 14),
+          style: GoogleFonts.outfit(color: Colors.black87, fontSize: 14),
           decoration: InputDecoration(
             hintText: tr('personalizeTagsHint'),
             hintStyle: TextStyle(color: Colors.grey.shade500),
             filled: true,
-            fillColor: esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            fillColor: Colors.black.withOpacity(0.05),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFF28B50)),
           ),
@@ -923,13 +921,13 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           Container(
             margin: const EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
-              color: esOscuro ? const Color(0xFF2A2A2A) : Colors.white,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
             ),
             child: Column(
               children: _sugerenciasTags.map((tag) => ListTile(
-                title: Text(tag['nombre'], style: GoogleFonts.outfit(color: esOscuro ? Colors.white : Colors.black87, fontSize: 13)),
+                title: Text(tag['nombre'], style: GoogleFonts.outfit(color: Colors.black87, fontSize: 13)),
                 onTap: () => _anadirTag(tag['nombre']),
                 dense: true,
               )).toList(),

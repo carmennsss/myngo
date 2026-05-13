@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/notificacion.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 import 'servicio_usuarios.dart';
 
 // Gestiona la bandeja de entrada de notificaciones de la app.
@@ -45,7 +47,8 @@ class ServicioNotificaciones {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar notificaciones (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioNotificaciones] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -64,7 +67,8 @@ class ServicioNotificaciones {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar la respuesta');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioNotificaciones] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -81,7 +85,8 @@ class ServicioNotificaciones {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudieron marcar las notificaciones');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioNotificaciones] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -98,7 +103,8 @@ class ServicioNotificaciones {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar la notificación');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioNotificaciones] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -117,6 +123,26 @@ class ServicioNotificaciones {
       return 0;
     } catch (e) {
       return 0;
+    }
+  }
+
+  // Marca como leídas SOLO las notificaciones de los tipos indicados.
+  // Se usa para la lectura por tab (interacciones, solicitudes, sistema).
+  Future<RespuestaApi<void>> marcarComoLeidasPorTipos(List<String> tipos) async {
+    try {
+      final respuesta = await client.post(
+        Uri.parse('${_urlNotificaciones}marcar-leidas-por-tipo/'),
+        headers: await _obtenerCabeceras(),
+        body: json.encode({'tipos': tipos}),
+      ).timeout(const Duration(seconds: 10));
+
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(exito: true, mensaje: 'Notificaciones de tab marcadas como leídas');
+      }
+      return RespuestaApi(exito: false, mensaje: 'No se pudieron marcar las notificaciones');
+    } catch (e) {
+      debugPrint('[ERROR ServicioNotificaciones] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }
