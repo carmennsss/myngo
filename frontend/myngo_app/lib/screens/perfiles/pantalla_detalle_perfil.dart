@@ -145,7 +145,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       });
       if (_usuario != null) {
         _sincronizarEstadoLocal();
-        _inicializarDatos();
+        // Cargamos el resto de datos secundarios sin re-entrar en carga de perfil
+        _cargarEstadoVoto();
+        _cargarPublicaciones();
+        _cargarRolContextual();
       }
     }
   }
@@ -190,16 +193,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     _scrollController.dispose();
     super.dispose();
   }
-
   Future<void> _inicializarDatos() async {
     final id = await ServicioUsuarios().obtenerIdUsuario();
     if (mounted) setState(() => _currentUserId = id);
-
-    bool incompleto = _usuario != null && (_usuario!.biografia?.isEmpty ?? true) && _usuario!.ratingActual == 0.0;
-    
-    if (incompleto) {
-      await _cargarPerfilInicial();
-    }
 
     await Future.wait([
       _cargarEstadoVoto(),
@@ -345,10 +341,37 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final res = await ServicioPerfiles()
         .enviarSolicitudSeguimiento(_usuario!.nombreUsuario);
     if (mounted) {
-      if (res.exito) setState(() => _estadoSeguimiento = res.datos);
+      if (res.exito) {
+        final nuevoEstado = res.datos;
+        setState(() => _estadoSeguimiento = nuevoEstado);
+
+        // Feedback visual con traducciones
+        String key = 'profileFollowSuccess'; // Default (público)
+        if (nuevoEstado == 'SOLICITUD') {
+          key = 'profileFollowRequestSent';
+        } else if (nuevoEstado == null) {
+          // Si el mensaje del servidor contenía 'retirada', usamos esa clave
+          if (res.mensaje.toLowerCase().contains('retirada')) {
+            key = 'profileFollowWithdrawn';
+          } else {
+            key = 'profileFollowUnfollowed';
+          }
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tr(key)),
+            backgroundColor: const Color(0xFFC35E34),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
+        );
+      }
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(res.mensaje)));
     }
   }
 
@@ -435,6 +458,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                           onMostrarVoto: _mostrarSelectorVoto,
                           onEditarBio: _mostrarDialogoEditarBio,
                           onChat: _iniciarChat,
+                          esPrivadoYNoSeguido: _esPrivadoYNoSeguido,
                         ),
                       ),
                     ),
