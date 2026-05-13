@@ -105,7 +105,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(color: const Color(0xFFF28B50), borderRadius: BorderRadius.circular(12)),
-                    child: const Text('Reintentar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                    child: Text(tr('videoRetry'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                   ),
                 ),
               ],
@@ -193,7 +193,7 @@ class _ReproductorVideoPostState extends State<ReproductorVideoPost> {
                     color: const Color(0xFFF28B50),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text('Reintentar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  child: Text(tr('videoRetry'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
               ),
             ],

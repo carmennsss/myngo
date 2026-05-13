@@ -83,9 +83,9 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
             onChanged: (val) => setState(() {}),
             style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
             decoration: InputDecoration(
-              labelText: 'Nombre del chat',
+              labelText: tr('chatNameLabel'),
               labelStyle: GoogleFonts.outfit(color: Colors.grey),
-              hintText: 'Ej: Grupo de estudio, Plan finde...',
+              hintText: tr('chatNameHint'),
               prefixIcon: const Icon(Icons.edit_rounded, color: Color(0xFFC35E34)),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               focusedBorder: OutlineInputBorder(
@@ -117,13 +117,13 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _esPublica ? 'Chat Público' : 'Chat Privado',
+                          _esPublica ? tr('chatPublic') : tr('chatPrivate'),
                           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           _esPublica 
-                            ? 'Cualquier miembro de la comunidad puede verlo.' 
-                            : 'Solo los invitados podrán ver y escribir.',
+                            ? tr('chatPublicDesc') 
+                            : tr('chatPrivateDesc'),
                           style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600),
                         ),
                       ],
@@ -141,7 +141,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           ],
 
           Text(
-            'Participantes (${_miembrosSeleccionados.length})',
+            tr('chatParticipantsCount', {'count': _miembrosSeleccionados.length.toString()}),
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -154,7 +154,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           TextField(
             onChanged: (val) => setState(() => _busqueda = val),
             decoration: InputDecoration(
-              hintText: 'Buscar participantes...',
+              hintText: tr('chatSearchParticipantsHint'),
               prefixIcon: const Icon(Icons.search_rounded),
               isDense: true,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -165,7 +165,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           // Lista de participantes
           Expanded(
             child: participantesFiltrados.isEmpty 
-              ? Center(child: Text('No se encontraron Myngos 😿', style: GoogleFonts.outfit(color: Colors.grey)))
+              ? Center(child: Text(tr('chatNoParticipantsFound'), style: GoogleFonts.outfit(color: Colors.grey)))
               : ListView.builder(
                   itemCount: participantesFiltrados.length,
                   itemBuilder: (context, index) {
@@ -224,7 +224,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                   )
                 : Text(
-                    'Crear Chat 🐾',
+                    tr('chatCreateAction'),
                     style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
             ),

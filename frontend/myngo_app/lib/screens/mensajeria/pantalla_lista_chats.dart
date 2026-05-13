@@ -327,7 +327,35 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     );
   }
 
+  String getMessagePreview(Map<String, dynamic>? ultimoMsg, String Function(String, [Map<String, dynamic>?]) tr) {
+    if (ultimoMsg == null) return tr('chatNoMessagesYet');
+
+    final dynamic typeRaw = ultimoMsg['type'] ?? ultimoMsg['message_type'] ?? ultimoMsg['file_type'] ?? ultimoMsg['tipo'] ?? ultimoMsg['content_type'];
+    final String type = (typeRaw ?? '').toString().toUpperCase();
+
+    final dynamic contentRaw = ultimoMsg['content'];
+    final String content = contentRaw == null ? '' : contentRaw.toString();
+
+    // Si el backend no trae type, intentamos inferir por contenido
+    if (type.isEmpty) {
+      if (ultimoMsg['url'] != null || ultimoMsg['file_url'] != null) {
+        // fallback: si trae url y no sabemos type, mostramos genérico
+        return '🖼️ Archivo';
+      }
+      return content.isNotEmpty ? content : tr('chatNoMessagesYet');
+    }
+
+    if (type == 'I' || type == 'IMAGEN' || type == 'IMAGE') return '📷 Imagen';
+    if (type == 'V' || type == 'VIDEO') return '🎬 Video';
+    if (type == 'A' || type == 'AUDIO') return '🎵 Audio';
+    if (type == 'SISTEMA' || type == 'SYSTEM') return content.isNotEmpty ? content : tr('chatNoMessagesYet');
+
+    // TEXTO u otros: preferimos content
+    return content.isNotEmpty ? content : tr('chatNoMessagesYet');
+  }
+
   Widget _buildEstadoVacio(String Function(String, [Map<String, dynamic>?]) tr) {
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -362,7 +390,8 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
     final avatarUrl = datos['avatar'];
     
     final ultimoMsg = sala['ultimo_mensaje'] as Map<String, dynamic>?;
-    final preview = ultimoMsg != null ? (ultimoMsg['content'] ?? '') as String : tr('chatNoMessagesYet');
+    final preview = getMessagePreview(ultimoMsg, tr);
+
     final hora = ultimoMsg != null ? _formatearFecha(ultimoMsg['fecha_envio']) : '';
     final noLeidos = (sala['mensajes_no_leidos'] as num?)?.toInt() ?? 0;
 

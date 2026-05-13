@@ -1,3 +1,4 @@
+import '../utils/tr_helper.dart';
 import '../utils/configuracion.dart';
 
 /// Modelo que representa una colección de imágenes del usuario.
@@ -43,7 +44,7 @@ class Coleccion {
       id: json['id'] ?? 0,
       usuarioId: json['usuario'] ?? 0,
       comunidadId: json['comunidad'] as int?,
-      nombreColeccion: json['nombre_coleccion']?.toString() ?? 'Sin nombre',
+      nombreColeccion: json['nombre_coleccion']?.toString() ?? tr('commonNoName'),
       descripcion: json['descripcion']?.toString(),
       categoria: json['categoria']?.toString(),
       esPrivada: json['es_privada'] ?? false,

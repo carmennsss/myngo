@@ -1,3 +1,5 @@
+import '../utils/tr_helper.dart';
+
 /// Modelo que representa un comentario en una publicación.
 ///
 /// Incluye el contenido del comentario, metadatos del autor y la fecha
@@ -41,7 +43,7 @@ class Comentario {
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       publicacionId: int.tryParse(json['publicacion']?.toString() ?? '0') ?? 0,
       autorId: int.tryParse(json['autor']?.toString() ?? '0') ?? 0,
-      autorNombre: json['autor_nombre']?.toString() ?? 'Anónimo',
+      autorNombre: json['autor_nombre']?.toString() ?? tr('commonDefaultUsername'),
       autorFoto: json['autor_foto']?.toString(),
       autorMarco: json['autor_marco']?.toString(),
       autorFondo: json['autor_fondo']?.toString(),

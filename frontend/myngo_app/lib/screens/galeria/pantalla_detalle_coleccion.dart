@@ -124,7 +124,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res.exito ? 'Privacidad actualizada 🐾' : res.mensaje),
+          content: Text(res.exito ? tr('collectionPrivacyUpdated') : res.mensaje),
           backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
         ),
       );
@@ -136,18 +136,18 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     final nuevoNombre = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Renombrar colección', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(tr('collectionRenameTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'Nuevo nombre'),
+          decoration: InputDecoration(hintText: tr('collectionRenameHint')),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('commonCancel'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, controller.text),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC35E34)),
-            child: const Text('Guardar', style: TextStyle(color: Colors.white)),
+            child: Text(tr('commonSave'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -454,7 +454,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
             child: MouseRegion(
               cursor: _puedeEditar ? SystemMouseCursors.click : SystemMouseCursors.basic,
               child: Tooltip(
-                message: _puedeEditar ? 'Toca para cambiar privacidad' : (_coleccion.esPrivada ? 'Colección privada' : 'Colección pública'),
+                message: _puedeEditar ? tr('collectionTapToChangePrivacy') : (_coleccion.esPrivada ? tr('collectionPrivateLabel') : tr('collectionPublicLabel')),
                 child: Icon(
                     _coleccion.esPrivada ? Icons.lock_rounded : Icons.public_rounded,
                     color: _coleccion.esPrivada ? const Color(0xFFC35E34) : const Color(0xFF248EA6),
@@ -664,14 +664,14 @@ class _DialogoSelectorImagenPostState extends State<_DialogoSelectorImagenPost> 
     return AlertDialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text('Elegir de Posts', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
+      title: Text(tr('collectionChooseFromPosts'), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
       content: SizedBox(
         width: 400,
         height: 500,
         child: _cargando
             ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
             : _posts.isEmpty
-                ? Center(child: Text('No hay posts con imágenes en esta comunidad 🐾', textAlign: TextAlign.center, style: GoogleFonts.outfit(color: Colors.grey)))
+                ? Center(child: Text(tr('collectionNoPostsWithImages'), textAlign: TextAlign.center, style: GoogleFonts.outfit(color: Colors.grey)))
                 : ListView.builder(
                     itemCount: _posts.length,
                     itemBuilder: (ctx, index) {
@@ -692,7 +692,7 @@ class _DialogoSelectorImagenPostState extends State<_DialogoSelectorImagenPost> 
                         children: [
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(post.titulo.isEmpty ? 'Post de @${post.autorNombre}' : post.titulo, 
+                            child: Text(post.titulo.isEmpty ? tr('collectionPostBy', {'name': post.autorNombre}) : post.titulo, 
                               style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade700)),
                           ),
                           GridView.builder(
@@ -726,7 +726,7 @@ class _DialogoSelectorImagenPostState extends State<_DialogoSelectorImagenPost> 
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Cancelar', style: GoogleFonts.outfit(color: Colors.grey)),
+          child: Text(tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.grey)),
         ),
       ],
     );

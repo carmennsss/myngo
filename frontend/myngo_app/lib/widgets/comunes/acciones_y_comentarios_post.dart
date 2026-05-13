@@ -188,13 +188,13 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('¿Eliminar comentario?'),
-        content: const Text('Esta acción no se puede deshacer y borrará todas sus respuestas.'),
+        title: Text(tr('postCommentDeleteTitle')),
+        content: Text(tr('postCommentDeleteContent')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('commonCancel'))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true), 
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red))
+            child: Text(tr('commonDelete'), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

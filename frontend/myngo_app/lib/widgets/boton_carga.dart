@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 // Botón naranja con gradiente que usamos en los formularios de login y registro.
 // Cuando se está procesando algo muestra un spinner en vez del texto, y bloquea el tap.
@@ -59,7 +60,7 @@ class BotonCarga extends StatelessWidget {
                         ),
                       )
                     : Text(
-                        texto?.toUpperCase() ?? 'CONTINUAR',
+                        texto?.toUpperCase() ?? tr('commonContinue').toUpperCase(),
                         style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontSize: 16,
