@@ -8,6 +8,7 @@ import 'comentario_item.dart';
 import 'bottom_sheet_colecciones.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../utils/manejo_errores.dart';
 
 class AccionesYComentariosPost extends StatefulWidget {
   final Publicacion post;
@@ -131,12 +132,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
 
   Future<void> _enviarComentario() async {
     if (!widget.esMiembro) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(tr('communityJoinToChat')),
-          backgroundColor: const Color(0xFFC35E34),
-        ),
-      );
+      mostrarAviso(context, tr('communityJoinToChat'));
       return;
     }
     if (_comentarioController.text.trim().isEmpty) return;
@@ -166,12 +162,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
     } else {
       setState(() => _enviandoComentario = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(respuesta.mensaje),
-            backgroundColor: const Color(0xFFC35E34),
-          ),
-        );
+        mostrarError(context, respuesta.mensaje, mensajePersonalizado: respuesta.mensaje);
       }
     }
   }
@@ -220,7 +211,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
           widget.post.comentariosCount = _comentariosCount;
         });
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+        mostrarError(context, res.mensaje, mensajePersonalizado: res.mensaje);
       }
     }
   }
@@ -245,23 +236,13 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                     fuente: widget.fuente,
                 onTap: () async {
                       if (!widget.esMiembro) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(tr('communityJoinToLike')),
-                            backgroundColor: const Color(0xFFC35E34),
-                          ),
-                        );
+                        mostrarAviso(context, tr('communityJoinToLike'));
                         return;
                       }
                       final id = await _servicioUsuarios.obtenerIdUsuario();
                       if (id == 0) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(tr('authLoginToLike')),
-                              backgroundColor: const Color(0xFFC35E34),
-                            ),
-                          );
+                          mostrarAviso(context, tr('authLoginToLike'));
                         }
                         return;
                       }
@@ -281,14 +262,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                           widget.post.usuarioDioLike = _dioLike;
                           widget.post.likesCount = _likesCount;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(res.mensaje),
-                            backgroundColor: const Color(0xFFD95F43),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        );
+                        mostrarError(context, res.mensaje, mensajePersonalizado: res.mensaje);
                       }
                     },
                   ),
@@ -314,12 +288,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                     fuente: widget.fuente,
                 onTap: () async {
                       if (!widget.esMiembro) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(tr('communityJoinToSave')),
-                            backgroundColor: const Color(0xFFC35E34),
-                          ),
-                        );
+                        mostrarAviso(context, tr('communityJoinToSave'));
                         return;
                       }
                       await showModalBottomSheet(

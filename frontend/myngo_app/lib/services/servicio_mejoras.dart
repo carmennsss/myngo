@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/catalogo_mejoras.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 import './servicio_usuarios.dart';
 
 // Controla los puntitos de reputación (votaciones) y la tienda de la app.
@@ -56,7 +57,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al procesar el voto');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -81,7 +83,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener estado de votación');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -111,7 +114,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al eliminar el voto');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -130,7 +134,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudo cargar la tienda global');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -149,7 +154,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudo cargar la tienda de la comunidad');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -191,7 +197,8 @@ class ServicioMejoras {
       final datosError = jsonDecode(respuesta.body);
       return RespuestaApi(exito: false, mensaje: datosError['error'] ?? 'Error al enviar propuesta');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -209,7 +216,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudieron recuperar las propuestas');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -227,7 +235,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar la moderación');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -249,7 +258,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error en la transacción');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -267,7 +277,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar tu inventario');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -289,7 +300,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al equipar mejora');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -311,7 +323,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al equipar mejora en comunidad');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -330,7 +343,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener catálogo de gestión');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -358,7 +372,8 @@ class ServicioMejoras {
       }
       return RespuestaApi(exito: false, mensaje: datosJson['error'] ?? 'Error al actualizar el artículo');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioMejoras] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }

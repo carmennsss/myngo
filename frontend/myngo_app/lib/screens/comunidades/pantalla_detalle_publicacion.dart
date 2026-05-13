@@ -143,11 +143,11 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     return Builder(
       builder: (context) {
         return Scaffold(
-          backgroundColor: const Color(0xFF121212),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: Text(tr('postDetailTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+            title: Text(tr('postDetailTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
             centerTitle: true,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.orangeAccent),
@@ -173,7 +173,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
   Widget _buildContenido(String Function(String, [Map<String, dynamic>?]) tr) {
     if (_cargando) return const Center(child: CircularProgressIndicator(color: Color(0xFFF28B50)));
     if (_error != null) return _buildErrorState();
-    if (_pub == null) return Center(child: Text(tr('commonNotFound'), style: const TextStyle(color: Colors.white70)));
+    if (_pub == null) return Center(child: Text(tr('commonNotFound'), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))));
 
     return RefreshIndicator(
       onRefresh: _cargarComentarios,
@@ -190,7 +190,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
             ),
             const SizedBox(height: 24),
             Text(tr('postCommentsCount', {'count': _comentarios.length}), 
-              style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildListaComentarios(tr),
             const SizedBox(height: 100),
@@ -211,9 +211,9 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
           padding: const EdgeInsets.symmetric(vertical: 40),
           child: Column(
             children: [
-              const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white24, size: 48),
+              Icon(Icons.chat_bubble_outline_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24), size: 48),
               const SizedBox(height: 12),
-              Text(tr('postFirstComment'), style: GoogleFonts.inter(color: Colors.white24)),
+              Text(tr('postFirstComment'), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24))),
             ],
           ),
         ),
@@ -233,9 +233,9 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.white10,
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                 backgroundImage: c.autorFoto != null ? NetworkImage(c.autorFoto!) : null,
-                child: c.autorFoto == null ? const Icon(Icons.person, size: 18, color: Colors.white38) : null,
+                child: c.autorFoto == null ? Icon(Icons.person, size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)) : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -246,11 +246,11 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
                       children: [
                         Text(c.autorNombre, style: GoogleFonts.inter(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(width: 8),
-                        Text(tr('commonRecent'), style: GoogleFonts.inter(color: Colors.white24, fontSize: 10)),
+                        Text(tr('commonRecent'), style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24), fontSize: 10)),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(c.contenido, style: GoogleFonts.inter(color: Colors.white.withOpacity(0.85), fontSize: 14, height: 1.4)),
+                    Text(c.contenido, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85), fontSize: 14, height: 1.4)),
                   ],
                 ),
               ),
@@ -265,20 +265,20 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
   Widget _buildInputComentario(String Function(String) tr) {
     return Container(
       padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _comentarioController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               maxLines: null,
               decoration: InputDecoration(
                 hintText: tr('postAddCommentHint'),
-                hintStyle: const TextStyle(color: Colors.white24),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24)),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
               ),
@@ -303,6 +303,6 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
   }
 
   Widget _buildErrorState() {
-     return Center(child: Text(_error!, style: const TextStyle(color: Colors.white70)));
+     return Center(child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))));
   }
 }

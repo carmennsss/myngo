@@ -17,6 +17,7 @@ import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 
 // Se encarga de gestionar a los usuarios y sus sesiones.
 // Lo usamos para hacer login, registrar cuentas, y guardar el token para no pedir la contraseña todo el rato.
@@ -88,7 +89,8 @@ class ServicioUsuarios {
         errores: datosJson['errores'],
       );
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -121,7 +123,8 @@ class ServicioUsuarios {
         errores: datosJson['errores'],
       );
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -145,7 +148,8 @@ class ServicioUsuarios {
         mensaje: datosJson['mensaje'] ?? 'Error al recuperar la contraseña',
       );
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -258,7 +262,8 @@ class ServicioUsuarios {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al listar usuarios');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -281,7 +286,8 @@ class ServicioUsuarios {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener ranking');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -304,7 +310,8 @@ class ServicioUsuarios {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener seguidores');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -327,7 +334,8 @@ class ServicioUsuarios {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener seguidos');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -352,7 +360,8 @@ class ServicioUsuarios {
         mensaje: datosJson['mensaje'] ?? 'Error al obtener datos',
       );
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -503,7 +512,8 @@ class ServicioUsuarios {
         errores: datosJson['errores'],
       );
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -526,7 +536,8 @@ class ServicioUsuarios {
         mensaje: datosJson['mensaje'] ?? 'Error al cambiar contraseña',
       );
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -549,7 +560,8 @@ class ServicioUsuarios {
         mensaje: datosJson['mensaje'] ?? 'Error al eliminar cuenta',
       );
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioUsuarios] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }

@@ -623,9 +623,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       backgroundColor: Colors.transparent,
       builder: (context) => Builder(builder: (context) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
           child: Column(
@@ -694,14 +694,14 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       context: context,
       builder: (ctx) => Builder(builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(tr('profileEditBioTitle'),
-              style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
           content: TextField(
             controller: controller,
             maxLines: 5,
-            style: GoogleFonts.inter(color: Colors.white70),
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
             decoration: InputDecoration(
               hintText: tr('profileEditBioHint'),
               hintStyle: TextStyle(color: Colors.grey.shade600),

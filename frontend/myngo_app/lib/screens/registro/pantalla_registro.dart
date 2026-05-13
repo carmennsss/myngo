@@ -384,12 +384,12 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
             return StatefulBuilder(
               builder: (context, setDialogState) {
                 return AlertDialog(
-                  backgroundColor: const Color(0xFF1E1E1E),
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(32),
-                    side: BorderSide(color: Colors.white.withOpacity(0.05)),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
                   ),
-                  title: Text(tr('registrationRulesTitle'), style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold)),
+                  title: Text(tr('registrationRulesTitle'), style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
                   content: SizedBox(
                     width: double.maxFinite,
                     height: 500,
@@ -399,7 +399,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white10),
+                                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: FutureBuilder<http.Response>(

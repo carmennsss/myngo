@@ -230,7 +230,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                             style: GoogleFonts.outfit(
                               fontSize: 32,
                               fontWeight: FontWeight.w900,
-                              color: const Color(0xFF2D2D2D),
+                              color: Theme.of(context).colorScheme.onSurface,
                               letterSpacing: -1,
                             ),
                           ),
@@ -477,7 +477,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
                                 style: GoogleFonts.outfit(
                                   fontWeight: noLeidos > 0 ? FontWeight.w800 : FontWeight.w600,
                                   fontSize: 17,
-                                  color: const Color(0xFF2D2D2D),
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),

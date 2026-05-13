@@ -50,10 +50,8 @@ class HeaderDetallePerfil extends StatelessWidget {
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) {
-        final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
-        final Color colorCard = esOscuro ? const Color(0xFF1E1E1E) : Colors.white;
-        final Color colorGradTop =
-            esOscuro ? const Color(0xFF1E1E1E) : const Color(0xFFF5EBE6);
+        final Color colorCard = Theme.of(context).colorScheme.surface;
+        final Color colorGradTop = const Color(0xFFF5EBE6);
 
         final String inicial = usuario.nombreUsuario.isNotEmpty
             ? usuario.nombreUsuario[0].toUpperCase()

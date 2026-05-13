@@ -59,10 +59,8 @@ class InfoPerfil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
-    final Color colorTextoP = esOscuro ? Colors.white : const Color(0xFF2D2D2D);
-    final Color colorTextoS =
-        esOscuro ? Colors.grey.shade400 : Colors.grey.shade600;
+    final Color colorTextoP = Theme.of(context).colorScheme.onSurface;
+    final Color colorTextoS = Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
 
     final String fecha =
         DateFormat('dd MMM yyyy').format(usuario.fechaRegistro);
@@ -82,7 +80,7 @@ class InfoPerfil extends StatelessWidget {
           const SizedBox(height: 16),
           _buildBioSection(colorTextoP, colorTextoS),
           const SizedBox(height: 20),
-          _buildStatsRow(context, colorTextoS, fecha, colorTextoP, !esOscuro),
+          _buildStatsRow(context, colorTextoS, fecha, colorTextoP, true),
           const SizedBox(height: 24),
           _buildActionButtons(context, themeColor),
         ],
@@ -425,9 +423,8 @@ class InfoPerfil extends StatelessWidget {
     final bool esPropio = currentUserId == usuario.id;
     if (esPropio) return const SizedBox.shrink();
 
-    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
-    final Color surface = esOscuro ? const Color(0xFF1E1E1E) : Colors.white;
-    final Color border = esOscuro ? Colors.white12 : Colors.black12;
+    final Color surface = Theme.of(context).colorScheme.surface;
+    final Color border = Theme.of(context).colorScheme.outlineVariant;
 
     return Row(
       children: [
@@ -533,10 +530,10 @@ class InfoPerfil extends StatelessWidget {
 
   LinearGradient _getFollowGradient() {
     if (estadoSeguimiento == 'ACEPTADO') {
-      return LinearGradient(colors: [Colors.grey.shade800, Colors.grey.shade700]);
+      return LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade500]);
     }
     if (estadoSeguimiento == 'SOLICITUD') {
-      return LinearGradient(colors: [Colors.grey.shade700, Colors.grey.shade600]);
+      return LinearGradient(colors: [Colors.grey.shade500, Colors.grey.shade400]);
     }
     return const LinearGradient(
       colors: [Color(0xFFF28B50), Color(0xFFF29C50)],
@@ -687,21 +684,21 @@ class _CircularAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        color: esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+        color: cs.surfaceVariant.withOpacity(0.3),
         shape: BoxShape.circle,
-        border: Border.all(color: esOscuro ? Colors.white12 : Colors.black12),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(25),
-          child: Icon(icon, color: esOscuro ? Colors.white : Colors.black87, size: 18),
+          child: Icon(icon, color: cs.onSurface, size: 18),
         ),
       ),
     );
@@ -721,7 +718,7 @@ class _RateBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     final Color colorP = const Color(0xFF248EA6);
 
     return Container(
@@ -729,12 +726,12 @@ class _RateBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: haVotado
-            ? (esOscuro ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
+            ? cs.surfaceVariant.withOpacity(0.3)
             : colorP.withOpacity(0.12),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(
           color: haVotado
-              ? (esOscuro ? Colors.white12 : Colors.black12)
+              ? Colors.black12
               : colorP.withOpacity(0.3),
         ),
       ),
@@ -755,7 +752,7 @@ class _RateBadge extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
-                  color: haVotado ? Colors.grey : (esOscuro ? Colors.white : Colors.black87),
+                  color: haVotado ? Colors.grey : Colors.black87,
                 ),
               ),
             ],

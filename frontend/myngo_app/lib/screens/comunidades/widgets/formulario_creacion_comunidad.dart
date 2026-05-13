@@ -140,9 +140,9 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
             left: 24,
             right: 24,
           ),
-          decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Form(
             key: _llaveFormulario,
@@ -153,7 +153,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                 children: [
                   Text(
                     tr('communityCreateTitle'),
-                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -164,9 +164,9 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                     child: Container(
                       height: 120,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF121212),
+                        color: Theme.of(context).colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF2A2A2A)),
+                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         image: _imagenSeleccionada != null
                             ? DecorationImage(
                                 image: kIsWeb 
@@ -182,7 +182,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                               children: [
                                 const Icon(Icons.add_photo_alternate_outlined, size: 40, color: Color(0xFFF28B50)),
                                 const SizedBox(height: 8),
-                                Text(tr('communityCreateAddBanner'), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
+                                Text(tr('communityCreateAddBanner'), style: GoogleFonts.outfit(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
                               ],
                             )
                           : null,
@@ -212,35 +212,35 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
     
                   Text(
                     tr('communityCreateTagsLabel'),
-                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _controladorTag,
                     onChanged: _buscarSugerencias,
                     onSubmitted: _anadirTag,
-                    style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
+                    style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: tr('communityCreateTagsHint'),
-                      hintStyle: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
+                      hintStyle: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 13),
                       prefixIcon: const Icon(Icons.tag_rounded, color: Color(0xFFF28B50), size: 20),
                       filled: true,
-                      fillColor: const Color(0xFF121212),
+                      fillColor: Theme.of(context).colorScheme.surfaceVariant,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
                     ),
                   ),
                   if (_mostrandoSugerencias)
                     Container(
                       margin: const EdgeInsets.only(top: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2A2A2A),
+                        color: Theme.of(context).colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
                         children: _sugerenciasTags.map((tag) => ListTile(
-                          title: Text(tag['nombre'], style: GoogleFonts.outfit(color: Colors.white, fontSize: 13)),
+                          title: Text(tag['nombre'], style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
                           onTap: () => _anadirTag(tag['nombre']),
                           dense: true,
                         )).toList(),
@@ -263,18 +263,18 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                   
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF121212),
+                      color: Theme.of(context).colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: _esPublica ? const Color(0xFF248EA6).withOpacity(0.3) : const Color(0xFFD95F43).withOpacity(0.3)),
                     ),
                     child: SwitchListTile(
                       title: Text(
                         _esPublica ? tr('communityCreatePublicTitle') : tr('communityCreatePrivateTitle'),
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       subtitle: Text(
                         _esPublica ? tr('communityCreatePublicDesc') : tr('communityCreatePrivateDesc'),
-                        style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
+                        style: GoogleFonts.outfit(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
                       ),
                       secondary: Icon(
                         _esPublica ? Icons.pets_rounded : Icons.lock_person_rounded,
@@ -291,9 +291,9 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF121212),
+                      color: Theme.of(context).colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +307,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                                 const SizedBox(width: 8),
                                 Text(
                                   tr('communityCreateMinRank'),
-                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                                 ),
                               ],
                             ),
@@ -315,7 +315,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                               _minRating == 0 ? tr('communityCreateMinRankNone') : '${_minRating.toStringAsFixed(1)} ⭐',
                               style: GoogleFonts.outfit(
                                 fontWeight: FontWeight.bold, 
-                                color: _minRating == 0 ? Colors.grey : Colors.amber,
+                                color: _minRating == 0 ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5) : Colors.amber,
                                 fontSize: 14
                               ),
                             ),
@@ -325,7 +325,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             activeTrackColor: const Color(0xFFF28B50),
-                            inactiveTrackColor: const Color(0xFF1E1E1E),
+                            inactiveTrackColor: Theme.of(context).colorScheme.surfaceVariant,
                             thumbColor: const Color(0xFFF28B50),
                             overlayColor: const Color(0xFFF28B50).withOpacity(0.2),
                           ),
@@ -340,7 +340,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
                         ),
                         Text(
                           tr('communityCreateMinRankDesc'),
-                          style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey),
+                          style: GoogleFonts.outfit(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
                         ),
                       ],
                     ),
