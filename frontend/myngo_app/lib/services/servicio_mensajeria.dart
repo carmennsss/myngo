@@ -401,7 +401,6 @@ class ServicioMensajeria {
         },
       );
     } catch (e) {
-      _estaConectadoChat = false;
       _reconectarChat(idSala, alRecibirMensaje);
     }
   }
@@ -413,16 +412,13 @@ class ServicioMensajeria {
       final urlLimpia = _urlWs.endsWith('/') ? _urlWs.substring(0, _urlWs.length - 1) : _urlWs;
       final url = Uri.parse("$urlLimpia/presence/?token=$token");
       _canalPresencia = WebSocketChannel.connect(url);
-      _estaConectadoPresencia = true;
 
       _canalPresencia!.stream.listen(
         (datos) => alCambiarEstado(jsonDecode(datos)),
         onDone: () {
-          _estaConectadoPresencia = false;
           _reconectarPresencia(alCambiarEstado);
         },
         onError: (err) {
-          _estaConectadoPresencia = false;
           _reconectarPresencia(alCambiarEstado);
         },
       );
