@@ -1,3 +1,10 @@
+/**
+ * @author Carmen Tamayo Doña
+ * @author Ainhoa Gomez Toro
+ * @version 1.0
+ * @date 2026-05-14
+ */
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';

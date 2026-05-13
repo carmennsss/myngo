@@ -1,3 +1,9 @@
+# /**
+#  * @author Carmen Tamayo Doña
+#  * @author Ainhoa Gomez Toro
+#  * @version 1.0
+#  * @date 2026-05-14
+#  */
 """Vistas para el sistema de notificaciones de Myngo.
 
 Incluye el listado de notificaciones, el conteo de no leídas,

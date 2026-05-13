@@ -1,3 +1,9 @@
+# /**
+#  * @author Carmen Tamayo Doña
+#  * @author Ainhoa Gomez Toro
+#  * @version 1.0
+#  * @date 2026-05-14
+#  */
 """Modelos del dominio de comunidades.
 
 Contiene la entidad Comunidad y la relación de membresía

@@ -1,3 +1,10 @@
+/**
+ * @author Carmen Tamayo Doña
+ * @author Ainhoa Gomez Toro
+ * @version 1.0
+ * @date 2026-05-14
+ */
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -32,7 +39,7 @@ void main() async {
       apiUrl: apiUrl,
     );
   } else {
-    // Modo estático (usa los archivos JSON en lib/tolgee/)
+
     await Tolgee.init();
   }
 
@@ -61,10 +68,6 @@ class TolgeeInContextWrapper extends StatelessWidget {
         final keys = HardwareKeyboard.instance.logicalKeysPressed;
         if (keys.contains(LogicalKeyboardKey.altLeft) || 
             keys.contains(LogicalKeyboardKey.altRight)) {
-          // Tolgee.highlightTolgeeWidgets() is hypothetical if Tolgee flutter supports it directly,
-          // but we can just use Tolgee object or similar.
-          // In standard Tolgee SDK for Flutter, in-context is handled automatically
-          // if initialized with API key in debug mode. But let's add this hook just in case.
           try {
             Tolgee.highlightTolgeeWidgets();
           } catch (e) {
