@@ -65,6 +65,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
   final _servicio = ServicioComunidades();
   final _servicioUsuarios = ServicioUsuarios();
   final _servicioGaleria = ServicioGaleria();
+  final _servicioMensajeria = ServicioMensajeria();
 
   Comunidad? _comunidad;
   bool _estaCargandoPeticion = false;
@@ -105,6 +106,26 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     } else {
       _inicializarDatos();
     }
+    _conectarWebSockets();
+  }
+
+  void _conectarWebSockets() {
+    if (_comunidad != null) {
+      _servicioMensajeria.conectarAComunidad(_comunidad!.id, (evento) {
+        if (evento['type'] == 'publicacion_creada') {
+          final data = evento['data'];
+          if (data != null && mounted) {
+            setState(() {
+              final nuevaPublicacion = Publicacion.fromJson(data);
+              // Evitar duplicados
+              if (_publicaciones != null && !_publicaciones!.any((p) => p.id == nuevaPublicacion.id)) {
+                _publicaciones!.insert(0, nuevaPublicacion);
+              }
+            });
+          }
+        }
+      });
+    }
   }
 
   // Descarga los datos completos de la comunidad si se pasa solo el ID o nombre
@@ -120,6 +141,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             _comunidad = res.datos;
             _estaCargandoComunidad = false;
           });
+          _conectarWebSockets();
           await _inicializarDatos();
         } else {
           setState(() {
@@ -149,6 +171,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
       _salasChat = null;
       _colecciones = null;
       _cachedBackground = null;
+      _conectarWebSockets();
       _inicializarDatos();
     }
   }

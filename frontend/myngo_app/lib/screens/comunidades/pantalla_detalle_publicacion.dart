@@ -7,6 +7,7 @@ import '../../models/comentario.dart';
 import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_interaccion.dart';
 import '../../widgets/inicio/tarjeta_post.dart';
+import '../../services/servicio_mensajeria.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 
 // Vista ampliada de una publicación con su sección de comentarios inline.
@@ -28,6 +29,7 @@ class PantallaDetallePublicacion extends StatefulWidget {
 class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion> {
   final _servicioComunidades = ServicioComunidades();
   final _servicioInteraccion = ServicioInteraccion();
+  final _servicioMensajeria = ServicioMensajeria();
   final _comentarioController = TextEditingController();
   
   Publicacion? _pub;
@@ -42,9 +44,32 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
     super.initState();
     if (widget.publicacion != null) {
       _pub = widget.publicacion;
-      _cargarComentarios();
     } else {
       _cargarPublicacion();
+    }
+    _conectarWebSockets();
+  }
+
+  void _conectarWebSockets() {
+    final pubId = widget.publicacion?.id ?? widget.publicacionId;
+    if (pubId != null) {
+      _servicioMensajeria.conectarAPublicacion(pubId, (evento) {
+        if (evento['type'] == 'comentario_creado') {
+          final data = evento['data'];
+          if (data != null && mounted) {
+            setState(() {
+              final nuevoComentario = Comentario.fromJson(data);
+              // Evitar duplicados si el usuario es el que lo envió
+              if (!_comentarios.any((c) => c.id == nuevoComentario.id)) {
+                _comentarios.add(nuevoComentario);
+                if (_pub != null) {
+                  _pub = _pub!.copyWith(comentariosCount: _comentarios.length);
+                }
+              }
+            });
+          }
+        }
+      });
     }
   }
 
@@ -58,6 +83,7 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
         _cargando = false;
         if (res.exito) {
           _pub = res.datos;
+          _conectarWebSockets();
           _cargarComentarios();
         } else {
           _error = res.mensaje;
@@ -267,6 +293,13 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _comentarioController.dispose();
+    _servicioMensajeria.dispose();
+    super.dispose();
   }
 
   Widget _buildErrorState() {

@@ -7,6 +7,8 @@ notificaciones automáticas de interacciones (likes y comentarios).
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from notificaciones.models import Notificacion
 from .models import Comentario, MeGusta, Publicacion, ImagenGaleria
 
@@ -42,6 +44,19 @@ def sincronizar_imagen_galeria(sender, instance, created, **kwargs):
 
     if modificado:
         imagen.save()
+
+    if created and instance.comunidad:
+        # Notificar a los miembros de la comunidad en tiempo real
+        channel_layer = get_channel_layer()
+        from .serializers import PublicacionSerializer
+        
+        async_to_sync(channel_layer.group_send)(
+            f'comunidad_{instance.comunidad.id}',
+            {
+                'type': 'publicacion_creada',
+                'data': PublicacionSerializer(instance).data
+            }
+        )
 
 
 @receiver(post_save, sender=MeGusta)
@@ -87,6 +102,19 @@ def notificar_comentario(sender, instance, created, **kwargs):
             ),
             referencia_usuario=instance.autor,
             referencia_id=instance.publicacion.id,
+        )
+
+    if created:
+        # Notificar a los que están viendo la publicación en tiempo real
+        channel_layer = get_channel_layer()
+        from .serializers import ComentarioSerializer
+        
+        async_to_sync(channel_layer.group_send)(
+            f'publicacion_{instance.publicacion.id}',
+            {
+                'type': 'comentario_creado',
+                'data': ComentarioSerializer(instance).data
+            }
         )
 
 
