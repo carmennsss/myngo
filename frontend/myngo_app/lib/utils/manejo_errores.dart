@@ -1,9 +1,3 @@
-/// Utilidad centralizada para manejar errores de forma amigable.
-///
-/// - [getFriendlyError] convierte cualquier excepción técnica en un string
-///   comprensible para el usuario (sin jerga de red ni stack traces).
-/// - [mostrarError] decide si mostrar un SnackBar (errores leves) o un
-///   AlertDialog (errores bloqueantes) y registra el error completo en log.
 library manejo_errores;
 
 import 'dart:async';
@@ -11,11 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart' as dio;
+import '../widgets/toast_service.dart';
 
-/// Traduce una excepción técnica en un mensaje legible para el usuario.
-///
-/// Los errores técnicos completos se siguen escribiendo a [debugPrint];
-/// esta función sólo devuelve el texto que puede mostrarse en la UI.
 String getFriendlyError(Object error) {
   if (error is dio.DioException) {
     switch (error.type) {
@@ -68,11 +59,6 @@ String getFriendlyError(Object error) {
   return 'Algo salió mal. Por favor inténtalo de nuevo.';
 }
 
-/// Muestra el error al usuario y registra el detalle técnico en el log.
-///
-/// - [bloqueante] = false (por defecto) → SnackBar en la parte inferior.
-/// - [bloqueante] = true → AlertDialog modal con botón de cerrar y,
-///   opcionalmente, un botón de [onReintentar].
 void mostrarError(
   BuildContext context,
   Object error, {
@@ -80,7 +66,6 @@ void mostrarError(
   VoidCallback? onReintentar,
   String? mensajePersonalizado,
 }) {
-  // Siempre loguear el error técnico completo (nunca llegará al usuario)
   debugPrint('[ERROR] ${error.toString()}');
 
   final mensaje = mensajePersonalizado ?? getFriendlyError(error);
@@ -111,20 +96,10 @@ void mostrarError(
       ),
     );
   } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-      ),
-    );
+    ToastService.showError(context, mensaje);
   }
 }
 
-/// Muestra un mensaje informativo o de éxito al usuario.
-///
-/// Se usa para feedback positivo (ej. "Imagen subida") o avisos neutros.
 void mostrarAviso(
   BuildContext context,
   String mensaje, {
@@ -132,12 +107,9 @@ void mostrarAviso(
 }) {
   if (!context.mounted) return;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(mensaje),
-      backgroundColor: esExito ? Colors.green : const Color(0xFF4A4440),
-      behavior: SnackBarBehavior.floating,
-      duration: const Duration(seconds: 3),
-    ),
-  );
+  if (esExito) {
+    ToastService.showSuccess(context, mensaje);
+  } else {
+    ToastService.showInfo(context, mensaje);
+  }
 }

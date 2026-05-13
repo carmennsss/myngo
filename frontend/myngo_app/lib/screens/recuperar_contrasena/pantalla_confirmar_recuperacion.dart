@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tolgee/tolgee.dart';
 import '../../services/servicio_usuarios.dart';
 import '../../utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 class PantallaConfirmarRecuperacion extends StatefulWidget {
   final String token;
@@ -125,9 +126,7 @@ class _PantallaConfirmarRecuperacionState extends State<PantallaConfirmarRecuper
                                   icon: const Icon(Icons.copy_rounded, size: 20, color: Color(0xFFC35E34)),
                                   onPressed: () {
                                     Clipboard.setData(ClipboardData(text: _nuevaPassword!));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Copiado al portapapeles')),
-                                    );
+                                    ToastService.showInfo(context, 'Copiado al portapapeles');
                                   },
                                 ),
                               ],

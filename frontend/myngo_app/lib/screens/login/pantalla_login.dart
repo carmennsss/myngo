@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 // Pantalla de entrada a Myngo. En escritorio muestra los gatos animados a la izquierda
 // y el formulario a la derecha; en móvil todo va en columna.
@@ -395,14 +396,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
           if (!mounted) return;
           _estadoGatos = EstadoMonstruo.feliz;
           _notificarCambioGato();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(respuesta.mensaje),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-          );
+          ToastService.showSuccess(context, respuesta.mensaje);
           context.go('/inicio');
         } else {
 
@@ -414,16 +408,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
             _estadoGatos = EstadoMonstruo.triste;
           });
           _notificarCambioGato();
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(respuesta.mensaje),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 4),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-          );
+          ToastService.showError(context, respuesta.mensaje);
           
           Future.delayed(const Duration(seconds: 2), () {
             if (mounted) {
@@ -442,15 +427,7 @@ class _TarjetaLoginState extends State<TarjetaLogin> {
         });
         _notificarCambioGato();
         
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${widget.tr('authConnectionError')}: $e'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        ToastService.showError(context, '${widget.tr('authConnectionError')}: $e');
       } finally {
         // ASEGURAMOS que el botón siempre vuelva a su estado normal
         if (mounted) {

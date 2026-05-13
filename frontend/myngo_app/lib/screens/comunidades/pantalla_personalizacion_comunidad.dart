@@ -962,10 +962,10 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
       context: context,
           builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: Theme.of(context).dialogBackgroundColor,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          title: Text('${tr('personalizeThemeColorTitle')} 🎨', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: Text('${tr('personalizeThemeColorTitle')} 🎨', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
           content: SizedBox(
             width: 320,
             child: SingleChildScrollView(
@@ -979,7 +979,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     decoration: BoxDecoration(
                       color: colorTemporal,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white24, width: 2),
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24), width: 2),
                     ),
                     child: Center(
                       child: Text(
@@ -996,7 +996,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   // Colores rápidos
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(tr('personalizeQuickColors'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(tr('personalizeQuickColors'), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -1020,7 +1020,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                             color: color,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: seleccionado ? Colors.white : Colors.white10,
+                              color: seleccionado ? Colors.white : Theme.of(context).colorScheme.onSurface.withOpacity(0.15),
                               width: seleccionado ? 3 : 1,
                             ),
                             boxShadow: seleccionado ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)] : null,
@@ -1030,12 +1030,12 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     }).toList(),
                   ),
                   const SizedBox(height: 24),
-                  Divider(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+                  Divider(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.12)),
                   const SizedBox(height: 16),
                   // Sliders personalizados
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(tr('personalizeFineTune'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(tr('personalizeFineTune'), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
                   _buildHSLSliders(colorTemporal, (nuevoColor) {
@@ -1049,15 +1049,15 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   TextField(
                     controller: hexController,
                     maxLength: 6,
-                    style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: 'monospace'),
                     decoration: InputDecoration(
                       labelText: tr('personalizeHexCode'),
-                      labelStyle: const TextStyle(color: Colors.white60),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                       prefixText: '#',
-                      prefixStyle: const TextStyle(color: Colors.white),
+                      prefixStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       counterText: '',
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
+                      fillColor: Theme.of(context).colorScheme.surfaceVariant,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                     onChanged: (val) {
@@ -1076,7 +1076,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(tr('commonCancel').toUpperCase(), style: const TextStyle(color: Colors.white60)),
+              child: Text(tr('commonCancel').toUpperCase(), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(

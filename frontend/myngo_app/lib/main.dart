@@ -134,6 +134,30 @@ class MiAplicacion extends StatelessWidget {
               elevation: 4,
             ),
           ),
+          dialogTheme: DialogThemeData(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            titleTextStyle: GoogleFonts.outfit(
+              color: const Color(0xFF4A4440),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            contentTextStyle: GoogleFonts.outfit(
+              color: const Color(0xFF4A4440),
+              fontSize: 14,
+            ),
+          ),
+          bottomSheetTheme: BottomSheetThemeData(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+          ),
+          iconTheme: IconThemeData(
+            color: const Color(0xFF4A4440),
+          ),
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
             fillColor: Colors.white,

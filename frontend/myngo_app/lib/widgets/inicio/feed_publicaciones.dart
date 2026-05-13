@@ -13,6 +13,7 @@ import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
+import '../toast_service.dart';
 
 enum FeedMode { social, gallery }
 
@@ -141,29 +142,16 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
 
   Future<void> _unirseAComunidad(int comunidadId, int index, dynamic tr) async {
     if (!_estaLogueado) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(tr('communityJoinNeedLogin'), style: GoogleFonts.outfit()),
-        backgroundColor: const Color(0xFFC35E34),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: tr('authLoginLinkAction').toUpperCase(),
-          textColor: Colors.white,
-          onPressed: () => context.push('/login'),
-        ),
-      ));
+      ToastService.showWarning(context, tr('communityJoinNeedLogin'));
       return;
     }
 
     final res = await _servicioComunidades.unirseAComunidad(comunidadId);
     if (res.exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(tr('communityJoinedMsg'), style: GoogleFonts.outfit()),
-        backgroundColor: const Color(0xFF248EA6),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ToastService.showInfo(context, tr('communityJoinedMsg'));
       _cargarPosts();
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje), backgroundColor: const Color(0xFFD95F43)));
+      ToastService.showError(context, res.mensaje);
     }
   }
 

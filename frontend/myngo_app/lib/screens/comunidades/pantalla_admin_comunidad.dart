@@ -21,6 +21,7 @@ import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
+import '../../widgets/toast_service.dart';
 
 // Dashboard de administración de una comunidad. Agrupa en pestañas las solicitudes
 // de acceso pendientes, la gestión de miembros, los reportes activos y los ajustes generales.
@@ -303,11 +304,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     final res = await _servicioComunidades.responderPeticionAcceso(id, aceptar);
     if (res.exito) {
       _cargarDatos(silencioso: true);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(res.mensaje, style: GoogleFonts.outfit()),
-        backgroundColor: const Color(0xFF248EA6),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ToastService.showInfo(context, res.mensaje);
     }
   }
 
@@ -317,11 +314,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     final res = await _servicioComunidades.gestionarRolMiembro(miembroId, rol);
     if (res.exito) {
       _cargarDatos(silencioso: true);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(tr('adminRoleUpdated'), style: GoogleFonts.outfit()),
-        backgroundColor: const Color(0xFF248EA6),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ToastService.showInfo(context, tr('adminRoleUpdated'));
     }
   }
 
@@ -354,10 +347,10 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                 // Notificar a la pantalla de inicio para refrescar el sidebar
                 context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
                 
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('communitySuccessDeleted'))));
+                ToastService.showSuccess(context, tr('communitySuccessDeleted'));
                 Navigator.of(context).popUntil((route) => route.isFirst);
               } else if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', {'error': res.mensaje})), backgroundColor: Colors.red));
+                ToastService.showError(context, tr('commonErrorGeneric', {'error': res.mensaje}));
               }
             },
             child: Text(tr('adminDeleteCommunityConfirm')),
@@ -423,11 +416,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
     if (resBorrado?.exito == true) {
        _cargarDatos(silencioso: true);
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-         content: Text(tr('adminContentDeleted'), style: GoogleFonts.outfit()),
-         backgroundColor: const Color(0xFF248EA6),
-         behavior: SnackBarBehavior.floating,
-       ));
+       ToastService.showInfo(context, tr('adminContentDeleted'));
     }
   }
 
@@ -591,7 +580,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   // Guarda nombre, descripción, color, banner y tags en el servidor
   Future<void> _guardarAjustes() async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('adminSaving'))));
+    ToastService.showInfo(context, tr('adminSaving'));
 
     
     final res = await _servicioComunidades.actualizarComunidad(
@@ -606,17 +595,11 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
     if (mounted) {
       if (res.exito && res.datos != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(tr('adminUpdatedSettings')),
-          backgroundColor: Colors.green,
-        ));
+        ToastService.showSuccess(context, tr('adminUpdatedSettings'));
         Navigator.pop(context, res.datos); // Devuelve la comunidad actualizada
 
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${tr('commonErrorPrefix')}${res.mensaje}'),
-          backgroundColor: Colors.red,
-        ));
+        ToastService.showError(context, '${tr('commonErrorPrefix')}${res.mensaje}');
       }
     }
   }

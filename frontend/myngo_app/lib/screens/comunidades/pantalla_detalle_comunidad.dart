@@ -31,6 +31,7 @@ import 'widgets_detalle/header_detalle_comunidad.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'widgets_detalle/seccion_galeria_comunidad.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 import 'widgets_detalle/seccion_chat_comunidad.dart';
 import 'widgets_detalle/lista_miembros_comunidad.dart';
 import 'widgets_detalle/preview_comunidad.dart';
@@ -274,14 +275,11 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
 
     if (mounted) {
       setState(() => _estaCargandoPeticion = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(respuesta.mensaje),
-          backgroundColor: respuesta.exito
-              ? const Color(0xFF248EA6)
-              : const Color(0xFFD95F43),
-        ),
-      );
+      if (respuesta.exito) {
+        ToastService.showInfo(context, respuesta.mensaje);
+      } else {
+        ToastService.showError(context, respuesta.mensaje);
+      }
       if (respuesta.exito) {
         if (respuesta.datos?['estado'] == 'ACEPTADO') {
           setState(() {
@@ -716,9 +714,7 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             _cargarDatosSeccion(3);
             Navigator.pop(context); // Cierre seguro tras éxito
           } else if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(tr('chatErrorCreate')))
-            );
+             ToastService.showError(context, tr('chatErrorCreate'));
           }
         },
       ),

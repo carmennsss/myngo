@@ -6,6 +6,7 @@ import '../../widgets/boton_carga.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:go_router/go_router.dart';
+import '../../widgets/toast_service.dart';
 
 // Pantalla de recuperación de contraseña (modo oscuro).
 // Pide el email del usuario y le manda un correo con el enlace de restablecimiento.
@@ -224,15 +225,11 @@ class _PantallaRecuperarContrasenaState
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(respuesta.mensaje, style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      if (respuesta.exito) {
+        ToastService.showInfo(context, respuesta.mensaje);
+      } else {
+        ToastService.showError(context, respuesta.mensaje);
+      }
 
       if (respuesta.exito) {
         Future.delayed(const Duration(seconds: 2), () {

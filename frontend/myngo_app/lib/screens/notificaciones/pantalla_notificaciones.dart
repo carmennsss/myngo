@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
+import '../../widgets/toast_service.dart';
 
 // Bandeja de notificaciones dividida en tres pestañas: Interacciones, Solicitudes y Alertas.
 // Implementa lectura diferida: marca el tab como leído 2 segundos después de entrar en él.
@@ -144,14 +145,11 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones>
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(respuesta.mensaje, style: GoogleFonts.outfit()),
-          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-      );
+      if (respuesta.exito) {
+        ToastService.showInfo(context, respuesta.mensaje);
+      } else {
+        ToastService.showError(context, respuesta.mensaje);
+      }
       if (respuesta.exito) {
         await _cargarNotificaciones();
         widget.onNotificacionesLeidas?.call();

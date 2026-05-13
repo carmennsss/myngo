@@ -11,6 +11,7 @@ import '../../utils/configuracion.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 import '../../services/api_base.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
@@ -513,14 +514,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     if (respuesta.exito) {
       _estadoGatos = EstadoMonstruo.feliz;
       _notificarCambioGato();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(tr('registrationSuccessEmail')),
-          backgroundColor: const Color(0xFF248EA6),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-      );
+      ToastService.showInfo(context, tr('registrationSuccessEmail'));
 
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) context.go('/login'); 
@@ -528,14 +522,7 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     } else {
       _estadoGatos = EstadoMonstruo.triste;
       _notificarCambioGato();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(respuesta.mensaje),
-          backgroundColor: const Color(0xFFD95F43),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-      );
+      ToastService.showError(context, respuesta.mensaje);
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           _estadoGatos = EstadoMonstruo.inactivo;

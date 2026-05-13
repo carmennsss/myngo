@@ -9,6 +9,7 @@ import 'package:mime/mime.dart';
 import 'package:tolgee/tolgee.dart';
 import '../providers/post_provider.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:myngo_app/widgets/toast_service.dart';
 
 class DialogoCrearPost extends StatefulWidget {
   final String titulo;
@@ -61,16 +62,11 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
     
     if (mb > 100) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(tr('postFileTooLarge', {
-              'name': archivo.name,
-              'size': mb.toStringAsFixed(1),
-              'limit': '100'
-            })),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        ToastService.showError(context, tr('postFileTooLarge', {
+          'name': archivo.name,
+          'size': mb.toStringAsFixed(1),
+          'limit': '100'
+        }));
       }
       return;
     }
@@ -79,9 +75,7 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
       if (_archivosSeleccionados.length < 4) {
         _archivosSeleccionados.add(archivo);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('postMaxFilesError'))),
-        );
+        ToastService.showInfo(context, tr('postMaxFilesError'));
       }
     });
   }
@@ -247,16 +241,12 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                       );
                       if (mounted) {
                         if (exitoso) {
+                          ToastService.showSuccess(context, tr('toastPostUploaded'));
                           Navigator.pop(context);
                         } else {
                           setState(() => _estaCargando = false);
                           final error = Provider.of<PostProvider>(context, listen: false).errorMessage ?? tr('errorActionFailed');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(error),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
+                          ToastService.showError(context, error);
                         }
                       }
                     },

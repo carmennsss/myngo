@@ -9,6 +9,7 @@ import '../../../models/usuario.dart';
 import '../../../providers/chat_provider.dart';
 import '../../inicio/pantalla_inicio.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../../widgets/toast_service.dart';
 import 'modal_lista_usuarios.dart';
 
 /// Widget que muestra la información textual y acciones de un perfil.
@@ -308,12 +309,7 @@ class InfoPerfil extends StatelessWidget {
     final bool esSeguidorAceptado = estadoSeguimiento == 'ACEPTADO';
 
     if (!esPropio && !esPublico && !esSeguidorAceptado) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(TrHelper.tr(context, 'profilePrivateLists', defaultValue: 'Este perfil es privado. Sigue al usuario para ver sus listas.')),
-          backgroundColor: const Color(0xFFC35E34),
-        ),
-      );
+      ToastService.showWarning(context, TrHelper.tr(context, 'profilePrivateLists', defaultValue: 'Este perfil es privado. Sigue al usuario para ver sus listas.'));
       return;
     }
 
@@ -550,21 +546,7 @@ class InfoPerfil extends StatelessWidget {
   }
 
   void _mostrarAvisoPrivado(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(child: Text(tr('profilePrivateActionWarning'))),
-          ],
-        ),
-        backgroundColor: const Color(0xFFC35E34),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    ToastService.showWarning(context, tr('profilePrivateActionWarning'));
   }
 }
 

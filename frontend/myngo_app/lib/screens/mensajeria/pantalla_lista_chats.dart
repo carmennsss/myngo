@@ -15,6 +15,7 @@ import '../../utils/configuracion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 
 // Pantalla que lista todos los chats del usuario, tanto personales como de comunidad.
@@ -175,9 +176,7 @@ class _PantallaListaChatsState extends State<PantallaListaChats> with SingleTick
             }
           } else if (mounted) {
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(tr('chatErrorCreate')))
-            );
+            ToastService.showError(context, tr('chatErrorCreate'));
           }
         },
       ),

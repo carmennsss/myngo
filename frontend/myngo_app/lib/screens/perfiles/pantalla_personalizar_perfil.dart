@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
+import '../../widgets/toast_service.dart';
 
 class PantallaPersonalizarPerfil extends StatefulWidget {
   const PantallaPersonalizarPerfil({super.key});
@@ -118,12 +119,11 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
 
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.exito ? tr('customProfileSuccess') : res.mensaje),
-          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-        ),
-      );
+      if (res.exito) {
+        ToastService.showInfo(context, tr('customProfileSuccess'));
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
       if (res.exito) {
         _cargarMisMejoras(); // Recargar para limpiar estados de XFile
         notificarMejoraEquipada(); // Notificar para que Detalle Perfil se recargue
@@ -795,12 +795,11 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(respuesta.mensaje),
-          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : Colors.red,
-        ),
-      );
+      if (respuesta.exito) {
+        ToastService.showInfo(context, respuesta.mensaje);
+      } else {
+        ToastService.showError(context, respuesta.mensaje);
+      }
       if (respuesta.exito) {
         _actualizarPreview(tipo ?? 'Avatar', {'url_recurso': url}, destino: destino);
         _cargarMisMejoras();
@@ -815,12 +814,11 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(respuesta.exito ? tr('profileUnequipSuccess') : respuesta.mensaje),
-          backgroundColor: respuesta.exito ? const Color(0xFF248EA6) : Colors.red,
-        ),
-      );
+      if (respuesta.exito) {
+        ToastService.showInfo(context, tr('profileUnequipSuccess'));
+      } else {
+        ToastService.showError(context, respuesta.mensaje);
+      }
       if (respuesta.exito) {
         // Limpiar preview local según el tipo
         setState(() {
