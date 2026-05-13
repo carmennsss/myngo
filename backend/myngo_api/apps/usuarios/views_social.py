@@ -98,7 +98,8 @@ class SeguirPerfil(APIView):
         seguimiento = Seguimiento.objects.filter(seguidor=usuario, seguido_usuario=perfil.usuario).first()
         if seguimiento:
             if seguimiento.estado == 'SOLICITUD':
-                return Response({'mensaje': 'Ya has mandado una solicitud a este usuario'}, status=status.HTTP_200_OK)
+                seguimiento.delete()
+                return Response({'mensaje': 'Solicitud de seguimiento retirada', 'estado': None}, status=status.HTTP_200_OK)
             elif seguimiento.estado == 'DENEGADO':
                 seguimiento.estado = 'SOLICITUD'
                 seguimiento.save()

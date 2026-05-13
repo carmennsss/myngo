@@ -26,6 +26,7 @@ class InfoPerfil extends StatelessWidget {
   final VoidCallback onMostrarVoto;
   final VoidCallback onEditarBio;
   final VoidCallback onChat;
+  final bool esPrivadoYNoSeguido;
 
   const InfoPerfil({
     super.key,
@@ -42,6 +43,7 @@ class InfoPerfil extends StatelessWidget {
     required this.onMostrarVoto,
     required this.onEditarBio,
     required this.onChat,
+    this.esPrivadoYNoSeguido = false,
   });
 
   Color _getColorEstado(String estado) {
@@ -450,11 +452,18 @@ class InfoPerfil extends StatelessWidget {
         ),
         const SizedBox(width: 8),
 
-        _CircularAction(icon: Icons.chat_bubble_outline_rounded, onPressed: onChat),
+        _CircularAction(
+          icon: Icons.chat_bubble_outline_rounded, 
+          onPressed: esPrivadoYNoSeguido 
+            ? () => _mostrarAvisoPrivado(context)
+            : onChat
+        ),
         const SizedBox(width: 8),
 
         GestureDetector(
-          onTap: onMostrarVoto,
+          onTap: esPrivadoYNoSeguido 
+            ? () => _mostrarAvisoPrivado(context)
+            : onMostrarVoto,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             decoration: BoxDecoration(
@@ -541,6 +550,24 @@ class InfoPerfil extends StatelessWidget {
     if (estadoSeguimiento == 'SOLICITUD') return tr('profileFollowPending');
     if (!usuario.esPublico) return tr('profileFollowRequest');
     return tr('profileFollowFollow');
+  }
+
+  void _mostrarAvisoPrivado(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(tr('profilePrivateActionWarning'))),
+          ],
+        ),
+        backgroundColor: const Color(0xFFC35E34),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 }
 

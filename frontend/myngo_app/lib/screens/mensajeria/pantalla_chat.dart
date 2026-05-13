@@ -166,6 +166,8 @@ class _PantallaChatState extends State<PantallaChat> {
   
 
   Map<int, String> _estadosPresencia = {};
+  final Set<int> _usuariosEscribiendo = {};
+  Timer? _typingTimer;
   
   bool _mostrarEmojiPicker = false;
   final List<XFile> _archivosSeleccionados = [];
@@ -396,6 +398,14 @@ class _PantallaChatState extends State<PantallaChat> {
               _mensajes = List.from(_mensajes);
             }
           }
+        } else if (type == 'user_typing') {
+          final uId = (datos['user_id'] as num).toInt();
+          final isTyping = datos['is_typing'] == true;
+          if (isTyping) {
+            _usuariosEscribiendo.add(uId);
+          } else {
+            _usuariosEscribiendo.remove(uId);
+          }
         }
       });
     }, alConectar: () => _servicio.marcarMensajesLeidosWS());
@@ -485,6 +495,20 @@ class _PantallaChatState extends State<PantallaChat> {
       setState(() => _estaSubiendoMedia = false);
     }
 
+    // Al enviar el mensaje, ya no estamos escribiendo
+    _typingTimer?.cancel();
+    _servicio.enviarEventoEscritura(false);
+  }
+
+  void _onTypingChanged() {
+    if (_typingTimer == null || !_typingTimer!.isActive) {
+      _servicio.enviarEventoEscritura(true);
+    }
+    
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+      _servicio.enviarEventoEscritura(false);
+    });
   }
 
   Widget _buildBarraRespuesta() {
@@ -1624,6 +1648,7 @@ class _PantallaChatState extends State<PantallaChat> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        _buildTypingIndicator(tr),
         if (_mensajeRespuesta != null || _mensajeEdicion != null) _buildBarraRespuesta(),
         if (_archivosSeleccionados.isNotEmpty)
           MediaPreviewGrid(
@@ -1688,6 +1713,7 @@ class _PantallaChatState extends State<PantallaChat> {
                                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                               ),
                               onSubmitted: (_) => _enviarMensaje(),
+                              onChanged: (_) => _onTypingChanged(),
                             ),
                           ),
                         ),
@@ -1724,6 +1750,43 @@ class _PantallaChatState extends State<PantallaChat> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTypingIndicator(dynamic tr) {
+    if (_usuariosEscribiendo.isEmpty) return const SizedBox.shrink();
+    
+    String texto = "";
+    if (_usuariosEscribiendo.length == 1) {
+      final uId = _usuariosEscribiendo.first;
+      final part = _sala?.participantes.firstWhere((p) => p.usuarioId == uId, 
+        orElse: () => ParticipanteChat(id: 0, usuarioId: uId, nombreUsuario: "...", fechaUnion: DateTime.now()));
+      texto = tr('chatIsTyping', {'name': part?.nombreAMostrar ?? '...'});
+    } else {
+      texto = tr('chatSeveralTyping');
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.grey),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            texto,
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1921,6 +1984,7 @@ class _PantallaChatState extends State<PantallaChat> {
       Provider.of<ChatProvider>(context, listen: false).setSalaActiva(null);
     } catch (_) {}
     
+    _typingTimer?.cancel();
     _mensajeController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
