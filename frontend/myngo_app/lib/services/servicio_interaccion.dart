@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/comentario.dart';
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 import 'servicio_usuarios.dart';
 
 // Maneja las interacciones sociales con los posts.
@@ -44,7 +46,8 @@ class ServicioInteraccion {
 
       return RespuestaApi(exito: false, mensaje: mensajeError);
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioInteraccion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -76,7 +79,8 @@ class ServicioInteraccion {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar comentarios');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioInteraccion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -108,7 +112,8 @@ class ServicioInteraccion {
 
       return RespuestaApi(exito: false, mensaje: mensajeError);
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioInteraccion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -129,7 +134,8 @@ class ServicioInteraccion {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar el guardado');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioInteraccion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -150,7 +156,8 @@ class ServicioInteraccion {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al eliminar comentario');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioInteraccion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }

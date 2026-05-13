@@ -96,12 +96,33 @@ class ChatProvider extends ChangeNotifier {
   /// Procesa una notificación de nuevo mensaje recibida por WebSocket.
   void procesarNuevaNotificacion(Map<String, dynamic> data) {
     final salaId = (data['sala_id'] as num).toInt();
-    
-    if (_salaActivaId == salaId) return;
+
+    // Si el usuario está viendo esa sala activa, no incrementamos no leídos,
+    // pero sí intentamos actualizar el ultimo_mensaje para que el preview refleje el nuevo contenido.
+    final salaIndex = _salas.indexWhere((s) => (s['id'] as num?)?.toInt() == salaId);
+    if (salaIndex != -1) {
+      final String? preview = data['preview']?.toString();
+      final dynamic tipoRaw = data['type'] ?? data['message_type'] ?? data['file_type'] ?? data['tipo'] ?? data['content_type'];
+      final String? tipo = tipoRaw?.toString();
+
+      _salas[salaIndex] = {
+        ..._salas[salaIndex],
+        'ultimo_mensaje': {
+          'content': preview ?? _salas[salaIndex]['ultimo_mensaje']?['content'] ?? '',
+          if (tipo != null && tipo.isNotEmpty) 'type': tipo,
+          // fecha_envio no siempre viene en el payload de notificación; la UI lo maneja con fallback.
+        },
+      };
+    }
+
+    if (_salaActivaId == salaId) {
+      notifyListeners();
+      return;
+    }
 
     _noLeidosPorSala[salaId] = (_noLeidosPorSala[salaId] ?? 0) + 1;
     _totalNoLeidos++;
-    
+
     ServicioNotificacionesLocales.mostrarNotificacionMensaje(
       id: salaId,
       titulo: data['sender_username'] ?? 'Nuevo mensaje',
@@ -111,6 +132,7 @@ class ChatProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
 
   /// Marca una sala como leída localmente.
   void _limpiarNoLeidosSala(int salaId) {

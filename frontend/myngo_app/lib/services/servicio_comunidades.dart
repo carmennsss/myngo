@@ -6,7 +6,7 @@
  */
 
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart' as dio;
 import 'package:http_parser/http_parser.dart';
@@ -20,6 +20,7 @@ import '../models/sala_chat.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
 import 'servicio_usuarios.dart';
+import '../utils/manejo_errores.dart';
 
 // Es el servicio más grande: maneja todo lo que pasa dentro de las comunidades.
 // Traer listas de miembros, unirse, publicar posts, subir fotos de portada y salas de chat del grupo.
@@ -94,7 +95,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al listar comunidades (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -122,7 +124,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al obtener comunidades propias');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -144,7 +147,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar comunidad');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -170,7 +174,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar miembros');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -191,7 +196,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudo procesar la unión');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -210,7 +216,8 @@ class ServicioComunidades {
       final error = jsonDecode(utf8.decode(respuesta.bodyBytes));
       return RespuestaApi(exito: false, mensaje: error['error'] ?? 'Error al abandonar comunidad');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -266,12 +273,14 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al crear comunidad (${respuesta.statusCode})');
     } catch (e) {
-      String msg = 'Error de conexión: $e';
+      debugPrint('[ERROR ServicioComunidades.crearComunidad] $e');
+      String msg = getFriendlyError(e);
       if (e is dio.DioException) {
         if (e.response != null) {
-          msg = e.response?.data?.toString() ?? e.message ?? msg;
-        } else {
-          msg = e.message ?? msg;
+          final resData = e.response?.data;
+          if (resData != null) {
+             msg = resData.toString();
+          }
         }
       }
       return RespuestaApi(exito: false, mensaje: msg);
@@ -292,7 +301,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al responder petición');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -313,7 +323,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar panel administrativo');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -414,7 +425,8 @@ class ServicioComunidades {
       );
       
     } catch (e) {
-      String msg = 'Error de conexión: $e';
+      debugPrint('[ERROR ServicioComunidades.actualizarComunidad] $e');
+      String msg = getFriendlyError(e);
       if (e is dio.DioException) {
         if (e.response != null) {
           final resData = e.response?.data;
@@ -423,11 +435,9 @@ class ServicioComunidades {
                   resData['mensaje']?.toString() ?? 
                   resData.values.firstWhere((v) => v is List, orElse: () => null)?.toString() ??
                   resData.toString();
-          } else {
-            msg = e.response?.statusMessage ?? 'Error del servidor (${e.response?.statusCode})';
+          } else if (resData != null) {
+            msg = resData.toString();
           }
-        } else {
-          msg = 'Error de red: ${e.message}';
         }
       }
       return RespuestaApi(exito: false, mensaje: msg);
@@ -448,7 +458,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cambiar rol');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -466,7 +477,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudo obtener el rol');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -491,7 +503,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar feed');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -525,7 +538,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -549,7 +563,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar publicaciones');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -571,7 +586,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar galería');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -597,7 +613,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar salas de chat (${respuesta.statusCode})');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -675,9 +692,11 @@ class ServicioComunidades {
 
       return RespuestaApi(exito: false, mensaje: 'Error en la publicación (${respuesta.statusCode})');
     } catch (e) {
-      String msg = 'Error de conexión: $e';
+      debugPrint('[ERROR ServicioComunidades.crearPublicacion] $e');
+      String msg = getFriendlyError(e);
       if (e is dio.DioException) {
-        msg = e.response?.data?['error']?.toString() ?? e.message ?? msg;
+        final serverMsg = e.response?.data?['error']?.toString() ?? e.message;
+        if (serverMsg != null && !serverMsg.contains('DioException')) msg = serverMsg;
       }
       return RespuestaApi(exito: false, mensaje: msg);
     }
@@ -696,7 +715,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudo eliminar la comunidad');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -719,7 +739,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Publicación no encontrada');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -737,7 +758,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al retirar publicación');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -755,7 +777,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al retirar comentario');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -777,7 +800,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar guardado');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -804,7 +828,8 @@ class ServicioComunidades {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al buscar tags');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioComunidades] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }

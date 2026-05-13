@@ -228,79 +228,87 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   void _mostrarMenuOpciones(BuildContext context, dynamic tr) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.only(top: 24, bottom: 48, left: 16, right: 16),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: const Color(0xFFF28B50).withValues(alpha: 0.2), shape: BoxShape.circle),
-                child: const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFFF28B50)),
-              ),
-              title: Text(widget.coleccionId != null ? tr('galleryUploadPhotoToFolder') : tr('galleryUploadRawPhoto'), 
-                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              subtitle: Text(widget.coleccionId != null ? tr('galleryUploadPhotoToFolderDesc') : tr('galleryUploadRawPhotoDesc'), 
-                style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
-              onTap: () {
-                Navigator.pop(context);
-                _seleccionarYSubir(false, tr);
-              },
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: const Color(0xFFC35E34).withOpacity(0.2), shape: BoxShape.circle),
-                child: const Icon(Icons.videocam_rounded, color: Color(0xFFC35E34)),
-              ),
-              title: Text(widget.coleccionId != null ? tr('galleryUploadVideoToFolder') : tr('galleryUploadRawVideo'), 
-                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              subtitle: Text(tr('galleryUploadVideoDesc'), 
-                style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
-              onTap: () {
-                Navigator.pop(context);
-                _seleccionarYSubir(true, tr);
-              },
-            ),
-            const SizedBox(height: 12),
-            if (widget.coleccionId != null)
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.45,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          padding: const EdgeInsets.only(top: 12, bottom: 24, left: 16, right: 16),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: ListView(
+            controller: scrollController,
+            shrinkWrap: true,
+            children: [
+              Center(child: Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 24),
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: const Color(0xFF248EA6).withValues(alpha: 0.2), shape: BoxShape.circle),
-                  child: const Icon(Icons.collections_bookmark_rounded, color: Color(0xFF248EA6)),
+                  decoration: BoxDecoration(color: const Color(0xFFF28B50).withValues(alpha: 0.2), shape: BoxShape.circle),
+                  child: const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFFF28B50)),
                 ),
-                title: Text(tr('galleryAddFromGallery'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                subtitle: Text(tr('galleryAddFromGalleryDesc'), style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                title: Text(widget.coleccionId != null ? tr('galleryUploadPhotoToFolder') : tr('galleryUploadRawPhoto'), 
+                  style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                subtitle: Text(widget.coleccionId != null ? tr('galleryUploadPhotoToFolderDesc') : tr('galleryUploadRawPhotoDesc'), 
+                  style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
-                  _abrirSelectorGaleriaMyngo(context, tr);
+                  _seleccionarYSubir(false, tr);
                 },
-              )
-            else
+              ),
+              const SizedBox(height: 12),
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: const Color(0xFF248EA6).withValues(alpha: 0.2), shape: BoxShape.circle),
-                  child: const Icon(Icons.create_new_folder_rounded, color: Color(0xFF248EA6)),
+                  decoration: BoxDecoration(color: const Color(0xFFC35E34).withOpacity(0.2), shape: BoxShape.circle),
+                  child: const Icon(Icons.videocam_rounded, color: Color(0xFFC35E34)),
                 ),
-                title: Text(tr('galleryNewCollection'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                subtitle: Text(tr('galleryNewCollectionDesc'), style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                title: Text(widget.coleccionId != null ? tr('galleryUploadVideoToFolder') : tr('galleryUploadRawVideo'), 
+                  style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                subtitle: Text(tr('galleryUploadVideoDesc'), 
+                  style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
-                  _mostrarDialogoNuevaColeccion(context, tr);
+                  _seleccionarYSubir(true, tr);
                 },
               ),
-          ],
+              const SizedBox(height: 12),
+              if (widget.coleccionId != null)
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: const Color(0xFF248EA6).withValues(alpha: 0.2), shape: BoxShape.circle),
+                    child: const Icon(Icons.collections_bookmark_rounded, color: Color(0xFF248EA6)),
+                  ),
+                  title: Text(tr('galleryAddFromGallery'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  subtitle: Text(tr('galleryAddFromGalleryDesc'), style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _abrirSelectorGaleriaMyngo(context, tr);
+                  },
+                )
+              else
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: const Color(0xFF248EA6).withValues(alpha: 0.2), shape: BoxShape.circle),
+                    child: const Icon(Icons.create_new_folder_rounded, color: Color(0xFF248EA6)),
+                  ),
+                  title: Text(tr('galleryNewCollection'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  subtitle: Text(tr('galleryNewCollectionDesc'), style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _mostrarDialogoNuevaColeccion(context, tr);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -344,67 +352,74 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
-          decoration: const BoxDecoration(color: Color(0xFF1E1E1E), borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.45,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (context, scrollController) => StatefulBuilder(
+          builder: (context, setModalState) => Container(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 12),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(32))),
+            child: ListView(
+              controller: scrollController,
+              shrinkWrap: true,
               children: [
-              Text(tr('galleryNewCollection'), style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 24),
-              TextField(
-                controller: nombreCtrl,
-                style: GoogleFonts.outfit(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: tr('galleryCollectionNameHint'),
-                  hintStyle: GoogleFonts.outfit(color: Colors.grey),
-                  filled: true,
-                  fillColor: const Color(0xFF121212),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                Center(child: Container(width: 48, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 24),
+                Text(tr('galleryNewCollection'), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: nombreCtrl,
+                  style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: tr('galleryCollectionNameHint'),
+                    hintStyle: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: Text(esPrivada ? tr('commonPrivate') : tr('commonPublic'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: Text(esPrivada ? tr('galleryCollectionPrivateDesc') : tr('galleryCollectionPublicDesc'), style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12)),
-                value: esPrivada,
-                activeColor: const Color(0xFF248EA6),
-                onChanged: (val) => setModalState(() => esPrivada = val),
-              ),
-              const SizedBox(height: 24),
-            SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (nombreCtrl.text.isEmpty) return;
-                    // Llamada al servicio
-                    final res = await _servicioGaleria.crearColeccion(
-                      nombre: nombreCtrl.text,
-                      esPrivada: esPrivada,
-                      idComunidad: widget.comunidadId,
-                    );
-                    if (mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(res.exito ? tr('galleryCollectionCreatedMsg') : res.mensaje),
-                        backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-                      ));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(vertical: 16)),
-                  child: Text(tr('commonCreate').toUpperCase(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: Text(esPrivada ? tr('commonPrivate') : tr('commonPublic'), style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
+                  subtitle: Text(esPrivada ? tr('galleryCollectionPrivateDesc') : tr('galleryCollectionPublicDesc'), style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                  value: esPrivada,
+                  activeColor: const Color(0xFF248EA6),
+                  onChanged: (val) => setModalState(() => esPrivada = val),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (nombreCtrl.text.isEmpty) return;
+                      // Llamada al servicio
+                      final res = await _servicioGaleria.crearColeccion(
+                        nombre: nombreCtrl.text,
+                        esPrivada: esPrivada,
+                        idComunidad: widget.comunidadId,
+                      );
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(res.exito ? tr('galleryCollectionCreatedMsg') : res.mensaje),
+                          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
+                        ));
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(vertical: 16)),
+                    child: Text(tr('commonCreate').toUpperCase(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildTile(ImagenGaleria item, double aspect) {
     return GestureDetector(
@@ -416,7 +431,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF1E1E1E),
+          color: Theme.of(context).colorScheme.surface,
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -503,7 +518,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
         imageUrl: item.urlArchivo,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
-          color: Colors.grey[900],
+          color: Theme.of(context).colorScheme.surfaceVariant,
           height: 150,
           child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),

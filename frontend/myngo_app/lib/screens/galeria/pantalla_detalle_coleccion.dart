@@ -311,95 +311,111 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
   void _mostrarSelectorOrigenImagen(dynamic tr) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            Text(tr('collectionAddTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440))),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF248EA6)),
-              title: Text(tr('collectionUploadLocal'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _subirDesdeGaleria(tr);
-              },
-            ),
-            if (_coleccion.comunidadId != null)
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.35,
+        minChildSize: 0.2,
+        maxChildSize: 0.6,
+        expand: false,
+        builder: (context, scrollController) => SafeArea(
+          child: ListView(
+            controller: scrollController,
+            shrinkWrap: true,
+            children: [
+              const SizedBox(height: 12),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 20),
+              Center(child: Text(tr('collectionAddTitle'), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: const Color(0xFF4A4440)))),
+              const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Icons.feed_rounded, color: Color(0xFFC35E34)),
-                title: Text(tr('collectionChooseFromPosts'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF248EA6)),
+                title: Text(tr('collectionUploadLocal'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _elegirDePostsComunidad(tr);
+                  _subirDesdeGaleria(tr);
                 },
               ),
-            const SizedBox(height: 16),
-          ],
+              if (_coleccion.comunidadId != null)
+                ListTile(
+                  leading: const Icon(Icons.feed_rounded, color: Color(0xFFC35E34)),
+                  title: Text(tr('collectionChooseFromPosts'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _elegirDePostsComunidad(tr);
+                  },
+                ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );
   }
 
-
-
   void _mostrarMenuImagen(BuildContext context, ImagenGaleria imagen, dynamic tr) {
     if (!_puedeEditar) return; // Sin permiso: no mostrar menú
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 48,
-              height: 4,
-              decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(2)),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.download_rounded, color: Color(0xFF248EA6)),
-              title: Text(
-                tr('collectionDownloadFile'),
-                style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.35,
+        minChildSize: 0.2,
+        maxChildSize: 0.6,
+        expand: false,
+        builder: (context, scrollController) => SafeArea(
+          child: ListView(
+            controller: scrollController,
+            shrinkWrap: true,
+            children: [
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(2)),
+                ),
               ),
-              onTap: () async {
-                Navigator.pop(context);
-                try {
-                  await GestorDescargas.descargar(imagen.urlArchivo);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(tr('moderationError'))),
-                    );
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.download_rounded, color: Color(0xFF248EA6)),
+                title: Text(
+                  tr('collectionDownloadFile'),
+                  style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  try {
+                    await GestorDescargas.descargar(imagen.urlArchivo);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(tr('moderationError'))),
+                      );
+                    }
                   }
-                }
-              },
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.remove_circle_outline_rounded, color: Colors.orangeAccent),
-              title: Text(
-                tr('collectionRemoveFromCollection'),
-                style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold),
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                _quitarImagen(imagen, tr);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.remove_circle_outline_rounded, color: Colors.orangeAccent),
+                title: Text(
+                  tr('collectionRemoveFromCollection'),
+                  style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _quitarImagen(imagen, tr);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

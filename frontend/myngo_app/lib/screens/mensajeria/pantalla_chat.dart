@@ -27,6 +27,7 @@ import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../providers/locale_notifier.dart';
+import '../../utils/manejo_errores.dart';
 
 // Painter eficiente para patrones de fondo
 class PatternPainter extends CustomPainter {
@@ -213,22 +214,27 @@ class _PantallaChatState extends State<PantallaChat> {
 
   void _enviarFoto() async {
     final picker = ImagePicker();
-    
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Builder(builder: (context) {
-        return Container(
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.35,
+        minChildSize: 0.2,
+        maxChildSize: 0.5,
+        expand: false,
+        builder: (context, scrollController) => Container(
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: ListView(
+              controller: scrollController,
+              shrinkWrap: true,
               children: [
                 const SizedBox(height: 12),
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 16),
                 ListTile(
                   leading: const Icon(Icons.photo_library_outlined),
@@ -280,8 +286,8 @@ class _PantallaChatState extends State<PantallaChat> {
               ],
             ),
           ),
-        );
-      }),
+        ),
+      ),
     );
   }
 
@@ -489,8 +495,7 @@ class _PantallaChatState extends State<PantallaChat> {
       }
     } catch (e) {
       if (mounted) {
-         // Tratar de obtener tr si es posible o usar mensaje genérico
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commonErrorGeneric', {'error': e.toString()}))));
+        mostrarError(context, e);
       }
       setState(() => _estaSubiendoMedia = false);
     }
@@ -1150,17 +1155,22 @@ class _PantallaChatState extends State<PantallaChat> {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white, 
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32))
+        builder: (_) => DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.35,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (_, sc) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white, 
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32))
+            ),
+            child: ListaMiembrosComunidad(comunidad: Comunidad(
+              id: _sala!.comunidadId, 
+              nombre: _sala!.nombre, 
+              descripcion: '', creadorNombre: '', urlPortada: '', esPublica: true, esVerificada: false, esMiembro: true, ratingMedio: 0.0, fechaCreacion: DateTime.now(), miRol: 'Miembro'
+            )),
           ),
-          child: ListaMiembrosComunidad(comunidad: Comunidad(
-            id: _sala!.comunidadId, 
-            nombre: _sala!.nombre, 
-            descripcion: '', creadorNombre: '', urlPortada: '', esPublica: true, esVerificada: false, esMiembro: true, ratingMedio: 0.0, fechaCreacion: DateTime.now(), miRol: 'Miembro'
-          )),
         ),
       );
       return;
@@ -1169,6 +1179,7 @@ class _PantallaChatState extends State<PantallaChat> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         decoration: const BoxDecoration(
@@ -1298,16 +1309,12 @@ class _PantallaChatState extends State<PantallaChat> {
                       Provider.of<ChatProvider>(context, listen: false).eliminarSalaDeLista(salaId);
                     }
                   } else if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(tr('chatDeleteError')), backgroundColor: Colors.orange)
-                    );
+                    mostrarAviso(context, tr('chatDeleteError'));
                   }
                 });
               }
               
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(tr('chatDeleteRoomProcessing')), backgroundColor: Colors.red)
-              );
+              mostrarAviso(context, tr('chatDeleteRoomProcessing'));
             },
             child: Text(tr('commonDelete').toUpperCase(), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
@@ -1344,16 +1351,12 @@ class _PantallaChatState extends State<PantallaChat> {
               if (salaId != null) {
                 _servicio.abandonarSala(salaId).then((exito) {
                   if (!exito && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(tr('moderationError')), backgroundColor: Colors.orange)
-                    );
+                    mostrarAviso(context, tr('moderationError'));
                   }
                 });
               }
               
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(tr('chatLeavingRoom')), duration: const Duration(seconds: 1))
-              );
+              mostrarAviso(context, tr('chatLeavingRoom'));
             },
             child: Text(tr('commonConfirm').toUpperCase(), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
@@ -1376,7 +1379,7 @@ class _PantallaChatState extends State<PantallaChat> {
               Navigator.pop(context);
               final exito = await _servicio.expulsarMiembro(_sala!.id, p.usuarioId!);
               if (exito && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('chatExpelledSuccess', {'name': p.nombreAMostrar}))));
+                mostrarAviso(context, tr('chatExpelledSuccess', {'name': p.nombreAMostrar}), esExito: true);
                 _cargarDatos();
               }
             },
@@ -1429,16 +1432,12 @@ class _PantallaChatState extends State<PantallaChat> {
                       final exito = await _servicio.agregarMiembro(_sala!.id, u.id);
                       if (exito) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(tr('commonSuccess')))
-                          );
+                          mostrarAviso(context, tr('commonSuccess'), esExito: true);
                           _cargarDatos();
                         }
                       } else {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(tr('chatDeleteError')))
-                          );
+                          mostrarAviso(context, tr('chatDeleteError'));
                         }
                       }
                     },
@@ -1459,6 +1458,7 @@ class _PantallaChatState extends State<PantallaChat> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         decoration: const BoxDecoration(

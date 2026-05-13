@@ -11,6 +11,7 @@ import '../models/respuesta_api.dart';
 import '../models/usuario.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 import 'servicio_usuarios.dart';
 
 // Se encarga de todo lo que tenga que ver con perfiles sociales.
@@ -41,7 +42,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar el perfil');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -64,7 +66,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar publicaciones');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -85,7 +88,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar seguimiento');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -107,7 +111,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al enviar solicitud');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -125,7 +130,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al responder solicitud');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -153,7 +159,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al actualizar perfil');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -190,7 +197,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al subir avatar');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de red: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -261,10 +269,11 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al publicar (${respuesta.statusCode})');
     } catch (e) {
-
-      String msg = 'Error de red: $e';
+      debugPrint('[ERROR ServicioPerfiles.crearPublicacion] $e');
+      String msg = getFriendlyError(e);
       if (e is http_dio.DioException) {
-        msg = e.response?.data?['error']?.toString() ?? e.message ?? msg;
+        final serverMsg = e.response?.data?['error']?.toString() ?? e.message;
+        if (serverMsg != null && !serverMsg.contains('DioException')) msg = serverMsg;
       }
       return RespuestaApi(exito: false, mensaje: msg);
     }
@@ -285,7 +294,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar favoritos');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -299,7 +309,8 @@ class ServicioPerfiles {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al cargar sugerencias');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioPerfiles] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }
