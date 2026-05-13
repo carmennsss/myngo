@@ -183,7 +183,7 @@ class SeccionChatComunidad extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
           backgroundColor: salaEncontrada ? const Color(0xFFF28B50) : Colors.grey,
-          child: const Icon(Icons.forum_rounded, color: Colors.white, size: 20),
+          child: Icon(Icons.forum_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
         ),
         title: Text(
           salaEncontrada ? tr('chatGeneralTitle') : tr('chatNoRoomsAvailable'),

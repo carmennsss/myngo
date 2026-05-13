@@ -229,13 +229,13 @@ class _TarjetaColeccion extends StatelessWidget {
                           final String? url =
                               col.previsualizaciones[i]?.toString();
                           if (url == null || url.isEmpty) {
-                            return Container(color: Colors.white10);
+                            return Container(color: Theme.of(context).colorScheme.surfaceVariant);
                           }
                           return CachedNetworkImage(
                             imageUrl: url,
                             fit: BoxFit.cover,
                             placeholder: (context, url) =>
-                                Container(color: Colors.white10),
+                                Container(color: Theme.of(context).colorScheme.surfaceVariant),
                             errorWidget: (context, url, error) =>
                                 const Icon(Icons.error, size: 10),
                           );

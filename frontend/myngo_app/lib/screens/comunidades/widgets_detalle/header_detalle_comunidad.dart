@@ -438,23 +438,25 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = colorRol.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+    final borderColor = textColor.withOpacity(0.3);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: colorRol.withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(iconRol, size: 14, color: Colors.white),
+          Icon(iconRol, size: 14, color: textColor),
           const SizedBox(width: 6),
           Text(
             rolLabel.toUpperCase(),
             style: GoogleFonts.getFont(
               fuente ?? 'Outfit',
-              color: Colors.white,
+              color: textColor,
               fontWeight: FontWeight.bold,
               fontSize: 11,
               letterSpacing: 0.5,

@@ -614,9 +614,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Builder(builder: (context) {
+        final cs = Theme.of(context).colorScheme;
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: cs.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
@@ -626,17 +627,17 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: cs.onSurface.withOpacity(0.24), borderRadius: BorderRadius.circular(2)),
               ),
               const SizedBox(height: 20),
               Text(
                 _haVotadoHoy ? tr('profileVoteTitleChange') : tr('profileVoteTitleNew'),
-                style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(color: cs.onSurface, fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 _haVotadoHoy ? tr('profileVoteDescChange') : tr('profileVoteDescNew'),
-                style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                style: GoogleFonts.inter(color: cs.onSurface.withOpacity(0.7), fontSize: 14),
               ),
               const SizedBox(height: 24),
               SelectorEstrellas(
