@@ -336,7 +336,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   }
 
   Future<void> _manejarSeguimiento() async {
-    if (_currentUserId == null || _usuario == null) return;
+    if (_currentUserId == null || _usuario == null || _isLoading) return;
     setState(() => _isLoading = true);
     final res = await ServicioPerfiles()
         .enviarSolicitudSeguimiento(_usuario!.nombreUsuario);
