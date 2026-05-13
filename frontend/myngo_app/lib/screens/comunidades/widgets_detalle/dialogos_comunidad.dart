@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tolgee/tolgee.dart';
 import '../../../services/servicio_galeria.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../../widgets/toast_service.dart';
 
 
 /// Clase de utilidad para mostrar diálogos comunes en la comunidad.
@@ -111,13 +112,11 @@ class DialogosComunidad {
                             if (context.mounted) {
                               setModalState(() => cargando = false);
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(res.mensaje),
-                                  backgroundColor:
-                                      res.exito ? Colors.green : Colors.red,
-                                ),
-                              );
+                              if (res.exito) {
+                                ToastService.showSuccess(context, res.mensaje);
+                              } else {
+                                ToastService.showError(context, res.mensaje);
+                              }
                               if (res.exito) onCreada();
                             }
                           },

@@ -28,6 +28,7 @@ import 'pantalla_personalizacion_chat.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../providers/locale_notifier.dart';
 import '../../utils/manejo_errores.dart';
+import '../../widgets/toast_service.dart';
 
 // Painter eficiente para patrones de fondo
 class PatternPainter extends CustomPainter {
@@ -1638,7 +1639,7 @@ class _PantallaChatState extends State<PantallaChat> {
           });
         }
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('chatDeleteError'))));
+        if (mounted) ToastService.showError(context, tr('chatDeleteError'));
       }
     }
   }

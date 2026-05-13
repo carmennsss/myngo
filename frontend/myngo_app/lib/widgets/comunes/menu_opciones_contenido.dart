@@ -7,6 +7,7 @@ import 'package:myngo_app/services/servicio_comunidades.dart';
 import 'package:myngo_app/models/respuesta_api.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:myngo_app/widgets/toast_service.dart';
 
 class MenuOpcionesContenido extends StatelessWidget {
   final String tipoObjeto; // 'POST', 'IMAGEN', 'COMUNIDAD', 'COMENTARIO'
@@ -158,11 +159,12 @@ class MenuOpcionesContenido extends StatelessWidget {
 
                 if (res.exito) {
                   if (onEliminado != null) onEliminado!();
+                  if (context.mounted) {
+                    ToastService.showSuccess(context, tr('toastPostDeleted'));
+                  }
                 } else {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-                    );
+                    ToastService.showError(context, res.mensaje);
                   }
                 }
               },
@@ -227,9 +229,11 @@ class MenuOpcionesContenido extends StatelessWidget {
                 );
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(res.mensaje), backgroundColor: res.exito ? Colors.green : Colors.red),
-                  );
+                  if (res.exito) {
+                    ToastService.showSuccess(context, tr('toastReportSent'));
+                  } else {
+                    ToastService.showError(context, res.mensaje);
+                  }
                 }
               },
               child: Text(tr('reportSend')),

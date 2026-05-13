@@ -9,6 +9,7 @@ import '../../widgets/comunes/boton_tactil.dart';
 import 'package:tolgee/tolgee.dart';
 import '../../utils/configuracion.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 import '../../models/participante_chat.dart';
 
 // Painter eficiente para preview de patrones
@@ -184,14 +185,10 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
       setState(() => _estaGuardando = false);
       if (exito) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('chatPersonalizationSaved')))
-        );
+        ToastService.showInfo(context, tr('chatPersonalizationSaved'));
 
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('chatPersonalizationError')))
-        );
+        ToastService.showError(context, tr('chatPersonalizationError'));
 
       }
     }
@@ -214,9 +211,7 @@ class _PantallaPersonalizacionChatState extends State<PantallaPersonalizacionCha
         });
         
         if (nuevaUrl == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(tr('chatImageUploadError')))
-          );
+          ToastService.showError(context, tr('chatImageUploadError'));
 
         }
       }

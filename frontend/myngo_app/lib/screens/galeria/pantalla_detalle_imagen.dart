@@ -11,6 +11,7 @@ import '../../services/servicio_comunidades.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/gestor_descargas.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 // Visor a pantalla completa de una imagen o vídeo de la galería.
 // Muestra metadatos (post vinculado, carpetas), permite descargar y unirse a la comunidad de origen.
@@ -45,9 +46,7 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
       await GestorDescargas.descargar(widget.imagen.urlArchivo);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('moderationError'))),
-        );
+        ToastService.showError(context, tr('moderationError'));
       }
     }
   }
@@ -78,14 +77,11 @@ class _PantallaDetalleImagenState extends State<PantallaDetalleImagen> {
         if (res.exito) _esMiembro = true;
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.mensaje, style: GoogleFonts.outfit()),
-          backgroundColor: res.exito ? const Color(0xFF248EA6) : const Color(0xFFD95F43),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-      );
+      if (res.exito) {
+        ToastService.showInfo(context, res.mensaje);
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
     }
   }
 

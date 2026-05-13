@@ -10,6 +10,7 @@ import '../../models/comunidad.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../services/servicio_usuarios.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 // Formulario para que un miembro proponga (o el creador añada directamente)
 // una nueva mejora visual a la tienda de la comunidad.
@@ -68,9 +69,7 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
   // Valida que haya imagen y envía la propuesta o la añade directamente si es el creador
   Future<void> _enviar() async {
     if (_imagenSeleccionada == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('proposalSelectImageError'))),
-      );
+      ToastService.showInfo(context, tr('proposalSelectImageError'));
       return;
     }
 
@@ -87,12 +86,11 @@ class _PantallaEnviarPropuestaState extends State<PantallaEnviarPropuesta> {
 
     if (mounted) {
       setState(() => _enviando = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.mensaje),
-          backgroundColor: res.exito ? Colors.green : Colors.red,
-        ),
-      );
+      if (res.exito) {
+        ToastService.showSuccess(context, res.mensaje);
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
       if (res.exito) {
         Navigator.pop(context);
       }

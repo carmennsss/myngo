@@ -12,6 +12,7 @@ import '../../inicio/pantalla_inicio.dart';
 
 import '../../../widgets/comunes/profile_preview.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../../widgets/toast_service.dart';
 
 
 class HeaderDetalleComunidad extends StatefulWidget {
@@ -132,13 +133,7 @@ class _HeaderDetalleComunidadState extends State<HeaderDetalleComunidad> {
                 }
               });
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(safeTr('communityLeaveSuccess', 'Has abandonado la comunidad')),
-                  backgroundColor: const Color(0xFF248EA6),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+              ToastService.showInfo(context, safeTr('communityLeaveSuccess', 'Has abandonado la comunidad'), duration: const Duration(seconds: 2));
             },
             child: Text(safeTr('communityLeaveAction', 'Abandonar'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
           ),

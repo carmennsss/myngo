@@ -32,6 +32,7 @@ import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -358,18 +359,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           }
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(tr(key)),
-            backgroundColor: const Color(0xFFC35E34),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        ToastService.showWarning(context, tr(key));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
-        );
+        ToastService.showError(context, res.mensaje);
       }
       setState(() => _isLoading = false);
     }

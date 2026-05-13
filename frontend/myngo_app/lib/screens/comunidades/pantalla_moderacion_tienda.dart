@@ -6,6 +6,7 @@ import '../../services/servicio_mejoras.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 
 // Cola de propuestas de mejoras pendientes de revisión por el equipo admin.
@@ -48,9 +49,11 @@ class _PantallaModeracionTiendaState extends State<PantallaModeracionTienda> {
   Future<void> _moderar(PeticionMejora peticion, String estado, int precio) async {
     final res = await _servicio.moderarPropuesta(peticion.id, estado, precio);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res.mensaje), backgroundColor: res.exito ? Colors.green : Colors.red),
-      );
+      if (res.exito) {
+        ToastService.showSuccess(context, res.mensaje);
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
       if (res.exito) _cargarPeticiones();
     }
   }

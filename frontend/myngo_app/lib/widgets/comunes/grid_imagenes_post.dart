@@ -7,6 +7,7 @@ import 'package:chewie/chewie.dart';
 import 'reproductor_video_post.dart';
 import '../../utils/gestor_descargas.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../toast_service.dart';
 
 
 class GridImagenesPost extends StatefulWidget {
@@ -232,9 +233,7 @@ class _GridMediaItemState extends State<_GridMediaItem> {
                     await GestorDescargas.descargar(widget.url);
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(tr('errorDownloadFile'))),
-                      );
+                      ToastService.showError(context, tr('errorDownloadFile'));
                     }
                   }
                 },

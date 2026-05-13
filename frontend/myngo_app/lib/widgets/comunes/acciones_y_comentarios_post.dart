@@ -9,6 +9,7 @@ import 'bottom_sheet_colecciones.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../utils/manejo_errores.dart';
+import '../../widgets/toast_service.dart';
 
 class AccionesYComentariosPost extends StatefulWidget {
   final Publicacion post;
@@ -159,6 +160,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
         _comentariosCount++;
         widget.post.comentariosCount = _comentariosCount;
       });
+      if (mounted) ToastService.showSuccess(context, tr('toastCommentSent'));
     } else {
       setState(() => _enviandoComentario = false);
       if (mounted) {
@@ -210,6 +212,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
           _comentariosCount = (_comentariosCount - totalBorrados).clamp(0, 999999);
           widget.post.comentariosCount = _comentariosCount;
         });
+        ToastService.showSuccess(context, tr('toastCommentDeleted'));
       } else if (mounted) {
         mostrarError(context, res.mensaje, mensajePersonalizado: res.mensaje);
       }

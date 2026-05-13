@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../models/comunidad.dart';
 import '../../../models/sala_chat.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../../widgets/toast_service.dart';
 
 /// Widget que muestra las salas de chat disponibles en la comunidad.
 class SeccionChatComunidad extends StatelessWidget {
@@ -204,9 +205,7 @@ class SeccionChatComunidad extends StatelessWidget {
         ),
         onTap: () {
           if (!salaEncontrada) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(tr('chatNoGeneralRoom')))
-            );
+            ToastService.showInfo(context, tr('chatNoGeneralRoom'));
             return;
           }
           context.push(

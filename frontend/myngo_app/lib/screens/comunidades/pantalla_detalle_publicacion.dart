@@ -9,6 +9,7 @@ import '../../services/servicio_interaccion.dart';
 import '../../widgets/inicio/tarjeta_post.dart';
 import '../../services/servicio_mensajeria.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 // Vista ampliada de una publicación con su sección de comentarios inline.
 // Se puede abrir pasando un objeto Publicacion o simplemente su ID.
@@ -131,9 +132,9 @@ class _PantallaDetallePublicacionState extends State<PantallaDetallePublicacion>
             _pub = _pub!.copyWith(comentariosCount: _comentarios.length);
           }
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('commentSent'))));
+        ToastService.showSuccess(context, tr('commentSent'));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
