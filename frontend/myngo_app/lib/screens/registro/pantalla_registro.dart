@@ -385,12 +385,12 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
             return StatefulBuilder(
               builder: (context, setDialogState) {
                 return AlertDialog(
-                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(32),
-                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+                    side: BorderSide(color: const Color(0xFFF2D0BD).withOpacity(0.5)),
                   ),
-                  title: Text(tr('registrationRulesTitle'), style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
+                  title: Text(tr('registrationRulesTitle'), style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontWeight: FontWeight.bold)),
                   content: SizedBox(
                     width: double.maxFinite,
                     height: 500,
@@ -429,11 +429,11 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                                   children: [
                                     Radio<bool>(
                                       value: true,
-                                      groupValue: acepto ? true : (declino ? false : null),
+                                      groupValue: acepto,
                                       onChanged: (_) => setDialogState(() { acepto = true; declino = false; }),
                                       activeColor: const Color(0xFFF28B50),
                                     ),
-                                    Text(tr('registrationRulesAccept'), style: GoogleFonts.outfit(color: Colors.black, fontSize: 14)),
+                                    Text(tr('registrationRulesAccept'), style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14)),
                                   ],
                                 ),
                               ),
@@ -443,11 +443,11 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
                                   children: [
                                     Radio<bool>(
                                       value: true,
-                                      groupValue: declino ? true : (acepto ? false : null),
+                                      groupValue: declino,
                                       onChanged: (_) => setDialogState(() { declino = true; acepto = false; }),
                                       activeColor: const Color(0xFFD95F43),
                                     ),
-                                    Text(tr('registrationRulesDecline'), style: GoogleFonts.outfit(color: Colors.black, fontSize: 14)),
+                                    Text(tr('registrationRulesDecline'), style: GoogleFonts.outfit(color: const Color(0xFF4A4440), fontSize: 14)),
                                   ],
                                 ),
                               ),
