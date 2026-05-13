@@ -2,6 +2,8 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from comunidades.models import MiembrosComunidad, Comunidad
 from .models import SalaChat, ParticipanteChat
 
@@ -44,4 +46,20 @@ def crear_sala_chat_comunidad(sender, instance, created, **kwargs):
             es_grupal=True,
             es_publica=True,
             es_general=True # Marcamos esta como la sala principal
+        )
+
+        # Notificar creación de comunidad a nivel global
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'global_events',
+            {
+                'type': 'comunidad_creada',
+                'data': {
+                    'id': instance.id,
+                    'nombre': instance.nombre,
+                    'descripcion': instance.descripcion,
+                    'imagen_fondo': instance.imagen_fondo.url if instance.imagen_fondo else None,
+                    'es_publica': instance.es_publica
+                }
+            }
         )

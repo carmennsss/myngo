@@ -22,6 +22,9 @@ class ServicioMensajeria {
   WebSocketChannel? _canalChat;
   WebSocketChannel? _canalPresencia;
   WebSocketChannel? _canalNotificaciones;
+  WebSocketChannel? _canalComunidad;
+  WebSocketChannel? _canalGlobal;
+  WebSocketChannel? _canalPublicacion;
 
   Timer? _temporizadorReconexion;
   Timer? _temporizadorLatido;
@@ -29,6 +32,9 @@ class ServicioMensajeria {
   bool _estaConectadoChat = false;
   bool _estaConectadoPresencia = false;
   bool _estaConectadoNotificaciones = false;
+  bool _estaConectadoComunidad = false;
+  bool _estaConectadoGlobal = false;
+  bool _estaConectadoPublicacion = false;
 
   final _servicioUsuarios = ServicioUsuarios();
   static const String _urlApi = Configuracion.baseUrl;
@@ -480,6 +486,68 @@ class ServicioMensajeria {
     });
   }
 
+  Future<void> conectarAComunidad(int idComunidad, Function(Map<String, dynamic>) alRecibirEvento) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      if (token == null) return;
+      _canalComunidad?.sink.close();
+      final url = Uri.parse("$_urlWs/comunidad/$idComunidad/?token=$token");
+      _canalComunidad = WebSocketChannel.connect(url);
+      _estaConectadoComunidad = true;
+      _canalComunidad!.stream.listen(
+        (datos) => alRecibirEvento(jsonDecode(datos)),
+        onDone: () {
+          _estaConectadoComunidad = false;
+          _reconectarComunidad(idComunidad, alRecibirEvento);
+        },
+        onError: (err) {
+          _estaConectadoComunidad = false;
+          _reconectarComunidad(idComunidad, alRecibirEvento);
+        },
+      );
+    } catch (e) {
+      _estaConectadoComunidad = false;
+      _reconectarComunidad(idComunidad, alRecibirEvento);
+    }
+  }
+
+  Future<void> conectarAGlobal(Function(Map<String, dynamic>) alRecibirEvento) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      if (token == null) return;
+      _canalGlobal?.sink.close();
+      final url = Uri.parse("$_urlWs/global/?token=$token");
+      _canalGlobal = WebSocketChannel.connect(url);
+      _estaConectadoGlobal = true;
+      _canalGlobal!.stream.listen(
+        (datos) => alRecibirEvento(jsonDecode(datos)),
+        onDone: () {
+          _estaConectadoGlobal = false;
+          _reconectarGlobal(alRecibirEvento);
+        },
+        onError: (err) {
+          _estaConectadoGlobal = false;
+          _reconectarGlobal(alRecibirEvento);
+        },
+      );
+    } catch (e) {
+      _estaConectadoGlobal = false;
+      _reconectarGlobal(alRecibirEvento);
+    }
+  }
+
+  void _reconectarComunidad(int idComunidad, Function(Map<String, dynamic>) callback) {
+    Timer(const Duration(seconds: 5), () {
+      if (!_estaConectadoComunidad) conectarAComunidad(idComunidad, callback);
+    });
+  }
+
+  void _reconectarGlobal(Function(Map<String, dynamic>) callback) {
+    Timer(const Duration(seconds: 10), () {
+      if (!_estaConectadoGlobal) conectarAGlobal(callback);
+    });
+  }
+
   Future<bool> enviarMensajeChat(String contenido, {
     String? clientId, 
     int? referenciaA, 
@@ -551,5 +619,39 @@ class ServicioMensajeria {
     _canalChat?.sink.close();
     _canalPresencia?.sink.close();
     _canalNotificaciones?.sink.close();
+    _canalComunidad?.sink.close();
+    _canalGlobal?.sink.close();
+    _canalPublicacion?.sink.close();
+  }
+
+  void _reconectarPublicacion(int idPublicacion, Function(Map<String, dynamic>) callback) {
+    Timer(const Duration(seconds: 5), () {
+      if (!_estaConectadoPublicacion) conectarAPublicacion(idPublicacion, callback);
+    });
+  }
+
+  Future<void> conectarAPublicacion(int idPublicacion, Function(Map<String, dynamic>) alRecibirEvento) async {
+    try {
+      final token = await _servicioUsuarios.obtenerToken();
+      if (token == null) return;
+      _canalPublicacion?.sink.close();
+      final url = Uri.parse("$_urlWs/publicacion/$idPublicacion/?token=$token");
+      _canalPublicacion = WebSocketChannel.connect(url);
+      _estaConectadoPublicacion = true;
+      _canalPublicacion!.stream.listen(
+        (datos) => alRecibirEvento(jsonDecode(datos)),
+        onDone: () {
+          _estaConectadoPublicacion = false;
+          _reconectarPublicacion(idPublicacion, alRecibirEvento);
+        },
+        onError: (err) {
+          _estaConectadoPublicacion = false;
+          _reconectarPublicacion(idPublicacion, alRecibirEvento);
+        },
+      );
+    } catch (e) {
+      _estaConectadoPublicacion = false;
+      _reconectarPublicacion(idPublicacion, alRecibirEvento);
+    }
   }
 }

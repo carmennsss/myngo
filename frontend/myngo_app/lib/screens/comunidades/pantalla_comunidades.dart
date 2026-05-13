@@ -15,6 +15,8 @@ import '../../providers/locale_notifier.dart';
 
 // Pantalla de listado de comunidades con buscador, filtros por tags y grid responsivo.
 // Permite crear nuevas comunidades desde el botón "+" del header.
+import '../../services/servicio_mensajeria.dart';
+
 class PantallaComunidades extends StatefulWidget {
   final Function(Comunidad)? onComunidadSelected;
   final Function(Usuario)? onUsuarioSelected;
@@ -27,6 +29,7 @@ class PantallaComunidades extends StatefulWidget {
 
 class _PantallaComunidadesState extends State<PantallaComunidades> {
   final _servicioComunidades = ServicioComunidades();
+  final _servicioMensajeria = ServicioMensajeria();
   final _controladorBusqueda = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -40,6 +43,24 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
     super.initState();
     _cargarDatos();
     _cargarTags();
+    _conectarWebSockets();
+  }
+
+  void _conectarWebSockets() {
+    _servicioMensajeria.conectarAGlobal((evento) {
+      if (evento['type'] == 'comunidad_creada') {
+        final data = evento['data'];
+        if (data != null && mounted) {
+          setState(() {
+            final nuevaComunidad = Comunidad.fromJson(data);
+            // Evitar duplicados
+            if (!_comunidades.any((c) => c.id == nuevaComunidad.id)) {
+              _comunidades.insert(0, nuevaComunidad);
+            }
+          });
+        }
+      }
+    });
   }
 
   // Carga los tags más populares para mostrarlos como filtros rápidos
@@ -70,6 +91,7 @@ class _PantallaComunidadesState extends State<PantallaComunidades> {
   void dispose() {
     _controladorBusqueda.dispose();
     _scrollController.dispose();
+    _servicioMensajeria.dispose();
     super.dispose();
   }
 

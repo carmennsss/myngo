@@ -24,6 +24,9 @@ application = ProtocolTypeRouter({
             re_path(r'.*chat/(?P<room_id>\d+)/?', consumers.ChatConsumer.as_asgi()),
             re_path(r'.*presence/?', consumers.PresenceConsumer.as_asgi()),
             re_path(r'.*chat-notificaciones/?', consumers.NotificacionesChatConsumer.as_asgi()),
+            re_path(r'ws/comunidad/(?P<comunidad_id>\d+)/$', consumers.ComunidadConsumer.as_asgi()),
+            re_path(r'ws/global/$', consumers.GlobalConsumer.as_asgi()),
+            re_path(r'ws/publicacion/(?P<publicacion_id>\d+)/$', consumers.PublicacionConsumer.as_asgi()),
         ])
     ),
 })

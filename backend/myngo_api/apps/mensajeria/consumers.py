@@ -466,3 +466,70 @@ class NotificacionesChatConsumer(AsyncWebsocketConsumer):
     async def new_chat_notification(self, event): await self.send(text_data=json.dumps(event))
 
     async def generic_notification(self, event): await self.send(text_data=json.dumps(event))
+
+
+class ComunidadConsumer(AsyncWebsocketConsumer):
+    """Consumidor para actualizaciones en tiempo real del muro de una comunidad."""
+
+    async def connect(self):
+        self.comunidad_id = self.scope['url_route']['kwargs']['comunidad_id']
+        self.group_name = f'comunidad_{self.comunidad_id}'
+        
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'group_name'):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        pass
+
+    async def publicacion_creada(self, event):
+        """Recibe evento de nueva publicación y lo envía al cliente."""
+        await self.send(text_data=json.dumps(event))
+
+    async def publicacion_borrada(self, event):
+        """Notifica que una publicación ha sido eliminada."""
+        await self.send(text_data=json.dumps(event))
+
+
+class GlobalConsumer(AsyncWebsocketConsumer):
+    """Consumidor para eventos globales de la aplicación (ej. nuevas comunidades)."""
+
+    async def connect(self):
+        self.group_name = 'global_events'
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        pass
+
+    async def comunidad_creada(self, event):
+        """Notifica a todos los usuarios de una nueva comunidad."""
+        await self.send(text_data=json.dumps(event))
+
+
+class PublicacionConsumer(AsyncWebsocketConsumer):
+    """Consumidor para actualizaciones en tiempo real de una publicación específica (ej. comentarios)."""
+
+    async def connect(self):
+        self.publicacion_id = self.scope['url_route']['kwargs']['publicacion_id']
+        self.group_name = f'publicacion_{self.publicacion_id}'
+        
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'group_name'):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        pass
+
+    async def comentario_creado(self, event):
+        """Recibe evento de nuevo comentario y lo envía al cliente."""
+        await self.send(text_data=json.dumps(event))
