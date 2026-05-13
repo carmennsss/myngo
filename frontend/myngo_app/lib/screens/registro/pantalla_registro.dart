@@ -186,7 +186,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                       const Icon(Icons.pets, color: Color(0xFFC35E34), size: 32),
                       const SizedBox(width: 12),
                       Text(
-                        'MYNGO',
+                        tr('commonAppTitle'),
                         style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 2),
                       ),
                     ],

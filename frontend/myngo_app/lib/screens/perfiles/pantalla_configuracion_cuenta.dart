@@ -210,7 +210,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('CANCELAR', style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child: Text(tr('commonCancel'), style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -358,7 +358,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.grey.shade50,
-                            hintText: '••••••••',
+                            hintText: tr('commonPasswordPlaceholder'),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
@@ -373,7 +373,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.grey.shade50,
-                            hintText: '••••••••',
+                            hintText: tr('commonPasswordPlaceholder'),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),

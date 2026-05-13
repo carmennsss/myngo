@@ -104,12 +104,12 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
-            title: Text(tr('adminTitle', {'community': widget.comunidad.nombre}), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF1E1E1E))),
+            title: Text(tr('adminTitle', {'community': widget.comunidad.nombre}), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.displayLarge?.color)),
             backgroundColor: Colors.transparent,
             elevation: 0,
             centerTitle: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E1E1E), size: 20),
+              icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).textTheme.displayLarge?.color, size: 20),
               onPressed: () => Navigator.pop(context),
             ),
             bottom: TabBar(
@@ -469,21 +469,6 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        _buildSeccionHeader(tr('adminSectionVisual')),
-        const SizedBox(height: 16),
-        _buildConfigItem(
-          icon: Icons.image_rounded,
-          title: tr('adminBannerTitle'),
-          subtitle: _nuevoBanner != null ? tr('adminChangesBanner') : tr('adminSelectingBanner'),
-          onTap: () async {
-            final picker = ImagePicker();
-            final imagen = await picker.pickImage(source: ImageSource.gallery);
-            if (imagen != null) {
-              setState(() => _nuevoBanner = imagen);
-            }
-          },
-        ),
-
         const SizedBox(height: 32),
         _buildSeccionHeader(tr('adminSectionGeneral')),
         const SizedBox(height: 16),
@@ -589,6 +574,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
             );
           },
         ),
+
         const SizedBox(height: 32),
         _buildSeccionHeader(tr('adminSectionDanger')),
         const SizedBox(height: 16),

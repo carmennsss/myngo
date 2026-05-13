@@ -516,7 +516,7 @@ class PantallaInicioState extends State<PantallaInicio> {
                   children: [
                     const Icon(Icons.pets, color: Colors.white, size: 40),
                     const SizedBox(height: 8),
-                    Text('MYNGO', 
+                    Text(tr('commonAppTitle'), 
                       style: GoogleFonts.outfit(
                         color: Colors.white, 
                         fontSize: 24, 

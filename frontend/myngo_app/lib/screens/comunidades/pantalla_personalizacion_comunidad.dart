@@ -963,9 +963,9 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
+          builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: Theme.of(context).dialogBackgroundColor,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
           title: Text('${tr('personalizeThemeColorTitle')} 🎨', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -999,7 +999,7 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   // Colores rápidos
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(tr('personalizeQuickColors'), style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(tr('personalizeQuickColors'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -1033,12 +1033,12 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                     }).toList(),
                   ),
                   const SizedBox(height: 24),
-                  const Divider(color: Colors.white10),
+                  Divider(color: Theme.of(context).dividerColor.withOpacity(0.2)),
                   const SizedBox(height: 16),
                   // Sliders personalizados
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(tr('personalizeFineTune'), style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(tr('personalizeFineTune'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
                   _buildHSLSliders(colorTemporal, (nuevoColor) {

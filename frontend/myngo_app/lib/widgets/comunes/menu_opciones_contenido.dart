@@ -100,7 +100,7 @@ class MenuOpcionesContenido extends StatelessWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: Theme.of(context).dialogBackgroundColor,
           title: Text(esModeracion ? tr('menuModerateTitle') : tr('menuDeleteTitle'), style: GoogleFonts.outfit(color: Colors.white)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
