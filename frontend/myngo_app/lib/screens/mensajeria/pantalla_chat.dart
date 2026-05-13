@@ -25,6 +25,7 @@ import 'package:mime/mime.dart';
 import '../comunidades/widgets_detalle/lista_miembros_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import 'pantalla_personalizacion_chat.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../providers/locale_notifier.dart';
 import '../../utils/manejo_errores.dart';
@@ -593,14 +594,29 @@ class _PantallaChatState extends State<PantallaChat> {
           setState(() => _mostrarEmojiPicker = false);
           return Future.value(false);
         }
-        // Asegurar limpieza inmediata del estado de sala activa
-        try {
-          Provider.of<ChatProvider>(context, listen: false).setSalaActiva(null);
-        } catch (_) {}
-        _servicio.dispose(); // Cerrar socket inmediatamente
+        // Asegurar limpieza definitiva al salir
+        Provider.of<ChatProvider>(context, listen: false).setSalaActiva(null);
+        _servicio.desconectarChat();
         return Future.value(true);
       },
-      child: Builder(builder: (context) {
+      child: VisibilityDetector(
+        key: Key('chat-${widget.salaId}'),
+        onVisibilityChanged: (info) {
+          if (info.visibleFraction == 0) {
+            // Ya no es visible (se cambió de pestaña o se abrió algo encima)
+            if (mounted) {
+              context.read<ChatProvider>().setSalaActiva(null);
+              _servicio.desconectarChat();
+            }
+          } else if (info.visibleFraction > 0.5) {
+            // Vuelve a ser visible (se regresó a esta pestaña)
+            if (mounted && widget.salaId != null) {
+              context.read<ChatProvider>().setSalaActiva(widget.salaId);
+              _conectarWebSocket(); // Reconectar si es necesario
+            }
+          }
+        },
+        child: Builder(builder: (context) {
         return Scaffold(
           backgroundColor: colorFondo,
           appBar: AppBar(
@@ -621,13 +637,15 @@ class _PantallaChatState extends State<PantallaChat> {
                       }
                     },
               ),
+              IconButton(
+                icon: const Icon(Icons.people_outline, color: Color(0xFFC35E34)),
+                tooltip: tr('chatParticipants'),
+                onPressed: () => _mostrarMiembros(context),
+              ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFC35E34)),
                 onSelected: (value) {
                   switch (value) {
-                    case 'members':
-                      _mostrarMiembros(context);
-                      break;
                     case 'add':
                       _mostrarDialogoAgregarMiembro(context);
                       break;
@@ -640,16 +658,6 @@ class _PantallaChatState extends State<PantallaChat> {
                   }
                 },
                 itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'members',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.people_outline, size: 20),
-                        const SizedBox(width: 12),
-                        Text(tr('chatParticipants')),
-                      ],
-                    ),
-                  ),
                   if (_sala?.esGrupal == true && (_sala?.puedoEliminar == true || _sala?.creador == _miId))
                     PopupMenuItem(
                       value: 'add',
@@ -690,6 +698,7 @@ class _PantallaChatState extends State<PantallaChat> {
           body: _buildBody(),
         );
       }),
+    ),
     );
   }
 
@@ -1615,7 +1624,7 @@ class _PantallaChatState extends State<PantallaChat> {
                   ),
                 ),
               const Divider(height: 24),
-              Text(tr('chatInfoAction').split(' ')[0] + ' ' + tr('commonBy') + ':', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+              Text(tr('chatReadBy') + ':', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
               const SizedBox(height: 8),
               if (lectores.isEmpty)
                 Padding(

@@ -109,17 +109,12 @@ class SeguirPerfil(APIView):
                 return Response({'mensaje': 'Has dejado de seguir a este usuario', 'estado': None}, status=status.HTTP_200_OK)
 
         estado = 'ACEPTADO' if perfil.es_publico else 'SOLICITUD'
-        seguimiento = Seguimiento.objects.create(
-            seguidor=usuario, seguido_usuario=perfil.usuario, estado=estado
+        seguimiento, _ = Seguimiento.objects.update_or_create(
+            seguidor=usuario, 
+            seguido_usuario=perfil.usuario, 
+            defaults={'estado': estado}
         )
-        if not perfil.es_publico and seguimiento.estado == 'SOLICITUD':
-            Notificacion.objects.create(
-                usuario=perfil.usuario,
-                tipo='PETICION_SEGUIMIENTO',
-                mensaje=f'¡Miau! {usuario.nombre_usuario} quiere seguirte.',
-                referencia_usuario=usuario,
-                referencia_id=seguimiento.id,
-            )
+        
         mensaje = 'Has seguido a este perfil' if perfil.es_publico else 'Solicitud enviada al perfil'
         return Response({'mensaje': mensaje, 'estado': seguimiento.estado}, status=status.HTTP_201_CREATED)
 
