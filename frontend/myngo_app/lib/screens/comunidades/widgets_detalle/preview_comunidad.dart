@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/comunidad.dart';
 import '../../../models/publicacion.dart';
@@ -193,7 +194,7 @@ class PreviewComunidad extends StatelessWidget {
                     comunidad: comunidad,
                     miId: miId,
                     estaCargandoPeticion: estaCargandoPeticion,
-                    onLogin: () => Navigator.pushNamed(context, '/login'),
+                    onLogin: () => context.push('/login'),
                     onJoin: onJoin,
                     isPreview: true,
                   ),

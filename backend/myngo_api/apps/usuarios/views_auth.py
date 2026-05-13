@@ -43,7 +43,7 @@ class RegistroUsuarios(APIView):
         if serializer.is_valid():
             datos_usuario = request.data
             token = _firmador.sign_object(datos_usuario)
-            url_activacion = f"{settings.API_URL}/usuarios/confirmar/{token}/"
+            url_activacion = f"{settings.FRONTEND_URL}/usuarios/confirmar/{token}/"
             sujeto = 'Bienvenido a Myngo 🐾 - Activa tu cuenta'
             mensaje_html = f"""
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 15px; padding: 25px; text-align: center; background-color: #ffffff;">
@@ -97,30 +97,14 @@ class RegistroUsuarios(APIView):
                 nombre_usuario=datos_limpios['nombre_usuario'],
             )
             Perfil.objects.create(usuario=usuario, biografia='', puntos=0)
-            return HttpResponse("""
-    <html>
-        <head>
-            <style>
-                body { font-family: 'Segoe UI', sans-serif; background-color: #F7F4FF; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
-                h1 { color: #6C63FF; margin-bottom: 20px; }
-                p { color: #666; line-height: 1.6; }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h1>¡Cuenta Activada! 🐾</h1>
-                <p>Tu registro en <b>Myngo</b> se ha completado con éxito. Ya puedes cerrar esta ventana y volver a la aplicación para iniciar sesión.</p>
-                <div style="font-size: 50px; margin: 20px 0;">🐱</div>
-                <p style="font-size: 12px; color: #aaa;">¡Nos vemos dentro!</p>
-            </div>
-        </body>
-    </html>
-    """)
+            return Response(
+                {'exito': True, 'mensaje': 'Cuenta activada con éxito. Ya puedes iniciar sesión.'},
+                status=status.HTTP_201_CREATED,
+            )
         except SignatureExpired:
-            return HttpResponse('<h1>Enlace caducado o inválido.</h1>', status=400)
-        except BadSignature:
-            return HttpResponse('<h1>Enlace caducado o inválido.</h1>', status=400)
+            return Response({'exito': False, 'mensaje': 'Enlace caducado.'}, status=status.HTTP_400_BAD_REQUEST)
+        except (BadSignature, Exception) as e:
+            return Response({'exito': False, 'mensaje': 'Enlace inválido o error en la activación.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginUsuario(APIView):
@@ -222,30 +206,23 @@ class RecuperarPassword(APIView):
             )
         try:
             usuario = Usuario.objects.get(email=email)
-            codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-            usuario.set_password(codigo)
-            usuario.save()
+            token = _firmador.sign_object({'email': email})
+            url_recuperacion = f"{settings.FRONTEND_URL}/usuarios/recuperar-confirmar/{token}/"
+            
             sujeto = 'Recupera tu acceso a Myngo 🐾'
             mensaje_html = f"""
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; padding: 20px;">
-                <h2 style="color: #6C63FF; text-align: center;">¡Hola, {usuario.nombre_usuario}!</h2>
-                <p style="font-size: 16px; color: #333;">
-                    Hemos recibido una solicitud para restablecer tu contraseña en <strong>Myngo</strong>.
-                </p>
-                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                    <p style="font-size: 14px; color: #666; margin-bottom: 10px;">Tu nueva contraseña temporal es:</p>
-                    <span style="font-size: 24px; font-weight: bold; color: #6C63FF; letter-spacing: 2px;">{codigo}</span>
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 15px; padding: 25px; text-align: center; background-color: #ffffff;">
+                <h2 style="color: #6C63FF; margin-bottom: 10px;">¡Hola, {usuario.nombre_usuario}!</h2>
+                <p style="color: #666; font-size: 16px;">Hemos recibido una solicitud para restablecer tu contraseña en <strong>Myngo</strong>.</p>
+                <div style="margin: 30px 0;">
+                    <a href="{url_recuperacion}" 
+                    style="background-color: #6C63FF; color: white; padding: 15px 30px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 4px 6px rgba(108, 99, 255, 0.2);">
+                    RESTABLECER CONTRASEÑA 🐾
+                    </a>
                 </div>
-                <p style="font-size: 14px; color: #555;">
-                    Te recomendamos iniciar sesión con esta contraseña y cambiarla por una nueva en tu perfil lo antes posible.
-                </p>
+                <p style="color: #999; font-size: 12px;">Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña actual no cambiará hasta que pulses el botón.</p>
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                <p style="font-size: 12px; color: #999; text-align: center;">
-                    Si no solicitaste este cambio, puedes ignorar este correo o contactar con soporte en myngoadmin@gmail.com.
-                </p>
-                <div style="text-align: center; margin-top: 20px;">
-                    <span style="font-size: 18px;">🐾 Myngo Team</span>
-                </div>
+                <p style="color: #6C63FF; font-weight: bold;">El equipo de Myngo</p>
             </div>
             """
             try:
@@ -271,3 +248,43 @@ class RecuperarPassword(APIView):
                 {'exito': False, 'mensaje': 'No existe ningún usuario registrado con ese email'},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+class ConfirmarRecuperacionPassword(APIView):
+    """Vista para confirmar la recuperación de contraseña.
+    
+    Valida el token enviado por email, genera una nueva contraseña y la devuelve.
+    """
+
+    def get(self, request, token):
+        """Valida el token y genera la nueva contraseña.
+        
+        Args:
+            request: Petición GET.
+            token: Token firmado con el email del usuario.
+            
+        Returns:
+            Response con la nueva contraseña o error.
+        """
+        try:
+            datos = _firmador.unsign_object(token, max_age=3600)
+            email = datos.get('email')
+            usuario = Usuario.objects.get(email=email)
+            
+            # Generar nueva contraseña aleatoria
+            nueva_pass = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            usuario.set_password(nueva_pass)
+            usuario.save()
+            
+            return Response({
+                'exito': True,
+                'mensaje': 'Contraseña restablecida con éxito',
+                'nueva_password': nueva_pass
+            }, status=status.HTTP_200_OK)
+            
+        except SignatureExpired:
+            return Response({'exito': False, 'mensaje': 'El enlace ha caducado.'}, status=status.HTTP_400_BAD_REQUEST)
+        except (BadSignature, Usuario.DoesNotExist):
+            return Response({'exito': False, 'mensaje': 'Enlace inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'exito': False, 'mensaje': f'Error interno: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

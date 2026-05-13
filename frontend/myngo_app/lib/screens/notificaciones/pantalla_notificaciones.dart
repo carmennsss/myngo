@@ -166,8 +166,8 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     }
 
     final interacciones = _notificaciones.where((n) => ['LIKE', 'COMENTARIO', 'VOTO'].contains(n.tipo)).toList();
-    final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE'].contains(n.tipo)).toList();
-    final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO', 'NUEVO_REPORTE'].contains(n.tipo)).toList();
+    final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO'].contains(n.tipo)).toList();
+    final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO'].contains(n.tipo)).toList();
 
     return DefaultTabController(
       length: 3,

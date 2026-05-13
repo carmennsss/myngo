@@ -142,6 +142,51 @@ class ServicioUsuarios {
     }
   }
 
+  /// Confirma el registro de un usuario mediante el token recibido por email.
+  Future<RespuestaApi> confirmarRegistro(String token) async {
+    try {
+      final respuesta = await client.get(
+        Uri.parse('$_urlUsuarios/confirmar/$token/'),
+        headers: ApiBase.obtenerHeaders(),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
+        return RespuestaApi.fromJson(datosJson);
+      }
+      return RespuestaApi(
+        exito: false, 
+        mensaje: datosJson['mensaje'] ?? 'Error al activar la cuenta',
+      );
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
+  /// Confirma la recuperación de contraseña y obtiene la nueva generada.
+  Future<RespuestaApi<String>> confirmarRecuperacion(String token) async {
+    try {
+      final respuesta = await client.get(
+        Uri.parse('$_urlUsuarios/recuperar-password/confirmar/$token/'),
+        headers: ApiBase.obtenerHeaders(),
+      ).timeout(const Duration(seconds: 20));
+
+      final Map<String, dynamic> datosJson = jsonDecode(respuesta.body);
+      
+      if (respuesta.statusCode == 200) {
+        return RespuestaApi(
+          exito: true, 
+          mensaje: datosJson['mensaje'],
+          datos: datosJson['nueva_password'],
+        );
+      }
+      return RespuestaApi(exito: false, mensaje: datosJson['mensaje'] ?? 'Error al confirmar recuperación');
+    } catch (e) {
+      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+    }
+  }
+
   // Lee el token guardado en el almacenamiento del móvil
   Future<String?> obtenerToken() async {
     try {
