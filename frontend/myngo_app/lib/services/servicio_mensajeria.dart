@@ -588,6 +588,18 @@ class ServicioMensajeria {
     }
   }
 
+  /// Notifica si el usuario actual está escribiendo o no en la sala activa.
+  void enviarEventoEscritura(bool escribiendo) {
+    if (_estaConectadoChat && _canalChat != null) {
+      try {
+        _canalChat!.sink.add(jsonEncode({
+          'type': 'typing',
+          'is_typing': escribiendo,
+        }));
+      } catch (_) {}
+    }
+  }
+
   void enviarLatido() {
     if (_estaConectadoPresencia && _canalPresencia != null) {
       _canalPresencia!.sink.add(jsonEncode({'type': 'heartbeat'}));
