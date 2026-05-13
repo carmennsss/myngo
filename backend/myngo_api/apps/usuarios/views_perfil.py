@@ -1,3 +1,9 @@
+# /**
+#  * @author Carmen Tamayo Doña
+#  * @author Ainhoa Gomez Toro
+#  * @version 1.0
+#  * @date 2026-05-14
+#  */
 """Vistas de gestión de perfiles y datos de usuario."""
 
 from django.core.files.storage import default_storage

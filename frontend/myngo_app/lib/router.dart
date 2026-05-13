@@ -1,3 +1,10 @@
+/**
+ * @author Carmen Tamayo Doña
+ * @author Ainhoa Gomez Toro
+ * @version 1.0
+ * @date 2026-05-14
+ */
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,8 +121,8 @@ final GoRouter appRouter = GoRouter(
               path: '/inicio',
               builder: (context, state) {
                 return FeedPublicaciones(
-                  onComunidadSelected: (c) => context.go('/inicio/comunidades/${c.nombre}', extra: c),
-                  onProfileSelected: (u) => context.go('/inicio/perfiles/${u.nombreUsuario}', extra: u),
+                  onComunidadSelected: (c) => context.go('/inicio/comunidades/${c.nombre}', extra: c.id > 0 ? c : null),
+                  onProfileSelected: (u) => context.go('/inicio/perfiles/${u.nombreUsuario}', extra: u.perfilId > 0 ? u : null),
                 );
               },
               routes: [

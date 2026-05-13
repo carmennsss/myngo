@@ -1,3 +1,10 @@
+/**
+ * @author Carmen Tamayo Doña
+ * @author Ainhoa Gomez Toro
+ * @version 1.0
+ * @date 2026-05-14
+ */
+
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;

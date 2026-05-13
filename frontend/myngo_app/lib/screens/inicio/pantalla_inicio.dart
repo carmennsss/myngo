@@ -1,3 +1,10 @@
+/**
+ * @author Carmen Tamayo Doña
+ * @author Ainhoa Gomez Toro
+ * @version 1.0
+ * @date 2026-05-14
+ */
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -354,10 +361,11 @@ class PantallaInicioState extends State<PantallaInicio> {
   void seleccionarComunidad(Comunidad comunidad) => _seleccionarComunidad(comunidad);
 
   void _seleccionarUsuario(Usuario usuario) {
+    final extra = usuario.perfilId > 0 ? usuario : null;
     if ((widget.navigationShell?.currentIndex ?? _indiceSeleccionado) == 1) {
-      context.go('/explorar/perfiles/${usuario.nombreUsuario}', extra: usuario);
+      context.go('/explorar/perfiles/${usuario.nombreUsuario}', extra: extra);
     } else {
-      context.go('/inicio/perfiles/${usuario.nombreUsuario}', extra: usuario);
+      context.go('/inicio/perfiles/${usuario.nombreUsuario}', extra: extra);
     }
   }
 

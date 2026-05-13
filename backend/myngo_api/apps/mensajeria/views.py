@@ -1,3 +1,9 @@
+# /**
+#  * @author Carmen Tamayo Doña
+#  * @author Ainhoa Gomez Toro
+#  * @version 1.0
+#  * @date 2026-05-14
+#  */
 """Vistas para la gestión de salas de chat y mensajes.
 
 Proporciona endpoints para listar, crear y administrar la pertenencia a salas,

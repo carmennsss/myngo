@@ -1199,7 +1199,7 @@ class _PantallaChatState extends State<PantallaChat> {
                   tr('chatParticipants'),
                   style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A4440)),
                 ),
-                if (_sala!.esGrupal) ...[
+                if (_sala!.esGrupal && (_sala!.puedoEliminar || _sala!.creador == _miId)) ...[
                   const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFFC35E34)),
@@ -1217,7 +1217,7 @@ class _PantallaChatState extends State<PantallaChat> {
                 itemBuilder: (context, index) {
                   final p = _sala!.participantes[index];
                   final esYo = p.usuarioId == _miId;
-                  final soyAdmin = _sala!.puedoEliminar; // Usamos el nuevo permiso centralizado
+                  final soyAdmin = _sala!.puedoEliminar || _sala!.creador == _miId;
                   
                   return ListTile(
                     leading: Builder(
@@ -1263,7 +1263,7 @@ class _PantallaChatState extends State<PantallaChat> {
                 onTap: () => _confirmarSalidaSala(context, tr),
               ),
             ],
-            if (_sala != null && _sala!.puedoEliminar) ...[
+            if (_sala != null && (_sala!.puedoEliminar || _sala!.creador == _miId)) ...[
               if (!_sala!.esGrupal) const Divider(),
               ListTile(
                 leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),

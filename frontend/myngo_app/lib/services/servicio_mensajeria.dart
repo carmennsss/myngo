@@ -13,9 +13,15 @@ import 'servicio_usuarios.dart';
 
 /// Servicio encargado de la gestión de mensajería instantánea y presencia en tiempo real.
 class ServicioMensajeria {
+  static final ServicioMensajeria _instancia = ServicioMensajeria._interno();
+  factory ServicioMensajeria() => _instancia;
+  ServicioMensajeria._interno() {
+    _client = http.Client();
+  }
+
   late final http.Client _client;
-  ServicioMensajeria({http.Client? httpClient}) {
-    _client = httpClient ?? http.Client();
+  ServicioMensajeria.conCliente(http.Client client) {
+    _client = client;
   }
   http.Client get client => _client;
 
@@ -28,13 +34,6 @@ class ServicioMensajeria {
 
   Timer? _temporizadorReconexion;
   Timer? _temporizadorLatido;
-
-  bool _estaConectadoChat = false;
-  bool _estaConectadoPresencia = false;
-  bool _estaConectadoNotificaciones = false;
-  bool _estaConectadoComunidad = false;
-  bool _estaConectadoGlobal = false;
-  bool _estaConectadoPublicacion = false;
 
   final _servicioUsuarios = ServicioUsuarios();
   static const String _urlApi = Configuracion.baseUrl;
@@ -384,23 +383,20 @@ class ServicioMensajeria {
       if (token == null) return;
 
       final url = Uri.parse("$_urlWs/chat/$idSala/?token=$token");
+      _canalChat?.sink.close();
       _canalChat = WebSocketChannel.connect(url);
       
       _canalChat!.ready.then((_) {
-        _estaConectadoChat = true;
         if (alConectar != null) alConectar();
       }).catchError((e) {
-        _estaConectadoChat = false;
       });
 
       _canalChat!.stream.listen(
         (datos) => alRecibirMensaje(jsonDecode(datos)),
         onDone: () {
-          _estaConectadoChat = false;
           _reconectarChat(idSala, alRecibirMensaje);
         },
         onError: (err) {
-          _estaConectadoChat = false;
           _reconectarChat(idSala, alRecibirMensaje);
         },
       );
@@ -433,10 +429,9 @@ class ServicioMensajeria {
 
       _temporizadorLatido?.cancel();
       _temporizadorLatido = Timer.periodic(const Duration(seconds: 30), (_) {
-        if (_estaConectadoPresencia) enviarLatido();
+        if (_canalPresencia != null) enviarLatido();
       });
     } catch (e) {
-      _estaConectadoPresencia = false;
       _reconectarPresencia(alCambiarEstado);
     }
   }
@@ -448,20 +443,16 @@ class ServicioMensajeria {
       _canalNotificaciones?.sink.close();
       final url = Uri.parse("$_urlWs/chat-notificaciones/?token=$token");
       _canalNotificaciones = WebSocketChannel.connect(url);
-      _estaConectadoNotificaciones = true;
       _canalNotificaciones!.stream.listen(
         (datos) => alRecibirNotificacion(jsonDecode(datos)),
         onDone: () {
-          _estaConectadoNotificaciones = false;
           _reconectarNotificaciones(alRecibirNotificacion);
         },
         onError: (err) {
-          _estaConectadoNotificaciones = false;
           _reconectarNotificaciones(alRecibirNotificacion);
         },
       );
     } catch (e) {
-      _estaConectadoNotificaciones = false;
       _reconectarNotificaciones(alRecibirNotificacion);
     }
   }
@@ -469,20 +460,20 @@ class ServicioMensajeria {
   void _reconectarChat(int idSala, Function(Map<String, dynamic>) callback) {
     _temporizadorReconexion?.cancel();
     _temporizadorReconexion = Timer(const Duration(seconds: 3), () {
-      if (!_estaConectadoChat) conectarASala(idSala, callback);
+      if (_canalChat == null) conectarASala(idSala, callback);
     });
   }
 
   void _reconectarPresencia(Function(Map<String, dynamic>) callback) {
     _temporizadorReconexion?.cancel();
     _temporizadorReconexion = Timer(const Duration(seconds: 5), () {
-      if (!_estaConectadoPresencia) conectarPresencia(callback);
+      if (_canalPresencia == null) conectarPresencia(callback);
     });
   }
 
   void _reconectarNotificaciones(Function(Map<String, dynamic>) callback) {
     Timer(const Duration(seconds: 5), () {
-      if (!_estaConectadoNotificaciones) conectarNotificacionesPersonales(callback);
+      if (_canalNotificaciones == null) conectarNotificacionesPersonales(callback);
     });
   }
 
@@ -490,23 +481,19 @@ class ServicioMensajeria {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       if (token == null) return;
-      _canalComunidad?.sink.close();
       final url = Uri.parse("$_urlWs/comunidad/$idComunidad/?token=$token");
+      _canalComunidad?.sink.close();
       _canalComunidad = WebSocketChannel.connect(url);
-      _estaConectadoComunidad = true;
       _canalComunidad!.stream.listen(
         (datos) => alRecibirEvento(jsonDecode(datos)),
         onDone: () {
-          _estaConectadoComunidad = false;
           _reconectarComunidad(idComunidad, alRecibirEvento);
         },
         onError: (err) {
-          _estaConectadoComunidad = false;
           _reconectarComunidad(idComunidad, alRecibirEvento);
         },
       );
     } catch (e) {
-      _estaConectadoComunidad = false;
       _reconectarComunidad(idComunidad, alRecibirEvento);
     }
   }
@@ -515,36 +502,32 @@ class ServicioMensajeria {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       if (token == null) return;
-      _canalGlobal?.sink.close();
       final url = Uri.parse("$_urlWs/global/?token=$token");
+      _canalGlobal?.sink.close();
       _canalGlobal = WebSocketChannel.connect(url);
-      _estaConectadoGlobal = true;
       _canalGlobal!.stream.listen(
         (datos) => alRecibirEvento(jsonDecode(datos)),
         onDone: () {
-          _estaConectadoGlobal = false;
           _reconectarGlobal(alRecibirEvento);
         },
         onError: (err) {
-          _estaConectadoGlobal = false;
           _reconectarGlobal(alRecibirEvento);
         },
       );
     } catch (e) {
-      _estaConectadoGlobal = false;
       _reconectarGlobal(alRecibirEvento);
     }
   }
 
   void _reconectarComunidad(int idComunidad, Function(Map<String, dynamic>) callback) {
     Timer(const Duration(seconds: 5), () {
-      if (!_estaConectadoComunidad) conectarAComunidad(idComunidad, callback);
+      if (_canalComunidad == null) conectarAComunidad(idComunidad, callback);
     });
   }
 
   void _reconectarGlobal(Function(Map<String, dynamic>) callback) {
     Timer(const Duration(seconds: 10), () {
-      if (!_estaConectadoGlobal) conectarAGlobal(callback);
+      if (_canalGlobal == null) conectarAGlobal(callback);
     });
   }
 
@@ -556,7 +539,7 @@ class ServicioMensajeria {
     List<Map<String, dynamic>>? attachments,
   }) async {
     // Intentar por WebSocket si está disponible
-    if (_estaConectadoChat && _canalChat != null) {
+    if (_canalChat != null) {
       try {
         _canalChat!.sink.add(jsonEncode({
           'type': 'message',
@@ -570,7 +553,6 @@ class ServicioMensajeria {
         return true;
       } catch (e) {
         debugPrint('Error enviando mensaje por WS: $e');
-        _estaConectadoChat = false;
       }
     }
 
@@ -583,14 +565,14 @@ class ServicioMensajeria {
   }
 
   void marcarMensajesLeidosWS() {
-    if (_estaConectadoChat && _canalChat != null) {
+    if (_canalChat != null) {
       _canalChat!.sink.add(jsonEncode({'type': 'read_messages'}));
     }
   }
 
   /// Notifica si el usuario actual está escribiendo o no en la sala activa.
   void enviarEventoEscritura(bool escribiendo) {
-    if (_estaConectadoChat && _canalChat != null) {
+    if (_canalChat != null) {
       try {
         _canalChat!.sink.add(jsonEncode({
           'type': 'typing',
@@ -601,13 +583,13 @@ class ServicioMensajeria {
   }
 
   void enviarLatido() {
-    if (_estaConectadoPresencia && _canalPresencia != null) {
+    if (_canalPresencia != null) {
       _canalPresencia!.sink.add(jsonEncode({'type': 'heartbeat'}));
     }
   }
 
   void cambiarEstadoDisponibilidad(String nuevoEstado) {
-    if (_estaConectadoPresencia && _canalPresencia != null) {
+    if (_canalPresencia != null) {
       _canalPresencia!.sink.add(jsonEncode({
         'type': 'change_status',
         'status': nuevoEstado,
@@ -615,11 +597,13 @@ class ServicioMensajeria {
     }
   }
 
-  void dispose() {
+  /// Cierra todas las conexiones y marca al usuario como desconectado (solo para Logout).
+  void limpiarParaCerrarSesion() {
     _temporizadorReconexion?.cancel();
     _temporizadorLatido?.cancel();
     
-    if (_estaConectadoPresencia && _canalPresencia != null) {
+    // Notificamos explícitamente el cierre de sesión antes de romper el socket
+    if (_canalPresencia != null) {
       try {
         _canalPresencia!.sink.add(jsonEncode({
           'type': 'change_status',
@@ -628,17 +612,48 @@ class ServicioMensajeria {
       } catch (_) {}
     }
     
+    desconectarTodo();
+  }
+
+  /// Cierra físicamente todos los sockets abiertos sin excepción.
+  void desconectarTodo() {
     _canalChat?.sink.close();
     _canalPresencia?.sink.close();
     _canalNotificaciones?.sink.close();
     _canalComunidad?.sink.close();
     _canalGlobal?.sink.close();
     _canalPublicacion?.sink.close();
+    
+    _canalChat = null;
+    _canalPresencia = null;
+    _canalNotificaciones = null;
+    _canalComunidad = null;
+    _canalGlobal = null;
+    _canalPublicacion = null;
+  }
+
+  void dispose() {
+    _canalChat?.sink.close();
+    _canalComunidad?.sink.close();
+    _canalPublicacion?.sink.close();
+    _canalChat = null;
+    _canalComunidad = null;
+    _canalPublicacion = null;
+  }
+
+  void desconectarChat() {
+    _canalChat?.sink.close();
+    _canalChat = null;
+  }
+
+  void desconectarGlobal() {
+    _canalGlobal?.sink.close();
+    _canalGlobal = null;
   }
 
   void _reconectarPublicacion(int idPublicacion, Function(Map<String, dynamic>) callback) {
     Timer(const Duration(seconds: 5), () {
-      if (!_estaConectadoPublicacion) conectarAPublicacion(idPublicacion, callback);
+      if (_canalPublicacion == null) conectarAPublicacion(idPublicacion, callback);
     });
   }
 
@@ -646,23 +661,19 @@ class ServicioMensajeria {
     try {
       final token = await _servicioUsuarios.obtenerToken();
       if (token == null) return;
-      _canalPublicacion?.sink.close();
       final url = Uri.parse("$_urlWs/publicacion/$idPublicacion/?token=$token");
+      _canalPublicacion?.sink.close();
       _canalPublicacion = WebSocketChannel.connect(url);
-      _estaConectadoPublicacion = true;
       _canalPublicacion!.stream.listen(
         (datos) => alRecibirEvento(jsonDecode(datos)),
         onDone: () {
-          _estaConectadoPublicacion = false;
           _reconectarPublicacion(idPublicacion, alRecibirEvento);
         },
         onError: (err) {
-          _estaConectadoPublicacion = false;
           _reconectarPublicacion(idPublicacion, alRecibirEvento);
         },
       );
     } catch (e) {
-      _estaConectadoPublicacion = false;
       _reconectarPublicacion(idPublicacion, alRecibirEvento);
     }
   }

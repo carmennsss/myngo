@@ -41,7 +41,11 @@ class DocumentosUtilidad(APIView):
         Returns:
             Response: URL del documento PDF.
         """
-        nombre_archivo = 'legal/Reglas_comunidad.pdf'
+        lang = request.query_params.get('lang', 'es')
+        if lang.startswith('en'):
+            nombre_archivo = 'legal/Reglas_comunidad_en.pdf'
+        else:
+            nombre_archivo = 'legal/Reglas_comunidad.pdf'
         try:
             url_s3 = default_storage.url(nombre_archivo)
             return Response({'reglas_comunidad': url_s3}, status=status.HTTP_200_OK)

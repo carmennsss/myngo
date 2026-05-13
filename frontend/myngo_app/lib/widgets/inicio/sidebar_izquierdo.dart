@@ -74,10 +74,12 @@ class SidebarIzquierdo extends StatelessWidget {
       children: [
         _TarjetaSidebar(
           titulo: safeTr('myGatosTitle', 'Mis Michi-Grupos'),
-          contenido: (cargando || comunidades == null) 
-           ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
-           : comunidades!.isEmpty 
-             ? Text(safeTr('emptyStateCommunitiesList', 'Únete a una comunidad 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+          contenido: !estaLogueado
+           ? Text(safeTr('loginRequiredForCommunities', 'Inicia sesión para unirte a comunidades 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
+           : (cargando || comunidades == null) 
+             ? const Center(child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Color(0xFFC35E34), strokeWidth: 2)))
+             : comunidades!.isEmpty 
+               ? Text(safeTr('emptyStateCommunitiesList', 'Únete a una comunidad 🐾'), style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade500))
              : Wrap(
                spacing: 12,
                runSpacing: 12,

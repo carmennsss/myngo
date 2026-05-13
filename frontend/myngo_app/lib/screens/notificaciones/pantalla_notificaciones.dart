@@ -152,7 +152,10 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
-      if (respuesta.exito) _cargarNotificaciones();
+      if (respuesta.exito) {
+        await _cargarNotificaciones();
+        widget.onNotificacionesLeidas?.call();
+      }
     }
   }
 
@@ -160,7 +163,7 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones>
   void _navegarADetalle(Notificacion notif) async {
     // Marcar como leída localmente e informar al servidor
     if (!notif.leida) {
-      _servicioNotificaciones.marcarComoLeida(notif.id);
+      await _servicioNotificaciones.marcarComoLeida(notif.id);
       setState(() {
         final index = _notificaciones.indexWhere((n) => n.id == notif.id);
         if (index != -1) {
@@ -368,7 +371,7 @@ class _TarjetaNotificacion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool esPeticionPendiente = (notif.tipo == 'PETICION_CO_ADMIN' || notif.tipo == 'PETICION_SEGUIMIENTO' || notif.tipo == 'PETICION_UNION') && 
-                                (notif.estadoPeticion == null || notif.estadoPeticion!.isEmpty);
+                                (notif.estadoPeticion == null || notif.estadoPeticion!.isEmpty || notif.estadoPeticion == 'SOLICITUD' || notif.estadoPeticion == 'PENDIENTE');
     final color = _getColorTipo(notif.tipo);
     final icon = _getIconoTipo(notif.tipo);
 
