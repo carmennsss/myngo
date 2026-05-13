@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:myngo_app/utils/tr_helper.dart';
 
 
 class GlobalVideoManager {

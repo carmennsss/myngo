@@ -1760,7 +1760,7 @@ class _PantallaChatState extends State<PantallaChat> {
     if (_usuariosEscribiendo.length == 1) {
       final uId = _usuariosEscribiendo.first;
       final part = _sala?.participantes.firstWhere((p) => p.usuarioId == uId, 
-        orElse: () => ParticipanteChat(id: 0, usuarioId: uId, nombreUsuario: "...", fechaUnion: DateTime.now()));
+        orElse: () => ParticipanteChat(id: 0, salaId: _sala?.id ?? 0, usuarioId: uId, apodo: "...", fechaUnion: DateTime.now()));
       texto = tr('chatIsTyping', {'name': part?.nombreAMostrar ?? '...'});
     } else {
       texto = tr('chatSeveralTyping');
