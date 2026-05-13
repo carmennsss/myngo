@@ -32,6 +32,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 API_URL = env('API_URL', default='http://localhost:8000')
+FRONTEND_URL = env('FRONTEND_URL', default='https://myngo.pages.dev')
 
 ALLOWED_HOSTS = ['*']
 
@@ -94,6 +95,7 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+    "ngrok-skip-browser-warning",
 ]
 CORS_ALLOW_METHODS = [
     "DELETE",

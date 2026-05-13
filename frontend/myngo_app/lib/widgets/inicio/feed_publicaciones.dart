@@ -10,6 +10,7 @@ import '../../models/usuario.dart';
 import 'tarjeta_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
 
@@ -147,7 +148,7 @@ class _FeedPublicacionesState extends State<FeedPublicaciones> {
         action: SnackBarAction(
           label: tr('authLoginLinkAction').toUpperCase(),
           textColor: Colors.white,
-          onPressed: () => Navigator.pushNamed(context, '/login'),
+          onPressed: () => context.push('/login'),
         ),
       ));
       return;

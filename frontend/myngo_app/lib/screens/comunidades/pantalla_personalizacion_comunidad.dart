@@ -757,7 +757,6 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
                   child: Row(
                     children: [
                       _buildMockTab(tr('postsTab'), true, esOscuro),
-                      _buildMockTab(tr('storeTab'), false, esOscuro),
                       _buildMockTab(tr('chatTab'), false, esOscuro),
                     ],
                   ),

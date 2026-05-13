@@ -5,6 +5,7 @@ import '../../services/servicio_usuarios.dart';
 import '../../widgets/boton_carga.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import 'package:go_router/go_router.dart';
 
 // Pantalla de recuperación de contraseña (modo oscuro).
 // Pide el email del usuario y le manda un correo con el enlace de restablecimiento.
@@ -194,7 +195,7 @@ class _PantallaRecuperarContrasenaState
                                   
                                   Center(
                                     child: TextButton.icon(
-                                      onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false),
+                                      onPressed: () => context.go('/login'),
                                       icon: const Icon(Icons.arrow_back_rounded, size: 20),
                                       label: Text(tr('recoveryRemembered'), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.8)),
                                       style: TextButton.styleFrom(
@@ -245,7 +246,7 @@ class _PantallaRecuperarContrasenaState
 
       if (respuesta.exito) {
         Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          if (mounted) context.go('/login');
         });
       }
     }

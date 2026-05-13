@@ -32,9 +32,21 @@ class GestorDescargas {
         // En Web usamos la implementación específica que usa dart:html
         await descargarArchivoWeb(url, nombre);
       } else {
-        // En Mobile, abrimos externamente para que el navegador gestione la descarga
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        // En Mobile, abrimos externamente para que el navegador gestione la descarga.
+        // Intentamos externalApplication primero para forzar al navegador.
+        try {
+          bool lanzado = false;
+          if (await canLaunchUrl(uri)) {
+            lanzado = await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+          
+          // Si falló canLaunch o launch, intentamos el modo por defecto como fallback.
+          if (!lanzado) {
+            await launchUrl(uri, mode: LaunchMode.platformDefault);
+          }
+        } catch (e) {
+          // Si todo falla, intentamos lanzar sin modo específico.
+          await launchUrl(uri);
         }
       }
     } catch (e) {

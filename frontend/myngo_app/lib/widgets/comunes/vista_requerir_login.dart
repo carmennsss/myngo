@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'boton_tactil.dart';
 
 // Pantalla de bloqueo que aparece cuando un usuario no logueado intenta acceder a algo privado.
@@ -53,7 +54,7 @@ class VistaRequerirLogin extends StatelessWidget {
             ),
             const SizedBox(height: 40),
             BotonTactil(
-              onTap: () => Navigator.pushNamed(context, '/login'),
+              onTap: () => context.push('/login'),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 decoration: BoxDecoration(
@@ -71,7 +72,7 @@ class VistaRequerirLogin extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/registro'),
+              onPressed: () => context.push('/registro'),
               child: Text(
                 '¿Aún no eres un michi? Regístrate',
                 style: GoogleFonts.outfit(color: const Color(0xFFC35E34), fontWeight: FontWeight.bold),

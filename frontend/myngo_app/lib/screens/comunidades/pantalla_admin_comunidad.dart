@@ -15,7 +15,7 @@ import 'package:myngo_app/models/imagen_galeria.dart';
 import 'package:myngo_app/models/publicacion.dart';
 
 import 'pantalla_personalizacion_comunidad.dart';
-import 'pantalla_moderacion_tienda.dart';
+
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
@@ -40,7 +40,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   TabController? _tabController;
   Map<String, dynamic>? _datos;
   bool _cargando = true;
-  bool _tiendaHabilitada = false;
+
 
 
   late TextEditingController _nombreCtrl;
@@ -60,7 +60,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
     _nombreCtrl = TextEditingController(text: widget.comunidad.nombre);
     _descCtrl = TextEditingController(text: widget.comunidad.descripcion);
     _colorSeleccionado = widget.comunidad.colorTema.toHex();
-    _tiendaHabilitada = widget.comunidad.tiendaHabilitada;
+
 
     
 
@@ -126,7 +126,6 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                 Tab(text: tr('adminTabRequests'), icon: const Icon(Icons.person_add_rounded)),
                 Tab(text: tr('adminTabMembers'), icon: const Icon(Icons.people_rounded)),
                 Tab(text: tr('adminTabReports'), icon: const Icon(Icons.gavel_rounded)),
-                Tab(text: tr('adminTabStore'), icon: const Icon(Icons.shopping_bag_rounded)),
                 Tab(text: tr('adminTabSettings'), icon: const Icon(Icons.settings_rounded)),
               ],
             ),
@@ -139,7 +138,6 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                   _buildSolicitudesTab(tr),
                   _buildMiembrosTab(tr),
                   _buildReportesTab(tr),
-                  PantallaModeracionTienda(comunidad: widget.comunidad),
                   _buildAjustesTab(tr),
                 ],
               ),
@@ -478,18 +476,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
         const SizedBox(height: 32),
         _buildSeccionHeader(tr('adminSectionFeatures')),
         const SizedBox(height: 16),
-        _buildConfigItem(
-          icon: Icons.store_rounded,
-          title: tr('adminStoreTitle'),
-          subtitle: _tiendaHabilitada ? tr('adminStoreEnabled') : tr('adminStoreDisabled'),
-          trailing: Switch(
 
-            value: _tiendaHabilitada,
-            activeColor: const Color(0xFFC35E34),
-            onChanged: (val) => setState(() => _tiendaHabilitada = val),
-          ),
-          onTap: () => setState(() => _tiendaHabilitada = !_tiendaHabilitada),
-        ),
         const SizedBox(height: 32),
         _buildSeccionHeader(tr('adminSectionTags')),
         const SizedBox(height: 16),

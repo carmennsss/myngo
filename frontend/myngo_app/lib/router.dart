@@ -13,6 +13,8 @@ import 'package:myngo_app/screens/comunidades/pantalla_detalle_post.dart';
 import 'package:myngo_app/screens/perfiles/pantalla_detalle_perfil.dart';
 import 'package:myngo_app/screens/perfiles/pantalla_personalizar_perfil.dart';
 import 'package:myngo_app/screens/perfiles/pantalla_configuracion_cuenta.dart';
+import 'package:myngo_app/screens/registro/pantalla_confirmar_registro.dart';
+import 'package:myngo_app/screens/recuperar_contrasena/pantalla_confirmar_recuperacion.dart';
 
 // Components inside the Shell
 import 'package:myngo_app/widgets/inicio/feed_publicaciones.dart';
@@ -78,6 +80,20 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/recuperar_contrasena',
       builder: (context, state) => const PantallaRecuperarContrasena(),
+    ),
+    GoRoute(
+      path: '/usuarios/confirmar/:token',
+      builder: (context, state) {
+        final token = state.pathParameters['token'] ?? '';
+        return PantallaConfirmarRegistro(token: token);
+      },
+    ),
+    GoRoute(
+      path: '/usuarios/recuperar-confirmar/:token',
+      builder: (context, state) {
+        final token = state.pathParameters['token'] ?? '';
+        return PantallaConfirmarRecuperacion(token: token);
+      },
     ),
     GoRoute(
       path: '/configuracion',

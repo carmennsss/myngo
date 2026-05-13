@@ -15,6 +15,7 @@ from .views import (
     SeguirPerfil,
     CambiarPassword,
     EliminarCuenta,
+    ConfirmarRecuperacionPassword,
 )
 from .views_listas import ListaSeguidores, ListaSeguidos
 
@@ -24,6 +25,7 @@ urlpatterns = [
     path('confirmar/<str:token>/', RegistroUsuarios.as_view()),
     path('login/', LoginUsuario.as_view(), name="login"),
     path('recuperar-password/', RecuperarPassword.as_view(), name='recuperar-password'),
+    path('recuperar-password/confirmar/<str:token>/', ConfirmarRecuperacionPassword.as_view(), name='confirmar-recuperar-password'),
 
     # Perfiles y Datos de Usuario
     path('datos/', DatosUsuarios.as_view(), name="listar_datos_usuarios"),

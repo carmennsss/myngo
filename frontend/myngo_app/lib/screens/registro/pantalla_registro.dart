@@ -11,6 +11,7 @@ import '../../utils/configuracion.dart';
 import '../../widgets/boton_idioma.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../services/api_base.dart';
 
 // Pantalla de creación de cuenta. Similar al login en estructura, pero con el formulario
 // de registro y el paso extra del diálogo de aceptación de normas de la comunidad.
@@ -360,13 +361,15 @@ class _TarjetaRegistroState extends State<TarjetaRegistro> {
     bool acepto = false;
     bool declino = false;
 
-    final futureDescargaPdf = http.get(Uri.parse('${Configuracion.baseUrl}/documentos/reglas_comunidad/'))
-      .then((res) async {
-        if (res.statusCode != 200) throw Exception('Error API');
-        final datos = jsonDecode(res.body);
-        final urlPdf = datos['reglas_comunidad'];
-        return await http.get(Uri.parse(urlPdf));
-      });
+    final futureDescargaPdf = http.get(
+      Uri.parse('${Configuracion.baseUrl}/documentos/reglas_comunidad/'),
+      headers: ApiBase.obtenerHeaders(),
+    ).then((res) async {
+      if (res.statusCode != 200) throw Exception('Error API');
+      final datos = jsonDecode(res.body);
+      final urlPdf = datos['reglas_comunidad'];
+      return await http.get(Uri.parse(urlPdf));
+    });
 
     showDialog(
       context: context,
