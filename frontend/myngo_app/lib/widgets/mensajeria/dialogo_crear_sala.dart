@@ -43,8 +43,12 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
       builder: (context) {
         // Si el título es el por defecto (Nuevo Chat 🐾), lo localizamos
         final tituloFinal = widget.titulo == 'Nuevo Chat 🐾' ? tr('chatNew') : widget.titulo;
-        return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
+        return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, scrollController) => Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -53,6 +57,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
           // Tirador superior
           Center(
             child: Container(
@@ -71,7 +76,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
             style: GoogleFonts.outfit(
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              color: const Color(0xFF2D2D2D),
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -1,
             ),
           ),
@@ -145,7 +150,7 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF2D2D2D),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -231,7 +236,8 @@ class _DialogoCrearSalaState extends State<DialogoCrearSala> {
           ),
         ],
       ),
-        );
+      ),  // Container
+        );  // DraggableScrollableSheet
       },
     );
   }

@@ -62,7 +62,7 @@ class _ModalListaUsuariosState extends State<ModalListaUsuarios> {
 
   @override
   Widget build(BuildContext context) {
-    final colorFondo = widget.esAppClara ? Colors.white : const Color(0xFF1E1E1E);
+    final colorFondo = Theme.of(context).colorScheme.surface;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,

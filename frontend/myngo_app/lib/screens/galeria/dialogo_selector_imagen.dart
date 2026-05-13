@@ -5,8 +5,6 @@ import '../../services/servicio_galeria.dart';
 import '../../services/servicio_usuarios.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-// Bottom sheet que muestra la galería del usuario para que pueda
-// seleccionar una imagen ya subida y meterla en una colección sin volver a subirla.
 class DialogoSelectorImagen extends StatefulWidget {
   const DialogoSelectorImagen({Key? key}) : super(key: key);
 
@@ -26,9 +24,7 @@ class _DialogoSelectorImagenState extends State<DialogoSelectorImagen> {
     _cargarGaleria();
   }
 
-  // Pide las imágenes del usuario al servidor para mostrarlas en el grid
   Future<void> _cargarGaleria() async {
-    // Obtenemos la galería general (pública)
     final res = await _servicioGaleria.obtenerGaleria();
     if (mounted && res.exito) {
       setState(() {
@@ -42,27 +38,28 @@ class _DialogoSelectorImagenState extends State<DialogoSelectorImagen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
           const SizedBox(height: 12),
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: cs.onSurface.withOpacity(0.24), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 16),
           Text(
             'Selecciona una imagen de tu galería',
-            style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: GoogleFonts.outfit(color: cs.onSurface, fontWeight: FontWeight.bold, fontSize: 18),
           ),
           const SizedBox(height: 16),
           Expanded(
             child: _cargando
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF248EA6)))
+                ? Center(child: CircularProgressIndicator(color: cs.tertiary))
                 : _items.isEmpty
-                    ? Center(child: Text('No tienes imágenes aún 🐾', style: GoogleFonts.outfit(color: Colors.grey)))
+                    ? Center(child: Text('No tienes imágenes aún 🐾', style: GoogleFonts.outfit(color: cs.onSurface.withOpacity(0.5))))
                     : GridView.builder(
                         padding: const EdgeInsets.all(16),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -80,7 +77,7 @@ class _DialogoSelectorImagenState extends State<DialogoSelectorImagen> {
                               child: CachedNetworkImage(
                                 imageUrl: img.urlArchivo,
                                 fit: BoxFit.cover,
-                                placeholder: (c, u) => Container(color: Colors.white10),
+                                placeholder: (c, u) => Container(color: cs.surfaceVariant),
                               ),
                             ),
                           );

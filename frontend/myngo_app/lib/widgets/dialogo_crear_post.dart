@@ -95,14 +95,14 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
             bottom: MediaQuery.of(context).viewInsets.bottom, 
             left: 24, right: 24, top: 24
           ),
-          decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E), 
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32))
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32))
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(widget.titulo, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(widget.titulo, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 24),
               Flexible(
                 child: SingleChildScrollView(
@@ -111,26 +111,26 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                     children: [
                       TextField(
                         controller: _controladorTitulo,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: tr('postTitleHint'),
-                          hintStyle: GoogleFonts.inter(color: Colors.grey),
+                          hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           filled: true,
-                          fillColor: const Color(0xFF121212),
+                          fillColor: Theme.of(context).colorScheme.surfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _controladorTexto,
                         maxLines: 4,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: tr('postHint'),
-                          hintStyle: GoogleFonts.inter(color: Colors.grey),
+                          hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           filled: true,
-                          fillColor: const Color(0xFF121212),
+                          fillColor: Theme.of(context).colorScheme.surfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -186,14 +186,14 @@ class _DialogoCrearPostState extends State<DialogoCrearPost> {
                         ),
                       TextField(
                         controller: _controladorEtiquetas,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: tr('tagsHint'),
-                          hintStyle: GoogleFonts.inter(color: Colors.grey),
-                          prefixIcon: const Icon(Icons.sell_outlined, color: Colors.grey),
+                          hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
+                          prefixIcon: Icon(Icons.sell_outlined, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           filled: true,
-                          fillColor: const Color(0xFF1E1E1E),
+                          fillColor: Theme.of(context).colorScheme.surfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 16),

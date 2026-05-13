@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/respuesta_api.dart';
 import '../utils/configuracion.dart';
 import 'api_base.dart';
+import '../utils/manejo_errores.dart';
 import 'servicio_usuarios.dart';
 
 // Gestiona todo lo relacionado con denuncias y control de contenido.
@@ -47,7 +49,8 @@ class ServicioModeracion {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al enviar la denuncia');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioModeracion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -68,7 +71,8 @@ class ServicioModeracion {
       }
       return RespuestaApi(exito: false, mensaje: 'No se pudo recuperar la información administrativa');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioModeracion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 
@@ -89,7 +93,8 @@ class ServicioModeracion {
       }
       return RespuestaApi(exito: false, mensaje: 'Error al procesar la resolución del reporte');
     } catch (e) {
-      return RespuestaApi(exito: false, mensaje: 'Error de conexión: $e');
+      debugPrint('[ERROR ServicioModeracion] $e');
+      return RespuestaApi(exito: false, mensaje: getFriendlyError(e));
     }
   }
 }

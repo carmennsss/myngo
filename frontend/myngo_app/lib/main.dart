@@ -9,6 +9,7 @@ import 'package:tolgee/tolgee.dart';
 import 'providers/post_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/locale_notifier.dart';
+import 'providers/notificacion_provider.dart';
 import 'services/servicio_notificaciones_locales.dart';
 import 'router.dart';
 import 'package:flutter/foundation.dart';
@@ -42,6 +43,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => LocaleNotifier()),
+        ChangeNotifierProvider(create: (_) => NotificacionProvider()),
       ],
       child: const TolgeeInContextWrapper(child: MiAplicacion()),
     ),

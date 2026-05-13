@@ -190,3 +190,30 @@ class MarcarNotificacionLeida(APIView):
             return Response({'mensaje': 'Notificación marcada como leída'})
         except Notificacion.DoesNotExist:
             return Response({'error': 'Notificación no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class MarcarLeidasPorTipo(APIView):
+    """Marca como leídas las notificaciones del usuario filtrando por una lista de tipos."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Actualiza las notificaciones de los tipos indicados a leídas.
+
+        Args:
+            request: Petición POST con JSON {"tipos": ["TIPO1", "TIPO2"]}.
+
+        Returns:
+            Response: Número de notificaciones actualizadas.
+        """
+        tipos = request.data.get('tipos', [])
+        if not tipos:
+            return Response({'error': 'No se proporcionaron tipos'}, status=status.HTTP_400_BAD_REQUEST)
+
+        actualizadas = Notificacion.objects.filter(
+            usuario=request.user,
+            tipo__in=tipos,
+            leida=False
+        ).update(leida=True)
+
+        return Response({'actualizadas': actualizadas})

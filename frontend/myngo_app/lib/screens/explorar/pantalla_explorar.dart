@@ -221,7 +221,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
           backgroundColor: const Color(0xFFFEF5F1),
           body: RefreshIndicator(
             color: const Color(0xFFF28B50),
-            backgroundColor: const Color(0xFF1E1E1E),
+            backgroundColor: Theme.of(context).colorScheme.surface,
             onRefresh: () => _cargarDatos(filtro: _controladorBusqueda.text),
             child: Scrollbar(
               controller: _scrollController,

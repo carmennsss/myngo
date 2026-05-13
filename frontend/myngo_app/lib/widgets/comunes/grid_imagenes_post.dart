@@ -203,7 +203,7 @@ class _GridMediaItemState extends State<_GridMediaItem> {
           ),
           errorWidget: (context, url, error) {
             return Container(
-              color: Colors.grey.shade900,
+              color: Colors.grey.shade300,
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

@@ -396,12 +396,18 @@ def actualizar_sala(request, pk):
             
             if visual_modified: perso.save()
 
-        # Crear mensajes de sistema
-        for cambio in cambios:
+        # Crear UN único mensaje de sistema agrupando todos los cambios
+        contenido_sistema = None
+        if len(cambios) == 1:
+            contenido_sistema = f"💬 {request.user.nombre_usuario} {cambios[0]}"
+        elif len(cambios) > 1:
+            contenido_sistema = f"✨ {request.user.nombre_usuario} ha personalizado el chat"
+
+        if contenido_sistema:
             MensajeChat.objects.create(
                 sala=sala,
                 emisor=request.user,
-                contenido=f"💬 {request.user.nombre_usuario} {cambio}",
+                contenido=contenido_sistema,
                 tipo='SISTEMA'
             )
 
@@ -411,7 +417,7 @@ def actualizar_sala(request, pk):
             {
                 'type': 'room_updated',
                 'data': SalaChatSerializer(sala, context={'request': request}).data,
-                'system_messages': [f"💬 {request.user.nombre_usuario} {c}" for c in cambios]
+                'system_messages': [contenido_sistema] if contenido_sistema else []
             }
         )
         

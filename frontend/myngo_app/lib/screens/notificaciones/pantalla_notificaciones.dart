@@ -11,13 +11,14 @@ import '../comunidades/pantalla_admin_comunidad.dart';
 import '../perfiles/pantalla_detalle_perfil.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../../widgets/comunes/boton_tactil.dart';
+import '../../providers/notificacion_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
 
 // Bandeja de notificaciones dividida en tres pestañas: Interacciones, Solicitudes y Alertas.
-// Al abrir la pantalla marca automáticamente como leídas las que no son solicitudes pendientes.
+// Implementa lectura diferida: marca el tab como leído 2 segundos después de entrar en él.
 class PantallaNotificaciones extends StatefulWidget {
   final VoidCallback? onNotificacionesLeidas;
   const PantallaNotificaciones({super.key, this.onNotificacionesLeidas});
@@ -26,7 +27,9 @@ class PantallaNotificaciones extends StatefulWidget {
   State<PantallaNotificaciones> createState() => _PantallaNotificacionesState();
 }
 
-class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
+class _PantallaNotificacionesState extends State<PantallaNotificaciones>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   final _servicioNotificaciones = ServicioNotificaciones();
   final _servicioComunidades = ServicioComunidades();
   final _servicioPerfiles = ServicioPerfiles();
@@ -34,22 +37,61 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
   List<Notificacion> _notificaciones = [];
   bool _estaCargando = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _cargarNotificaciones();
-  }
-
-  // Tipos que requieren acción o atención especial: no se marcan leídas automáticamente
+  // Tipos que NO se marcan como leídos automáticamente (requieren acción)
   static const _tiposPeticion = {
-    'PETICION_CO_ADMIN', 
-    'PETICION_UNION', 
-    'PETICION_SEGUIMIENTO', 
+    'PETICION_CO_ADMIN',
+    'PETICION_UNION',
+    'PETICION_SEGUIMIENTO',
     'CONTENIDO_REPORTADO',
     'NUEVO_REPORTE'
   };
 
-  // Carga todas las notificaciones y marca las no-interactivas como leídas en segundo plano
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_alCambiarTab);
+    _cargarNotificaciones();
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_alCambiarTab);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // Lectura diferida: espera 2 segundos y si el usuario sigue en el mismo tab, marca como leído
+  void _alCambiarTab() {
+    if (_tabController.indexIsChanging) return;
+    final tabActual = _tabController.index;
+    final notifTab = NotifTab.values[tabActual];
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      if (_tabController.index != tabActual) return; // el usuario cambió de tab
+
+      // Decrementar badge inmediatamente en el provider
+      context.read<NotificacionProvider>().alLeerTab(notifTab);
+
+      // Marcar como leídas en el backend (en background)
+      final tipos = NotificacionProvider.tiposDeTab(notifTab);
+      _servicioNotificaciones.marcarComoLeidasPorTipos(tipos).then((_) {
+        // Actualizar la vista local
+        if (mounted) {
+          setState(() {
+            _notificaciones = _notificaciones.map((n) {
+              if (tipos.contains(n.tipo)) return n.copyWith(leida: true);
+              return n;
+            }).toList();
+          });
+          widget.onNotificacionesLeidas?.call();
+        }
+      });
+    });
+  }
+
+  // Carga notificaciones desde el backend sin auto-marcar al cargar
   Future<void> _cargarNotificaciones() async {
     final respuesta = await _servicioNotificaciones.listarNotificaciones();
     if (mounted) {
@@ -58,25 +100,37 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
         _estaCargando = false;
       });
 
-      // Solo marcamos como leídas las que NO son de atención especial
-      final tieneNoLeidasNormales = _notificaciones.any(
-        (n) => !n.leida && !_tiposPeticion.contains(n.tipo),
-      );
-
-      if (tieneNoLeidasNormales) {
-        await _servicioNotificaciones.marcarTodasComoLeidas();
-        if (mounted) {
-          setState(() {
-            _notificaciones = _notificaciones.map((n) {
-              if (_tiposPeticion.contains(n.tipo)) return n;
-              return n.copyWith(leida: true);
-            }).toList();
-          });
-          widget.onNotificacionesLeidas?.call();
-        }
+      // Redistribuir conteos por tab desde los datos reales
+      final provider = context.read<NotificacionProvider>();
+      provider.reset(); // reseteamos para recalcular desde los datos frescos
+      for (final n in _notificaciones.where((n) => !n.leida)) {
+        // Silenciosamente actualizamos sin notifyListeners para no rebuildar en cada item
       }
+      // Recalculamos de golpe
+      final sinLeerInteracciones = _notificaciones
+          .where((n) => !n.leida && NotificacionProvider.tabParaTipo(n.tipo) == NotifTab.interacciones)
+          .length;
+      final sinLeerSolicitudes = _notificaciones
+          .where((n) => !n.leida && NotificacionProvider.tabParaTipo(n.tipo) == NotifTab.solicitudes)
+          .length;
+      final sinLeerSistema = _notificaciones
+          .where((n) => !n.leida && NotificacionProvider.tabParaTipo(n.tipo) == NotifTab.sistema)
+          .length;
+      if (sinLeerInteracciones > 0) {
+        for (var i = 0; i < sinLeerInteracciones; i++) provider.alRecibirNotificacion('LIKE');
+      }
+      if (sinLeerSolicitudes > 0) {
+        for (var i = 0; i < sinLeerSolicitudes; i++) provider.alRecibirNotificacion('PETICION_UNION');
+      }
+      if (sinLeerSistema > 0) {
+        for (var i = 0; i < sinLeerSistema; i++) provider.alRecibirNotificacion('ROL_ACTUALIZADO');
+      }
+
+      // Disparar lectura diferida para el tab activo inicial
+      _alCambiarTab();
     }
   }
+
 
   // Acepta o rechaza solicitudes de seguimiento o de unión a comunidades
   Future<void> _responder(Notificacion notif, bool aceptar) async {
@@ -169,54 +223,80 @@ class _PantallaNotificacionesState extends State<PantallaNotificaciones> {
     final solicitudes = _notificaciones.where((n) => ['PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO'].contains(n.tipo)).toList();
     final sistema = _notificaciones.where((n) => !['LIKE', 'COMENTARIO', 'VOTO', 'PETICION_UNION', 'PETICION_CO_ADMIN', 'PETICION_SEGUIMIENTO'].contains(n.tipo)).toList();
 
-    return DefaultTabController(
-      length: 3,
-      child: Builder(builder: (context) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFFEF5F1), // Peach Cream Universal
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            toolbarHeight: 80,
-            title: Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: Text(
-                tr('notificationTitle'),
-                style: GoogleFonts.outfit(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF4A4440),
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ),
-            bottom: TabBar(
-              dividerColor: Colors.transparent,
-              isScrollable: true,
-              tabAlignment: TabAlignment.center,
-              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
-              unselectedLabelColor: Colors.grey.shade500,
-              labelColor: const Color(0xFFC35E34),
-              indicatorColor: const Color(0xFFC35E34),
-              indicatorSize: TabBarIndicatorSize.label,
-              tabs: [
-                Tab(text: tr('notificationTabInteractions'), icon: const Icon(Icons.favorite_rounded)),
-                Tab(text: tr('notificationTabRequests'), icon: const Icon(Icons.group_add_rounded)),
-                Tab(text: tr('notificationTabAlerts'), icon: const Icon(Icons.notifications_rounded)),
-              ],
+    return Scaffold(
+      backgroundColor: const Color(0xFFFEF5F1),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 80,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: Text(
+            tr('notificationTitle'),
+            style: GoogleFonts.outfit(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF4A4440),
+              letterSpacing: 1.0,
             ),
           ),
-          body: TabBarView(
-            children: [
-              _buildListaTab(interacciones, tr('notificationEmptyInteractions'), Icons.favorite_border_rounded, tr),
-              _buildListaTab(solicitudes, tr('notificationEmptyRequests'), Icons.group_add_rounded, tr),
-              _buildListaTab(sistema, tr('notificationEmptyAlerts'), Icons.notifications_none_rounded, tr),
-            ],
-          ),
-        );
-      }),
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          dividerColor: Colors.transparent,
+          isScrollable: true,
+          tabAlignment: TabAlignment.center,
+          labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+          unselectedLabelColor: Colors.grey.shade500,
+          labelColor: const Color(0xFFC35E34),
+          indicatorColor: const Color(0xFFC35E34),
+          indicatorSize: TabBarIndicatorSize.label,
+          tabs: [
+            _buildTab(
+              context,
+              tr('notificationTabInteractions'),
+              Icons.favorite_rounded,
+              context.watch<NotificacionProvider>().sinLeerDeTab(NotifTab.interacciones),
+            ),
+            _buildTab(
+              context,
+              tr('notificationTabRequests'),
+              Icons.group_add_rounded,
+              context.watch<NotificacionProvider>().sinLeerDeTab(NotifTab.solicitudes),
+            ),
+            _buildTab(
+              context,
+              tr('notificationTabAlerts'),
+              Icons.notifications_rounded,
+              context.watch<NotificacionProvider>().sinLeerDeTab(NotifTab.sistema),
+            ),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildListaTab(interacciones, tr('notificationEmptyInteractions'), Icons.favorite_border_rounded, tr),
+          _buildListaTab(solicitudes, tr('notificationEmptyRequests'), Icons.group_add_rounded, tr),
+          _buildListaTab(sistema, tr('notificationEmptyAlerts'), Icons.notifications_none_rounded, tr),
+        ],
+      ),
     );
   }
+
+  // Construye un tab con badge de no leídos
+  Widget _buildTab(BuildContext context, String label, IconData icon, int badgeCount) {
+    return Tab(
+      text: label,
+      icon: Badge(
+        label: Text(badgeCount.toString(), style: const TextStyle(fontSize: 10)),
+        isLabelVisible: badgeCount > 0,
+        backgroundColor: const Color(0xFFC35E34),
+        child: Icon(icon),
+      ),
+    );
+  }
+
 
   // Renderiza la lista de notificaciones de cada pestaña
   Widget _buildListaTab(List<Notificacion> lista, String mensajeVacio, IconData iconoVacio, dynamic tr) {

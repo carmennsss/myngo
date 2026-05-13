@@ -15,6 +15,7 @@ import '../dialogo_crear_post.dart';
 import '../../utils/estilo_post_helper.dart';
 import '../../services/servicio_comunidades.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../utils/manejo_errores.dart';
 
 class TarjetaPost extends StatefulWidget {
   final Publicacion post;
@@ -94,12 +95,7 @@ class _TarjetaPostState extends State<TarjetaPost> {
 
   Future<void> _toggleLike() async {
     if (!widget.post.usuarioEsMiembro) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(tr('communityJoinToLike')),
-          backgroundColor: const Color(0xFFC35E34),
-        ),
-      );
+      mostrarAviso(context, tr('communityJoinToLike'));
       return;
     }
     setState(() {
@@ -117,25 +113,13 @@ class _TarjetaPostState extends State<TarjetaPost> {
         widget.post.usuarioDioLike = _dioLike;
         widget.post.likesCount = _likesCount;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.mensaje), 
-          backgroundColor: const Color(0xFFD95F43),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      mostrarError(context, res.mensaje, mensajePersonalizado: res.mensaje);
     }
   }
 
   Future<void> _toggleGuardado() async {
     if (!widget.post.usuarioEsMiembro) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(tr('communityJoinToSave')),
-          backgroundColor: const Color(0xFFC35E34),
-        ),
-      );
+      mostrarAviso(context, tr('communityJoinToSave'));
       return;
     }
     showModalBottomSheet(

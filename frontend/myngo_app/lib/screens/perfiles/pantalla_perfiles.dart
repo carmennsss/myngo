@@ -135,7 +135,7 @@ class _PantallaPerfilesState extends State<PantallaPerfiles> {
     
     return RefreshIndicator(
       color: const Color(0xFFF28B50),
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       onRefresh: () => _cargarDatos(),
       child: ListView.builder(
         physics: const BouncingScrollPhysics(),

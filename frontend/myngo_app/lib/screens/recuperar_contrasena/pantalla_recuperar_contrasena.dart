@@ -63,20 +63,12 @@ class _PantallaRecuperarContrasenaState
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
-        return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1A1A), Color(0xFF121212)],
-          ),
-        ),
         child: Stack(
           children: [
             // Decoración bubble de fondo
@@ -87,7 +79,7 @@ class _PantallaRecuperarContrasenaState
                 width: 300,
                 height: 300,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF28B50).withOpacity(0.03),
+                  color: cs.primary.withOpacity(0.03),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -105,12 +97,12 @@ class _PantallaRecuperarContrasenaState
                         position: _slideAnim,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E1E),
+                            color: cs.surface,
                             borderRadius: BorderRadius.circular(32),
-                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.4),
+                                color: cs.shadow.withOpacity(0.1),
                                 blurRadius: 40,
                                 offset: const Offset(0, 20),
                               ),
@@ -154,7 +146,7 @@ class _PantallaRecuperarContrasenaState
                                     style: GoogleFonts.outfit(
                                       fontSize: 27,
                                       fontWeight: FontWeight.w900,
-                                      color: Colors.white,
+                                      color: cs.onSurface,
                                       height: 1.1,
                                     ),
                                     textAlign: TextAlign.center,
@@ -164,7 +156,7 @@ class _PantallaRecuperarContrasenaState
                                   Text(
                                     tr('recoveryInstructions'),
                                     style: GoogleFonts.outfit(
-                                      color: Colors.grey.shade400,
+                                      color: cs.onSurface.withOpacity(0.6),
                                       fontSize: 15,
                                       height: 1.5,
                                     ),
@@ -218,8 +210,6 @@ class _PantallaRecuperarContrasenaState
           ],
         ),
       ),
-    );
-      },
     );
   }
 

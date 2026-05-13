@@ -233,15 +233,16 @@ class _ChatMediaLightboxState extends State<ChatMediaLightbox> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: cs.onSurface),
         title: Text(
           '${_currentIndex + 1} / ${widget.attachments.length}',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: cs.onSurface),
         ),
       ),
       body: PageView.builder(
