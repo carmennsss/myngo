@@ -31,6 +31,8 @@ class ServicioMensajeria {
   WebSocketChannel? _canalComunidad;
   WebSocketChannel? _canalGlobal;
   WebSocketChannel? _canalPublicacion;
+  
+  int? _idSalaActiva; // ID de la sala que el usuario desea tener abierta
 
   Timer? _temporizadorReconexion;
   Timer? _temporizadorLatido;
@@ -374,6 +376,7 @@ class ServicioMensajeria {
   }
 
   void conectarASala(int idSala, Function(Map<String, dynamic>) alRecibirMensaje, {VoidCallback? alConectar}) {
+    _idSalaActiva = idSala;
     _iniciarConexionChat(idSala, alRecibirMensaje, alConectar: alConectar);
   }
 
@@ -454,9 +457,13 @@ class ServicioMensajeria {
   }
 
   void _reconectarChat(int idSala, Function(Map<String, dynamic>) callback) {
+    if (_idSalaActiva != idSala) return; // No reconectar si ya no es la sala deseada
+    
     _temporizadorReconexion?.cancel();
     _temporizadorReconexion = Timer(const Duration(seconds: 3), () {
-      if (_canalChat == null) conectarASala(idSala, callback);
+      if (_canalChat == null && _idSalaActiva == idSala) {
+        conectarASala(idSala, callback);
+      }
     });
   }
 
@@ -629,6 +636,8 @@ class ServicioMensajeria {
   }
 
   void dispose() {
+    _idSalaActiva = null;
+    _temporizadorReconexion?.cancel();
     _canalChat?.sink.close();
     _canalComunidad?.sink.close();
     _canalPublicacion?.sink.close();
@@ -638,6 +647,8 @@ class ServicioMensajeria {
   }
 
   void desconectarChat() {
+    _idSalaActiva = null;
+    _temporizadorReconexion?.cancel();
     _canalChat?.sink.close();
     _canalChat = null;
   }

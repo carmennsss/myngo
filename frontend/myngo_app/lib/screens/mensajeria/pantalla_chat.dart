@@ -592,6 +592,11 @@ class _PantallaChatState extends State<PantallaChat> {
           setState(() => _mostrarEmojiPicker = false);
           return Future.value(false);
         }
+        // Asegurar limpieza inmediata del estado de sala activa
+        try {
+          Provider.of<ChatProvider>(context, listen: false).setSalaActiva(null);
+        } catch (_) {}
+        _servicio.dispose(); // Cerrar socket inmediatamente
         return Future.value(true);
       },
       child: Builder(builder: (context) {
@@ -601,13 +606,7 @@ class _PantallaChatState extends State<PantallaChat> {
             title: _buildAppBarTitle(tr),
             actions: [
               IconButton(
-                icon: _estaCargando || _sala == null
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
-                      )
-                    : const Icon(Icons.palette_outlined, color: Color(0xFFC35E34)),
+                icon: const Icon(Icons.palette_outlined, color: Color(0xFFC35E34)),
                 tooltip: tr('chatPersonalization'),
                 onPressed: (_sala == null) 
                   ? null 
@@ -621,9 +620,69 @@ class _PantallaChatState extends State<PantallaChat> {
                       }
                     },
               ),
-              IconButton(
-                icon: const Icon(Icons.people_outline),
-                onPressed: () => _mostrarMiembros(context),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFC35E34)),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'members':
+                      _mostrarMiembros(context);
+                      break;
+                    case 'add':
+                      _mostrarDialogoAgregarMiembro(context);
+                      break;
+                    case 'leave':
+                      _confirmarSalidaSala(context, tr);
+                      break;
+                    case 'delete':
+                      _confirmarEliminarSala(context, tr);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'members',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.people_outline, size: 20),
+                        const SizedBox(width: 12),
+                        Text(tr('chatParticipants')),
+                      ],
+                    ),
+                  ),
+                  if (_sala?.esGrupal == true && (_sala?.puedoEliminar == true || _sala?.creador == _miId))
+                    PopupMenuItem(
+                      value: 'add',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person_add_alt_1_rounded, size: 20, color: Color(0xFFC35E34)),
+                          const SizedBox(width: 12),
+                          Text(tr('chatAddMember')),
+                        ],
+                      ),
+                    ),
+                  if (_sala?.esGrupal == true)
+                    PopupMenuItem(
+                      value: 'leave',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.exit_to_app_rounded, size: 20, color: Colors.red),
+                          const SizedBox(width: 12),
+                          Text(tr('chatLeaveRoomWarning').split(' ')[0], style: const TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  if (_sala?.puedoEliminar == true || _sala?.creador == _miId)
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.delete_forever_rounded, size: 20, color: Colors.red),
+                          const SizedBox(width: 12),
+                          Text(tr('chatDeleteRoomAction'), style: const TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
