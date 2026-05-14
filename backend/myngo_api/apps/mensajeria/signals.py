@@ -33,6 +33,18 @@ def agregar_miembro_a_chat_comunidad(sender, instance, created, **kwargs):
 
         if sala:
             sala.miembros.add(usuario)
+            
+            # Notificar al usuario vía WebSocket para que el chat aparezca en su lista
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'user_{usuario.id}_notif',
+                {
+                    'type': 'new_chat_notification',
+                    'sala_id': sala.id,
+                    'nombre': sala.nombre,
+                    'es_grupal': sala.es_grupal,
+                }
+            )
 
 @receiver(post_save, sender=Comunidad)
 def crear_sala_chat_comunidad(sender, instance, created, **kwargs):
@@ -58,7 +70,7 @@ def crear_sala_chat_comunidad(sender, instance, created, **kwargs):
                     'id': instance.id,
                     'nombre': instance.nombre,
                     'descripcion': instance.descripcion,
-                    'imagen_fondo': instance.imagen_fondo.url if instance.imagen_fondo else None,
+                    'imagen_fondo': instance.url_fondo.url if instance.url_fondo else None,
                     'es_publica': instance.es_publica
                 }
             }

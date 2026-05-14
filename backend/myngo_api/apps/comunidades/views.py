@@ -240,19 +240,8 @@ class UnirseComunidad(APIView):
 
         estado = 'ACEPTADO' if comunidad.es_publica else 'SOLICITUD'
         if not comunidad.es_publica:
-            solicitud = Seguimiento.objects.create(
+            Seguimiento.objects.create(
                 seguidor=usuario, seguida_comunidad=comunidad, estado=estado
-            )
-            Notificacion.objects.create(
-                usuario=comunidad.creador,
-                tipo='PETICION_UNION',
-                mensaje=(
-                    f'¡Miau! {usuario.nombre_usuario} quiere unirse a '
-                    f"tu comunidad '{comunidad.nombre}'."
-                ),
-                referencia_usuario=usuario,
-                referencia_comunidad=comunidad,
-                referencia_id=solicitud.id,
             )
         else:
             MiembrosComunidad.objects.create(usuario=usuario, comunidad=comunidad)

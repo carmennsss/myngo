@@ -348,14 +348,15 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               color: widget.colorTexto.computeLuminance() > 0.5 
-                              ? Colors.white.withOpacity(0.1) 
-                              : Colors.black.withOpacity(0.05),
+                              ? Colors.black.withOpacity(0.3) 
+                              : Colors.white.withOpacity(0.8),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: widget.colorTexto.withOpacity(0.2)),
+                              border: Border.all(color: widget.colorTexto.withOpacity(0.3)),
                             ),
                             child: TextField(
                               controller: _comentarioController,
                               focusNode: _comentarioFocus,
+                              cursorColor: widget.colorTexto.computeLuminance() > 0.5 ? Colors.white : Colors.black87,
                               style: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
                             color: widget.colorTexto.computeLuminance() > 0.5 ? Colors.white : Colors.black87, 
                             fontSize: 14,
@@ -366,7 +367,7 @@ class _AccionesYComentariosPostState extends State<AccionesYComentariosPost> {
                                     ? tr('commentJoinToComment')
                                     : (_comentarioPadre != null ? tr('commentWriteReply') : tr('commentAddComment')),
                                 hintStyle: GoogleFonts.getFont(widget.fuente ?? 'Outfit',
-                              color: (widget.colorTexto.computeLuminance() > 0.5 ? Colors.white : Colors.black).withOpacity(0.5), 
+                              color: (widget.colorTexto.computeLuminance() > 0.5 ? Colors.white : Colors.black).withOpacity(0.6), 
                               fontSize: 14
                             ),
                                 border: InputBorder.none,

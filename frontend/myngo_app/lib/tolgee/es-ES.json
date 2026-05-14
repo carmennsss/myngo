@@ -279,6 +279,7 @@
   "communityCreateAddBanner": "Añadir foto de portada",
   "communityCreateBtn": "EMPEZAR YA",
   "communityCreateButton": "CREAR COMUNIDAD 🐾",
+  "communityCreateError": "Ha ocurrido un error al crear la comunidad 😿",
   "communityCreateDescLabel": "Descripción / Reglas",
   "communityCreatedSuccess": "¡Comunidad creada 🐾!",
   "communityCreateMinRank": "Ranking Mínimo",

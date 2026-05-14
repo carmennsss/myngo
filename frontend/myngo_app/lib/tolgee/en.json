@@ -281,6 +281,7 @@
   "communityCreateButton": "CREATE COMMUNITY 🐾",
   "communityCreateDescLabel": "Description / Rules",
   "communityCreatedSuccess": "Community created 🐾!",
+  "communityCreateError": "Something went wrong while creating the community 😿",
   "communityCreateMinRank": "Minimum Ranking",
   "communityCreateMinRankDesc": "Only users with a level higher than this can join.",
   "communityCreateMinRankNone": "No limit",

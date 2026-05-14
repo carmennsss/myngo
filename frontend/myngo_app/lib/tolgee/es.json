@@ -293,6 +293,7 @@
   "communityCreateTagsLabel": "Etiquetas (máx. 5)",
   "communityCreateTitle": "Nueva Comunidad 🐾",
   "communityCreatedSuccess": "¡Comunidad creada 🐾!",
+  "communityCreateError": "Ha ocurrido un error al crear la comunidad 😿",
   "communityExploreMore": "Explora para ver más 🐾",
   "communityFabNewRoom": "Nueva Sala",
   "communityFabPost": "Miau Post",
