@@ -120,7 +120,7 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
           ToastService.showSuccess(context, tr('communityCreatedSuccess'));
 
         } else {
-          ToastService.showError(context, respuesta.mensaje);
+          ToastService.showError(context, tr('communityCreateError'));
         }
       }
     }
