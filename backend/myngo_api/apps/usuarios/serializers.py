@@ -307,15 +307,20 @@ class PerfilSerializer(serializers.ModelSerializer):
         return obj.usuario.siguiendo.filter(estado='ACEPTADO', seguido_usuario__isnull=False).count()
 
     def get_url_avatar(self, obj):
-        """Retorna el avatar como cadena.
+        """Retorna la URL pública del avatar desde S3.
 
         Args:
             obj: Instancia de Perfil.
 
         Returns:
-            str: Ruta o URL del avatar.
+            str: URL absoluta o None.
         """
-        return obj.avatar
+        if obj.avatar:
+            if obj.avatar.startswith('http'):
+                return obj.avatar
+            from django.core.files.storage import default_storage
+            return default_storage.url(obj.avatar.lstrip('/'))
+        return None
 
     def get_estado_seguimiento(self, obj):
         """Determina el estado de seguimiento del usuario autenticado.

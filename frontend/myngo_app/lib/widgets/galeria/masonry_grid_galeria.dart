@@ -34,10 +34,10 @@ class MasonryGridGaleria extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _MasonryGridGaleriaState createState() => _MasonryGridGaleriaState();
+  MasonryGridGaleriaState createState() => MasonryGridGaleriaState();
 }
 
-class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
+class MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   final _servicioGaleria = ServicioGaleria();
   
   List<ImagenGaleria>? _items;
@@ -56,6 +56,14 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  /// Recarga la galería desde cero (resetea offset y vacía lista).
+  /// Útil tras subir una imagen nueva para que aparezca inmediatamente.
+  Future<void> recargar() async {
+    _offset = 0;
+    _hayMas = true;
+    await _cargarMas();
   }
 
   Future<void> _cargarMas() async {

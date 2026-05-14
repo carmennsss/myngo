@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/servicio_mejoras.dart';
 import '../../utils/mejoras_notifier.dart';
+import '../../utils/image_utils.dart';
 import '../../utils/estilo_post_helper.dart';
 import '../../widgets/comunes/post_preview.dart';
 import '../../widgets/comunes/profile_preview.dart';
@@ -90,13 +91,18 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
+      XFile archivoFinal = pickedFile;
+      if (tipo == 'avatar') {
+        final recortada = await recortarImagenCirculo(pickedFile);
+        if (recortada != null) archivoFinal = recortada;
+      }
       setState(() {
         if (tipo == 'banner') {
-          _previewFondo = pickedFile; // Guardamos el XFile para subirlo luego
+          _previewFondo = archivoFinal;
         } else if (tipo == 'fondo_feed') {
-          _previewFondoPerfil = pickedFile;
+          _previewFondoPerfil = archivoFinal;
         } else if (tipo == 'avatar') {
-          _previewAvatar = pickedFile;
+          _previewAvatar = archivoFinal;
         }
       });
     }
