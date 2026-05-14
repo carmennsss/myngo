@@ -34,6 +34,7 @@ import '../../models/coleccion.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../widgets/toast_service.dart';
+import '../../widgets/comunes/upload_overlay.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -64,6 +65,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
   Usuario? _usuario;
   int? _currentUserId;
   bool _isLoading = false;
+  bool _subiendoAvatar = false;
   bool _cargandoPerfil = false;
   String? _estadoSeguimiento;
   List<Publicacion>? _publicaciones;
@@ -147,10 +149,7 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       });
       if (_usuario != null) {
         _sincronizarEstadoLocal();
-        // Cargamos el resto de datos secundarios sin re-entrar en carga de perfil
-        _cargarEstadoVoto();
-        _cargarPublicaciones();
-        _cargarRolContextual();
+        await _inicializarDatos();
       }
     }
   }
@@ -410,8 +409,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
                           fontWeight: FontWeight.bold, color: Colors.white)),
                 )
               : null,
-          body: Container(
-            color: Theme.of(context).scaffoldBackgroundColor,
+          body: Stack(
+            children: [
+              Container(
+                color: Theme.of(context).scaffoldBackgroundColor,
             child: Scrollbar(
               controller: _scrollController,
               thumbVisibility: true,
@@ -544,7 +545,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               ),
             ),
           ),
-        );
+          UploadOverlay(visible: _subiendoAvatar),
+          ],
+        ));
       },
     );
   }
@@ -739,14 +742,23 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final img = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (img == null) return;
     if (_usuario == null) return;
-    // Recorte circular antes de subir
-    final recortada = await recortarImagenCirculo(img);
+    final recortada = await recortarImagenCirculo(img, context: context);
     if (recortada == null) return;
-    final res = await ServicioPerfiles()
-        .editarAvatarPerfil(imagen: recortada, perfilId: _usuario!.perfilId);
-    if (res.exito) {
-      await _recargarUsuarioActualizado();
-      notificarMejoraEquipada();
+
+    setState(() => _subiendoAvatar = true);
+    try {
+      final res = await ServicioPerfiles()
+          .editarAvatarPerfil(imagen: recortada, perfilId: _usuario!.perfilId);
+      if (res.exito) {
+        await _recargarUsuarioActualizado();
+        notificarMejoraEquipada();
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
+    } catch (e) {
+      ToastService.showError(context, 'Error al subir la foto de perfil');
+    } finally {
+      if (mounted) setState(() => _subiendoAvatar = false);
     }
   }
 

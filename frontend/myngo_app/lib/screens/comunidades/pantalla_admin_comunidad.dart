@@ -22,6 +22,7 @@ import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
 import '../../widgets/toast_service.dart';
+import '../../widgets/comunes/upload_overlay.dart';
 
 // Dashboard de administración de una comunidad. Agrupa en pestañas las solicitudes
 // de acceso pendientes, la gestión de miembros, los reportes activos y los ajustes generales.
@@ -41,8 +42,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
   TabController? _tabController;
   Map<String, dynamic>? _datos;
   bool _cargando = true;
-
-
+  bool _estaGuardando = false;
 
   late TextEditingController _nombreCtrl;
   late TextEditingController _descCtrl;
@@ -131,17 +131,22 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
               ],
             ),
           ),
-          body: _cargando 
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildSolicitudesTab(tr),
-                  _buildMiembrosTab(tr),
-                  _buildReportesTab(tr),
-                  _buildAjustesTab(tr),
-                ],
-              ),
+          body: Stack(
+            children: [
+              _cargando 
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFC35E34)))
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildSolicitudesTab(tr),
+                      _buildMiembrosTab(tr),
+                      _buildReportesTab(tr),
+                      _buildAjustesTab(tr),
+                    ],
+                  ),
+              UploadOverlay(visible: _estaGuardando, message: tr('adminSaving')),
+            ],
+          ),
         );
       },
     );
@@ -546,8 +551,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                     _cargarDatos(silencioso: true);
                   },
                 ),
-              ),
-            );
+              ));
           },
         ),
 
@@ -580,27 +584,27 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
 
   // Guarda nombre, descripción, color, banner y tags en el servidor
   Future<void> _guardarAjustes() async {
-    ToastService.showInfo(context, tr('adminSaving'));
+    setState(() => _estaGuardando = true);
+    try {
+      final res = await _servicioComunidades.actualizarComunidad(
+        widget.comunidad.id,
+        nombre: _nombreCtrl.text,
+        descripcion: _descCtrl.text,
+        colorTema: _colorSeleccionado,
+        banner: _nuevoBanner,
+        tags: _tagsSeleccionados,
+      );
 
-    
-    final res = await _servicioComunidades.actualizarComunidad(
-      widget.comunidad.id,
-      nombre: _nombreCtrl.text,
-      descripcion: _descCtrl.text,
-      colorTema: _colorSeleccionado,
-
-      banner: _nuevoBanner,
-      tags: _tagsSeleccionados,
-    );
-
-    if (mounted) {
-      if (res.exito && res.datos != null) {
-        ToastService.showSuccess(context, tr('adminUpdatedSettings'));
-        Navigator.pop(context, res.datos); // Devuelve la comunidad actualizada
-
-      } else {
-        ToastService.showError(context, '${tr('commonErrorPrefix')}${res.mensaje}');
+      if (mounted) {
+        if (res.exito && res.datos != null) {
+          ToastService.showSuccess(context, tr('adminUpdatedSettings'));
+          Navigator.pop(context, res.datos);
+        } else {
+          ToastService.showError(context, '${tr('commonErrorPrefix')}${res.mensaje}');
+        }
       }
+    } finally {
+      if (mounted) setState(() => _estaGuardando = false);
     }
   }
 

@@ -137,10 +137,10 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     if (imagen != null) {
       XFile imagenFinal = imagen;
       if (tipo == 'avatar') {
-        final recortada = await recortarImagenCirculo(imagen);
+        final recortada = await recortarImagenCirculo(imagen, context: context);
         if (recortada != null) imagenFinal = recortada;
       } else if (tipo == 'portada') {
-        final recortada = await recortarImagenRectangular(imagen, aspectRatioX: 16, aspectRatioY: 9);
+        final recortada = await recortarImagenRectangular(imagen, context: context, aspectRatioX: 16, aspectRatioY: 9);
         if (recortada != null) imagenFinal = recortada;
       }
       setState(() {
