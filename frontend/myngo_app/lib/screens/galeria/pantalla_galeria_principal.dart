@@ -9,6 +9,7 @@ import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../widgets/toast_service.dart';
+import '../../widgets/comunes/upload_overlay.dart';
 
 // Pantalla de galería con dos pestañas: todas las fotos/vídeos (masonry) y las colecciones (carpetas).
 // Sirve tanto para galería personal como para galería de comunidad.
@@ -35,6 +36,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
 
   List<Coleccion> _colecciones = [];
   bool _cargandoColecciones = false;
+  bool _subiendoImagen = false;
   int? _miId; // ID del usuario logueado
 
   @override
@@ -116,18 +118,26 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
               ),
           ],
         ),
-        body: TabBarView(
-          controller: _tabController,
+        body: Stack(
           children: [
-            // Pestaña 1: Masonry Grid
-            MasonryGridGaleria(
-              key: _masonryKey,
-              comunidadId: widget.comunidadId,
-              usuarioId: widget.usuarioId,
+            TabBarView(
+              controller: _tabController,
+              children: [
+                // Pestaña 1: Masonry Grid
+                MasonryGridGaleria(
+                  key: _masonryKey,
+                  comunidadId: widget.comunidadId,
+                  usuarioId: widget.usuarioId,
+                ),
+                
+                // Pestaña 2: Colecciones
+                _buildColeccionesTab(tr),
+              ],
             ),
-            
-            // Pestaña 2: Colecciones
-            _buildColeccionesTab(tr),
+            UploadOverlay(
+              visible: _subiendoImagen,
+              message: tr('galleryUploadingImage'),
+            ),
           ],
         ),
         floatingActionButton: _puedeCrearColeccion
@@ -299,24 +309,27 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         : await picker.pickImage(source: ImageSource.gallery);
     
     if (pickedFile != null) {
-      ToastService.showInfo(context, esVideo ? tr('galleryUploadingVideo') : tr('galleryUploadingImage'));
-      
-      final res = await _servicioGaleria.subirImagenGaleria(
-        pickedFile, 
-        idComunidad: widget.comunidadId,
-        esPublica: true
-      );
-      
-      if (mounted) {
-        if (res.exito) {
-          ToastService.showSuccess(context, res.mensaje);
-        } else {
-          ToastService.showError(context, res.mensaje);
+      setState(() => _subiendoImagen = true);
+      try {
+        final res = await _servicioGaleria.subirImagenGaleria(
+          pickedFile, 
+          idComunidad: widget.comunidadId,
+          esPublica: true
+        );
+        
+        if (mounted) {
+          if (res.exito) {
+            ToastService.showSuccess(context, res.mensaje);
+          } else {
+            ToastService.showError(context, res.mensaje);
+          }
+          if (res.exito) {
+            _tabController.animateTo(0);
+            _masonryKey.currentState?.recargar();
+          }
         }
-        if (res.exito) {
-          _tabController.animateTo(0); // Volver a la pestaña de galería
-          _masonryKey.currentState?.recargar(); // Forzar refresh para que aparezca la nueva imagen
-        }
+      } finally {
+        if (mounted) setState(() => _subiendoImagen = false);
       }
     }
   }

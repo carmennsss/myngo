@@ -33,6 +33,7 @@ import '../comunidades/pantalla_admin_comunidad.dart';
 import '../perfiles/pantalla_tienda_mejoras.dart';
 import '../galeria/pantalla_mis_cosas.dart';
 import '../../widgets/comunes/vista_requerir_login.dart';
+import '../../widgets/comunes/cat_feed_background.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../models/publicacion.dart';
 import '../../widgets/inicio/cabecera_pro.dart';
@@ -79,6 +80,7 @@ class PantallaInicioState extends State<PantallaInicio> {
   List<Usuario>? _rankingUsuarios;
   bool _cargandoRanking = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  dynamic _tr;
 
   @override
   void initState() {
@@ -162,9 +164,10 @@ class PantallaInicioState extends State<PantallaInicio> {
                 }
               }
             });
-            if (datos['online_users'] != null) {
+            if (datos['online_users'] != null && datos['online_users'] is List) {
+              final List onlineList = datos['online_users'] as List;
               context.read<ChatProvider>().setUsuariosOnline(
-                (datos['online_users'] as List).map((id) => (id as num).toInt()).toList()
+                onlineList.map((id) => (id as num).toInt()).toList(),
               );
             }
           }
@@ -248,6 +251,7 @@ class PantallaInicioState extends State<PantallaInicio> {
 
   void _mostrarToastNotificacion(Map<String, dynamic> data) {
     final mensaje = data['mensaje'] ?? 'Nueva notificación';
+    final trFn = _tr ?? (String key, {Map<String, dynamic>? params}) => key;
     
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
@@ -261,6 +265,7 @@ class PantallaInicioState extends State<PantallaInicio> {
           _alPulsarNav(2); // Ir a la pestaña de notificaciones
         },
         onDismiss: () => entry.remove(),
+        tr: trFn,
       ),
     );
     overlay.insert(entry);
@@ -275,6 +280,7 @@ class PantallaInicioState extends State<PantallaInicio> {
     final preview = data['preview'] ?? '';
     final salaName = data['sala_nombre'] ?? 'Chat';
     final avatar = data['sender_avatar'];
+    final trFn = _tr ?? (String key, {Map<String, dynamic>? params}) => key;
 
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
@@ -289,6 +295,7 @@ class PantallaInicioState extends State<PantallaInicio> {
               extra: {'nombre': salaName});
         },
         onDismiss: () => entry.remove(),
+        tr: trFn,
       ),
     );
     overlay.insert(entry);
@@ -407,12 +414,13 @@ class PantallaInicioState extends State<PantallaInicio> {
         context.watch<LocaleNotifier>();
         final screenWidth = MediaQuery.of(context).size.width;
         final isMobile = screenWidth < 800;
+        _tr = tr;
 
         return Scaffold(
           key: _scaffoldKey,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           drawer: isMobile && _estaLogueado ? _construirDrawerMobile(tr) : null,
-          body: Column(
+          body: Stack(children:[const Positioned.fill(child:CatFeedBackground()),Column(
             children: [
               SafeArea(
                 bottom: false,
@@ -501,6 +509,8 @@ class PantallaInicioState extends State<PantallaInicio> {
                 ),
               ),
             ],
+          ),
+          ],
           ),
         );
       },
@@ -615,6 +625,7 @@ class _ToastMensaje extends StatefulWidget {
   final String? avatar;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
+  final String Function(String, {Map<String, dynamic>? params}) tr;
 
   const _ToastMensaje({
     required this.sender,
@@ -622,6 +633,7 @@ class _ToastMensaje extends StatefulWidget {
     this.avatar,
     required this.onTap,
     required this.onDismiss,
+    required this.tr,
   });
 
   @override
@@ -750,7 +762,7 @@ class _ToastMensajeState extends State<_ToastMensaje>
                                     ),
                                     const Spacer(),
                                     Text(
-                                      tr('notificationNow'),
+                                      widget.tr('notificationNow'),
                                       style: GoogleFonts.outfit(
                                         color: Colors.grey.shade400,
                                         fontSize: 11,

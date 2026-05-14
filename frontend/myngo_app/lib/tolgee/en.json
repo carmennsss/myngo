@@ -890,5 +890,6 @@
   "cropperTitle": "Adjust photo",
   "cropperBannerTitle": "Adjust banner",
   "cropperDone": "Done",
-  "cropperCancel": "Cancel"
+  "cropperCancel": "Cancel",
+  "cropperConfirm": "Confirm crop"
 }

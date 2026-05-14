@@ -189,7 +189,7 @@ class ServicioPerfiles {
         solicitud.files.add(await http.MultipartFile.fromPath('url_avatar', imagen.path, contentType: MediaType(typeParts[0], typeParts[1])));
       }
 
-      final respuestaStream = await solicitud.send().timeout(const Duration(minutes: 2));
+      final respuestaStream = await solicitud.send().timeout(const Duration(seconds: 30));
       final respuesta = await http.Response.fromStream(respuestaStream);
 
       if (respuesta.statusCode == 200) {

@@ -1,12 +1,18 @@
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import '../widgets/comunes/web_cropper_dialog.dart';
 
 const Color _primaryColor = Color(0xFFC35E34);
 const Color _toolbarColor = Color(0xFFC35E34);
 const Color _toolbarWidgetColor = Colors.white;
 
 Future<XFile?> recortarImagenCirculo(XFile imagen, {BuildContext? context}) async {
+  if (kIsWeb) {
+    return _recortarEnWeb(imagen, context, circle: true, aspectRatio: 1);
+  }
   try {
     final uiSettings = [
       AndroidUiSettings(
@@ -31,16 +37,6 @@ Future<XFile?> recortarImagenCirculo(XFile imagen, {BuildContext? context}) asyn
         resetAspectRatioEnabled: false,
         aspectRatioPickerButtonHidden: true,
       ),
-      if (context != null)
-        WebUiSettings(
-          context: context,
-          size: const CropperSize(width: 500, height: 500),
-          presentStyle: WebPresentStyle.dialog,
-          modal: true,
-          background: true,
-          center: true,
-          guides: true,
-        ),
     ];
 
     final croppedFile = await ImageCropper().cropImage(
@@ -56,11 +52,14 @@ Future<XFile?> recortarImagenCirculo(XFile imagen, {BuildContext? context}) asyn
     return XFile(croppedFile.path);
   } catch (e) {
     debugPrint('[ERROR image_cropper] $e');
-    return imagen;
+    return null;
   }
 }
 
 Future<XFile?> recortarImagenRectangular(XFile imagen, {BuildContext? context, double aspectRatioX = 16, double aspectRatioY = 9}) async {
+  if (kIsWeb) {
+    return _recortarEnWeb(imagen, context, circle: false, aspectRatio: aspectRatioX / aspectRatioY);
+  }
   try {
     final uiSettings = [
       AndroidUiSettings(
@@ -85,16 +84,6 @@ Future<XFile?> recortarImagenRectangular(XFile imagen, {BuildContext? context, d
         resetAspectRatioEnabled: false,
         aspectRatioPickerButtonHidden: true,
       ),
-      if (context != null)
-        WebUiSettings(
-          context: context,
-          size: const CropperSize(width: 500, height: 500),
-          presentStyle: WebPresentStyle.dialog,
-          modal: true,
-          background: true,
-          center: true,
-          guides: true,
-        ),
     ];
 
     final croppedFile = await ImageCropper().cropImage(
@@ -110,6 +99,27 @@ Future<XFile?> recortarImagenRectangular(XFile imagen, {BuildContext? context, d
     return XFile(croppedFile.path);
   } catch (e) {
     debugPrint('[ERROR image_cropper rectangular] $e');
-    return imagen;
+    return null;
+  }
+}
+
+Future<XFile?> _recortarEnWeb(XFile imagen, BuildContext? context, {required bool circle, required double aspectRatio}) async {
+  if (context == null) return imagen;
+  try {
+    final bytes = await imagen.readAsBytes();
+    final cropped = await showDialog<Uint8List>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => WebCropperDialog(
+        imageBytes: bytes,
+        withCircleUi: circle,
+        aspectRatio: aspectRatio,
+      ),
+    );
+    if (cropped == null) return null;
+    return XFile.fromData(Uint8List.fromList(cropped), name: 'cropped_image.jpg');
+  } catch (e) {
+    debugPrint('[ERROR web_cropper] $e');
+    return null;
   }
 }

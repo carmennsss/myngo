@@ -93,7 +93,7 @@ class _PantallaPersonalizarPerfilState extends State<PantallaPersonalizarPerfil>
     if (pickedFile != null) {
       XFile archivoFinal = pickedFile;
       if (tipo == 'avatar') {
-        final recortada = await recortarImagenCirculo(pickedFile);
+        final recortada = await recortarImagenCirculo(pickedFile, context: context);
         if (recortada != null) archivoFinal = recortada;
       }
       setState(() {
