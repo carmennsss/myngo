@@ -9,7 +9,6 @@ import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../widgets/toast_service.dart';
-import '../../utils/image_utils.dart';
 
 // Pantalla de galería con dos pestañas: todas las fotos/vídeos (masonry) y las colecciones (carpetas).
 // Sirve tanto para galería personal como para galería de comunidad.
@@ -300,16 +299,10 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         : await picker.pickImage(source: ImageSource.gallery);
     
     if (pickedFile != null) {
-      XFile archivoSubir = pickedFile;
-      if (!esVideo) {
-        final recortada = await recortarImagenCirculo(pickedFile);
-        if (recortada != null) archivoSubir = recortada;
-      }
-
       ToastService.showInfo(context, esVideo ? tr('galleryUploadingVideo') : tr('galleryUploadingImage'));
       
       final res = await _servicioGaleria.subirImagenGaleria(
-        archivoSubir, 
+        pickedFile, 
         idComunidad: widget.comunidadId,
         esPublica: true
       );

@@ -251,7 +251,6 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
     } else if (index == 1) {
         setState(() {
           _estaCargandoDatos = true;
-          _galeriaKey = UniqueKey();
         });
         await _cargarColecciones();
         if (mounted) setState(() => _estaCargandoDatos = false);
