@@ -17,6 +17,7 @@ import '../../services/servicio_mensajeria.dart';
 import '../../utils/mejoras_notifier.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../utils/image_utils.dart';
 
 import '../../widgets/dialogo_crear_post.dart';
 import '../../widgets/selector_estrellas.dart';
@@ -738,9 +739,15 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final img = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (img == null) return;
     if (_usuario == null) return;
+    // Recorte circular antes de subir
+    final recortada = await recortarImagenCirculo(img);
+    if (recortada == null) return;
     final res = await ServicioPerfiles()
-        .editarAvatarPerfil(imagen: img, perfilId: _usuario!.perfilId);
-    if (res.exito) _recargarUsuarioActualizado();
+        .editarAvatarPerfil(imagen: recortada, perfilId: _usuario!.perfilId);
+    if (res.exito) {
+      await _recargarUsuarioActualizado();
+      notificarMejoraEquipada();
+    }
   }
 
   void _iniciarChat() async {
