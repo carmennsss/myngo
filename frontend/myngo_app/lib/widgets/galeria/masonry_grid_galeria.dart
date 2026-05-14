@@ -73,7 +73,6 @@ class MasonryGridGaleriaState extends State<MasonryGridGaleria> {
       _cargando = true;
       if (_offset == 0) _items = null; // Reiniciar a null solo en la carga inicial
     });
-
     final respuesta = await _servicioGaleria.obtenerGaleria(
       idComunidad: widget.comunidadId,
       idUsuario: widget.usuarioId,
@@ -111,7 +110,7 @@ class MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     if (pickedFile != null) {
       if (!mounted) return;
       setState(() => _subiendo = true);
-      
+
       final res = await _servicioGaleria.subirImagenGaleria(
         pickedFile,
         idComunidad: widget.comunidadId,

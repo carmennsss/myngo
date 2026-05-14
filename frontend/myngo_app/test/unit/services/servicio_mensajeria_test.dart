@@ -14,7 +14,7 @@ void main() {
 
   setUp(() {
     mockClient = MockClient();
-    servicioMensajeria = ServicioMensajeria(httpClient: mockClient);
+    servicioMensajeria = ServicioMensajeria.conCliente(mockClient);
     registerFallbackValue(Uri.parse('http://localhost'));
   });
 

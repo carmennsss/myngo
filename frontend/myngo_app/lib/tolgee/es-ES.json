@@ -885,5 +885,9 @@
   "user": "Usuario",
   "videoErrorLoading": "Error al cargar vídeo",
   "videoRetry": "Reintentar",
-  "you": "Tú"
+  "you": "Tú",
+  "cropperTitle": "Ajustar foto",
+  "cropperBannerTitle": "Ajustar banner",
+  "cropperDone": "Listo",
+  "cropperCancel": "Cancelar"
 }

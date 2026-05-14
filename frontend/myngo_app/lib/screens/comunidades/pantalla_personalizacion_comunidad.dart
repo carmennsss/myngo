@@ -12,6 +12,7 @@ import '../../utils/extensiones_color.dart';
 import 'widgets_detalle/seccion_posts_comunidad.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import '../../utils/manejo_errores.dart';
+import '../../utils/image_utils.dart';
 
 // Editor visual avanzado de la identidad de una comunidad: avatar, portada, fondo global,
 // colores del feed, patrones, fuente y etiquetas, con previsualización en tiempo real.
@@ -134,10 +135,18 @@ class _PantallaPersonalizacionComunidadState extends State<PantallaPersonalizaci
     final XFile? imagen = await picker.pickImage(source: ImageSource.gallery);
     
     if (imagen != null) {
+      XFile imagenFinal = imagen;
+      if (tipo == 'avatar') {
+        final recortada = await recortarImagenCirculo(imagen);
+        if (recortada != null) imagenFinal = recortada;
+      } else if (tipo == 'portada') {
+        final recortada = await recortarImagenRectangular(imagen, aspectRatioX: 16, aspectRatioY: 9);
+        if (recortada != null) imagenFinal = recortada;
+      }
       setState(() {
-        if (tipo == 'avatar') _avatarSeleccionado = imagen;
-        else if (tipo == 'portada') _portadaSeleccionada = imagen;
-        else if (tipo == 'fondo') _fondoGlobalSeleccionado = imagen;
+        if (tipo == 'avatar') _avatarSeleccionado = imagenFinal;
+        else if (tipo == 'portada') _portadaSeleccionada = imagenFinal;
+        else if (tipo == 'fondo') _fondoGlobalSeleccionado = imagenFinal;
       });
     }
   }

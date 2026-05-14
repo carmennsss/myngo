@@ -885,5 +885,9 @@
   "toastProposalSent": "Propuesta enviada para revisión",
   "toastProposalError": "No se pudo enviar la propuesta.",
   "toastGenericError": "Algo salió mal. Inténtalo de nuevo.",
-  "toastGenericSuccess": "Operación completada con éxito"
+  "toastGenericSuccess": "Operación completada con éxito",
+  "cropperTitle": "Ajustar foto",
+  "cropperBannerTitle": "Ajustar banner",
+  "cropperDone": "Listo",
+  "cropperCancel": "Cancelar"
 }
