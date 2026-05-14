@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/locale_notifier.dart';
+import '../../widgets/toast_service.dart';
 
 // Pantalla de ajustes de cuenta: nombre de usuario, privacidad, contraseña y zona de peligro.
 // Cada sección tiene su propia validación antes de llamar al servicio.
@@ -63,9 +64,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     if (nuevoNombre.isEmpty || nuevoNombre == _usuarioActual?.nombreUsuario) return;
 
     if (nuevoNombre.length < 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('configErrorNameShort')), backgroundColor: Colors.red),
-      );
+      ToastService.showError(context, tr('configErrorNameShort'));
       return;
     }
 
@@ -76,15 +75,11 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
         if (res.exito) {
           await _cargarDatos();
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(tr('configSuccessNameUpdated')), backgroundColor: const Color(0xFF248EA6)),
-            );
+            ToastService.showInfo(context, tr('configSuccessNameUpdated'));
           }
         } else {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-          );
+          ToastService.showError(context, res.mensaje);
         }
       }
   }
@@ -95,30 +90,22 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
     final passConfirm = _passConfirmController.text.replaceAll(' ', '');
 
     if (pass.isEmpty || passConfirm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('configErrorFillPasswords')), backgroundColor: Colors.red),
-      );
+      ToastService.showError(context, tr('configErrorFillPasswords'));
       return;
     }
     
     if (pass.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('configErrorPasswordShort')), backgroundColor: Colors.red),
-      );
+      ToastService.showError(context, tr('configErrorPasswordShort'));
       return;
     }
 
     if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$').hasMatch(pass)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('configErrorPasswordComplex')), backgroundColor: Colors.red),
-      );
+      ToastService.showError(context, tr('configErrorPasswordComplex'));
       return;
     }
 
     if (pass != passConfirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('configErrorPasswordsNotMatch')), backgroundColor: Colors.red),
-      );
+      ToastService.showError(context, tr('configErrorPasswordsNotMatch'));
       return;
     }
 
@@ -130,13 +117,9 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
       if (res.exito) {
         _passController.clear();
         _passConfirmController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('configSuccessPasswordChanged')), backgroundColor: const Color(0xFF248EA6)),
-        );
+        ToastService.showInfo(context, tr('configSuccessPasswordChanged'));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-        );
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
@@ -182,15 +165,11 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
         if (res.exito) {
           await _cargarDatos();
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(tr('configSuccessPrivacyUpdated')), backgroundColor: const Color(0xFF248EA6)),
-            );
+            ToastService.showInfo(context, tr('configSuccessPrivacyUpdated'));
           }
         } else {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-          );
+          ToastService.showError(context, res.mensaje);
         }
       }
     }
@@ -233,9 +212,7 @@ class _PantallaConfiguracionCuentaState extends State<PantallaConfiguracionCuent
         if (res.exito) {
           context.go('/login');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-          );
+          ToastService.showError(context, res.mensaje);
         }
       }
     }

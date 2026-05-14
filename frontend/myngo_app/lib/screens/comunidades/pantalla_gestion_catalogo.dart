@@ -6,6 +6,7 @@ import '../../services/servicio_mejoras.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 
 // Listado de los artículos aprobados en la tienda de la comunidad.
@@ -56,9 +57,7 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
       if (res.exito) {
         _cargarCatalogo();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.red),
-        );
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
@@ -135,9 +134,7 @@ class _PantallaGestionCatalogoState extends State<PantallaGestionCatalogo> {
                 Navigator.pop(context);
                 _actualizarItem(item, precio: precio);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(tr('catalogManagementErrorMinPrice'))),
-                );
+                ToastService.showInfo(context, tr('catalogManagementErrorMinPrice'));
               }
             },
             child: Text(tr('adminSave')),

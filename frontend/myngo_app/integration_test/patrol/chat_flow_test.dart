@@ -198,9 +198,9 @@ void main() {
         await $.native.openNotifications();
         
         // Esperamos que el backend (o un script externo) lance una push real
-        final notif = $.native.getNotifications();
+        final notif = await $.native.getNotifications();
         if (notif.isNotEmpty) {
-          await $.native.tapOnNotificationByText('Tienes un nuevo mensaje');
+          await $.native.tapOnNotificationByIndex(0);
           await $.pumpAndSettle();
           
           // Verificar que estamos en la pantalla de chat

@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../../widgets/toast_service.dart';
 
 /// Modal para la creación de nuevas comunidades.
 class FormularioCreacionComunidad extends StatefulWidget {
@@ -116,14 +117,10 @@ class _FormularioCreacionComunidadState extends State<FormularioCreacionComunida
         if (respuesta.exito) {
           Navigator.pop(context, true);
           widget.alConfirmar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(tr('communityCreatedSuccess')), backgroundColor: Colors.green),
-          );
+          ToastService.showSuccess(context, tr('communityCreatedSuccess'));
 
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(respuesta.mensaje), backgroundColor: Colors.redAccent),
-          );
+          ToastService.showError(context, respuesta.mensaje);
         }
       }
     }

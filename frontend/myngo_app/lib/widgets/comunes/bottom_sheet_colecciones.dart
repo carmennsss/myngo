@@ -6,6 +6,7 @@ import '../../services/servicio_comunidades.dart';
 import '../../services/servicio_interaccion.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../toast_service.dart';
 
 class BottomSheetColecciones extends StatefulWidget {
   final int? imagenId;
@@ -52,11 +53,11 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
     if (mounted) {
       setState(() => _guardando = false);
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(res.exito ? tr('collectionSavedIn', {'name': coleccion.nombreColeccion}) : res.mensaje, style: GoogleFonts.outfit()),
-        backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ));
+      if (res.exito) {
+        ToastService.showInfo(context, tr('collectionSavedIn', {'name': coleccion.nombreColeccion}));
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
     }
   }
 
@@ -71,17 +72,10 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
           _guardando = false;
         });
         Navigator.pop(context); // Cerramos tras la acción principal
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(res.mensaje, style: GoogleFonts.outfit()),
-          backgroundColor: const Color(0xFF248EA6),
-          behavior: SnackBarBehavior.floating,
-        ));
+        ToastService.showInfo(context, res.mensaje);
       } else {
         setState(() => _guardando = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(res.mensaje),
-          backgroundColor: Colors.red,
-        ));
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
@@ -131,7 +125,7 @@ class _BottomSheetColeccionesState extends State<BottomSheetColecciones> {
                   await _agregarAColeccion(res.datos!);
                 } else if (mounted) {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje, style: GoogleFonts.outfit()), backgroundColor: Colors.red));
+                  ToastService.showError(context, res.mensaje);
                 }
               },
               child: Text(tr('collectionCreateAndSave'), style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),

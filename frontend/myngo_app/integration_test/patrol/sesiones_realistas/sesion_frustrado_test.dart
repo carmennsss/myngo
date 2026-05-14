@@ -237,7 +237,7 @@ void main() {
       await humano.humanType($(#searchGlobalInput), '¿!123!?', makeMistake: false);
       
       // Pulsa fuera para forzar unfocus
-      await $.native.tap(const Offset(0.5, 0.5));
+      await $.native.tapAt(const Offset(500, 500));
       await $.pumpAndSettle();
       await humano.pauseToRead(minSeconds: 1, maxSeconds: 2);
     });

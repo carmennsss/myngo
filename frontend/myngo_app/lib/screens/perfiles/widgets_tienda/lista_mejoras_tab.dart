@@ -6,6 +6,7 @@ import '../../../services/servicio_mejoras.dart';
 import '../../../utils/mejoras_notifier.dart';
 import '../../../utils/estilo_post_helper.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../../widgets/toast_service.dart';
 
 /// Widget que muestra una pestaña del catálogo de mejoras filtrada por tipo.
 class ListaMejorasTab extends StatefulWidget {
@@ -183,13 +184,9 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
       if (mounted) {
         if (res.exito) {
           widget.onRefresh();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.mensaje), backgroundColor: const Color(0xFF248EA6)),
-          );
+          ToastService.showInfo(context, res.mensaje);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
-          );
+          ToastService.showError(context, res.mensaje);
         }
       }
       return;
@@ -239,17 +236,9 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
         notificarMejoraEquipada();
         widget.onRefresh();
         widget.onPuntosActualizados?.call(widget.usuarioActual?.puntos ?? 0);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.mensaje),
-            backgroundColor: const Color(0xFF248EA6),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ToastService.showInfo(context, res.mensaje);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
-        );
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
@@ -279,13 +268,9 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
         if (res.exito) {
           widget.onRefresh();
           if (res.datos is int) widget.onPuntosActualizados?.call(res.datos);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(tr('storePurchaseSuccess')),
-              backgroundColor: const Color(0xFF248EA6)));
+          ToastService.showInfo(context, tr('storePurchaseSuccess'));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(res.mensaje),
-              backgroundColor: const Color(0xFFD95F43)));
+          ToastService.showError(context, res.mensaje);
         }
       }
     }
@@ -326,7 +311,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
       if (res.exito) {
         widget.onRefresh();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
@@ -368,7 +353,7 @@ class _ListaMejorasTabState extends State<ListaMejorasTab> {
           if (res.exito) {
             widget.onRefresh();
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.mensaje)));
+            ToastService.showError(context, res.mensaje);
           }
         }
       }

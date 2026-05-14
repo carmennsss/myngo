@@ -128,7 +128,7 @@ class SeccionColeccionesPerfil extends StatelessWidget {
                                       return CachedNetworkImage(
                                         imageUrl: url,
                                         fit: BoxFit.cover,
-                                        placeholder: (c, u) => Container(color: Colors.white10),
+                                        placeholder: (c, u) => Container(color: Theme.of(context).colorScheme.surfaceVariant),
                                         errorWidget: (c, u, e) => Container(color: color.withOpacity(0.1)),
                                       );
                                     },
@@ -171,7 +171,7 @@ class SeccionColeccionesPerfil extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
@@ -220,7 +220,7 @@ class SeccionColeccionesPerfil extends StatelessWidget {
             coleccion.esPrivada
                 ? tr('profileFolderMakePublicDesc')
                 : tr('profileFolderMakePrivateDesc'),
-            style: GoogleFonts.inter(color: Colors.white70),
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
           ),
           actions: [
             TextButton(

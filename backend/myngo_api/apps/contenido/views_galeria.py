@@ -65,7 +65,9 @@ class GaleriaList(generics.ListCreateAPIView):
                             return ImagenGaleria.objects.none()
                     
                     # Mostramos imágenes que pertenecen a posts de esta comunidad
+                    # o que fueron subidas directamente a la comunidad (raw/crudas)
                     qs = qs.filter(
+                        Q(comunidad=comunidad) |
                         Q(publicacion__comunidad=comunidad) | 
                         Q(publicaciones_asociadas__comunidad=comunidad)
                     ).distinct()

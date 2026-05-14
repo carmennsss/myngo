@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'pantalla_detalle_coleccion.dart';
 import '../../widgets/comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 // Pantalla de galería con dos pestañas: todas las fotos/vídeos (masonry) y las colecciones (carpetas).
 // Sirve tanto para galería personal como para galería de comunidad.
@@ -30,6 +31,7 @@ class PantallaGaleriaPrincipal extends StatefulWidget {
 class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _servicioGaleria = ServicioGaleria();
+  final _masonryKey = GlobalKey<MasonryGridGaleriaState>();
 
   List<Coleccion> _colecciones = [];
   bool _cargandoColecciones = false;
@@ -119,6 +121,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
           children: [
             // Pestaña 1: Masonry Grid
             MasonryGridGaleria(
+              key: _masonryKey,
               comunidadId: widget.comunidadId,
               usuarioId: widget.usuarioId,
             ),
@@ -296,9 +299,7 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
         : await picker.pickImage(source: ImageSource.gallery);
     
     if (pickedFile != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(esVideo ? tr('galleryUploadingVideo') : tr('galleryUploadingImage')), behavior: SnackBarBehavior.floating),
-      );
+      ToastService.showInfo(context, esVideo ? tr('galleryUploadingVideo') : tr('galleryUploadingImage'));
       
       final res = await _servicioGaleria.subirImagenGaleria(
         pickedFile, 
@@ -307,16 +308,14 @@ class _PantallaGaleriaPrincipalState extends State<PantallaGaleriaPrincipal> wit
       );
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.mensaje), 
-            backgroundColor: res.exito ? Colors.green : Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (res.exito) {
+          ToastService.showSuccess(context, res.mensaje);
+        } else {
+          ToastService.showError(context, res.mensaje);
+        }
         if (res.exito) {
           _tabController.animateTo(0); // Volver a la pestaña de galería
-          // Se podría forzar un refresh del MasonryGridGaleria si fuera necesario
+          _masonryKey.currentState?.recargar(); // Forzar refresh para que aparezca la nueva imagen
         }
       }
     }

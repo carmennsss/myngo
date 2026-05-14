@@ -17,6 +17,7 @@ import '../../services/servicio_mensajeria.dart';
 import '../../utils/mejoras_notifier.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../utils/image_utils.dart';
 
 import '../../widgets/dialogo_crear_post.dart';
 import '../../widgets/selector_estrellas.dart';
@@ -32,6 +33,7 @@ import '../../services/servicio_galeria.dart';
 import '../../models/coleccion.dart';
 import 'package:tolgee/tolgee.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 /// Pantalla que muestra los detalles del perfil de un usuario.
 class PantallaDetallePerfil extends StatefulWidget {
@@ -358,18 +360,9 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
           }
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(tr(key)),
-            backgroundColor: const Color(0xFFC35E34),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        ToastService.showWarning(context, tr(key));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.mensaje), backgroundColor: Colors.redAccent),
-        );
+        ToastService.showError(context, res.mensaje);
       }
       setState(() => _isLoading = false);
     }
@@ -622,9 +615,10 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Builder(builder: (context) {
+        final cs = Theme.of(context).colorScheme;
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: cs.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
@@ -634,17 +628,17 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
               Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: cs.onSurface.withOpacity(0.24), borderRadius: BorderRadius.circular(2)),
               ),
               const SizedBox(height: 20),
               Text(
                 _haVotadoHoy ? tr('profileVoteTitleChange') : tr('profileVoteTitleNew'),
-                style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(color: cs.onSurface, fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 _haVotadoHoy ? tr('profileVoteDescChange') : tr('profileVoteDescNew'),
-                style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                style: GoogleFonts.inter(color: cs.onSurface.withOpacity(0.7), fontSize: 14),
               ),
               const SizedBox(height: 24),
               SelectorEstrellas(
@@ -745,9 +739,15 @@ class _PantallaDetallePerfilState extends State<PantallaDetallePerfil>
     final img = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (img == null) return;
     if (_usuario == null) return;
+    // Recorte circular antes de subir
+    final recortada = await recortarImagenCirculo(img);
+    if (recortada == null) return;
     final res = await ServicioPerfiles()
-        .editarAvatarPerfil(imagen: img, perfilId: _usuario!.perfilId);
-    if (res.exito) _recargarUsuarioActualizado();
+        .editarAvatarPerfil(imagen: recortada, perfilId: _usuario!.perfilId);
+    if (res.exito) {
+      await _recargarUsuarioActualizado();
+      notificarMejoraEquipada();
+    }
   }
 
   void _iniciarChat() async {

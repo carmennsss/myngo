@@ -13,6 +13,7 @@ import '../../screens/galeria/dialogo_selector_imagen.dart';
 import '../comunes/menu_opciones_contenido.dart';
 import '../comunes/estado_vacio_cargando.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../toast_service.dart';
 
 
 // Grid de estilo masonry (columnas de altura variable) para la galería de fotos y vídeos.
@@ -33,10 +34,10 @@ class MasonryGridGaleria extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _MasonryGridGaleriaState createState() => _MasonryGridGaleriaState();
+  MasonryGridGaleriaState createState() => MasonryGridGaleriaState();
 }
 
-class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
+class MasonryGridGaleriaState extends State<MasonryGridGaleria> {
   final _servicioGaleria = ServicioGaleria();
   
   List<ImagenGaleria>? _items;
@@ -57,6 +58,14 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     super.dispose();
   }
 
+  /// Recarga la galería desde cero (resetea offset y vacía lista).
+  /// Útil tras subir una imagen nueva para que aparezca inmediatamente.
+  Future<void> recargar() async {
+    _offset = 0;
+    _hayMas = true;
+    await _cargarMas();
+  }
+
   Future<void> _cargarMas() async {
     if (_cargando) return;
     if (!mounted) return;
@@ -64,7 +73,6 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
       _cargando = true;
       if (_offset == 0) _items = null; // Reiniciar a null solo en la carga inicial
     });
-
     final respuesta = await _servicioGaleria.obtenerGaleria(
       idComunidad: widget.comunidadId,
       idUsuario: widget.usuarioId,
@@ -102,7 +110,7 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
     if (pickedFile != null) {
       if (!mounted) return;
       setState(() => _subiendo = true);
-      
+
       final res = await _servicioGaleria.subirImagenGaleria(
         pickedFile,
         idComunidad: widget.comunidadId,
@@ -126,19 +134,11 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           _subiendo = false;
         });
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(nuevaImagen.tipoArchivo == 'V' ? tr('galleryVideoAdded') : tr('galleryImageAdded'), style: GoogleFonts.outfit()), 
-            backgroundColor: const Color(0xFF248EA6),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        ToastService.showInfo(context, nuevaImagen.tipoArchivo == 'V' ? tr('galleryVideoAdded') : tr('galleryImageAdded'), duration: const Duration(seconds: 2));
       } else if (mounted) {
         if (!mounted) return;
         setState(() => _subiendo = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.mensaje, style: GoogleFonts.outfit()), backgroundColor: Colors.red),
-        );
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
@@ -334,13 +334,9 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
           _items ??= <ImagenGaleria>[];
           _items!.insert(0, seleccionada);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('galleryAddedToCollectionMsg'), style: GoogleFonts.outfit()), backgroundColor: const Color(0xFF248EA6)),
-        );
+        ToastService.showInfo(context, tr('galleryAddedToCollectionMsg'));
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.mensaje, style: GoogleFonts.outfit()), backgroundColor: Colors.red),
-        );
+        ToastService.showError(context, res.mensaje);
       }
     }
   }
@@ -402,10 +398,11 @@ class _MasonryGridGaleriaState extends State<MasonryGridGaleria> {
                       );
                       if (mounted) {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(res.exito ? tr('galleryCollectionCreatedMsg') : res.mensaje),
-                          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-                        ));
+                        if (res.exito) {
+                          ToastService.showInfo(context, tr('galleryCollectionCreatedMsg'));
+                        } else {
+                          ToastService.showError(context, res.mensaje);
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF248EA6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(vertical: 16)),

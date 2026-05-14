@@ -13,6 +13,7 @@ import 'pantalla_detalle_imagen.dart';
 import '../../utils/gestor_descargas.dart';
 import 'package:myngo_app/widgets/comunes/miniatura_video.dart';
 import 'package:myngo_app/utils/tr_helper.dart';
+import '../../widgets/toast_service.dart';
 
 class PantallaDetalleColeccion extends StatefulWidget {
   final Coleccion coleccion;
@@ -94,16 +95,11 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
           _imagenes.removeWhere((i) => i.id == imagen.id);
         }
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            res.exito ? tr('collectionImageRemoved') : res.mensaje,
-            style: GoogleFonts.outfit(),
-          ),
-          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (res.exito) {
+        ToastService.showInfo(context, tr('collectionImageRemoved'));
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
     }
   }
 
@@ -122,12 +118,11 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
           _coleccion.esPrivada = nuevaPrivacidad;
         }
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.exito ? tr('collectionPrivacyUpdated') : res.mensaje),
-          backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-        ),
-      );
+      if (res.exito) {
+        ToastService.showInfo(context, tr('collectionPrivacyUpdated'));
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
     }
   }
 
@@ -207,13 +202,11 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
     final res = await _servicio.eliminarColeccion(idColeccion: _coleccion.id);
     if (mounted) {
       setState(() => _procesando = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.mensaje, style: GoogleFonts.outfit()),
-          backgroundColor: res.exito ? Colors.green.shade700 : Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (res.exito) {
+        ToastService.showSuccess(context, res.mensaje);
+      } else {
+        ToastService.showError(context, res.mensaje);
+      }
       if (res.exito) Navigator.pop(context, true); // devuelve true para que la galería refresque
     }
   }
@@ -248,32 +241,22 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
               _imagenes.insert(0, resSubida.datos!);
             }
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(resVinculo.mensaje, style: GoogleFonts.outfit()),
-              backgroundColor: resVinculo.exito ? const Color(0xFF248EA6) : Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          if (resVinculo.exito) {
+            ToastService.showInfo(context, resVinculo.mensaje);
+          } else {
+            ToastService.showError(context, resVinculo.mensaje);
+          }
         }
       } else {
         setState(() => _procesando = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(resSubida.mensaje, style: GoogleFonts.outfit()),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ToastService.showError(context, resSubida.mensaje);
       }
     }
   }
 
   Future<void> _elegirDePostsComunidad(dynamic tr) async {
     if (_coleccion.comunidadId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('collectionCommunityOnly'), style: GoogleFonts.outfit())),
-      );
+      ToastService.showInfo(context, tr('collectionCommunityOnly'));
       return;
     }
 
@@ -297,13 +280,11 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
           _offset = 0; // Reiniciar para ver la nueva imagen
           _cargarImagenes();
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.mensaje, style: GoogleFonts.outfit()),
-            backgroundColor: res.exito ? const Color(0xFF248EA6) : Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (res.exito) {
+          ToastService.showInfo(context, res.mensaje);
+        } else {
+          ToastService.showError(context, res.mensaje);
+        }
       }
     }
   }
@@ -394,9 +375,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                     await GestorDescargas.descargar(imagen.urlArchivo);
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(tr('moderationError'))),
-                      );
+                      ToastService.showError(context, tr('moderationError'));
                     }
                   }
                 },
@@ -590,9 +569,7 @@ class _PantallaDetalleColeccionState extends State<PantallaDetalleColeccion> {
                                             await GestorDescargas.descargar(imagen.urlArchivo);
                                           } catch (e) {
                                             if (context.mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text(tr('moderationError'))),
-                                              );
+                                              ToastService.showError(context, tr('moderationError'));
                                             }
                                           }
                                         },
