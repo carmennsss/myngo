@@ -303,6 +303,7 @@ def editar_mensaje(request, mensaje_id):
             
         mensaje.contenido = nuevo_contenido
         mensaje.es_editado = True
+        mensaje.fecha_edicion = timezone.now()
         mensaje.save()
         
         channel_layer = get_channel_layer()

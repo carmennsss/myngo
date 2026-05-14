@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tolgee/tolgee.dart';
 
 import 'package:google_fonts/google_fonts.dart';
@@ -348,7 +349,7 @@ class _PantallaAdminComunidadState extends State<PantallaAdminComunidad> with Si
                 context.findAncestorStateOfType<PantallaInicioState>()?.cargarComunidades();
                 
                 ToastService.showSuccess(context, tr('communitySuccessDeleted'));
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                context.go('/inicio');
               } else if (mounted) {
                 ToastService.showError(context, tr('commonErrorGeneric', {'error': res.mensaje}));
               }
