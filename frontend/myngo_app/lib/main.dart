@@ -21,27 +21,16 @@ import 'services/servicio_notificaciones_locales.dart';
 import 'router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  usePathUrlStrategy(); 
-  await initializeDateFormatting('es_ES', null);
-  
-  // Inicializar notificaciones locales
-  await ServicioNotificacionesLocales.inicializar();
+  GoogleFonts.config.allowRuntimeFetching = false;
+  usePathUrlStrategy();
 
-  // Configurar Tolgee
-  // Si no se proporcionan apiKey y apiUrl, Tolgee buscará automáticamente en lib/tolgee/
-  final String apiKey = const String.fromEnvironment('TOLGEE_API_KEY');
-  final String apiUrl = const String.fromEnvironment('TOLGEE_API_URL', defaultValue: 'https://app.tolgee.io');
-
-  if (!kReleaseMode && apiKey.isNotEmpty) {
-    await Tolgee.init(
-      apiKey: apiKey,
-      apiUrl: apiUrl,
-    );
-  } else {
-
-    await Tolgee.init();
+  try {
+    await Tolgee.init().timeout(const Duration(seconds: 8));
+  } catch (e) {
+    debugPrint('[main] Tolgee init skip: $e');
   }
 
   runApp(
@@ -55,6 +44,15 @@ void main() async {
       child: const TolgeeInContextWrapper(child: MiAplicacion()),
     ),
   );
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    initializeDateFormatting('es_ES', null).catchError((e) {
+      debugPrint('[main] DateFormatting error: $e');
+    });
+    ServicioNotificacionesLocales.inicializar().catchError((e) {
+      debugPrint('[main] Notifications init error: $e');
+    });
+  });
 }
 
 class TolgeeInContextWrapper extends StatelessWidget {
@@ -64,16 +62,15 @@ class TolgeeInContextWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (kReleaseMode) return child;
-    
+
     return Listener(
       onPointerDown: (event) {
         final keys = HardwareKeyboard.instance.logicalKeysPressed;
-        if (keys.contains(LogicalKeyboardKey.altLeft) || 
+        if (keys.contains(LogicalKeyboardKey.altLeft) ||
             keys.contains(LogicalKeyboardKey.altRight)) {
           try {
             Tolgee.highlightTolgeeWidgets();
           } catch (e) {
-            // Si la versión actual del SDK de Flutter no expone este método, lo ignoramos
             debugPrint("Tolgee highlight no disponible: $e");
           }
         }

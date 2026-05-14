@@ -17,7 +17,7 @@ class ServicioNotificacionesLocales {
   static Future<void> inicializar() async {
     if (_estaInicializado) return;
 
-    const inicializacionAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const inicializacionAndroid = AndroidInitializationSettings('myngo_icon');
 
     const inicializacionIos = DarwinInitializationSettings(
       requestAlertPermission: true,
