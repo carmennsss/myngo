@@ -522,63 +522,75 @@ class _PantallaDetalleComunidadState extends State<PantallaDetalleComunidad> {
             : '${Configuracion.baseUrl}${rawAvatar.startsWith('/') ? '' : '/'}$rawAvatar')
         : null;
 
-    return Row(
-      children: [
-        Expanded(
-          child: TrWidget(
-            builder: (context, tr) => ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.92),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TrWidget(
+              builder: (context, tr) => ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                children: [
+                  _buildNavItem(0, tr('communityTabPosts'), Icons.grid_view_rounded),
+                  _buildNavItem(1, tr('communityTabGallery'), Icons.photo_library_rounded),
+                  _buildNavItem(2, tr('communityTabChats'), Icons.chat_bubble_rounded),
+                  _buildNavItem(3, tr('communityTabMembers'), Icons.people_alt_rounded),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildNavItem(0, tr('communityTabPosts'), Icons.grid_view_rounded),
-                _buildNavItem(1, tr('communityTabGallery'), Icons.photo_library_rounded),
-                _buildNavItem(2, tr('communityTabChats'), Icons.chat_bubble_rounded),
-                _buildNavItem(3, tr('communityTabMembers'), Icons.people_alt_rounded),
+                Container(
+                  width: 1,
+                  height: 28,
+                  color: Colors.grey.withOpacity(0.25),
+                  margin: const EdgeInsets.only(right: 12),
+                ),
+                if (avatarUrl != null)
+                  ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: avatarUrl,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _buildAvatarFallback(comunidad),
+                    ),
+                  )
+                else
+                  _buildAvatarFallback(comunidad),
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: Text(
+                    comunidad.nombre,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: _colorTextoPrincipal(context),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
               ],
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 1,
-                height: 28,
-                color: Colors.grey.withOpacity(0.25),
-                margin: const EdgeInsets.only(right: 12),
-              ),
-              if (avatarUrl != null)
-                ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: avatarUrl,
-                    width: 28,
-                    height: 28,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => _buildAvatarFallback(comunidad),
-                  ),
-                )
-              else
-                _buildAvatarFallback(comunidad),
-              const SizedBox(width: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Text(
-                  comunidad.nombre,
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: _colorTextoPrincipal(context),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
